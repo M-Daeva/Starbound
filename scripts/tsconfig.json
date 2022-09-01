@@ -1,0 +1,37 @@
+{
+  "include": [
+    "./",
+    "./*.json"
+  ],
+  "exclude": [
+    "./tests"
+  ],
+  "ts-node": {
+    "rootDir": "./",
+    "outDir": "./dist",
+    "transpileOnly": true,
+    "files": true,
+    "compilerOptions": {
+      "target": "es2015",
+      "moduleResolution": "node",
+      "strict": true,
+      "composite": true,
+      "resolveJsonModule": true,
+      "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true,
+      "module": "commonjs"
+    }
+  },
+  "compilerOptions": {
+    "rootDir": "../",
+    "outDir": "../../dist",
+    "target": "es2015",
+    "moduleResolution": "node",
+    "strict": true,
+    "composite": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "module": "commonjs"
+  }
+}

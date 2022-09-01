@@ -1,0 +1,36 @@
+{
+  "name": "cw-boilerplate",
+  "version": "1.1.0",
+  "description": "",
+  "main": "./index.ts",
+  "private": true,
+  "engines": {
+    "node": ">=12.x"
+  },
+  "scripts": {
+    "start": "ts-node ./index.ts",
+    "init": "sudo chmod +x ../testnet.sh && cp ../../.test-wallets/test_wallets.json ./test_wallets.json && npm i"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/M-Daeva/cw-boilerplate.git"
+  },
+  "keywords": [],
+  "author": "M. Daeva",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/M-Daeva/cw-boilerplate/issues"
+  },
+  "homepage": "https://github.com/M-Daeva/cw-boilerplate#readme",
+  "devDependencies": {
+    "@types/node": "^17.0.31",
+    "typescript": "^4.6.4"
+  },
+  "dependencies": {
+    "@cosmjs/cosmwasm-stargate": "^0.28.11",
+    "@cosmjs/stargate": "^0.28.7",
+    "@cosmology/core": "^0.11.0",
+    "cosmjs-types": "^0.5.0",
+    "osmojs": "^0.11.3"
+  }
+}
