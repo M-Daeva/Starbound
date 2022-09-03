@@ -1,3 +1,6 @@
+import { SwapAmountInRoute } from "osmojs/types/proto/osmosis/gamm/v1beta1/tx";
+import { Long } from "@osmonauts/helpers";
+
 interface PoolInfo {
   symbolFirst: AssetSymbol;
   symbolSecond: AssetSymbol;
@@ -175,4 +178,52 @@ const POOLS: PoolInfo[] = [
   { symbolFirst: "CUDOS", symbolSecond: "OSMO", number: 796 },
 ];
 
-export { DENOMS, POOLS, PoolInfo, AssetDenom, AssetSymbol };
+function getRoutes(
+  symbolFirst: AssetSymbol,
+  symbolSecond: AssetSymbol
+): SwapAmountInRoute[] {
+  let poolFirst: SwapAmountInRoute[] = [];
+  let poolSecond: SwapAmountInRoute[] = [];
+
+  for (let pool of POOLS) {
+    // returns direct pool
+    if (
+      (pool.symbolFirst === symbolFirst &&
+        pool.symbolSecond === symbolSecond) ||
+      (pool.symbolFirst === symbolSecond && pool.symbolSecond === symbolFirst)
+    ) {
+      return [
+        {
+          poolId: pool.number as unknown as Long,
+          tokenOutDenom: DENOMS[symbolSecond],
+        },
+      ];
+    }
+
+    // fill pool list with first symbol pools
+    if (pool.symbolFirst === symbolFirst && pool.symbolSecond === "OSMO") {
+      poolFirst.push({
+        poolId: pool.number as unknown as Long,
+        tokenOutDenom: DENOMS.OSMO,
+      });
+    }
+
+    // fill pool list with second symbol pools
+    if (pool.symbolFirst === symbolSecond && pool.symbolSecond === "OSMO") {
+      poolSecond.push({
+        poolId: pool.number as unknown as Long,
+        tokenOutDenom: DENOMS[symbolSecond],
+      });
+    }
+  }
+
+  return [...poolFirst, ...poolSecond];
+}
+
+function getSymbolByDenom(denom: string): string {
+  let list = Object.entries(DENOMS).filter(([_, den]) => den === denom);
+  if (list.length === 0) return denom;
+  return list[0][0] as unknown as string;
+}
+
+export { DENOMS, POOLS, PoolInfo, AssetSymbol, getRoutes, getSymbolByDenom };

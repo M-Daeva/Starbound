@@ -1,63 +1,68 @@
 import { getData, SigningStargateClient, getAddrByAddr } from "./osmo-signer";
-import { coin } from "@cosmjs/stargate";
+import { coin, StdFee } from "@cosmjs/stargate";
 import { osmosis } from "osmojs";
 import {
   MsgSwapExactAmountIn,
   SwapAmountInRoute,
 } from "osmojs/types/proto/osmosis/gamm/v1beta1/tx";
 import { Long } from "@osmonauts/helpers";
+import { getRoutes, DENOMS, getSymbolByDenom, AssetSymbol } from "./osmo-pools";
 
 const { swapExactAmountIn } = osmosis.gamm.v1beta1.MessageComposer.withTypeUrl;
 const { ADDR, getAliceClient } = getData(true);
 
 const PREFIX = "osmo";
-const DENOM = "uosmo";
 
-const gas = {
-  amount: [{ denom: DENOM, amount: "0" }],
+const fee: StdFee = {
+  amount: [coin(0, DENOMS.OSMO)],
   gas: "250000",
 };
 
 const l = console.log.bind(console);
 
-async function swap(client: SigningStargateClient) {
-  const osmoToJunoRoute: SwapAmountInRoute = {
-    poolId: 497 as unknown as Long,
-    tokenOutDenom:
-      "ibc/46B44899322F3CD854D2D46DEEF881958467CDD4B3B10086DA49296BBED94BED",
-  };
-
+async function swap(
+  client: SigningStargateClient,
+  assetFirst: AssetSymbol,
+  assetSecond: AssetSymbol,
+  amount: number
+) {
   const sender = getAddrByAddr(ADDR.ALICE, PREFIX);
 
+  const routes = getRoutes(assetFirst, assetSecond);
+
   const msgSwapExactAmountIn: MsgSwapExactAmountIn = {
-    routes: [osmoToJunoRoute],
+    routes,
     sender,
-    tokenIn: coin(`${100_000}`, DENOM),
+    tokenIn: coin(amount, DENOMS[assetFirst]),
     tokenOutMinAmount: "1",
   };
 
   const msg = swapExactAmountIn(msgSwapExactAmountIn);
 
-  const tx = await client.signAndBroadcast(sender, [msg], gas);
+  const tx = await client.signAndBroadcast(sender, [msg], fee);
   return tx.rawLog;
 }
 
-async function getBalance(client: SigningStargateClient) {
+async function getAllBalances(client: SigningStargateClient) {
   let osmo_addr = getAddrByAddr(ADDR.ALICE, PREFIX);
 
-  return await client.getBalance(osmo_addr, DENOM);
+  let balances = await client.getAllBalances(osmo_addr);
+  return balances.map(({ amount, denom }) => ({
+    amount,
+    symbol: getSymbolByDenom(denom),
+  }));
 }
 
 async function main() {
   const aliceClient = (await getAliceClient(false)) as SigningStargateClient;
 
-  let res = await getBalance(aliceClient);
+  let res = await getAllBalances(aliceClient);
   l("\n", res, "\n");
 
-  let res2 = await swap(aliceClient);
+  let res2 = await swap(aliceClient, "OSMO", "JUNO", 500);
   l("\n", res2, "\n");
 
-  res = await getBalance(aliceClient);
+  res = await getAllBalances(aliceClient);
   l("\n", res, "\n");
 }
 
