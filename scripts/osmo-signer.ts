@@ -59,7 +59,7 @@ const RPC_TEST = "https://testnet-rpc.osmosis.zone/";
 const PREFIX = "osmo";
 const DENOM = "uosmo";
 
-function getAddrByAddr(addr: string, prefix: string): string {
+function getAddrByPrefix(addr: string, prefix: string): string {
   return toBech32(prefix, fromBech32(addr).data);
 }
 
@@ -122,4 +122,43 @@ function getData(
   };
 }
 
-export { getData, SigningCosmWasmClient, SigningStargateClient, getAddrByAddr };
+async function getJunoSigners() {
+  const RPC_TEST = "https://rpc.uni.junomint.com:443";
+  const PREFIX = "juno";
+
+  const signerA = await DirectSecp256k1HdWallet.fromMnemonic(ALICE_SEED_TEST, {
+    prefix: PREFIX,
+  });
+
+  const signerB = await DirectSecp256k1HdWallet.fromMnemonic(BOB_SEED_TEST, {
+    prefix: PREFIX,
+  });
+
+  const aliceJunoClient = await SigningStargateClient.connectWithSigner(
+    RPC_TEST,
+    signerA,
+    {
+      prefix: PREFIX,
+      gasPrice: GasPrice.fromString("0.1ujunox"),
+    }
+  );
+
+  const bobJunoClient = await SigningStargateClient.connectWithSigner(
+    RPC_TEST,
+    signerB,
+    {
+      prefix: PREFIX,
+      gasPrice: GasPrice.fromString("0.1ujunox"),
+    }
+  );
+
+  return { aliceJunoClient, bobJunoClient };
+}
+
+export {
+  getData,
+  SigningCosmWasmClient,
+  SigningStargateClient,
+  getAddrByPrefix,
+  getJunoSigners,
+};

@@ -1,0 +1,1412 @@
+{
+  "channels": [
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-0"
+      },
+      "connection_hops": [
+        "connection-0"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-0"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-10"
+      },
+      "connection_hops": [
+        "connection-1"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-1"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-352"
+      },
+      "connection_hops": [
+        "connection-14"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-10"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-163"
+      },
+      "connection_hops": [
+        "connection-86"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-100"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-165"
+      },
+      "connection_hops": [
+        "connection-87"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-101"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-178"
+      },
+      "connection_hops": [
+        "connection-88"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-102"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-180"
+      },
+      "connection_hops": [
+        "connection-89"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-103"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-181"
+      },
+      "connection_hops": [
+        "connection-90"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-104"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-182"
+      },
+      "connection_hops": [
+        "connection-91"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-105"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-184"
+      },
+      "connection_hops": [
+        "connection-92"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-106"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-185"
+      },
+      "connection_hops": [
+        "connection-93"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-107"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-186"
+      },
+      "connection_hops": [
+        "connection-94"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-108"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-187"
+      },
+      "connection_hops": [
+        "connection-95"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-109"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "wasm.tki16ugzt75sa9mf2g2mjfpf4knlc2l0p4ankteff55tlkxh3m55htgqdq3ky0",
+        "channel_id": "channel-354"
+      },
+      "connection_hops": [
+        "connection-16"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-11"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-190"
+      },
+      "connection_hops": [
+        "connection-98"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-110"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-189"
+      },
+      "connection_hops": [
+        "connection-97"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-111"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-191"
+      },
+      "connection_hops": [
+        "connection-96"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-112"
+    },
+    {
+      "state": "STATE_INIT",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": ""
+      },
+      "connection_hops": [
+        "connection-68"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-113"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-198"
+      },
+      "connection_hops": [
+        "connection-68"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-114"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-200"
+      },
+      "connection_hops": [
+        "connection-99"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-115"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-203"
+      },
+      "connection_hops": [
+        "connection-101"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-116"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-215"
+      },
+      "connection_hops": [
+        "connection-102"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-117"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-216"
+      },
+      "connection_hops": [
+        "connection-103"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-118"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-217"
+      },
+      "connection_hops": [
+        "connection-104"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-119"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-17"
+      },
+      "connection_hops": [
+        "connection-17"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-12"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-218"
+      },
+      "connection_hops": [
+        "connection-105"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-120"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-220"
+      },
+      "connection_hops": [
+        "connection-104"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-121"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-221"
+      },
+      "connection_hops": [
+        "connection-103"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-122"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-222"
+      },
+      "connection_hops": [
+        "connection-103"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-123"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-223"
+      },
+      "connection_hops": [
+        "connection-106"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-124"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-224"
+      },
+      "connection_hops": [
+        "connection-107"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-125"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-0"
+      },
+      "connection_hops": [
+        "connection-108"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-126"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-229"
+      },
+      "connection_hops": [
+        "connection-109"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-127"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-237"
+      },
+      "connection_hops": [
+        "connection-111"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-128"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-252"
+      },
+      "connection_hops": [
+        "connection-112"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-129"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-44"
+      },
+      "connection_hops": [
+        "connection-115"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-130"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-48"
+      },
+      "connection_hops": [
+        "connection-120"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-131"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-7"
+      },
+      "connection_hops": [
+        "connection-126"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-132"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-8"
+      },
+      "connection_hops": [
+        "connection-127"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-133"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-13"
+      },
+      "connection_hops": [
+        "connection-129"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-134"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-14"
+      },
+      "connection_hops": [
+        "connection-133"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-135"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-15"
+      },
+      "connection_hops": [
+        "connection-134"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-136"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-16"
+      },
+      "connection_hops": [
+        "connection-135"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-137"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-17"
+      },
+      "connection_hops": [
+        "connection-138"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-138"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-18"
+      },
+      "connection_hops": [
+        "connection-141"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-139"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-18"
+      },
+      "connection_hops": [
+        "connection-19"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-14"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-19"
+      },
+      "connection_hops": [
+        "connection-143"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-140"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-20"
+      },
+      "connection_hops": [
+        "connection-145"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-141"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-21"
+      },
+      "connection_hops": [
+        "connection-146"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-142"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-22"
+      },
+      "connection_hops": [
+        "connection-147"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-143"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-23"
+      },
+      "connection_hops": [
+        "connection-148"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-144"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-24"
+      },
+      "connection_hops": [
+        "connection-149"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-145"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-25"
+      },
+      "connection_hops": [
+        "connection-150"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-146"
+    },
+    {
+      "state": "STATE_TRYOPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-26"
+      },
+      "connection_hops": [
+        "connection-151"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-147"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-27"
+      },
+      "connection_hops": [
+        "connection-152"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-148"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-260"
+      },
+      "connection_hops": [
+        "connection-153"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-149"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-335"
+      },
+      "connection_hops": [
+        "connection-20"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-15"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-30"
+      },
+      "connection_hops": [
+        "connection-158"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-150"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-28"
+      },
+      "connection_hops": [
+        "connection-156"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-151"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-29"
+      },
+      "connection_hops": [
+        "connection-155"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-152"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-31"
+      },
+      "connection_hops": [
+        "connection-157"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-153"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-32"
+      },
+      "connection_hops": [
+        "connection-154"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-154"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-33"
+      },
+      "connection_hops": [
+        "connection-160"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-155"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-53"
+      },
+      "connection_hops": [
+        "connection-165"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-156"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-54"
+      },
+      "connection_hops": [
+        "connection-169"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-157"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-55"
+      },
+      "connection_hops": [
+        "connection-170"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-158"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-56"
+      },
+      "connection_hops": [
+        "connection-170"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-159"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-21"
+      },
+      "connection_hops": [
+        "connection-21"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-16"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-57"
+      },
+      "connection_hops": [
+        "connection-173"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-160"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-36"
+      },
+      "connection_hops": [
+        "connection-174"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-161"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-37"
+      },
+      "connection_hops": [
+        "connection-177"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-162"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-266"
+      },
+      "connection_hops": [
+        "connection-198"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-163"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-267"
+      },
+      "connection_hops": [
+        "connection-199"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-164"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-270"
+      },
+      "connection_hops": [
+        "connection-201"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-166"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-322"
+      },
+      "connection_hops": [
+        "connection-153"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-167"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-387"
+      },
+      "connection_hops": [
+        "connection-203"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-168"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-488"
+      },
+      "connection_hops": [
+        "connection-23"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-17"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-61"
+      },
+      "connection_hops": [
+        "connection-205"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-170"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-58"
+      },
+      "connection_hops": [
+        "connection-209"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-171"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-60"
+      },
+      "connection_hops": [
+        "connection-210"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-172"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-69"
+      },
+      "connection_hops": [
+        "connection-211"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-173"
+    },
+    {
+      "state": "STATE_TRYOPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-69"
+      },
+      "connection_hops": [
+        "connection-211"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-174"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-76"
+      },
+      "connection_hops": [
+        "connection-213"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-175"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-64"
+      },
+      "connection_hops": [
+        "connection-214"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-176"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-392"
+      },
+      "connection_hops": [
+        "connection-228"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-177"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-393"
+      },
+      "connection_hops": [
+        "connection-229"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-178"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-394"
+      },
+      "connection_hops": [
+        "connection-230"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-179"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-22"
+      },
+      "connection_hops": [
+        "connection-25"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-18"
+    },
+    {
+      "state": "STATE_INIT",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": ""
+      },
+      "connection_hops": [
+        "connection-0"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-180"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-0"
+      },
+      "connection_hops": [
+        "connection-234"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-181"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-2"
+      },
+      "connection_hops": [
+        "connection-237"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-183"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-1"
+      },
+      "connection_hops": [
+        "connection-243"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-188"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-0"
+      },
+      "connection_hops": [
+        "connection-244"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-189"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-4"
+      },
+      "connection_hops": [
+        "connection-26"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-19"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-2"
+      },
+      "connection_hops": [
+        "connection-245"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-190"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-480"
+      },
+      "connection_hops": [
+        "connection-257"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-198"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-0"
+      },
+      "connection_hops": [
+        "connection-2"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-2"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-26"
+      },
+      "connection_hops": [
+        "connection-28"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-20"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-69"
+      },
+      "connection_hops": [
+        "connection-259"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-200"
+    },
+    {
+      "state": "STATE_OPEN",
+      "ordering": "ORDER_UNORDERED",
+      "counterparty": {
+        "port_id": "transfer",
+        "channel_id": "channel-27"
+      },
+      "connection_hops": [
+        "connection-28"
+      ],
+      "version": "ics20-1",
+      "port_id": "transfer",
+      "channel_id": "channel-21"
+    }
+  ],
+  "pagination": {
+    "next_key": "L3BvcnRzL3RyYW5zZmVyL2NoYW5uZWxzL2NoYW5uZWwtMjI=",
+    "total": "0"
+  },
+  "height": {
+    "revision_number": "3",
+    "revision_height": "1569348"
+  }
+}

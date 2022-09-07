@@ -194,7 +194,7 @@ function getRoutes(
     ) {
       return [
         {
-          poolId: pool.number as unknown as Long,
+          poolId: Long.fromNumber(pool.number),
           tokenOutDenom: DENOMS[symbolSecond],
         },
       ];
@@ -203,7 +203,7 @@ function getRoutes(
     // fill pool list with first symbol pools
     if (pool.symbolFirst === symbolFirst && pool.symbolSecond === "OSMO") {
       poolFirst.push({
-        poolId: pool.number as unknown as Long,
+        poolId: Long.fromNumber(pool.number),
         tokenOutDenom: DENOMS.OSMO,
       });
     }
@@ -211,7 +211,7 @@ function getRoutes(
     // fill pool list with second symbol pools
     if (pool.symbolFirst === symbolSecond && pool.symbolSecond === "OSMO") {
       poolSecond.push({
-        poolId: pool.number as unknown as Long,
+        poolId: Long.fromNumber(pool.number),
         tokenOutDenom: DENOMS[symbolSecond],
       });
     }
