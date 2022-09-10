@@ -1,8 +1,22 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::state::{AssetDenom, AssetInfo, Pool};
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct CountResponse {
-    pub count: u8,
+pub struct GetDenomResponse {
+    pub denom: AssetDenom,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct GetAllDenomsResponse {
+    pub all_assets_info: Vec<AssetInfo>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct GetAllPoolsResponse {
+    pub all_pools: Vec<Pool>,
 }

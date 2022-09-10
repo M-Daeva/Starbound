@@ -3,6 +3,7 @@ import {
   SigningStargateClient,
   getAddrByPrefix,
   getJunoSigners,
+  SigningCosmWasmClient,
 } from "./osmo-signer";
 import { coin, StdFee } from "@cosmjs/stargate";
 import { osmosis, ibc } from "osmojs";
@@ -32,7 +33,7 @@ import { channels } from "./channels-osmo.json";
 import { StakeAuthorization } from "cosmjs-types/cosmos/staking/v1beta1/authz";
 
 const { swapExactAmountIn } = osmosis.gamm.v1beta1.MessageComposer.withTypeUrl;
-const { ADDR, getAliceClient, getBobClient } = getData(true);
+const { ADDR, getAliceClient, getBobClient, CONTR } = getData(true);
 
 const PREFIX = "osmo";
 
@@ -343,10 +344,33 @@ async function main() {
   const aliceClient = (await getAliceClient(false)) as SigningStargateClient;
   const bobClient = (await getBobClient(false)) as SigningStargateClient;
 
+  const aliceCwClient = (await getAliceClient(true)) as SigningCosmWasmClient;
+
+  const query = async () => {
+    let res = await aliceCwClient.queryContractSmart(CONTR.ADDR, {
+      get_count: {},
+    });
+    l("\n", res, "\n");
+  };
+
+  let res;
+
+  await query();
+
+  res = await aliceCwClient.execute(
+    getAddrByPrefix(ADDR.ALICE, PREFIX),
+    CONTR.ADDR,
+    { set: { count: 45 } },
+    fee
+  );
+  l({ attributes: res.logs[0].events[2].attributes }, "\n");
+
+  await query();
+
   //const { aliceJunoClient, bobJunoClient } = await getJunoSigners();
 
-  let res = await getAllBalances(aliceClient);
-  l("\n", res, "\n");
+  // let res = await getAllBalances(aliceClient);
+  // l("\n", res, "\n");
 
   //let res2 = await swap(aliceClient, "OSMO", "JUNO", 500);
   // let res2;
@@ -359,11 +383,13 @@ async function main() {
   // let res2 = await ibcFromMainnet();
   // l("\n", res2, "\n");
 
+  /*
   let res2 = await grant(aliceClient);
   l("\n", res2, "\n");
 
   res2 = await delegateFrom(bobClient);
   l("\n", res2, "\n");
+  */
 
   // let res2 = await grantJuno(aliceJunoClient);
   // l("\n", res2, "\n");
@@ -379,8 +405,8 @@ async function main() {
   // );
   // l(tx);
 
-  res = await getAllBalances(aliceClient);
-  l("\n", res, "\n");
+  // res = await getAllBalances(aliceClient);
+  // l("\n", res, "\n");
 }
 
 main();

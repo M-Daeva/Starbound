@@ -2,7 +2,7 @@
 use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
 use crate::{
-    actions::{execute::set, instantiate::init, migrate::migrate_contract, query::query_state},
+    actions::{instantiate::init, migrate::migrate_contract},
     error::ContractError,
     messages::{
         execute::ExecuteMsg, instantiate::InstantiateMsg, migrate::MigrateMsg, query::QueryMsg,
@@ -29,7 +29,8 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Set { count } => set(deps, env, info, count),
+        ExecuteMsg::Deposit {} => unimplemented!(),
+        ExecuteMsg::SwapTokens {} => unimplemented!(),
     }
 }
 
@@ -37,7 +38,9 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::GetCount {} => query_state(deps, env),
+        QueryMsg::GetDenom { asset_symbol } => unimplemented!(),
+        QueryMsg::GetAllDenoms {} => unimplemented!(),
+        QueryMsg::GetAllPools {} => unimplemented!(),
     }
 }
 
