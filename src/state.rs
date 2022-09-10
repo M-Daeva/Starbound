@@ -1,4 +1,4 @@
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Coin, Uint128};
 use cw_storage_plus::{Item, Map};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -30,10 +30,35 @@ impl Pool {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct User {
+    pub address: Addr,
+    pub deposited: Uint128,
+    pub portfolio: Vec<Coin>,
+}
+
+impl User {
+    pub fn new(address: Addr) -> Self {
+        User {
+            address,
+            deposited: Uint128::new(0),
+            portfolio: Vec::<Coin>::new(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct Bank {
+    pub address: Addr,
+    pub balance: Vec<Coin>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct State {
     pub admin: Addr,
     pub pools: Vec<Pool>,
 }
 
 pub const STATE: Item<State> = Item::new("state");
+pub const BANK: Item<Bank> = Item::new("bank");
 pub const ASSET_DENOMS: Map<AssetSymbol, AssetDenom> = Map::new("asset_denoms");
+pub const USERS: Map<Addr, User> = Map::new("users");

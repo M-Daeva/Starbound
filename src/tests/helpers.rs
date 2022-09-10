@@ -5,10 +5,10 @@ use cosmwasm_std::{
 
 use crate::{contract::instantiate, error::ContractError, messages::instantiate::InstantiateMsg};
 
-pub const ADDR1: &str = "juno1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyqd4qeg";
+pub const ADDR_ALICE: &str = "osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx";
 
-pub const VALUE1: u8 = 42;
-pub const VALUE2: u8 = 45;
+pub const POOLS_AMOUNT_INITIAL: &str = "65";
+pub const ASSETS_AMOUNT_INITIAL: &str = "46";
 
 pub type Instance = (
     OwnedDeps<MockStorage, MockApi, MockQuerier, Empty>,
@@ -17,11 +17,11 @@ pub type Instance = (
     Result<Response, ContractError>,
 );
 
-pub fn get_instance(count: u8, addr: &str) -> Instance {
+pub fn get_instance(addr: &str) -> Instance {
     let mut deps = mock_dependencies();
     let env = mock_env();
     let info = mock_info(addr, &[]);
-    let msg = InstantiateMsg { count };
+    let msg = InstantiateMsg {};
 
     let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg);
     (deps, env, info, res)

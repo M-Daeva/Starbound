@@ -1,3 +1,4 @@
+use cosmwasm_std::{Coin, Uint128};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -19,4 +20,17 @@ pub struct GetAllDenomsResponse {
 #[serde(rename_all = "snake_case")]
 pub struct GetAllPoolsResponse {
     pub all_pools: Vec<Pool>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct GetBankBalanceResponse {
+    pub balance: Vec<Coin>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct GetUserInfoResponse {
+    pub deposited: Uint128,
+    pub portfolio: Vec<Coin>,
 }

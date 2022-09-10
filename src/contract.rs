@@ -2,7 +2,12 @@
 use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
 use crate::{
-    actions::{instantiate::init, migrate::migrate_contract},
+    actions::{
+        execute::deposit,
+        instantiate::init,
+        migrate::migrate_contract,
+        query::{get_all_denoms, get_all_pools, get_bank_balance, get_denom, get_user_info},
+    },
     error::ContractError,
     messages::{
         execute::ExecuteMsg, instantiate::InstantiateMsg, migrate::MigrateMsg, query::QueryMsg,
@@ -29,8 +34,8 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Deposit {} => unimplemented!(),
-        ExecuteMsg::SwapTokens {} => unimplemented!(),
+        ExecuteMsg::Deposit {} => deposit(deps, env, info),
+        ExecuteMsg::SwapTokens { from, to, amount } => unimplemented!(),
     }
 }
 
@@ -38,9 +43,11 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::GetDenom { asset_symbol } => unimplemented!(),
-        QueryMsg::GetAllDenoms {} => unimplemented!(),
-        QueryMsg::GetAllPools {} => unimplemented!(),
+        QueryMsg::GetDenom { asset_symbol } => get_denom(deps, env, asset_symbol),
+        QueryMsg::GetAllDenoms {} => get_all_denoms(deps, env),
+        QueryMsg::GetAllPools {} => get_all_pools(deps, env),
+        QueryMsg::GetBankBalance {} => get_bank_balance(deps, env),
+        QueryMsg::GetUserInfo { address } => get_user_info(deps, env, address),
     }
 }
 

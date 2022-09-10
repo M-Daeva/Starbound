@@ -7,4 +7,6 @@ pub enum QueryMsg {
     GetDenom { asset_symbol: String },
     GetAllDenoms {},
     GetAllPools {},
+    GetBankBalance {},
+    GetUserInfo { address: String },
 }
