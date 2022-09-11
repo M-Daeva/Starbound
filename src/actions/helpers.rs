@@ -1,8 +1,9 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::StdError;
 
-use crate::state::AssetDenom;
+use crate::state::{AssetDenom, SwapAmountInRoute};
 
+// TODO: add unit tests for helpers
 pub struct Denoms;
 
 impl<'a> Denoms {
@@ -206,7 +207,7 @@ impl<'a> Denoms {
 pub struct Pools;
 
 impl<'a> Pools {
-    pub fn list() -> Vec<(&'a str, &'a str, u32)> {
+    pub fn list() -> Vec<(&'a str, &'a str, u128)> {
         vec![
             ("ATOM", "OSMO", 1),
             ("ION", "OSMO", 2),
@@ -274,5 +275,50 @@ impl<'a> Pools {
             ("BLD", "OSMO", 795),
             ("CUDOS", "OSMO", 796),
         ]
+    }
+
+    pub fn get_routes(
+        symbol_first: &str,
+        symbol_second: &str,
+    ) -> Result<Vec<SwapAmountInRoute>, StdError> {
+        let denom_second = Denoms::get(symbol_second)?;
+        let mut pool_first = Vec::<SwapAmountInRoute>::new();
+        let mut pool_second = Vec::<SwapAmountInRoute>::new();
+        const SYMBOL_OSMO: &str = "OSMO";
+
+        for (s1, s2, n) in Self::list() {
+            // returns direct pool
+            if (s1 == symbol_first && s2 == symbol_second)
+                || (s1 == symbol_second && s2 == symbol_first)
+            {
+                return Ok(vec![SwapAmountInRoute::new(n, &denom_second)]);
+            }
+
+            // fill pool list with first symbol pools
+            if s1 == symbol_first && s2 == SYMBOL_OSMO {
+                pool_first.push(SwapAmountInRoute::new(n, SYMBOL_OSMO));
+            }
+
+            // fill pool list with second symbol pools
+            if s1 == symbol_second && s2 == SYMBOL_OSMO {
+                pool_second.push(SwapAmountInRoute::new(n, &denom_second));
+            }
+        }
+
+        let result: Vec<SwapAmountInRoute> = pool_first
+            .into_iter()
+            .chain(pool_second.into_iter())
+            .collect();
+
+        if result.is_empty() {
+            return Err(StdError::NotFound {
+                kind: format!(
+                    "From {} to {} routes are not found!",
+                    symbol_first, symbol_second
+                ),
+            });
+        }
+
+        Ok(result)
     }
 }

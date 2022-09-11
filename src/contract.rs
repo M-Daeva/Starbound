@@ -3,7 +3,7 @@ use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Respons
 
 use crate::{
     actions::{
-        execute::deposit,
+        execute::{deposit, swap_tokens},
         instantiate::init,
         migrate::migrate_contract,
         query::{get_all_denoms, get_all_pools, get_bank_balance, get_denom, get_user_info},
@@ -35,11 +35,9 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Deposit {} => deposit(deps, env, info),
-        ExecuteMsg::SwapTokens {
-            from: _,
-            to: _,
-            amount: _,
-        } => unimplemented!(),
+        ExecuteMsg::SwapTokens { from, to, amount } => {
+            swap_tokens(deps, env, info, from, to, amount)
+        }
     }
 }
 

@@ -5,11 +5,75 @@
     {
       "type": "object",
       "required": [
-        "get_count"
+        "get_denom"
       ],
       "properties": {
-        "get_count": {
+        "get_denom": {
+          "type": "object",
+          "required": [
+            "asset_symbol"
+          ],
+          "properties": {
+            "asset_symbol": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "get_all_denoms"
+      ],
+      "properties": {
+        "get_all_denoms": {
           "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "get_all_pools"
+      ],
+      "properties": {
+        "get_all_pools": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "get_bank_balance"
+      ],
+      "properties": {
+        "get_bank_balance": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "get_user_info"
+      ],
+      "properties": {
+        "get_user_info": {
+          "type": "object",
+          "required": [
+            "address"
+          ],
+          "properties": {
+            "address": {
+              "type": "string"
+            }
+          }
         }
       },
       "additionalProperties": false

@@ -3,6 +3,35 @@ use cw_storage_plus::{Item, Map};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+// TODO: add portfolio structures storage
+
+// Stargate message struct
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+pub struct SwapAmountInRoute {
+    pub poolId: u128,
+    pub tokenOutDenom: String,
+}
+
+impl SwapAmountInRoute {
+    pub fn new(pool_id: u128, token_out_denom: &str) -> Self {
+        Self {
+            poolId: pool_id,
+            tokenOutDenom: token_out_denom.to_string(),
+        }
+    }
+}
+
+// Stargate message struct
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+pub struct MsgSwapExactAmountIn {
+    pub sender: String,
+    pub routes: Vec<SwapAmountInRoute>,
+    pub tokenIn: Coin,
+    pub tokenOutMinAmount: String,
+}
+
 pub type AssetSymbol = String;
 pub type AssetDenom = String;
 
@@ -16,11 +45,11 @@ pub struct AssetInfo {
 pub struct Pool {
     pub symbol_first: AssetSymbol,
     pub symbol_second: AssetSymbol,
-    pub number: u32,
+    pub number: u128,
 }
 
 impl Pool {
-    pub fn new(symbol_first: &str, symbol_second: &str, number: u32) -> Self {
+    pub fn new(symbol_first: &str, symbol_second: &str, number: u128) -> Self {
         Pool {
             symbol_first: symbol_first.to_string(),
             symbol_second: symbol_second.to_string(),

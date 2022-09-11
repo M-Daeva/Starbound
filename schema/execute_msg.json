@@ -5,19 +5,39 @@
     {
       "type": "object",
       "required": [
-        "set"
+        "deposit"
       ],
       "properties": {
-        "set": {
+        "deposit": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "swap_tokens"
+      ],
+      "properties": {
+        "swap_tokens": {
           "type": "object",
           "required": [
-            "count"
+            "amount",
+            "from",
+            "to"
           ],
           "properties": {
-            "count": {
+            "amount": {
               "type": "integer",
-              "format": "uint8",
+              "format": "uint128",
               "minimum": 0.0
+            },
+            "from": {
+              "type": "string"
+            },
+            "to": {
+              "type": "string"
             }
           }
         }

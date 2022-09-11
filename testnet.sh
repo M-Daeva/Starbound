@@ -1,4 +1,4 @@
-# script for connecting to juno testnet
+# script for connecting to osmo testnet
 
 CHAIN_ID="osmo-test-4"
 RPC="https://testnet-rpc.osmosis.zone:443"
@@ -26,7 +26,7 @@ echo contract code is $CONTRACT_CODE
 #---------- SMART CONTRACT INTERACTION ------------------------
 
 # instantiate smart contract
-INIT='{"count":42}'
+INIT='{}'
 osmosisd tx wasm instantiate $CONTRACT_CODE "$INIT" --from "alice" --label "osmo-swaper" $TXFLAG --admin $ALICE_ADDRESS
 
 # get smart contract address

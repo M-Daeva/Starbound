@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GetAllDenomsResponse",
+  "type": "object",
+  "required": [
+    "all_assets_info"
+  ],
+  "properties": {
+    "all_assets_info": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/AssetInfo"
+      }
+    }
+  },
+  "definitions": {
+    "AssetInfo": {
+      "type": "object",
+      "required": [
+        "asset_denom",
+        "asset_symbol"
+      ],
+      "properties": {
+        "asset_denom": {
+          "type": "string"
+        },
+        "asset_symbol": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
