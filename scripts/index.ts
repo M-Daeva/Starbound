@@ -346,26 +346,37 @@ async function main() {
 
   const aliceCwClient = (await getAliceClient(true)) as SigningCosmWasmClient;
 
-  const query = async () => {
+  const get_bank_balance = async () => {
     let res = await aliceCwClient.queryContractSmart(CONTR.ADDR, {
-      get_count: {},
+      get_bank_balance: {},
     });
     l("\n", res, "\n");
   };
 
   let res;
 
-  await query();
+  await get_bank_balance();
 
+  // let res2 = await swap(
+  //   aliceClient,
+  //   DENOMS.OSMO as unknown as AssetSymbol,
+  //   DENOMS.USDC as unknown as AssetSymbol,
+  //   10_000_000
+  // );
+  // l("\n", res2, "\n");
+
+  // OMG, there is no USDC on testnet.osmosis.zone!
   res = await aliceCwClient.execute(
     getAddrByPrefix(ADDR.ALICE, PREFIX),
     CONTR.ADDR,
-    { set: { count: 45 } },
-    fee
+    { deposit: {} },
+    fee,
+    "",
+    [coin(`${1_000}`, DENOMS.USDC)]
   );
   l({ attributes: res.logs[0].events[2].attributes }, "\n");
 
-  await query();
+  await get_bank_balance();
 
   //const { aliceJunoClient, bobJunoClient } = await getJunoSigners();
 
