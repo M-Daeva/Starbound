@@ -6,13 +6,13 @@ use serde::{Deserialize, Serialize};
 pub type AssetSymbol = String;
 pub type AssetDenom = String;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct AssetInfo {
     pub asset_symbol: AssetSymbol,
     pub asset_denom: AssetDenom,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct Pool {
     pub symbol_first: AssetSymbol,
     pub symbol_second: AssetSymbol,
@@ -29,7 +29,7 @@ impl Pool {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct User {
     pub address: Addr,
     pub deposited: Uint128,
@@ -46,13 +46,13 @@ impl User {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct Bank {
     pub address: Addr,
     pub balance: Vec<Coin>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct State {
     pub admin: Addr,
     pub pools: Vec<Pool>,

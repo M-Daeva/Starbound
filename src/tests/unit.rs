@@ -1,6 +1,7 @@
 use cosmwasm_std::{attr, coin, from_binary};
 
 use crate::{
+    actions::helpers::Denoms,
     contract::{execute, query},
     messages::{execute::ExecuteMsg, query::QueryMsg, response::GetDenomResponse},
     tests::helpers::{get_instance, ADDR_ALICE, ASSETS_AMOUNT_INITIAL, POOLS_AMOUNT_INITIAL},
@@ -44,15 +45,15 @@ fn test_deposit() {
 
 #[test]
 fn test_query() {
-    const JUNO_SYMBOL: &str = "JUNO";
-    const JUNO_DENOM: &str = "ibc/46B44899322F3CD854D2D46DEEF881958467CDD4B3B10086DA49296BBED94BED";
+    const SYMBOL_JUNO: &str = "JUNO";
+    let denom_juno = Denoms::get(SYMBOL_JUNO).unwrap();
 
     let (deps, env, _, _) = get_instance(ADDR_ALICE);
     let msg = QueryMsg::GetDenom {
-        asset_symbol: JUNO_SYMBOL.to_string(),
+        asset_symbol: SYMBOL_JUNO.to_string(),
     };
     let bin = query(deps.as_ref(), env, msg).unwrap();
     let res = from_binary::<GetDenomResponse>(&bin).unwrap();
 
-    assert_eq!(res.denom, JUNO_DENOM);
+    assert_eq!(res.denom, denom_juno);
 }
