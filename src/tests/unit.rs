@@ -26,11 +26,11 @@ fn test_init() {
 #[test]
 fn test_deposit() {
     const FUNDS_AMOUNT: u128 = 100;
-    const FUNDS_DENOM: &str = "uosmo";
+    let funds_denom = &Denoms::get("USDC").unwrap();
 
     let (mut deps, env, mut info, _) = get_instance(ADDR_ALICE);
     let msg = ExecuteMsg::Deposit {};
-    info.funds = vec![coin(FUNDS_AMOUNT, FUNDS_DENOM)];
+    info.funds = vec![coin(FUNDS_AMOUNT, funds_denom)];
     let res = execute(deps.as_mut(), env, info, msg);
 
     assert_eq!(

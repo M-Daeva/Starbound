@@ -8,4 +8,7 @@ pub enum ContractError {
 
     #[error("Custom Error val: {val:?}")]
     CustomError { val: String },
+
+    #[error("USDC is not found!")]
+    UsdcNotFound {},
 }
