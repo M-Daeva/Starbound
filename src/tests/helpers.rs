@@ -11,8 +11,12 @@ pub const ADDR_BOB: &str = "osmo1chgwz55h9kepjq0fkj5supl2ta3nwu63e3ds8x";
 pub const POOLS_AMOUNT_INITIAL: &str = "65";
 pub const ASSETS_AMOUNT_INITIAL: &str = "46";
 
-pub const SYMBOL_USDC: &str = "USDC";
-pub const SYMBOL_JUNO: &str = "JUNO";
+// temporary replacement to work with testnet
+// there is no USDC on testnet so we use OSMO instead of USDC
+pub const SYMBOL_TOKEN_IN: &str = "OSMO";
+//pub const SYMBOL_TOKEN_IN: &str = "USDC";
+pub const SYMBOL_TOKEN_OUT: &str = "ATOM";
+pub const SYMBOL_TOKEN_NONEX: &str = "NONEXISTENT TOKEN";
 
 pub type Instance = (
     OwnedDeps<MockStorage, MockApi, MockQuerier, Empty>,

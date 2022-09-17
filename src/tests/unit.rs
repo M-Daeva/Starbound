@@ -13,7 +13,7 @@ use crate::{
     },
     tests::helpers::{
         get_instance, ADDR_ALICE, ADDR_BOB, ASSETS_AMOUNT_INITIAL, POOLS_AMOUNT_INITIAL,
-        SYMBOL_JUNO, SYMBOL_USDC,
+        SYMBOL_TOKEN_IN, SYMBOL_TOKEN_NONEX, SYMBOL_TOKEN_OUT,
     },
 };
 
@@ -36,7 +36,7 @@ fn test_init() {
 #[test]
 fn test_execute_deposit() {
     const FUNDS_AMOUNT: u128 = 100;
-    let funds_denom = &Denoms::get(SYMBOL_USDC).unwrap();
+    let funds_denom = &Denoms::get(SYMBOL_TOKEN_IN).unwrap();
 
     let (mut deps, env, mut info, _) = get_instance(ADDR_ALICE);
     let msg = ExecuteMsg::Deposit {};
@@ -56,7 +56,7 @@ fn test_execute_deposit() {
 #[test]
 fn test_execute_swap_tokens() {
     const FUNDS_AMOUNT: u128 = 100;
-    let funds_denom = &Denoms::get(SYMBOL_USDC).unwrap();
+    let funds_denom = &Denoms::get(SYMBOL_TOKEN_IN).unwrap();
 
     let (mut deps, env, mut info, _) = get_instance(ADDR_ALICE);
     let msg = ExecuteMsg::Deposit {};
@@ -64,8 +64,8 @@ fn test_execute_swap_tokens() {
     let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
 
     let msg = ExecuteMsg::SwapTokens {
-        from: SYMBOL_USDC.to_string(),
-        to: SYMBOL_JUNO.to_string(),
+        from: SYMBOL_TOKEN_IN.to_string(),
+        to: SYMBOL_TOKEN_OUT.to_string(),
         amount: FUNDS_AMOUNT,
     };
 
@@ -75,8 +75,8 @@ fn test_execute_swap_tokens() {
         res.unwrap().attributes,
         vec![
             attr("method", "swap_tokens"),
-            attr("from", SYMBOL_USDC),
-            attr("to", SYMBOL_JUNO),
+            attr("from", SYMBOL_TOKEN_IN),
+            attr("to", SYMBOL_TOKEN_OUT),
             attr("amount", FUNDS_AMOUNT.to_string())
         ]
     )
@@ -84,17 +84,27 @@ fn test_execute_swap_tokens() {
 
 #[test]
 fn test_query_get_denom() {
-    const SYMBOL_JUNO: &str = "JUNO";
-    let denom_juno = Denoms::get(SYMBOL_JUNO).unwrap();
+    let denom_token_out = Denoms::get(SYMBOL_TOKEN_OUT).unwrap();
 
     let (deps, env, _, _) = get_instance(ADDR_ALICE);
     let msg = QueryMsg::GetDenom {
-        asset_symbol: SYMBOL_JUNO.to_string(),
+        asset_symbol: SYMBOL_TOKEN_OUT.to_string(),
     };
     let bin = query(deps.as_ref(), env, msg).unwrap();
     let res = from_binary::<GetDenomResponse>(&bin).unwrap();
 
-    assert_eq!(res.denom, denom_juno);
+    assert_eq!(res.denom, denom_token_out);
+}
+
+#[test]
+fn test_query_get_nonexistent_denom() {
+    let (deps, env, _, _) = get_instance(ADDR_ALICE);
+    let msg = QueryMsg::GetDenom {
+        asset_symbol: SYMBOL_TOKEN_NONEX.to_string(),
+    };
+    let bin = query(deps.as_ref(), env, msg);
+
+    bin.unwrap_err();
 }
 
 #[test]
@@ -136,7 +146,7 @@ fn test_query_get_bank_balance() {
 #[test]
 fn test_query_get_user_info() {
     const FUNDS_AMOUNT: u128 = 100;
-    let funds_denom = &Denoms::get("USDC").unwrap();
+    let funds_denom = &Denoms::get(SYMBOL_TOKEN_IN).unwrap();
 
     let (mut deps, env, mut info, _) = get_instance(ADDR_ALICE);
     let msg = ExecuteMsg::Deposit {};

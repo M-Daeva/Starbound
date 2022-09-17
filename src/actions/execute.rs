@@ -9,16 +9,20 @@ use crate::{
 
 // TODO: add users portfolio structure settings
 pub fn deposit(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-    let denom_usdc = ASSET_DENOMS.load(deps.storage, "USDC".to_string())?;
+    // temporary replacement to work with testnet
+    // there is no USDC on testnet so we use OSMO instead of USDC
+    let symbol_token_in = "OSMO";
+    //let symbol_token_in = "USDC";
+    let denom_token_in = ASSET_DENOMS.load(deps.storage, symbol_token_in.to_string())?;
     let user_addr = &info.sender;
     let funds = &info
         .funds
         .into_iter()
-        .filter(|item| item.denom == denom_usdc)
+        .filter(|item| item.denom == denom_token_in)
         .collect::<Vec<Coin>>();
 
     if funds.is_empty() {
-        return Err(ContractError::UsdcNotFound {});
+        return Err(ContractError::FundsIsNotFound {});
     }
 
     let funds_amount = funds[0].amount;
@@ -52,13 +56,13 @@ pub fn swap_tokens(
     to: String,
     amount: u128,
 ) -> Result<Response, ContractError> {
-    let denom_usdc = ASSET_DENOMS.load(deps.storage, "USDC".to_string())?;
+    let denom_token_in = ASSET_DENOMS.load(deps.storage, from.clone())?;
     let token_out_min_amount = String::from("1");
 
     let msg_swap_exact_amount_in = MsgSwapExactAmountIn {
         sender: info.sender.to_string(),
         routes: Pools::get_routes(&from, &to)?,
-        tokenIn: coin(amount, denom_usdc),
+        tokenIn: coin(amount, denom_token_in),
         tokenOutMinAmount: token_out_min_amount,
     };
 
