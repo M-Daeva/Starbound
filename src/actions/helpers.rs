@@ -1,7 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::StdError;
+use osmosis_std::types::osmosis::gamm::v1beta1::SwapAmountInRoute;
 
-use crate::state::{AssetDenom, SwapAmountInRoute};
+use crate::state::AssetDenom;
 
 // TODO: add unit tests for helpers
 pub struct Denoms;
@@ -281,7 +282,7 @@ impl<'a> Pools {
         symbol_first: &str,
         symbol_second: &str,
     ) -> Result<Vec<SwapAmountInRoute>, StdError> {
-        let denom_second = Denoms::get(symbol_second)?;
+        let denom_second = &Denoms::get(symbol_second)?;
         let mut pool_first = Vec::<SwapAmountInRoute>::new();
         let mut pool_second = Vec::<SwapAmountInRoute>::new();
         const SYMBOL_OSMO: &str = "OSMO";
@@ -291,17 +292,26 @@ impl<'a> Pools {
             if (s1 == symbol_first && s2 == symbol_second)
                 || (s1 == symbol_second && s2 == symbol_first)
             {
-                return Ok(vec![SwapAmountInRoute::new(n, &denom_second)]);
+                return Ok(vec![SwapAmountInRoute {
+                    pool_id: n as u64,
+                    token_out_denom: denom_second.to_string(),
+                }]);
             }
 
             // fill pool list with first symbol pools
             if s1 == symbol_first && s2 == SYMBOL_OSMO {
-                pool_first.push(SwapAmountInRoute::new(n, SYMBOL_OSMO));
+                pool_first.push(SwapAmountInRoute {
+                    pool_id: n as u64,
+                    token_out_denom: SYMBOL_OSMO.to_string(),
+                });
             }
 
             // fill pool list with second symbol pools
             if s1 == symbol_second && s2 == SYMBOL_OSMO {
-                pool_second.push(SwapAmountInRoute::new(n, &denom_second));
+                pool_second.push(SwapAmountInRoute {
+                    pool_id: n as u64,
+                    token_out_denom: denom_second.to_string(),
+                });
             }
         }
 

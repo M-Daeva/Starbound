@@ -218,7 +218,7 @@ function initWithSigningCosmWasmClient(
 
   async function deposit(
     senderAddr: string = ADDR.ALICE,
-    tokenAmount: number = 100_000,
+    tokenAmount: number = 10_000,
     tokenDenom: string = DENOMS.OSMO
   ) {
     let res = await signingCosmWasmClient.execute(
@@ -236,7 +236,7 @@ function initWithSigningCosmWasmClient(
     senderAddr: string = ADDR.ALICE,
     from: string = DENOMS.OSMO,
     to: string = DENOMS.ATOM,
-    amount: number = 10_000
+    amount: number = 1_000
   ) {
     let res = await signingCosmWasmClient.execute(
       getAddrByPrefix(senderAddr, PREFIX),
@@ -245,7 +245,7 @@ function initWithSigningCosmWasmClient(
         swap_tokens: {
           from,
           to,
-          amount: Long.fromNumber(amount),
+          amount,
         },
       },
       fee

@@ -1,10 +1,13 @@
 #[cfg(not(feature = "library"))]
-use cosmwasm_std::{coin, to_binary, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Response};
+use cosmwasm_std::{coin, Coin, DepsMut, Env, MessageInfo, Response};
+use osmosis_std::types::{
+    cosmos::base::v1beta1::Coin as PoolCoin, osmosis::gamm::v1beta1::MsgSwapExactAmountIn,
+};
 
 use crate::{
     actions::helpers::Pools,
     error::ContractError,
-    state::{MsgSwapExactAmountIn, User, ASSET_DENOMS, BANK, USERS},
+    state::{User, ASSET_DENOMS, BANK, USERS},
 };
 
 // TODO: add users portfolio structure settings
@@ -59,16 +62,14 @@ pub fn swap_tokens(
     let denom_token_in = ASSET_DENOMS.load(deps.storage, from.clone())?;
     let token_out_min_amount = String::from("1");
 
-    let msg_swap_exact_amount_in = MsgSwapExactAmountIn {
+    let msg = MsgSwapExactAmountIn {
         sender: info.sender.to_string(),
         routes: Pools::get_routes(&from, &to)?,
-        tokenIn: coin(amount, denom_token_in),
-        tokenOutMinAmount: token_out_min_amount,
-    };
-
-    let msg = CosmosMsg::Stargate {
-        type_url: "/osmosis.gamm.v1beta1.MsgSwapExactAmountIn".to_string(),
-        value: to_binary(&msg_swap_exact_amount_in)?,
+        token_in: Some(PoolCoin {
+            amount: amount.to_string(),
+            denom: denom_token_in,
+        }),
+        token_out_min_amount,
     };
 
     Ok(Response::new().add_message(msg).add_attributes(vec![

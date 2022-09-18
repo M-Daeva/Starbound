@@ -5,33 +5,6 @@ use serde::{Deserialize, Serialize};
 
 // TODO: add portfolio structures storage
 
-// Stargate message struct
-#[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-pub struct SwapAmountInRoute {
-    pub poolId: u128,
-    pub tokenOutDenom: String,
-}
-
-impl SwapAmountInRoute {
-    pub fn new(pool_id: u128, token_out_denom: &str) -> Self {
-        Self {
-            poolId: pool_id,
-            tokenOutDenom: token_out_denom.to_string(),
-        }
-    }
-}
-
-// Stargate message struct
-#[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-pub struct MsgSwapExactAmountIn {
-    pub sender: String,
-    pub routes: Vec<SwapAmountInRoute>,
-    pub tokenIn: Coin,
-    pub tokenOutMinAmount: String,
-}
-
 pub type AssetSymbol = String;
 pub type AssetDenom = String;
 
