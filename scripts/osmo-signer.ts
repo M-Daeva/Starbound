@@ -24,8 +24,8 @@ import {
 import {
   ALICE_ADDR as ALICE_ADDR_LOCAL,
   ALICE_SEED as ALICE_SEED_LOCAL,
-  BOB_ADDR as BOB_ADDR_LOCAL,
-  BOB_SEED as BOB_SEED_LOCAL,
+  // BOB_ADDR as BOB_ADDR_LOCAL,
+  // BOB_SEED as BOB_SEED_LOCAL,
   CONTRACT_ADDRESS as CONTR_ADDR_LOCAL,
   CONTRACT_CODE as CONTR_CODE_LOCAL,
 } from "./chain_data.json";
@@ -68,12 +68,12 @@ function getData(
 ) {
   const SEED = {
     ALICE: isTest ? ALICE_SEED_TEST : ALICE_SEED_LOCAL,
-    BOB: isTest ? BOB_SEED_TEST : BOB_SEED_LOCAL,
+    // BOB: isTest ? BOB_SEED_TEST : BOB_SEED_LOCAL,
   };
 
   const ADDR = {
     ALICE: isTest ? ALICE_ADDR_TEST : ALICE_ADDR_LOCAL,
-    BOB: isTest ? BOB_ADDR_TEST : BOB_ADDR_LOCAL,
+    // BOB: isTest ? BOB_ADDR_TEST : BOB_ADDR_LOCAL,
   };
 
   const CONTR = {
@@ -110,13 +110,13 @@ function getData(
     return await getSigningClient(SEED.ALICE, isCW);
   }
 
-  async function getBobClient(isCW: boolean) {
-    return await getSigningClient(SEED.BOB, isCW);
-  }
+  // async function getBobClient(isCW: boolean) {
+  //   return await getSigningClient(SEED.BOB, isCW);
+  // }
 
   return {
     getAliceClient,
-    getBobClient,
+    // getBobClient,
     ADDR,
     CONTR,
   };

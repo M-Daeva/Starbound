@@ -6,8 +6,9 @@ import {
 import {
   initWithSigningStargateClient,
   initWithSigningCosmWasmClient,
+  IS_TEST,
 } from "./helpers";
-const { ADDR, getAliceClient, getBobClient, CONTR } = getData(true);
+const { ADDR, getAliceClient, CONTR } = getData(IS_TEST);
 
 async function main() {
   // const aliceClient = (await getAliceClient(false)) as SigningStargateClient;

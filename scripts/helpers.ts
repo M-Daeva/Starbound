@@ -33,7 +33,8 @@ import { channels } from "./channels-osmo.json";
 import { StakeAuthorization } from "cosmjs-types/cosmos/staking/v1beta1/authz";
 
 const { swapExactAmountIn } = osmosis.gamm.v1beta1.MessageComposer.withTypeUrl;
-const { ADDR, CONTR } = getData(true);
+const IS_TEST = false;
+const { ADDR, CONTR } = getData(IS_TEST);
 
 const l = console.log.bind(console);
 
@@ -71,7 +72,8 @@ function initWithSigningStargateClient(
 
   async function ibcTransfer(
     senderAddr: string = ADDR.ALICE,
-    receiverAddr: string = ADDR.BOB,
+    receiverAddr: string = ADDR.ALICE,
+    // receiverAddr: string = ADDR.BOB,
     channelId: string = "channel-0",
     portId: string = "transfer",
     tokenAmount: number = 1_000,
@@ -106,7 +108,8 @@ function initWithSigningStargateClient(
 
   async function grantStakeAuth(
     granterAddr: string = ADDR.ALICE,
-    granteeAddr: string = ADDR.BOB,
+    granteeAddr: string = ADDR.ALICE,
+    // granteeAddr: string = ADDR.BOB,
     tokenAmount: number = 5_000,
     tokenDenom: string = DENOMS.OSMO
   ) {
@@ -155,7 +158,8 @@ function initWithSigningStargateClient(
 
   async function delegateFrom(
     granterAddr: string = ADDR.ALICE,
-    granteeAddr: string = ADDR.BOB,
+    granteeAddr: string = ADDR.ALICE,
+    //   granteeAddr: string = ADDR.BOB,
     tokenAmount: number = 5_000,
     tokenDenom: string = DENOMS.OSMO
   ) {
@@ -261,4 +265,5 @@ export {
   initWithSigningCosmWasmClient,
   PREFIX,
   fee,
+  IS_TEST,
 };
