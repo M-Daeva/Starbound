@@ -1,5 +1,5 @@
 [package]
-name = "osmo-swapper"
+name = "starbound"
 version = "0.1.0"
 authors = ["M. Daeva <embedmad@gmail.com>"]
 edition = "2021"

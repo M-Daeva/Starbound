@@ -460,23 +460,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
-name = "osmo-swapper"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cw-multi-test",
- "cw-storage-plus",
- "cw2",
- "osmosis-std",
- "osmosis-std-derive",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "osmosis-std"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -752,6 +735,23 @@ checksum = "67cf02bbac7a337dc36e4f5a693db6c21e7863f45070f7064577eb4367a3212b"
 dependencies = [
  "base64ct",
  "der",
+]
+
+[[package]]
+name = "starbound"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw-multi-test",
+ "cw-storage-plus",
+ "cw2",
+ "osmosis-std",
+ "osmosis-std-derive",
+ "schemars",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]

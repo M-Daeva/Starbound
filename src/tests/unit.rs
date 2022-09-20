@@ -53,34 +53,34 @@ fn test_execute_deposit() {
     )
 }
 
-#[test]
-fn test_execute_swap_tokens() {
-    const FUNDS_AMOUNT: u128 = 100;
-    let funds_denom = &Denoms::get(SYMBOL_TOKEN_IN).unwrap();
+// #[test]
+// fn test_execute_swap_tokens() {
+//     const FUNDS_AMOUNT: u128 = 100;
+//     let funds_denom = &Denoms::get(SYMBOL_TOKEN_IN).unwrap();
 
-    let (mut deps, env, mut info, _) = get_instance(ADDR_ALICE);
-    let msg = ExecuteMsg::Deposit {};
-    info.funds = vec![coin(FUNDS_AMOUNT, funds_denom)];
-    let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
+//     let (mut deps, env, mut info, _) = get_instance(ADDR_ALICE);
+//     let msg = ExecuteMsg::Deposit {};
+//     info.funds = vec![coin(FUNDS_AMOUNT, funds_denom)];
+//     let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
 
-    let msg = ExecuteMsg::SwapTokens {
-        from: SYMBOL_TOKEN_IN.to_string(),
-        to: SYMBOL_TOKEN_OUT.to_string(),
-        amount: FUNDS_AMOUNT,
-    };
+//     let msg = ExecuteMsg::SwapTokens {
+//         from: SYMBOL_TOKEN_IN.to_string(),
+//         to: SYMBOL_TOKEN_OUT.to_string(),
+//         amount: FUNDS_AMOUNT,
+//     };
 
-    let res = execute(deps.as_mut(), env, info, msg);
+//     let res = execute(deps.as_mut(), env, info, msg);
 
-    assert_eq!(
-        res.unwrap().attributes,
-        vec![
-            attr("method", "swap_tokens"),
-            attr("from", SYMBOL_TOKEN_IN),
-            attr("to", SYMBOL_TOKEN_OUT),
-            attr("amount", FUNDS_AMOUNT.to_string())
-        ]
-    )
-}
+//     assert_eq!(
+//         res.unwrap().attributes,
+//         vec![
+//             attr("method", "swap_tokens"),
+//             attr("from", SYMBOL_TOKEN_IN),
+//             attr("to", SYMBOL_TOKEN_OUT),
+//             attr("amount", FUNDS_AMOUNT.to_string())
+//         ]
+//     )
+// }
 
 #[test]
 fn test_query_get_denom() {

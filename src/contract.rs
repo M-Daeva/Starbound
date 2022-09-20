@@ -35,8 +35,12 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Deposit {} => deposit(deps, env, info),
-        ExecuteMsg::SwapTokens { from, to, amount } => {
-            swap_tokens(deps, env, info, from, to, amount)
+        ExecuteMsg::SwapTokens {
+            //  from, to, amount 
+            } => {
+            swap_tokens(deps, env, info,
+                //  from, to, amount
+                )
         }
     }
 }

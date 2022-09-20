@@ -8,8 +8,8 @@ use serde::{Deserialize, Serialize};
 pub enum ExecuteMsg {
     Deposit {},
     SwapTokens {
-        from: String,
-        to: String,
-        amount: u128,
+        // from: String,
+        // to: String,
+        // amount: u128,
     },
 }

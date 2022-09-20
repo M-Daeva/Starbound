@@ -3,7 +3,7 @@ use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
 
-use osmo_swapper::messages::{
+use starbound::messages::{
     execute::ExecuteMsg,
     instantiate::InstantiateMsg,
     query::QueryMsg,

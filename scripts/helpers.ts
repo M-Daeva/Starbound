@@ -234,8 +234,8 @@ function initWithSigningCosmWasmClient(
 
   async function swap(
     senderAddr: string = ADDR.ALICE,
-    from: string = DENOMS.OSMO,
-    to: string = DENOMS.ATOM,
+    from: AssetSymbol = "OSMO",
+    to: AssetSymbol = "ATOM",
     amount: number = 1_000
   ) {
     let res = await signingCosmWasmClient.execute(
@@ -243,9 +243,9 @@ function initWithSigningCosmWasmClient(
       CONTR.ADDR,
       {
         swap_tokens: {
-          from,
-          to,
-          amount,
+          // from,
+          // to,
+          // amount,
         },
       },
       fee
