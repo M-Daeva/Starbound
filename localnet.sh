@@ -10,10 +10,12 @@ DIR_NAME=$(basename "$PWD")
 IMAGE_NAME="localosmosis-osmosisd-1" # osmosisd-1
 DIR_NAME_SNAKE=$(echo $DIR_NAME | tr '-' '_')
 WASM="artifacts/$DIR_NAME_SNAKE.wasm"
-
+CONTRACT=starbound-dev
+PROPOSAL=1
+VALIDATOR_ADDR="osmo1phaxpevm5wecex2jyaqty2a4v02qj7qmlmzk5a"
 
 waitForChainServe() {
-  ADDR="osmo1phaxpevm5wecex2jyaqty2a4v02qj7qmlmzk5a"  # validator addr
+  ADDR=$VALIDATOR_ADDR  # validator addr
   TRIES=0
   echo Waiting for chain serve
   $BINARY query account $ADDR 2> /dev/null
@@ -57,9 +59,6 @@ cd $OSMO_DIR
 # wait for chain starting before contract storing
 waitForChainServe
 
-# $BINARY query bank balances validator
-# $BINARY query bank balances osmo1phaxpevm5wecex2jyaqty2a4v02qj7qmlmzk5a
-
 # add new users
 echo "------------------------------------------------------------------------------------"
 echo add validator
@@ -69,42 +68,31 @@ $BINARY keys add validator --recover
 # enter seed
 # enter password
 # enter password again
-VALIDATOR_ADDR="osmo1phaxpevm5wecex2jyaqty2a4v02qj7qmlmzk5a"
-
 
 echo "------------------------------------------------------------------------------------"
-echo add alice
-#notice oak worry limit wrap speak medal online prefer cluster roof addict wrist behave treat actual wasp year salad speed social layer crew genius
-
-$BINARY keys add alice --recover
-# enter seed
-# enter password
-# enter password again
-ALICE_ADDR="osmo1cyyzpxplxdzkeea7kwsydadg87357qnahakaks"
-
-# BOB_SEED=$(osmosisd keys mnemonic)
-# echo $BOB_SEED | $BINARY keys add bob --recover
-# BOB_ADDR=$($BINARY keys show bob --address)
-
-# send them some coins
+echo submit proposal
+$BINARY tx gov submit-proposal wasm-store "/$DIR_NAME_SNAKE.wasm" --title "Add $CONTRACT" \
+  --description "Let's upload $CONTRACT contract" --run-as $VALIDATOR_ADDR \
+  --from validator --chain-id $CHAIN_ID -y -b block \
+  --gas 9000000 --gas-prices 0.025uosmo
+ 
+# echo "------------------------------------------------------------------------------------"
+# echo query proposal
+# $BINARY query gov proposal $PROPOSAL
+ 
 echo "------------------------------------------------------------------------------------"
-echo send coins from validator to alice
-$BINARY tx bank send $VALIDATOR_ADDR $ALICE_ADDR "250000000uosmo" --from $VALIDATOR_ADDR --yes --broadcast-mode block --sign-mode direct --chain-id $CHAIN_ID
-# enter password
-#$BINARY tx bank send $VALIDATOR_ADDR $BOB_ADDR "250000000uosmo" --from $VALIDATOR_ADDR --yes --broadcast-mode block --sign-mode direct --chain-id $CHAIN_ID
-
-echo "------------------------------------------------------------------------------------"
-echo store contract
-CONTRACT_CODE=$($BINARY tx wasm store "/$DIR_NAME_SNAKE.wasm" --from alice $TXFLAG --output json | jq -r '.logs[0].events[-1].attributes[0].value')
-# enter password
+echo check results
+$BINARY query wasm list-code
+CONTRACT_CODE=1
 echo contract code is $CONTRACT_CODE
+
 #---------- SMART CONTRACT INTERACTION ------------------------
 
 # instantiate smart contract
 echo "------------------------------------------------------------------------------------"
 echo init contract
 INIT='{}'
-$BINARY tx wasm instantiate $CONTRACT_CODE "$INIT" --from "alice" --label "starbound-dev" $TXFLAG --admin $ALICE_ADDR
+$BINARY tx wasm instantiate $CONTRACT_CODE $INIT --from validator --label "starbound-dev" $TXFLAG --admin $VALIDATOR_ADDR
 
 # get smart contract address
 echo "------------------------------------------------------------------------------------"
@@ -113,6 +101,7 @@ CONTRACT_ADDRESS=$($BINARY query wasm list-contract-by-code $CONTRACT_CODE --nod
 
 # write data to file
 cd $DIR/scripts
+ALICE_ADDR="osmo1cyyzpxplxdzkeea7kwsydadg87357qnahakaks"
 ALICE_SEED="notice oak worry limit wrap speak medal online prefer cluster roof addict wrist behave treat actual wasp year salad speed social layer crew genius"
 R="{\"ALICE_SEED\":\"$ALICE_SEED\",\"ALICE_ADDR\":\"$ALICE_ADDR\",\"CONTRACT_ADDRESS\":\"$CONTRACT_ADDRESS\",\"CONTRACT_CODE\":\"$CONTRACT_CODE\"}"
 echo $R > chain_data.json
