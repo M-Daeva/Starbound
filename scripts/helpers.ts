@@ -79,8 +79,13 @@ function initWithSigningStargateClient(
     tokenAmount: number = 1_000,
     tokenDenom: string = DENOMS.ATOM
   ) {
-    const sender = getAddrByPrefix(senderAddr, PREFIX);
-    const receiver = getAddrByPrefix(receiverAddr, PREFIX);
+    const PREFIX = {
+      FROM: "osmo",
+      TO: "atom",
+    };
+
+    const sender = getAddrByPrefix(senderAddr, PREFIX.FROM);
+    const receiver = getAddrByPrefix(receiverAddr, PREFIX.TO);
     const height = await signingStargateClient.getHeight();
 
     const msgIbcTransfer: MsgTransfer = {
@@ -93,7 +98,7 @@ function initWithSigningStargateClient(
         revisionNumber: Long.fromNumber(1),
         revisionHeight: Long.fromNumber(height),
       },
-      timeoutTimestamp: Long.fromNumber(30_000_000_000),
+      timeoutTimestamp: Long.fromNumber(0),
     };
 
     const msg: EncodeObject = {
