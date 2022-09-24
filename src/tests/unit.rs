@@ -12,8 +12,8 @@ use crate::{
         },
     },
     tests::helpers::{
-        get_instance, ADDR_ALICE, ADDR_BOB, ASSETS_AMOUNT_INITIAL, POOLS_AMOUNT_INITIAL,
-        SYMBOL_TOKEN_IN, SYMBOL_TOKEN_NONEX, SYMBOL_TOKEN_OUT,
+        get_instance, ADDR_ALICE, ADDR_ALICE_WASM, ADDR_BOB, ASSETS_AMOUNT_INITIAL, CHANNEL_ID,
+        POOLS_AMOUNT_INITIAL, SYMBOL_TOKEN_IN, SYMBOL_TOKEN_NONEX, SYMBOL_TOKEN_OUT,
     },
 };
 
@@ -81,6 +81,37 @@ fn test_execute_deposit() {
 //         ]
 //     )
 // }
+
+#[test]
+fn test_execute_transfer() {
+    const FUNDS_AMOUNT: u128 = 100;
+    let funds_denom = &Denoms::get(SYMBOL_TOKEN_IN).unwrap();
+
+    let (mut deps, env, mut info, _) = get_instance(ADDR_ALICE);
+    let msg = ExecuteMsg::Deposit {};
+    info.funds = vec![coin(FUNDS_AMOUNT, funds_denom)];
+    let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
+
+    let msg = ExecuteMsg::Transfer {
+        receiver_addr: ADDR_ALICE_WASM.to_string(),
+        channel_id: CHANNEL_ID.to_string(),
+        token_amount: FUNDS_AMOUNT / 10,
+        token_symbol: SYMBOL_TOKEN_IN.to_string(),
+    };
+
+    let res = execute(deps.as_mut(), env, info, msg);
+
+    assert_eq!(
+        res.unwrap().attributes,
+        vec![
+            attr("method", "transfer"),
+            attr("receiver_addr", ADDR_ALICE_WASM),
+            attr("channel_id", CHANNEL_ID),
+            attr("token_amount", (FUNDS_AMOUNT / 10).to_string()),
+            attr("token_symbol", SYMBOL_TOKEN_IN),
+        ]
+    )
+}
 
 #[test]
 fn test_query_get_denom() {

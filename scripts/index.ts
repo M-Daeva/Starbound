@@ -17,7 +17,7 @@ async function main() {
   const aliceCosmWasmClient = (await getAliceClient(
     true
   )) as SigningCosmWasmClient;
-  const { deposit, getBankBalance, swap } =
+  const { deposit, getBankBalance, swap, transfer } =
     initWithSigningCosmWasmClient(aliceCosmWasmClient);
 
   await getBankBalance();

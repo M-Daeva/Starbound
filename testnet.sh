@@ -7,7 +7,7 @@ DIR=$(pwd)
 DIR_NAME=$(basename "$PWD")
 DIR_NAME_SNAKE=$(echo $DIR_NAME | tr '-' '_')
 WASM="artifacts/$DIR_NAME_SNAKE.wasm"
-ALICE_ADDRESS="osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx"
+ALICE_ADDRESS="osmo1cyyzpxplxdzkeea7kwsydadg87357qnahakaks"
 
 # build optimized binary if it doesn't exist
 if [ ! -f "$WASM" ]; then

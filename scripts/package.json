@@ -9,7 +9,8 @@
   },
   "scripts": {
     "start": "ts-node ./index.ts",
-    "init": "sudo chmod +x ../testnet.sh && sudo chmod +x ../localnet.sh && cp ../../.test-wallets/test_wallets.json ./test_wallets.json && npm i"
+    "init": "sudo chmod +x ../testnet.sh && sudo chmod +x ../localnet.sh && cp ../../.test-wallets/test_wallets.json ./test_wallets.json && npm i",
+    "clear": "sudo rm -rf ../artifacts"
   },
   "repository": {
     "type": "git",

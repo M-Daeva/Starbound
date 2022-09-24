@@ -13,6 +13,7 @@ WASM="artifacts/$DIR_NAME_SNAKE.wasm"
 CONTRACT=starbound-dev
 PROPOSAL=1
 VALIDATOR_ADDR="osmo1phaxpevm5wecex2jyaqty2a4v02qj7qmlmzk5a"
+TEST="--keyring-backend test"
 
 waitForChainServe() {
   ADDR=$VALIDATOR_ADDR  # validator addr
@@ -41,13 +42,25 @@ if [ ! -f "$WASM" ]; then
   cosmwasm/rust-optimizer:0.12.6
 fi
 
+# reset LocalOsmosis
+echo "reset chain"
+sudo rm -rf $OSMO_DIR
+cd ..
+git clone https://github.com/osmosis-labs/LocalOsmosis.git
+cd $DIR
+
 # stop docker container
 cd $OSMO_DIR
 echo "stopping container..."
 docker compose down
 # delete docker container
 echo "deleting container"
-docker rm -f $IMAGE_NAME 2> /dev/null
+docker rm -f $IMAGE_NAME 
+# delete image
+echo "deleting image"
+docker image rm -f osmolabs/osmosis
+docker image rm -f osmolabs/osmosis:10.0.1
+
 # build new docker container
 echo "starting local network"
 docker compose up -d
@@ -75,11 +88,25 @@ $BINARY tx gov submit-proposal wasm-store "/$DIR_NAME_SNAKE.wasm" --title "Add $
   --description "Let's upload $CONTRACT contract" --run-as $VALIDATOR_ADDR \
   --from validator --chain-id $CHAIN_ID -y -b block \
   --gas 9000000 --gas-prices 0.025uosmo
- 
-# echo "------------------------------------------------------------------------------------"
-# echo query proposal
-# $BINARY query gov proposal $PROPOSAL
- 
+  
+echo "------------------------------------------------------------------------------------"
+echo deposit on proposal
+$BINARY tx gov deposit $PROPOSAL 10000000uosmo --from validator \
+  --chain-id $CHAIN_ID -y -b block --gas 6000000 --gas-prices 0.025uosmo
+
+echo "------------------------------------------------------------------------------------"
+echo vote on proposal
+$BINARY tx gov vote $PROPOSAL yes --from validator \
+  --chain-id $CHAIN_ID -y -b block --gas 600000 --gas-prices 0.025uosmo
+
+echo "------------------------------------------------------------------------------------"
+echo waiting for storing the code
+sleep 60
+
+echo "------------------------------------------------------------------------------------"
+echo query proposal
+$BINARY query gov proposal $PROPOSAL
+
 echo "------------------------------------------------------------------------------------"
 echo check results
 $BINARY query wasm list-code

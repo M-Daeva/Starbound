@@ -251,10 +251,29 @@ function initWithSigningCosmWasmClient(
       getAddrByPrefix(senderAddr, PREFIX),
       CONTR.ADDR,
       {
-        swap_tokens: {
-          // from,
-          // to,
-          // amount,
+        swap_tokens: {},
+      },
+      fee
+    );
+    l({ attributes: res.logs[0].events[2].attributes }, "\n");
+  }
+
+  async function transfer(
+    senderAddr: string = ADDR.ALICE,
+    receiverAddr: string = getAddrByPrefix(ADDR.ALICE, "wasm"),
+    channelId: string = "channel-0",
+    tokenAmount: number = 1_000,
+    tokenSymbol: AssetSymbol = "OSMO"
+  ) {
+    let res = await signingCosmWasmClient.execute(
+      getAddrByPrefix(senderAddr, PREFIX),
+      CONTR.ADDR,
+      {
+        transfer: {
+          receiver_addr: receiverAddr,
+          channel_id: channelId,
+          token_amount: tokenAmount,
+          token_symbol: tokenSymbol,
         },
       },
       fee
@@ -262,7 +281,7 @@ function initWithSigningCosmWasmClient(
     l({ attributes: res.logs[0].events[2].attributes }, "\n");
   }
 
-  return { getBankBalance, deposit, swap };
+  return { getBankBalance, deposit, swap, transfer };
 }
 
 export {

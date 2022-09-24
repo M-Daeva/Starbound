@@ -21,22 +21,38 @@
       ],
       "properties": {
         "swap_tokens": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "transfer"
+      ],
+      "properties": {
+        "transfer": {
           "type": "object",
           "required": [
-            "amount",
-            "from",
-            "to"
+            "channel_id",
+            "receiver_addr",
+            "token_amount",
+            "token_symbol"
           ],
           "properties": {
-            "amount": {
+            "channel_id": {
+              "type": "string"
+            },
+            "receiver_addr": {
+              "type": "string"
+            },
+            "token_amount": {
               "type": "integer",
               "format": "uint128",
               "minimum": 0.0
             },
-            "from": {
-              "type": "string"
-            },
-            "to": {
+            "token_symbol": {
               "type": "string"
             }
           }
