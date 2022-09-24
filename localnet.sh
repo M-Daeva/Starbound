@@ -75,29 +75,25 @@ waitForChainServe
 # add new users
 echo "------------------------------------------------------------------------------------"
 echo add validator
-#satisfy adjust timber high purchase tuition stool faith fine install that you unaware feed domain license impose boss human eager hat rent enjoy dawn
-
-$BINARY keys add validator --recover
-# enter seed
-# enter password
-# enter password again
+VAL_SEED="satisfy adjust timber high purchase tuition stool faith fine install that you unaware feed domain license impose boss human eager hat rent enjoy dawn"
+echo $VAL_SEED | $BINARY keys add validator --recover $TEST
 
 echo "------------------------------------------------------------------------------------"
 echo submit proposal
 $BINARY tx gov submit-proposal wasm-store "/$DIR_NAME_SNAKE.wasm" --title "Add $CONTRACT" \
   --description "Let's upload $CONTRACT contract" --run-as $VALIDATOR_ADDR \
   --from validator --chain-id $CHAIN_ID -y -b block \
-  --gas 9000000 --gas-prices 0.025uosmo
+  --gas 9000000 --gas-prices 0.025uosmo $TEST
   
 echo "------------------------------------------------------------------------------------"
 echo deposit on proposal
 $BINARY tx gov deposit $PROPOSAL 10000000uosmo --from validator \
-  --chain-id $CHAIN_ID -y -b block --gas 6000000 --gas-prices 0.025uosmo
+  --chain-id $CHAIN_ID -y -b block --gas 6000000 --gas-prices 0.025uosmo $TEST
 
 echo "------------------------------------------------------------------------------------"
 echo vote on proposal
 $BINARY tx gov vote $PROPOSAL yes --from validator \
-  --chain-id $CHAIN_ID -y -b block --gas 600000 --gas-prices 0.025uosmo
+  --chain-id $CHAIN_ID -y -b block --gas 600000 --gas-prices 0.025uosmo $TEST
 
 echo "------------------------------------------------------------------------------------"
 echo waiting for storing the code
@@ -119,12 +115,13 @@ echo contract code is $CONTRACT_CODE
 echo "------------------------------------------------------------------------------------"
 echo init contract
 INIT='{}'
-$BINARY tx wasm instantiate $CONTRACT_CODE $INIT --from validator --label "starbound-dev" $TXFLAG --admin $VALIDATOR_ADDR
+$BINARY tx wasm instantiate $CONTRACT_CODE $INIT --from validator --label "starbound-dev" $TXFLAG --admin $VALIDATOR_ADDR  $TEST
 
 # get smart contract address
 echo "------------------------------------------------------------------------------------"
 echo get contract address
 CONTRACT_ADDRESS=$($BINARY query wasm list-contract-by-code $CONTRACT_CODE --node $RPC --chain-id $CHAIN_ID --output json | jq -r '.contracts[-1]')
+echo contract address is $CONTRACT_ADDRESS
 
 # write data to file
 cd $DIR/scripts
@@ -133,3 +130,10 @@ ALICE_SEED="notice oak worry limit wrap speak medal online prefer cluster roof a
 R="{\"ALICE_SEED\":\"$ALICE_SEED\",\"ALICE_ADDR\":\"$ALICE_ADDR\",\"CONTRACT_ADDRESS\":\"$CONTRACT_ADDRESS\",\"CONTRACT_CODE\":\"$CONTRACT_CODE\"}"
 echo $R > chain_data.json
 cd $DIR
+
+cd $DIR/scripts
+npm run start
+cd $DIR
+cd $OSMO_DIR
+echo "stopping container..."
+docker compose down
