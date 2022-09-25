@@ -11,7 +11,8 @@
     "start": "ts-node ./index.ts",
     "init": "sudo chmod +x ../*.sh && cp ../../.test-wallets/test_wallets.json ./test_wallets.json && npm i",
     "clear": "sudo rm -rf ../artifacts",
-    "test-ibc": "ts-node ./test-ibc.ts"
+    "test-ibc": "ts-node ./test-ibc.ts",
+    "test-contract": "ts-node ./test-contract.ts"
   },
   "repository": {
     "type": "git",

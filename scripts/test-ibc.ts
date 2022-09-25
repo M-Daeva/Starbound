@@ -58,19 +58,6 @@ async function ibcTransfer(ibcStruct: IbcStruct) {
 }
 
 async function main() {
-  /*
-  // from osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx
-  // to juno1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyqd4qeg
-  const fromOsmoToJunoMainnet: IbcStruct = {
-    RPC: "https://rpc.osmosis.zone/",
-    seed: "december sick hurt huge code grief giggle health bubble bounce unfair fire flock grow voyage lawn crucial owner enrich depth leave core situate rule",
-    dstPrefix: "juno",
-    sourceChannel: "channel-42",
-    sourcePort: "transfer",
-    amount: 123,
-  };
-  */
-
   // from osmo1ll3s59aawh0qydpz2q3xmqf6pwzmj24t9ch58c
   // to wasm1ll3s59aawh0qydpz2q3xmqf6pwzmj24t8l43cp
   const fromOsmotoWasmWbaTestnet: IbcStruct = {
