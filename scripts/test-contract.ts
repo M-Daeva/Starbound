@@ -2,7 +2,7 @@ import { getAddrByPrefix, SigningCosmWasmClient } from "./osmo-signer";
 import { coin } from "@cosmjs/stargate";
 import { DENOMS, AssetSymbol } from "./osmo-pools";
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
-import { l, PREFIX, fee } from "./helpers";
+import { l, PREFIX, fee, SEP } from "./helpers";
 import { CONTRACT_ADDRESS_TEST as CONTRACT } from "./contract_data.json";
 
 interface ClientStruct {
@@ -85,11 +85,30 @@ async function main() {
   });
 
   await getBankBalance();
-  await deposit(10_000);
-  await getBankBalance();
-  await transfer(1_000);
-  // await swap();
-  await getBankBalance();
+
+  try {
+    l(SEP, "depositing...");
+    await deposit(10_000);
+    await getBankBalance();
+  } catch (error) {
+    l(error, "\n");
+  }
+
+  try {
+    l(SEP, "sending ibc transfer...");
+    await transfer(1_000);
+    await getBankBalance();
+  } catch (error) {
+    l(error, "\n");
+  }
+
+  try {
+    l(SEP, "executing swap...");
+    await swap();
+    await getBankBalance();
+  } catch (error) {
+    l(error, "\n");
+  }
 }
 
 main();

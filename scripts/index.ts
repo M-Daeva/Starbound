@@ -21,10 +21,10 @@ async function main() {
     initWithSigningCosmWasmClient(aliceCosmWasmClient);
 
   await getBankBalance();
-  // await deposit();
-  // await getBankBalance();
-  // await swap();
-  // await getBankBalance();
+  await deposit();
+  await getBankBalance();
+  await swap();
+  await getBankBalance();
 }
 
 main();

@@ -38,6 +38,9 @@ const { ADDR, CONTR } = getData(IS_TEST);
 
 const l = console.log.bind(console);
 
+const SEP =
+  "////////////////////////////////////////////////////////////////////////////////////\n";
+
 const PREFIX = "osmo";
 
 const fee: StdFee = {
@@ -291,4 +294,5 @@ export {
   fee,
   IS_TEST,
   l,
+  SEP,
 };

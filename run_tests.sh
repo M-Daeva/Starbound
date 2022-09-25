@@ -18,7 +18,6 @@ B_PORT="transfer"
 
 SEP="------------------------------------------------------------------------------------"
 
-
 clear
 
 # run local osmo and wasm networks
@@ -41,11 +40,11 @@ echo "openning ibc channel..."
 hermes --config ./hermes/config.toml create channel --a-chain $A_CHAIN \
   --a-connection $A_CONNECTION --a-port $A_PORT --b-port $B_PORT
 
-# execute ibc transfer
+# run chain tests
 echo $SEP
-echo "executing ibc transfer..."
+echo "testing chain..."
 cd $DIR/scripts
-npm run test-ibc
+npm run test-chain
 
 # move binary to docker container
 echo $SEP
@@ -56,7 +55,7 @@ docker cp "artifacts/$DIR_NAME_SNAKE.wasm" "$IMAGE_NAME:/$DIR_NAME_SNAKE.wasm"
 # store the contract
 echo $SEP
 echo "storing contract..."
-echo "enter password"
+echo "enter password (1234567890)"
 CONTRACT_CODE=$($BINARY tx wasm store "/$DIR_NAME_SNAKE.wasm" --from relayer2 $TXFLAG --output json | jq -r '.logs[0].events[-1].attributes[0].value')
 echo contract code is $CONTRACT_CODE
 
@@ -65,7 +64,7 @@ echo contract code is $CONTRACT_CODE
 # instantiate the contract
 echo $SEP
 echo "instantiating contract..."
-echo "enter password"
+echo "enter password (1234567890)"
 INIT='{}'
 $BINARY tx wasm instantiate $CONTRACT_CODE $INIT --from relayer2 --label "starbound-dev" $TXFLAG --no-admin
 
@@ -83,7 +82,7 @@ R="{\"CONTRACT_CODE_TEST\":\"$CONTRACT_CODE\",\"CONTRACT_ADDRESS_TEST\":\"$CONTR
 echo $R > contract_data.json
 cd $DIR
 
-# test the contract
+# run contract tests
 echo $SEP
 echo "testing contract..."
 cd $DIR/scripts
