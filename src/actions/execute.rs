@@ -1,7 +1,6 @@
-use cosmwasm_std::CosmosMsg;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::{
-    coin, Coin, DepsMut, Env, IbcMsg, IbcTimeout, IbcTimeoutBlock, MessageInfo, Response, Timestamp,
+    coin, Coin, CosmosMsg, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo, Response,
 };
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as PoolCoin, osmosis::gamm::v1beta1::MsgSwapExactAmountIn,
@@ -89,36 +88,44 @@ pub fn swap_tokens(
     ]))
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn transfer(
     deps: DepsMut,
     env: Env,
     _info: MessageInfo,
     receiver_addr: String,
     channel_id: String,
-    token_amount: u128,
+    token_amount: String,
     token_symbol: String,
 ) -> Result<Response, ContractError> {
+    const TIMEOUT: u64 = 300;
+
+    let amount = match token_amount.parse::<u128>() {
+        Ok(x) => x,
+        _ => {
+            return Err(ContractError::CustomError {
+                val: "Can not parse 'token_amount'!".to_string(),
+            })
+        }
+    };
+
     // TODO: add validation to prevent using denom instead of symbol
     let token_denom = ASSET_DENOMS.load(deps.storage, token_symbol.clone())?;
 
-    let block = IbcTimeoutBlock {
-        revision: 1,
-        height: env.block.height,
-    };
-    let timestamp = Timestamp::default();
+    let timestamp = env.block.time.plus_seconds(TIMEOUT);
 
     let msg = CosmosMsg::Ibc(IbcMsg::Transfer {
         channel_id: channel_id.clone(),
         to_address: receiver_addr.clone(),
-        amount: coin(token_amount, token_denom),
-        timeout: IbcTimeout::with_both(block, timestamp),
+        amount: coin(amount, token_denom),
+        timeout: IbcTimeout::with_timestamp(timestamp),
     });
 
     Ok(Response::new().add_message(msg).add_attributes(vec![
         ("method", "transfer"),
         ("receiver_addr", &receiver_addr),
         ("channel_id", &channel_id),
-        ("token_amount", &token_amount.to_string()),
+        ("token_amount", &amount.to_string()),
         ("token_symbol", &token_symbol),
     ]))
 }

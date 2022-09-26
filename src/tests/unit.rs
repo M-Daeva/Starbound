@@ -83,8 +83,8 @@ fn test_execute_deposit() {
 // }
 
 #[test]
-fn test_execute_transfer() {
-    const FUNDS_AMOUNT: u128 = 100;
+fn test_execute_ibc_transfer() {
+    const FUNDS_AMOUNT: u128 = 10_000;
     let funds_denom = &Denoms::get(SYMBOL_TOKEN_IN).unwrap();
 
     let (mut deps, env, mut info, _) = get_instance(ADDR_ALICE);
@@ -95,7 +95,7 @@ fn test_execute_transfer() {
     let msg = ExecuteMsg::Transfer {
         receiver_addr: ADDR_ALICE_WASM.to_string(),
         channel_id: CHANNEL_ID.to_string(),
-        token_amount: FUNDS_AMOUNT / 10,
+        token_amount: (FUNDS_AMOUNT / 10).to_string(),
         token_symbol: SYMBOL_TOKEN_IN.to_string(),
     };
 

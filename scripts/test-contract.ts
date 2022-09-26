@@ -1,5 +1,5 @@
 import { getAddrByPrefix, SigningCosmWasmClient } from "./osmo-signer";
-import { coin } from "@cosmjs/stargate";
+import { coin, SigningStargateClient } from "@cosmjs/stargate";
 import { DENOMS, AssetSymbol } from "./osmo-pools";
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 import { l, PREFIX, fee, SEP } from "./helpers";
@@ -20,6 +20,20 @@ async function init(clientStruct: ClientStruct) {
   const sender = (await signer.getAccounts())[0].address;
 
   const client = await SigningCosmWasmClient.connectWithSigner(RPC, signer);
+
+  const signerOsmo = await DirectSecp256k1HdWallet.fromMnemonic(seed, {
+    prefix: "osmo",
+  });
+
+  const clientOsmo = await SigningStargateClient.connectWithSigner(
+    RPC,
+    signerOsmo
+  );
+
+  async function queryBalance() {
+    let resOsmo = await clientOsmo.getAllBalances(CONTRACT);
+    l({ contract: resOsmo });
+  }
 
   async function getBankBalance() {
     let res = await client.queryContractSmart(CONTRACT, {
@@ -54,7 +68,7 @@ async function init(clientStruct: ClientStruct) {
         transfer: {
           receiver_addr: receiver,
           channel_id: "channel-0",
-          token_amount: tokenAmount,
+          token_amount: `${tokenAmount}`,
           token_symbol: tokenSymbol,
         },
       },
@@ -75,21 +89,21 @@ async function init(clientStruct: ClientStruct) {
     l({ attributes: res.logs[0].events[2].attributes }, "\n");
   }
 
-  return { getBankBalance, deposit, transfer, swap };
+  return { getBankBalance, deposit, transfer, swap, queryBalance };
 }
 
 async function main() {
-  const { getBankBalance, deposit, transfer, swap } = await init({
+  const { getBankBalance, deposit, transfer, swap, queryBalance } = await init({
     RPC: "http://localhost:26653/",
     seed: "harsh adult scrub stadium solution impulse company agree tomorrow poem dirt innocent coyote slight nice digital scissors cool pact person item moon double wagon",
   });
 
-  await getBankBalance();
+  await queryBalance();
 
   try {
     l(SEP, "depositing...");
     await deposit(10_000);
-    await getBankBalance();
+    await queryBalance();
   } catch (error) {
     l(error, "\n");
   }
@@ -97,7 +111,7 @@ async function main() {
   try {
     l(SEP, "sending ibc transfer...");
     await transfer(1_000);
-    await getBankBalance();
+    await queryBalance();
   } catch (error) {
     l(error, "\n");
   }
@@ -105,7 +119,7 @@ async function main() {
   try {
     l(SEP, "executing swap...");
     await swap();
-    await getBankBalance();
+    await queryBalance();
   } catch (error) {
     l(error, "\n");
   }

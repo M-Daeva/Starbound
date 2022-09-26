@@ -48,9 +48,7 @@
               "type": "string"
             },
             "token_amount": {
-              "type": "integer",
-              "format": "uint128",
-              "minimum": 0.0
+              "type": "string"
             },
             "token_symbol": {
               "type": "string"

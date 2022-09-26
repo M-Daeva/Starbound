@@ -87,6 +87,7 @@ echo $SEP
 echo "testing contract..."
 cd $DIR/scripts
 npm run test-contract
+# docker exec -i wasmd wasmd query bank balances wasm1ll3s59aawh0qydpz2q3xmqf6pwzmj24t8l43cp
 
 # stop hermes
 echo $SEP
