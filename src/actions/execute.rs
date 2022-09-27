@@ -95,20 +95,10 @@ pub fn transfer(
     _info: MessageInfo,
     receiver_addr: String,
     channel_id: String,
-    token_amount: String,
+    token_amount: u128,
     token_symbol: String,
 ) -> Result<Response, ContractError> {
     const TIMEOUT: u64 = 300;
-
-    let amount = match token_amount.parse::<u128>() {
-        Ok(x) => x,
-        _ => {
-            return Err(ContractError::CustomError {
-                val: "Can not parse 'token_amount'!".to_string(),
-            })
-        }
-    };
-
     // TODO: add validation to prevent using denom instead of symbol
     let token_denom = ASSET_DENOMS.load(deps.storage, token_symbol.clone())?;
 
@@ -117,7 +107,7 @@ pub fn transfer(
     let msg = CosmosMsg::Ibc(IbcMsg::Transfer {
         channel_id: channel_id.clone(),
         to_address: receiver_addr.clone(),
-        amount: coin(amount, token_denom),
+        amount: coin(token_amount, token_denom),
         timeout: IbcTimeout::with_timestamp(timestamp),
     });
 
@@ -125,7 +115,7 @@ pub fn transfer(
         ("method", "transfer"),
         ("receiver_addr", &receiver_addr),
         ("channel_id", &channel_id),
-        ("token_amount", &amount.to_string()),
+        ("token_amount", &token_amount.to_string()),
         ("token_symbol", &token_symbol),
     ]))
 }

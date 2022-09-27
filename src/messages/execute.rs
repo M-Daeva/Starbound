@@ -11,7 +11,7 @@ pub enum ExecuteMsg {
     Transfer {
         receiver_addr: String,
         channel_id: String,
-        token_amount: String,
+        token_amount: u128,
         token_symbol: String,
     },
 }

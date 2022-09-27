@@ -95,7 +95,7 @@ fn test_execute_ibc_transfer() {
     let msg = ExecuteMsg::Transfer {
         receiver_addr: ADDR_ALICE_WASM.to_string(),
         channel_id: CHANNEL_ID.to_string(),
-        token_amount: (FUNDS_AMOUNT / 10).to_string(),
+        token_amount: (FUNDS_AMOUNT / 10),
         token_symbol: SYMBOL_TOKEN_IN.to_string(),
     };
 
@@ -107,7 +107,7 @@ fn test_execute_ibc_transfer() {
             attr("method", "transfer"),
             attr("receiver_addr", ADDR_ALICE_WASM),
             attr("channel_id", CHANNEL_ID),
-            attr("token_amount", (FUNDS_AMOUNT / 10).to_string()),
+            attr("token_amount", &(FUNDS_AMOUNT / 10).to_string()),
             attr("token_symbol", SYMBOL_TOKEN_IN),
         ]
     )
