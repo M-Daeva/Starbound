@@ -11,4 +11,10 @@ pub enum ContractError {
 
     #[error("Funds is not found!")]
     FundsIsNotFound {},
+
+    #[error("Non equal vectors")]
+    NonEqualVectors {},
+
+    #[error("Empty vector")]
+    EmptyVector {},
 }
