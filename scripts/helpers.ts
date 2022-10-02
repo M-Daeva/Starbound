@@ -33,7 +33,7 @@ import { channels } from "./channels-osmo.json";
 import { StakeAuthorization } from "cosmjs-types/cosmos/staking/v1beta1/authz";
 
 const { swapExactAmountIn } = osmosis.gamm.v1beta1.MessageComposer.withTypeUrl;
-const IS_TEST = false;
+const IS_TEST = true;
 const { ADDR, CONTR } = getData(IS_TEST);
 
 const l = console.log.bind(console);

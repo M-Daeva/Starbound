@@ -55,8 +55,8 @@ pub fn deposit(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, 
 // TODO: add users and bank changing funds logic
 pub fn swap_tokens(
     deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
+    env: Env,
+    _info: MessageInfo,
     // from: String,
     // to: String,
     // amount: u128,
@@ -71,7 +71,7 @@ pub fn swap_tokens(
     let token_out_min_amount = String::from("1");
 
     let msg = MsgSwapExactAmountIn {
-        sender: info.sender.to_string(),
+        sender: env.contract.address.to_string(),
         routes: Pools::get_routes(&from, &to)?,
         token_in: Some(PoolCoin {
             amount: amount.to_string(),
