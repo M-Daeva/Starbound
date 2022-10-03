@@ -1,7 +1,17 @@
-# script for running integration tests
+# script for running tests on ibc network
 
+PREFIX="osmo"
 CHAIN_ID="osmo-testing"
 RPC="http://localhost:26657/"
+RPC_OSMO="http://localhost:26653/"
+# it's relayer seed actually
+# osmo1ll3s59aawh0qydpz2q3xmqf6pwzmj24t9ch58c | wasm1ll3s59aawh0qydpz2q3xmqf6pwzmj24t8l43cp
+SEED_ALICE="harsh adult scrub stadium solution impulse company agree tomorrow poem dirt innocent coyote slight nice digital scissors cool pact person item moon double wagon"
+# osmo1chgwz55h9kepjq0fkj5supl2ta3nwu63e3ds8x
+SEED_BOB=$(jq -r '.BOB_SEED' ../.test-wallets/test_wallets.json)
+# osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt
+SEED_DAPP=$(jq -r '.JOHN_SEED' ../.test-wallets/test_wallets.json)
+
 TXFLAG="--gas-prices 0.1uosmo --gas auto --gas-adjustment 1.3 -y -b block --node $RPC --chain-id $CHAIN_ID"
 BINARY="docker exec -i osmosis osmosisd"
 DIR=$(pwd)
@@ -32,7 +42,7 @@ sleep 15
 echo $SEP
 echo "starting hermes..."
 ./hermes/start.sh &> /dev/null &
-sleep 20
+sleep 30
 
 # open ibc channel
 echo $SEP
@@ -44,7 +54,7 @@ hermes --config ./hermes/config.toml create channel --a-chain $A_CHAIN \
 echo $SEP
 echo "testing chain..."
 cd $DIR/scripts
-npm run test-chain
+npm run ibc-network-test-chain
 
 # move binary to docker container
 echo $SEP
@@ -78,15 +88,24 @@ echo contract address is $CONTRACT_ADDRESS
 echo $SEP
 echo "writing data to file..."
 cd $DIR/scripts
-R="{\"CONTRACT_CODE_TEST\":\"$CONTRACT_CODE\",\"CONTRACT_ADDRESS_TEST\":\"$CONTRACT_ADDRESS\"}"
-echo $R > contract_data.json
+R="{
+\"PREFIX\":\"$PREFIX\",
+\"CHAIN_ID\":\"$CHAIN_ID\",
+\"RPC\":\"$RPC_OSMO\",
+\"CONTRACT_CODE\":\"$CONTRACT_CODE\",
+\"CONTRACT_ADDRESS\":\"$CONTRACT_ADDRESS\",
+\"SEED_ALICE\":\"$SEED_ALICE\",
+\"SEED_BOB\":\"$SEED_BOB\",
+\"SEED_DAPP\":\"$SEED_DAPP\"
+}"
+echo $R > config/ibc-network-config.json
 cd $DIR
 
 # run contract tests
 echo $SEP
 echo "testing contract..."
 cd $DIR/scripts
-npm run test-contract
+npm run ibc-network-test-contract
 # docker exec -i wasmd wasmd query bank balances wasm1ll3s59aawh0qydpz2q3xmqf6pwzmj24t8l43cp
 
 # stop hermes

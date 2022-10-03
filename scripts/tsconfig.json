@@ -1,7 +1,8 @@
 {
   "include": [
     "./",
-    "./*.json"
+    "./*.json",
+    "./**/*.json"
   ],
   "exclude": [
     "./tests"

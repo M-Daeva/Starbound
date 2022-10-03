@@ -9,10 +9,11 @@
   },
   "scripts": {
     "start": "ts-node ./index.ts",
-    "init": "sudo chmod +x ../*.sh && cp ../../.test-wallets/test_wallets.json ./test_wallets.json && npm i",
+    "init": "sudo chmod +x ../*.sh && npm i",
     "clear": "sudo rm -rf ../artifacts",
-    "test-chain": "ts-node ./test-chain.ts",
-    "test-contract": "ts-node ./test-contract.ts"
+    "ibc-network-test-chain": "ts-node ./tests/ibc-network-test-chain.ts",
+    "ibc-network-test-contract": "ts-node ./tests/ibc-network-test-contract.ts",
+    "test-network-test-full": "ts-node ./tests/test-network-test-full.ts"
   },
   "repository": {
     "type": "git",
