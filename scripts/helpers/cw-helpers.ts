@@ -1,7 +1,8 @@
 import { coin } from "@cosmjs/stargate";
 import { DENOMS, AssetSymbol } from "../osmo-pools";
 import { l } from "../utils";
-import { ClientStruct, getCwClient, getAddrByPrefix, fee } from "../clients";
+import { getCwClient, getAddrByPrefix, fee } from "../clients";
+import { SwapStruct, ClientStruct } from "./structs";
 
 async function getCwHelpers(
   clientStruct: ClientStruct,
@@ -11,7 +12,7 @@ async function getCwHelpers(
   _cwGetBankBalance: () => Promise<void>;
   _cwDeposit: (tokenAmount: number) => Promise<void>;
   _cwTransfer: (tokenAmount: number) => Promise<void>;
-  _cwSwap: () => Promise<any>;
+  _cwSwap: (swapStruct: SwapStruct) => Promise<any>;
 }> {
   const { client, owner } = await getCwClient(clientStruct);
 
@@ -22,12 +23,17 @@ async function getCwHelpers(
     l("\n", res, "\n");
   }
 
-  async function _cwSwap() {
+  async function _cwSwap(swapStruct: SwapStruct) {
+    const { from, to, amount } = swapStruct;
     const res = await client.execute(
       owner,
       contractAddress,
       {
-        swap_tokens: {},
+        swap_tokens: {
+          from,
+          to,
+          amount: `${amount}`,
+        },
       },
       fee
     );

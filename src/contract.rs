@@ -35,7 +35,9 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Deposit {} => deposit(deps, env, info),
-        ExecuteMsg::SwapTokens {} => swap_tokens(deps, env, info),
+        ExecuteMsg::SwapTokens { from, to, amount } => {
+            swap_tokens(deps, env, info, from, to, amount)
+        }
         ExecuteMsg::Transfer {
             receiver_addr,
             channel_id,

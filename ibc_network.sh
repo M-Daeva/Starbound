@@ -42,7 +42,7 @@ sleep 15
 echo $SEP
 echo "starting hermes..."
 ./hermes/start.sh &> /dev/null &
-sleep 30
+sleep 20
 
 # open ibc channel
 echo $SEP

@@ -21,7 +21,25 @@
       ],
       "properties": {
         "swap_tokens": {
-          "type": "object"
+          "type": "object",
+          "required": [
+            "amount",
+            "from",
+            "to"
+          ],
+          "properties": {
+            "amount": {
+              "type": "integer",
+              "format": "uint128",
+              "minimum": 0.0
+            },
+            "from": {
+              "type": "string"
+            },
+            "to": {
+              "type": "string"
+            }
+          }
         }
       },
       "additionalProperties": false

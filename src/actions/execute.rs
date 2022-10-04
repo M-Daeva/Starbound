@@ -57,15 +57,10 @@ pub fn swap_tokens(
     deps: DepsMut,
     env: Env,
     _info: MessageInfo,
-    // from: String,
-    // to: String,
-    // amount: u128,
+    from: String,
+    to: String,
+    amount: u128,
 ) -> Result<Response, ContractError> {
-    // temporary hardcoded to be sure that all works fine on contract side
-    let from = "OSMO".to_string();
-    let to = "ATOM".to_string();
-    let amount: u128 = 1_000;
-
     // TODO: add validation to prevent using denom instead of symbol
     let denom_token_in = ASSET_DENOMS.load(deps.storage, from.clone())?;
     let token_out_min_amount = String::from("1");

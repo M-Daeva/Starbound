@@ -9,33 +9,14 @@ import { Grant } from "cosmjs-types/cosmos/authz/v1beta1/authz";
 import { Timestamp } from "cosmjs-types/google/protobuf/timestamp";
 import { EncodeObject } from "@cosmjs/proto-signing/build";
 import { l } from "../utils";
-import { ClientStruct, getSgClient, getAddrByPrefix, fee } from "../clients";
+import { getSgClient, getAddrByPrefix, fee } from "../clients";
+import { getRoutes, DENOMS, getSymbolByDenom } from "../osmo-pools";
 import {
-  getRoutes,
-  DENOMS,
-  getSymbolByDenom,
-  AssetSymbol,
-} from "../osmo-pools";
-
-interface IbcStruct {
-  dstPrefix: string;
-  sourceChannel: string;
-  sourcePort: string;
-  amount: number;
-}
-
-interface SwapStruct {
-  from: AssetSymbol;
-  to: AssetSymbol;
-  amount: number;
-}
-
-interface DelegationStruct {
-  targetAddr: string;
-  tokenAmount: number;
-  tokenDenom: string;
-  validatorAddr: string;
-}
+  DelegationStruct,
+  IbcStruct,
+  SwapStruct,
+  ClientStruct,
+} from "./structs";
 
 async function getSgHelpers(clientStruct: ClientStruct): Promise<{
   owner: string;
@@ -194,4 +175,4 @@ async function getSgHelpers(clientStruct: ClientStruct): Promise<{
   };
 }
 
-export { getSgHelpers, IbcStruct, SwapStruct, DelegationStruct };
+export { getSgHelpers };

@@ -1,8 +1,8 @@
 import { l, SEP } from "../utils";
-import { ClientStruct } from "../clients";
 import { getCwHelpers } from "../helpers/cw-helpers";
 import { DENOMS } from "../osmo-pools";
-import { getSgHelpers, DelegationStruct } from "../helpers/sg-helpers";
+import { getSgHelpers } from "../helpers/sg-helpers";
+import { SwapStruct, DelegationStruct, ClientStruct } from "../helpers/structs";
 import {
   CONTRACT_ADDRESS,
   PREFIX,
@@ -67,10 +67,16 @@ async function init() {
     }
   }
 
+  const swapStruct: SwapStruct = {
+    from: "OSMO",
+    to: "ATOM",
+    amount: 1_000,
+  };
+
   async function cwSwap() {
     l(SEP, "executing swap...");
     try {
-      await _cwSwap();
+      await _cwSwap(swapStruct);
       await _queryBalance();
     } catch (error) {
       l(error, "\n");

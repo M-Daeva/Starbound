@@ -3,12 +3,7 @@ import { fromBech32, toBech32 } from "@cosmjs/encoding";
 import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
 import { SigningStargateClient, coin, StdFee } from "@cosmjs/stargate";
 import { DENOMS } from "../osmo-pools";
-
-interface ClientStruct {
-  RPC: string;
-  seed: string;
-  prefix: string;
-}
+import { ClientStruct } from "../helpers/structs";
 
 async function getSigner(clientStruct: ClientStruct): Promise<{
   signer: DirectSecp256k1HdWallet;
@@ -48,4 +43,4 @@ const fee: StdFee = {
   gas: "250000",
 };
 
-export { ClientStruct, getSgClient, getCwClient, getAddrByPrefix, fee };
+export { getSgClient, getCwClient, getAddrByPrefix, fee };

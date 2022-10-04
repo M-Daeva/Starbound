@@ -7,7 +7,11 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     Deposit {},
-    SwapTokens {},
+    SwapTokens {
+        from: String,
+        to: String,
+        amount: u128,
+    },
     Transfer {
         receiver_addr: String,
         channel_id: String,
