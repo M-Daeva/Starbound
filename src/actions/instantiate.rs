@@ -1,12 +1,12 @@
 #[cfg(not(feature = "library"))]
-use cosmwasm_std::{Coin, DepsMut, Env, MessageInfo, Response};
+use cosmwasm_std::{DepsMut, Env, MessageInfo, Response};
 use cw2::set_contract_version;
 
 use crate::{
     actions::helpers::{Denoms, Pools},
     error::ContractError,
     messages::instantiate::InstantiateMsg,
-    state::{Bank, Pool, State, ASSET_DENOMS, BANK, STATE},
+    state::{PoolInfo, State, ASSET_DENOMS, STATE},
 };
 
 const CONTRACT_NAME: &str = "crates.io:boilerplate-test";
@@ -14,7 +14,7 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn init(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     _msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
@@ -26,30 +26,25 @@ pub fn init(
             .unwrap()
     });
 
-    let pools: Vec<Pool> = Pools::list()
+    let pool_list: Vec<PoolInfo> = Pools::list()
         .into_iter()
-        .map(|(s1, s2, n)| Pool::new(s1, s2, n))
+        .map(|(s1, s2, n)| PoolInfo::new(s1, s2, n))
         .collect();
 
     let state = State {
-        admin: info.sender,
-        pools,
+        admin: info.sender.clone(),
+        scheduler: info.sender,
+        pool_list,
     };
     STATE.save(deps.storage, &state)?;
-
-    let bank = Bank {
-        address: env.contract.address,
-        balance: Vec::<Coin>::new(),
-    };
-    BANK.save(deps.storage, &bank)?;
 
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     Ok(Response::new().add_attributes(vec![
         ("method", "instantiate"),
         ("admin", state.admin.as_str()),
-        ("pools_amount", &state.pools.len().to_string()), // 65
-        ("assets_amount", &asset_denoms.len().to_string()), // 46
-        ("bank_address", bank.address.as_str()),
+        ("scheduler", state.scheduler.as_str()),
+        ("pools_amount", &state.pool_list.len().to_string()), // 65
+        ("assets_amount", &asset_denoms.len().to_string()),   // 46
     ]))
 }

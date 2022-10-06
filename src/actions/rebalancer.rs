@@ -7,7 +7,7 @@ fn u128_to_dec(num: u128) -> Decimal {
 }
 
 fn dec_to_u128(dec: Decimal) -> u128 {
-    dec.ceil().to_string().parse::<u128>().unwrap()
+    dec.ceil().atomics().u128() / 1_000_000_000_000_000_000
 }
 
 pub fn perm_vec_to_dec_vec(perm_vec: Vec<u128>) -> Vec<Decimal> {
@@ -19,7 +19,7 @@ pub fn perm_vec_to_dec_vec(perm_vec: Vec<u128>) -> Vec<Decimal> {
 
 // calculation error correction
 // replace max(r) with sum(r) - sum(r w/o max(r))
-pub fn correct_sum(r: Vec<u128>, d: u128) -> Vec<u128> {
+fn correct_sum(r: Vec<u128>, d: u128) -> Vec<u128> {
     let r_max = *r.iter().max().unwrap();
     let r_sum_wo_max_item = r.iter().filter(|&&r_item| r_item != r_max).sum::<u128>();
     let r_corrected = r
@@ -108,7 +108,7 @@ pub mod test {
 
     #[test]
     // case 1
-    fn big_deposit_and_s2_greater_s1() {
+    fn big_payment_and_s2_greater_s1() {
         let x1 = vec![100_000000, 300_000000, 200_000000];
         let k2 = perm_vec_to_dec_vec(vec![300, 200, 500]);
         let sd = 10000_000000;
@@ -132,7 +132,7 @@ pub mod test {
 
     #[test]
     // case 3
-    fn small_deposit_and_s2_greater_s1() {
+    fn small_payment_and_s2_greater_s1() {
         let x1 = vec![100_000000, 300_000000, 200_000000];
         let k2 = perm_vec_to_dec_vec(vec![300, 200, 500]);
         let sd = 100_000000;

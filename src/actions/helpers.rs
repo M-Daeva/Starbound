@@ -4,7 +4,7 @@ use osmosis_std::types::osmosis::gamm::v1beta1::SwapAmountInRoute;
 
 use crate::state::AssetDenom;
 
-// TODO: add unit tests for helpers
+// TODO: add tests for helpers
 pub struct Denoms;
 
 impl<'a> Denoms {

@@ -9,12 +9,12 @@
     "all_pools": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/Pool"
+        "$ref": "#/definitions/PoolInfo"
       }
     }
   },
   "definitions": {
-    "Pool": {
+    "PoolInfo": {
       "type": "object",
       "required": [
         "number",

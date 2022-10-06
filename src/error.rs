@@ -9,8 +9,11 @@ pub enum ContractError {
     #[error("Custom Error val: {val:?}")]
     CustomError { val: String },
 
-    #[error("Funds is not found!")]
-    FundsIsNotFound {},
+    #[error("Funds are not found!")]
+    FundsAreNotFound {},
+
+    #[error("User is not found!")]
+    UserIsNotFound {},
 
     #[error("Non equal vectors")]
     NonEqualVectors {},

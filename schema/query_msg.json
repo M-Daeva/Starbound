@@ -49,18 +49,6 @@
     {
       "type": "object",
       "required": [
-        "get_bank_balance"
-      ],
-      "properties": {
-        "get_bank_balance": {
-          "type": "object"
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
         "get_user_info"
       ],
       "properties": {

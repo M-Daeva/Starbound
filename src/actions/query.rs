@@ -3,10 +3,9 @@ use cosmwasm_std::{to_binary, Binary, Deps, Env, Order, StdResult};
 
 use crate::{
     messages::response::{
-        GetAllDenomsResponse, GetAllPoolsResponse, GetBankBalanceResponse, GetDenomResponse,
-        GetUserInfoResponse,
+        GetAllDenomsResponse, GetAllPoolsResponse, GetDenomResponse, GetUserInfoResponse,
     },
-    state::{AssetInfo, ASSET_DENOMS, BANK, STATE, USERS},
+    state::{AssetInfo, ASSET_DENOMS, STATE, USERS},
 };
 
 pub fn get_denom(deps: Deps, _env: Env, asset_symbol: String) -> StdResult<Binary> {
@@ -23,6 +22,7 @@ pub fn get_all_denoms(deps: Deps, _env: Env) -> StdResult<Binary> {
             acc.push(AssetInfo {
                 asset_symbol,
                 asset_denom,
+                price: 0, // TODO: add quering price
             });
             acc
         });
@@ -31,15 +31,9 @@ pub fn get_all_denoms(deps: Deps, _env: Env) -> StdResult<Binary> {
 }
 
 pub fn get_all_pools(deps: Deps, _env: Env) -> StdResult<Binary> {
-    let all_pools = STATE.load(deps.storage)?.pools;
+    let all_pools = STATE.load(deps.storage)?.pool_list;
 
     to_binary(&GetAllPoolsResponse { all_pools })
-}
-
-pub fn get_bank_balance(deps: Deps, _env: Env) -> StdResult<Binary> {
-    let balance = BANK.load(deps.storage)?.balance;
-
-    to_binary(&GetBankBalanceResponse { balance })
 }
 
 pub fn get_user_info(deps: Deps, _env: Env, address: String) -> StdResult<Binary> {
@@ -47,7 +41,11 @@ pub fn get_user_info(deps: Deps, _env: Env, address: String) -> StdResult<Binary
     let user = USERS.load(deps.storage, address_validated)?;
 
     to_binary(&GetUserInfoResponse {
-        deposited: user.deposited,
-        portfolio: user.portfolio,
+        asset_list: user.asset_list,
+        deposited_on_current_period: user.deposited_on_current_period,
+        deposited_on_next_period: user.deposited_on_next_period,
+        block_counter: user.block_counter,
+        is_controlled_rebalancing: user.is_controlled_rebalancing,
+        osmo_address: user.osmo_address,
     })
 }

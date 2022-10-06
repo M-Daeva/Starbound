@@ -9,7 +9,61 @@
       ],
       "properties": {
         "deposit": {
-          "type": "object"
+          "type": "object",
+          "required": [
+            "is_controlled_rebalancing",
+            "is_current_period"
+          ],
+          "properties": {
+            "is_controlled_rebalancing": {
+              "type": "boolean"
+            },
+            "is_current_period": {
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "withdraw"
+      ],
+      "properties": {
+        "withdraw": {
+          "type": "object",
+          "required": [
+            "amount"
+          ],
+          "properties": {
+            "amount": {
+              "type": "integer",
+              "format": "uint128",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "update_user_settings"
+      ],
+      "properties": {
+        "update_user_settings": {
+          "type": "object",
+          "required": [
+            "is_controlled_rebalancing"
+          ],
+          "properties": {
+            "is_controlled_rebalancing": {
+              "type": "boolean"
+            }
+          }
         }
       },
       "additionalProperties": false
@@ -74,6 +128,62 @@
               "type": "string"
             }
           }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "update_pool_list"
+      ],
+      "properties": {
+        "update_pool_list": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "update_asset_list"
+      ],
+      "properties": {
+        "update_asset_list": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "update_scheduler"
+      ],
+      "properties": {
+        "update_scheduler": {
+          "type": "object",
+          "required": [
+            "address"
+          ],
+          "properties": {
+            "address": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "process"
+      ],
+      "properties": {
+        "process": {
+          "type": "object"
         }
       },
       "additionalProperties": false

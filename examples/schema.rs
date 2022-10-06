@@ -7,10 +7,7 @@ use starbound::messages::{
     execute::ExecuteMsg,
     instantiate::InstantiateMsg,
     query::QueryMsg,
-    response::{
-        GetAllDenomsResponse, GetAllPoolsResponse, GetBankBalanceResponse, GetDenomResponse,
-        GetUserInfoResponse,
-    },
+    response::{GetAllDenomsResponse, GetAllPoolsResponse, GetDenomResponse, GetUserInfoResponse},
 };
 
 fn main() {
@@ -18,13 +15,11 @@ fn main() {
     out_dir.push("schema");
     create_dir_all(&out_dir).unwrap();
     remove_schemas(&out_dir).unwrap();
-
     export_schema(&schema_for!(InstantiateMsg), &out_dir);
     export_schema(&schema_for!(ExecuteMsg), &out_dir);
     export_schema(&schema_for!(QueryMsg), &out_dir);
     export_schema(&schema_for!(GetAllDenomsResponse), &out_dir);
     export_schema(&schema_for!(GetDenomResponse), &out_dir);
     export_schema(&schema_for!(GetAllPoolsResponse), &out_dir);
-    export_schema(&schema_for!(GetBankBalanceResponse), &out_dir);
     export_schema(&schema_for!(GetUserInfoResponse), &out_dir);
 }

@@ -18,7 +18,8 @@
       "type": "object",
       "required": [
         "asset_denom",
-        "asset_symbol"
+        "asset_symbol",
+        "price"
       ],
       "properties": {
         "asset_denom": {
@@ -26,6 +27,11 @@
         },
         "asset_symbol": {
           "type": "string"
+        },
+        "price": {
+          "type": "integer",
+          "format": "uint128",
+          "minimum": 0.0
         }
       }
     }

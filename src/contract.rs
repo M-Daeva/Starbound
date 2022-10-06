@@ -3,10 +3,10 @@ use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Respons
 
 use crate::{
     actions::{
-        execute::{deposit, swap_tokens, transfer},
+        execute::{deposit, swap_tokens, transfer, withdraw},
         instantiate::init,
         migrate::migrate_contract,
-        query::{get_all_denoms, get_all_pools, get_bank_balance, get_denom, get_user_info},
+        query::{get_all_denoms, get_all_pools, get_denom, get_user_info},
     },
     error::ContractError,
     messages::{
@@ -34,7 +34,20 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Deposit {} => deposit(deps, env, info),
+        ExecuteMsg::Deposit {
+            is_controlled_rebalancing,
+            is_current_period,
+        } => deposit(
+            deps,
+            env,
+            info,
+            is_controlled_rebalancing,
+            is_current_period,
+        ),
+        ExecuteMsg::Withdraw { amount } => withdraw(deps, env, info, amount),
+        ExecuteMsg::UpdateUserSettings {
+            is_controlled_rebalancing,
+        } => unimplemented!(),
         ExecuteMsg::SwapTokens { from, to, amount } => {
             swap_tokens(deps, env, info, from, to, amount)
         }
@@ -52,6 +65,10 @@ pub fn execute(
             token_amount,
             token_symbol,
         ),
+        ExecuteMsg::UpdateAssetList {} => unimplemented!(),
+        ExecuteMsg::UpdatePoolList {} => unimplemented!(),
+        ExecuteMsg::UpdateScheduler { address } => unimplemented!(),
+        ExecuteMsg::Process {} => unimplemented!(),
     }
 }
 
@@ -62,7 +79,6 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetDenom { asset_symbol } => get_denom(deps, env, asset_symbol),
         QueryMsg::GetAllDenoms {} => get_all_denoms(deps, env),
         QueryMsg::GetAllPools {} => get_all_pools(deps, env),
-        QueryMsg::GetBankBalance {} => get_bank_balance(deps, env),
         QueryMsg::GetUserInfo { address } => get_user_info(deps, env, address),
     }
 }

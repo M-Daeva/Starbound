@@ -1,6 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::{
-    coin, Coin, CosmosMsg, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo, Response,
+    coin, BankMsg, Coin, CosmosMsg, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo, Response,
 };
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as PoolCoin, osmosis::gamm::v1beta1::MsgSwapExactAmountIn,
@@ -9,15 +9,19 @@ use osmosis_std::types::{
 use crate::{
     actions::helpers::Pools,
     error::ContractError,
-    state::{User, ASSET_DENOMS, BANK, USERS},
+    state::{User, ASSET_DENOMS, USERS},
 };
 
-// TODO: add users portfolio structure settings
-pub fn deposit(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-    // temporary replacement to work with testnet
-    // there is no USDC on testnet so we use OSMO instead of USDC
-    let symbol_token_in = "OSMO";
-    //let symbol_token_in = "USDC";
+pub fn deposit(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    is_controlled_rebalancing: bool,
+    is_current_period: bool,
+) -> Result<Response, ContractError> {
+    // temporary replacement for tests
+    // there is no USDC so we use OSMO instead of USDC
+    let symbol_token_in = "OSMO"; //let symbol_token_in = "USDC";
     let denom_token_in = ASSET_DENOMS.load(deps.storage, symbol_token_in.to_string())?;
     let user_addr = &info.sender;
     let funds = &info
@@ -27,28 +31,90 @@ pub fn deposit(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, 
         .collect::<Vec<Coin>>();
 
     if funds.is_empty() {
-        return Err(ContractError::FundsIsNotFound {});
+        return Err(ContractError::FundsAreNotFound {});
     }
 
-    let funds_amount = funds[0].amount;
+    let funds_amount = funds[0].amount.u128();
     let funds_denom = &funds[0].denom;
 
-    let mut bank = BANK.load(deps.storage)?;
     let mut user = match USERS.load(deps.storage, user_addr.clone()) {
         Ok(user) => user,
-        _ => User::new(user_addr.clone()),
+        _ => User::new(
+            user_addr.clone(),
+            is_controlled_rebalancing,
+            coin(funds_amount, funds_denom),
+            is_current_period,
+        ),
     };
 
-    user.deposited = funds_amount;
-    bank.balance.push(coin(funds_amount.u128(), funds_denom));
+    user.deposited_on_current_period = funds_amount;
 
     USERS.save(deps.storage, user_addr.clone(), &user)?;
-    BANK.save(deps.storage, &bank)?;
 
     Ok(Response::new().add_attributes(vec![
         ("method", "deposit"),
-        ("user_address", user.address.as_str()),
-        ("user_deposit", &user.deposited.to_string()),
+        ("user_address", user.osmo_address.as_str()),
+        (
+            "user_deposited_on_current_period",
+            &user.deposited_on_current_period.to_string(),
+        ),
+        (
+            "user_deposited_on_next_period",
+            &user.deposited_on_next_period.to_string(),
+        ),
+    ]))
+}
+
+pub fn withdraw(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    mut amount: u128,
+) -> Result<Response, ContractError> {
+    // temporary replacement for tests
+    // there is no USDC so we use OSMO instead of USDC
+    let symbol_token_out = "OSMO"; //let symbol_token_out = "USDC";
+    let denom_token_out = ASSET_DENOMS.load(deps.storage, symbol_token_out.to_string())?;
+    let user_addr = &info.sender;
+
+    let mut user = match USERS.load(deps.storage, user_addr.clone()) {
+        Ok(user) => user,
+        _ => {
+            return Err(ContractError::UserIsNotFound {});
+        }
+    };
+
+    // limit withdraw amount
+    if amount > user.deposited_on_next_period + user.deposited_on_current_period {
+        amount = user.deposited_on_next_period + user.deposited_on_current_period;
+    }
+
+    // subtract from deposited_on_next_period first
+    if amount > user.deposited_on_next_period {
+        user.deposited_on_next_period = 0;
+        user.deposited_on_current_period -= amount - user.deposited_on_next_period;
+    } else {
+        user.deposited_on_next_period -= amount;
+    }
+
+    let msg = CosmosMsg::Bank(BankMsg::Send {
+        to_address: user_addr.to_string(),
+        amount: vec![coin(amount, denom_token_out)],
+    });
+
+    USERS.save(deps.storage, user_addr.clone(), &user)?;
+
+    Ok(Response::new().add_message(msg).add_attributes(vec![
+        ("method", "withdraw"),
+        ("user_address", user.osmo_address.as_str()),
+        (
+            "user_deposited_on_current_period",
+            &user.deposited_on_current_period.to_string(),
+        ),
+        (
+            "user_deposited_on_next_period",
+            &user.deposited_on_next_period.to_string(),
+        ),
     ]))
 }
 
