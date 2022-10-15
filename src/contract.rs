@@ -3,10 +3,13 @@ use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Respons
 
 use crate::{
     actions::{
-        execute::{deposit, swap_tokens, transfer, withdraw},
+        execute::{deposit, swap, transfer, update_pools_and_users, update_scheduler, withdraw},
         instantiate::init,
         migrate::migrate_contract,
-        query::{get_all_denoms, get_all_pools, get_denom, get_user_info},
+        query::{
+            debug_query_assets, debug_query_bank, debug_query_pools_and_users,
+            query_pools_and_users,
+        },
     },
     error::ContractError,
     messages::{
@@ -34,41 +37,14 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Deposit {
-            is_controlled_rebalancing,
-            is_current_period,
-        } => deposit(
-            deps,
-            env,
-            info,
-            is_controlled_rebalancing,
-            is_current_period,
-        ),
+        ExecuteMsg::Deposit { user } => deposit(deps, env, info, user),
         ExecuteMsg::Withdraw { amount } => withdraw(deps, env, info, amount),
-        ExecuteMsg::UpdateUserSettings {
-            is_controlled_rebalancing,
-        } => unimplemented!(),
-        ExecuteMsg::SwapTokens { from, to, amount } => {
-            swap_tokens(deps, env, info, from, to, amount)
+        ExecuteMsg::UpdateScheduler { address } => update_scheduler(deps, env, info, address),
+        ExecuteMsg::UpdatePoolsAndUsers { pools, users } => {
+            update_pools_and_users(deps, env, info, pools, users)
         }
-        ExecuteMsg::Transfer {
-            receiver_addr,
-            channel_id,
-            token_amount,
-            token_symbol,
-        } => transfer(
-            deps,
-            env,
-            info,
-            receiver_addr,
-            channel_id,
-            token_amount,
-            token_symbol,
-        ),
-        ExecuteMsg::UpdateAssetList {} => unimplemented!(),
-        ExecuteMsg::UpdatePoolList {} => unimplemented!(),
-        ExecuteMsg::UpdateScheduler { address } => unimplemented!(),
-        ExecuteMsg::Process {} => unimplemented!(),
+        ExecuteMsg::Swap {} => swap(deps, env, info),
+        ExecuteMsg::Transfer {} => transfer(deps, env, info),
     }
 }
 
@@ -76,10 +52,10 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::GetDenom { asset_symbol } => get_denom(deps, env, asset_symbol),
-        QueryMsg::GetAllDenoms {} => get_all_denoms(deps, env),
-        QueryMsg::GetAllPools {} => get_all_pools(deps, env),
-        QueryMsg::GetUserInfo { address } => get_user_info(deps, env, address),
+        QueryMsg::QueryPoolsAndUsers {} => query_pools_and_users(deps, env),
+        QueryMsg::DebugQueryPoolsAndUsers {} => debug_query_pools_and_users(deps, env),
+        QueryMsg::DebugQueryAssets { address } => debug_query_assets(deps, env, address),
+        QueryMsg::DebugQueryBank {} => debug_query_bank(deps, env),
     }
 }
 

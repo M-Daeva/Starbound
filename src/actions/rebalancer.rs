@@ -2,11 +2,19 @@ use cosmwasm_std::{Decimal, Uint128};
 
 use crate::error::ContractError;
 
-fn u128_to_dec(num: u128) -> Decimal {
+pub fn str_to_dec(s: &str) -> Decimal {
+    s.to_string().parse::<Decimal>().unwrap()
+}
+
+pub fn str_vec_to_dec_vec(str_vec: Vec<&str>) -> Vec<Decimal> {
+    str_vec.iter().map(|&x| str_to_dec(x)).collect()
+}
+
+pub fn u128_to_dec(num: u128) -> Decimal {
     Decimal::from_ratio(Uint128::new(num), Uint128::one())
 }
 
-fn dec_to_u128(dec: Decimal) -> u128 {
+pub fn dec_to_u128(dec: Decimal) -> u128 {
     dec.ceil().atomics().u128() / 1_000_000_000_000_000_000
 }
 
@@ -35,8 +43,8 @@ fn correct_sum(r: Vec<u128>, d: u128) -> Vec<u128> {
     r_corrected
 }
 
-/// x1 - vector of current asset prices \
-/// k2 - vector of target asset ratios multiplied by 1000 (permille) \
+/// x1 - vector of current asset costs \
+/// k2 - vector of target asset ratios \
 /// d - funds to buy coins \
 /// r - vector of coins to buy costs
 pub fn rebalance(x1: &Vec<u128>, k2: &Vec<Decimal>, d: u128) -> Result<Vec<u128>, ContractError> {
@@ -104,13 +112,15 @@ pub fn rebalance(x1: &Vec<u128>, k2: &Vec<Decimal>, d: u128) -> Result<Vec<u128>
 
 #[cfg(test)]
 pub mod test {
+    use super::{str_vec_to_dec_vec, Decimal};
     use crate::actions::rebalancer::{perm_vec_to_dec_vec, rebalance};
 
     #[test]
     // case 1
     fn big_payment_and_s2_greater_s1() {
         let x1 = vec![100_000000, 300_000000, 200_000000];
-        let k2 = perm_vec_to_dec_vec(vec![300, 200, 500]);
+        let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5"]);
+        //    let k2 = perm_vec_to_dec_vec(vec![300, 200, 500]);
         let sd = 10000_000000;
 
         let xd = vec![3080_000000, 1820_000000, 5100_000000];
@@ -122,7 +132,7 @@ pub mod test {
     // case 2
     fn s2_equal_s1() {
         let x1 = vec![300_000000, 200_000000, 500_000000];
-        let k2 = perm_vec_to_dec_vec(vec![300, 200, 500]);
+        let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5"]);
         let sd = 100_000000;
 
         let xd = vec![30_000000, 20_000000, 50_000000];
@@ -134,7 +144,7 @@ pub mod test {
     // case 3
     fn small_payment_and_s2_greater_s1() {
         let x1 = vec![100_000000, 300_000000, 200_000000];
-        let k2 = perm_vec_to_dec_vec(vec![300, 200, 500]);
+        let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5"]);
         let sd = 100_000000;
 
         let xd = vec![38_888889, 0, 61_111111];

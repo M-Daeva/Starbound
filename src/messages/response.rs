@@ -1,34 +1,35 @@
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Coin, Decimal};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::state::{Asset, AssetDenom, AssetInfo, PoolInfo};
+use crate::state::{Asset, PoolExtracted, User, UserExtracted};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct GetDenomResponse {
-    pub denom: AssetDenom,
+pub struct QueryPoolsAndUsers {
+    pub users: Vec<UserExtracted>,
+    pub pools: Vec<PoolExtracted>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct GetAllDenomsResponse {
-    pub all_assets_info: Vec<AssetInfo>,
+pub struct DebugQueryPoolsAndUsers {
+    pub users: Vec<User>,
+    pub pools: Vec<PoolExtracted>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct GetAllPoolsResponse {
-    pub all_pools: Vec<PoolInfo>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct GetUserInfoResponse {
-    pub osmo_address: Addr,
-    pub is_controlled_rebalancing: bool,
+pub struct DebugQueryAssets {
     pub asset_list: Vec<Asset>,
-    pub block_counter: u128,
-    pub deposited_on_current_period: u128,
-    pub deposited_on_next_period: u128,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct DebugQueryBank {
+    pub dapp_wallet: Vec<Coin>,
+    pub global_delta_balance_list: Vec<u128>,
+    pub global_delta_cost_list: Vec<u128>,
+    pub global_denom_list: Vec<String>,
+    pub global_price_list: Vec<Decimal>,
 }

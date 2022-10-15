@@ -3,10 +3,10 @@ use cosmwasm_std::{DepsMut, Env, MessageInfo, Response};
 use cw2::set_contract_version;
 
 use crate::{
-    actions::helpers::{Denoms, Pools},
+    actions::rebalancer::u128_to_dec,
     error::ContractError,
     messages::instantiate::InstantiateMsg,
-    state::{PoolInfo, State, ASSET_DENOMS, STATE},
+    state::{Pool, State, POOLS, STATE},
 };
 
 const CONTRACT_NAME: &str = "crates.io:boilerplate-test";
@@ -18,33 +18,52 @@ pub fn init(
     info: MessageInfo,
     _msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
-    let asset_denoms = Denoms::list();
+    // testnet config
+    // ATOM / OSMO
+    POOLS.save(
+        deps.storage,
+        "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+        &Pool::new(1, u128_to_dec(13), "channel-0", "transfer", "uatom"),
+    )?;
 
-    asset_denoms.clone().into_iter().for_each(|(s, d)| {
-        ASSET_DENOMS
-            .save(deps.storage, s.to_string(), &(d.to_string()))
-            .unwrap()
-    });
+    // JUNO / OSMO
+    POOLS.save(
+        deps.storage,
+        "ibc/46B44899322F3CD854D2D46DEEF881958467CDD4B3B10086DA49296BBED94BED",
+        &Pool::new(497, u128_to_dec(4), "channel-1110", "transfer", "ujuno"),
+    )?;
 
-    let pool_list: Vec<PoolInfo> = Pools::list()
-        .into_iter()
-        .map(|(s1, s2, n)| PoolInfo::new(s1, s2, n))
-        .collect();
+    // EEUR / OSMO
+    POOLS.save(
+        deps.storage,
+        "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F",
+        &Pool::new(
+            481,
+            u128_to_dec(1),
+            "debug_ch_id",
+            "transfer",
+            "debug_ueeur",
+        ),
+    )?;
 
-    let state = State {
-        admin: info.sender.clone(),
-        scheduler: info.sender,
-        pool_list,
-    };
-    STATE.save(deps.storage, &state)?;
+    STATE.save(
+        deps.storage,
+        &State {
+            admin: info.sender.clone(),
+            scheduler: info.sender.clone(),
+            global_delta_balance_list: vec![],
+            global_delta_cost_list: vec![],
+            global_denom_list: vec![],
+            global_price_list: vec![],
+        },
+    )?;
 
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     Ok(Response::new().add_attributes(vec![
         ("method", "instantiate"),
-        ("admin", state.admin.as_str()),
-        ("scheduler", state.scheduler.as_str()),
-        ("pools_amount", &state.pool_list.len().to_string()), // 65
-        ("assets_amount", &asset_denoms.len().to_string()),   // 46
+        ("admin", info.sender.as_ref()),
+        ("scheduler", info.sender.as_ref()),
+        ("pools_amount", "3"),
     ]))
 }

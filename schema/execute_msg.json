@@ -11,15 +11,11 @@
         "deposit": {
           "type": "object",
           "required": [
-            "is_controlled_rebalancing",
-            "is_current_period"
+            "user"
           ],
           "properties": {
-            "is_controlled_rebalancing": {
-              "type": "boolean"
-            },
-            "is_current_period": {
-              "type": "boolean"
+            "user": {
+              "$ref": "#/definitions/User"
             }
           }
         }
@@ -51,114 +47,6 @@
     {
       "type": "object",
       "required": [
-        "update_user_settings"
-      ],
-      "properties": {
-        "update_user_settings": {
-          "type": "object",
-          "required": [
-            "is_controlled_rebalancing"
-          ],
-          "properties": {
-            "is_controlled_rebalancing": {
-              "type": "boolean"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "swap_tokens"
-      ],
-      "properties": {
-        "swap_tokens": {
-          "type": "object",
-          "required": [
-            "amount",
-            "from",
-            "to"
-          ],
-          "properties": {
-            "amount": {
-              "type": "integer",
-              "format": "uint128",
-              "minimum": 0.0
-            },
-            "from": {
-              "type": "string"
-            },
-            "to": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "transfer"
-      ],
-      "properties": {
-        "transfer": {
-          "type": "object",
-          "required": [
-            "channel_id",
-            "receiver_addr",
-            "token_amount",
-            "token_symbol"
-          ],
-          "properties": {
-            "channel_id": {
-              "type": "string"
-            },
-            "receiver_addr": {
-              "type": "string"
-            },
-            "token_amount": {
-              "type": "integer",
-              "format": "uint128",
-              "minimum": 0.0
-            },
-            "token_symbol": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "update_pool_list"
-      ],
-      "properties": {
-        "update_pool_list": {
-          "type": "object"
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "update_asset_list"
-      ],
-      "properties": {
-        "update_asset_list": {
-          "type": "object"
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
         "update_scheduler"
       ],
       "properties": {
@@ -179,14 +67,205 @@
     {
       "type": "object",
       "required": [
-        "process"
+        "update_pools_and_users"
       ],
       "properties": {
-        "process": {
+        "update_pools_and_users": {
+          "type": "object",
+          "required": [
+            "pools",
+            "users"
+          ],
+          "properties": {
+            "pools": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/PoolExtracted"
+              }
+            },
+            "users": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/UserExtracted"
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "swap"
+      ],
+      "properties": {
+        "swap": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "transfer"
+      ],
+      "properties": {
+        "transfer": {
           "type": "object"
         }
       },
       "additionalProperties": false
     }
-  ]
+  ],
+  "definitions": {
+    "Addr": {
+      "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+      "type": "string"
+    },
+    "Asset": {
+      "type": "object",
+      "required": [
+        "amount_to_send_until_next_epoch",
+        "asset_denom",
+        "wallet_address",
+        "wallet_balance",
+        "weight"
+      ],
+      "properties": {
+        "amount_to_send_until_next_epoch": {
+          "type": "integer",
+          "format": "uint128",
+          "minimum": 0.0
+        },
+        "asset_denom": {
+          "type": "string"
+        },
+        "wallet_address": {
+          "$ref": "#/definitions/Addr"
+        },
+        "wallet_balance": {
+          "type": "integer",
+          "format": "uint128",
+          "minimum": 0.0
+        },
+        "weight": {
+          "$ref": "#/definitions/Decimal"
+        }
+      }
+    },
+    "AssetExtracted": {
+      "type": "object",
+      "required": [
+        "asset_denom",
+        "wallet_address",
+        "wallet_balance"
+      ],
+      "properties": {
+        "asset_denom": {
+          "type": "string"
+        },
+        "wallet_address": {
+          "type": "string"
+        },
+        "wallet_balance": {
+          "type": "integer",
+          "format": "uint128",
+          "minimum": 0.0
+        }
+      }
+    },
+    "Decimal": {
+      "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 (which is (2^128 - 1) / 10^18)",
+      "type": "string"
+    },
+    "PoolExtracted": {
+      "type": "object",
+      "required": [
+        "channel_id",
+        "denom",
+        "id",
+        "port_id",
+        "price",
+        "symbol"
+      ],
+      "properties": {
+        "channel_id": {
+          "type": "string"
+        },
+        "denom": {
+          "type": "string"
+        },
+        "id": {
+          "type": "integer",
+          "format": "uint128",
+          "minimum": 0.0
+        },
+        "port_id": {
+          "type": "string"
+        },
+        "price": {
+          "$ref": "#/definitions/Decimal"
+        },
+        "symbol": {
+          "type": "string"
+        }
+      }
+    },
+    "User": {
+      "type": "object",
+      "required": [
+        "asset_list",
+        "day_counter",
+        "deposited_on_current_period",
+        "deposited_on_next_period",
+        "is_controlled_rebalancing"
+      ],
+      "properties": {
+        "asset_list": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Asset"
+          }
+        },
+        "day_counter": {
+          "type": "integer",
+          "format": "uint128",
+          "minimum": 0.0
+        },
+        "deposited_on_current_period": {
+          "type": "integer",
+          "format": "uint128",
+          "minimum": 0.0
+        },
+        "deposited_on_next_period": {
+          "type": "integer",
+          "format": "uint128",
+          "minimum": 0.0
+        },
+        "is_controlled_rebalancing": {
+          "type": "boolean"
+        }
+      }
+    },
+    "UserExtracted": {
+      "type": "object",
+      "required": [
+        "asset_list",
+        "osmo_address"
+      ],
+      "properties": {
+        "asset_list": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AssetExtracted"
+          }
+        },
+        "osmo_address": {
+          "type": "string"
+        }
+      }
+    }
+  }
 }

@@ -3,7 +3,7 @@ import { fromBech32, toBech32 } from "@cosmjs/encoding";
 import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
 import { SigningStargateClient, coin, StdFee } from "@cosmjs/stargate";
 import { DENOMS } from "../osmo-pools";
-import { ClientStruct } from "../helpers/structs";
+import { ClientStruct } from "../helpers/interfaces";
 
 async function getSigner(clientStruct: ClientStruct): Promise<{
   signer: DirectSecp256k1HdWallet;
@@ -40,7 +40,7 @@ function getAddrByPrefix(address: string, prefix: string): string {
 
 const fee: StdFee = {
   amount: [coin(0, DENOMS.OSMO)],
-  gas: "250000",
+  gas: "500000",
 };
 
 export { getSgClient, getCwClient, getAddrByPrefix, fee };

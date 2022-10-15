@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    GetDenom { asset_symbol: String },
-    GetAllDenoms {},
-    GetAllPools {},
-    GetUserInfo { address: String },
+    QueryPoolsAndUsers {},
+    DebugQueryPoolsAndUsers {},
+    DebugQueryAssets { address: String },
+    DebugQueryBank {},
 }

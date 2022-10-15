@@ -12,12 +12,27 @@ pub enum ContractError {
     #[error("Funds are not found!")]
     FundsAreNotFound {},
 
+    #[error("Sended funds are not equal planned payment!")]
+    FundsAreNotEqual {},
+
+    #[error("There are not enough funds to withdraw!")]
+    WithdrawAmountIsExceeded {},
+
     #[error("User is not found!")]
     UserIsNotFound {},
+
+    #[error("Asset is not found in pool list!")]
+    AssetIsNotFound {},
 
     #[error("Non equal vectors")]
     NonEqualVectors {},
 
     #[error("Empty vector")]
     EmptyVector {},
+
+    #[error("Sender does not have access permissions!")]
+    Unauthorized {},
+
+    #[error("Pool is not updated!")]
+    PoolIsNotUpdated {},
 }

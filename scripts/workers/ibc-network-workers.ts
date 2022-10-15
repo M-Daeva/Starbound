@@ -1,7 +1,7 @@
 import { l, SEP } from "../utils";
 import { getCwHelpers } from "../helpers/cw-helpers";
 import { getSgHelpers } from "../helpers/sg-helpers";
-import { IbcStruct, SwapStruct, ClientStruct } from "../helpers/structs";
+import { IbcStruct, SwapStruct, ClientStruct } from "../helpers/interfaces";
 import {
   CONTRACT_ADDRESS,
   PREFIX,

@@ -1,3 +1,4 @@
+use crate::state::{PoolExtracted, User, UserExtracted};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -5,30 +6,18 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     Deposit {
-        is_controlled_rebalancing: bool,
-        is_current_period: bool,
+        user: User,
     },
     Withdraw {
         amount: u128,
     },
-    UpdateUserSettings {
-        is_controlled_rebalancing: bool,
-    },
-    SwapTokens {
-        from: String,
-        to: String,
-        amount: u128,
-    },
-    Transfer {
-        receiver_addr: String,
-        channel_id: String,
-        token_amount: u128,
-        token_symbol: String,
-    },
-    UpdatePoolList {},
-    UpdateAssetList {},
     UpdateScheduler {
         address: String,
     },
-    Process {},
+    UpdatePoolsAndUsers {
+        pools: Vec<PoolExtracted>,
+        users: Vec<UserExtracted>,
+    },
+    Swap {},
+    Transfer {},
 }
