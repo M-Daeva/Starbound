@@ -76,7 +76,7 @@
 
     let deposited = 0;
 
-    if (tx2.asset_list.length !== 0) {
+    if (tx2 !== undefined && tx2.asset_list.length !== 0) {
       let user = tx.users.find((user) => {
         let addr = user.asset_list.map((asset) => asset.wallet_address)[0];
         return getAddrByPrefix(addr, "osmo") === owner;
@@ -84,13 +84,17 @@
 
       deposited =
         +user?.deposited_on_current_period + +user?.deposited_on_next_period;
-    }
 
-    textAreaContent += `Deposited ${Number.isNaN(deposited) ? 0 : deposited}\n`;
+      textAreaContent += `Deposited ${
+        Number.isNaN(deposited) ? 0 : deposited
+      }\n`;
 
-    for (let asset of tx2.asset_list) {
-      let str = `${asset.wallet_balance} coins on ${asset.wallet_address}\n`;
-      textAreaContent += str;
+      for (let asset of tx2.asset_list) {
+        let str = `${asset.wallet_balance} coins on ${asset.wallet_address}\n`;
+        textAreaContent += str;
+      }
+    } else {
+      textAreaContent += `Deposited 0\n`;
     }
 
     assetOptions = assetOptions.map((item) => {

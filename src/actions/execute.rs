@@ -136,8 +136,8 @@ pub fn withdraw(
 
     // subtract from deposited_on_next_period first
     if amount > user.deposited_on_next_period {
-        user.deposited_on_next_period = 0;
         user.deposited_on_current_period -= amount - user.deposited_on_next_period;
+        user.deposited_on_next_period = 0;
     } else {
         user.deposited_on_next_period -= amount;
     }
