@@ -99,8 +99,8 @@ async function getSgHelpers(clientStruct: ClientStruct) {
       sourceChannel,
       sourcePort,
       timeoutHeight: {
-        revisionNumber: Long.fromNumber(1),
-        revisionHeight: Long.fromNumber(height),
+        revisionNumber: Long.fromNumber(5),
+        revisionHeight: Long.fromNumber(400000),
       },
       timeoutTimestamp: Long.fromNumber(0),
     };

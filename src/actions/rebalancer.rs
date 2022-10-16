@@ -112,8 +112,8 @@ pub fn rebalance(x1: &Vec<u128>, k2: &Vec<Decimal>, d: u128) -> Result<Vec<u128>
 
 #[cfg(test)]
 pub mod test {
-    use super::{str_vec_to_dec_vec, Decimal};
-    use crate::actions::rebalancer::{perm_vec_to_dec_vec, rebalance};
+    use super::str_vec_to_dec_vec;
+    use crate::actions::rebalancer::rebalance;
 
     #[test]
     // case 1

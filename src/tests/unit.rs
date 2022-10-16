@@ -1,183 +1,317 @@
-// use cosmwasm_std::{attr, coin, from_binary, Addr};
+use cosmwasm_std::{attr, coin, from_binary, Addr};
 
-// use crate::{
-//     actions::helpers::Denoms,
-//     contract::{execute, query},
-//     messages::{
-//         execute::ExecuteMsg,
-//         query::QueryMsg,
-//         response::{
-//             GetAllDenomsResponse, GetAllPoolsResponse, GetDenomResponse, GetUserInfoResponse,
-//         },
-//     },
-//     tests::helpers::{
-//         get_instance, instantiate_and_deposit, ADDR_ALICE, ADDR_ALICE_WASM, ADDR_BOB,
-//         ASSETS_AMOUNT_INITIAL, CHANNEL_ID, FUNDS_AMOUNT, IS_CONTROLLED_REBALANCING,
-//         IS_CURRENT_PERIOD, POOLS_AMOUNT_INITIAL, SYMBOL_TOKEN_IN, SYMBOL_TOKEN_NONEX,
-//         SYMBOL_TOKEN_OUT,
-//     },
-// };
+use crate::{
+    actions::rebalancer::str_to_dec,
+    contract::{execute, query},
+    messages::{
+        execute::ExecuteMsg,
+        query::QueryMsg,
+        response::{DebugQueryAssets, DebugQueryBank, DebugQueryPoolsAndUsers, QueryPoolsAndUsers},
+    },
+    state::{Asset, AssetExtracted, PoolExtracted, User, UserExtracted},
+    tests::helpers::{
+        get_instance, instantiate_and_deposit, ADDR_ADMIN_OSMO, ADDR_ALICE_ATOM, ADDR_ALICE_JUNO,
+        ADDR_ALICE_OSMO, ADDR_BOB_ATOM, ADDR_BOB_JUNO, ADDR_BOB_OSMO, CHANNEL_ID, DENOM_ATOM,
+        DENOM_EEUR, DENOM_JUNO, FUNDS_AMOUNT, IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD,
+        POOLS_AMOUNT_INITIAL,
+    },
+};
 
-// #[test]
-// fn test_init() {
-//     let (_, _, _, res) = get_instance(ADDR_ALICE);
+#[test]
+fn test_init() {
+    let (_, _, _, res) = get_instance(ADDR_ADMIN_OSMO);
 
-//     assert_eq!(
-//         res.unwrap().attributes,
-//         vec![
-//             attr("method", "instantiate"),
-//             attr("admin", ADDR_ALICE),
-//             attr("scheduler", ADDR_ALICE),
-//             attr("pools_amount", POOLS_AMOUNT_INITIAL),
-//             attr("assets_amount", ASSETS_AMOUNT_INITIAL),
-//         ]
-//     )
-// }
+    assert_eq!(
+        res.unwrap().attributes,
+        vec![
+            attr("method", "instantiate"),
+            attr("admin", ADDR_ADMIN_OSMO),
+            attr("scheduler", ADDR_ADMIN_OSMO),
+            attr("pools_amount", POOLS_AMOUNT_INITIAL),
+        ]
+    )
+}
 
-// #[test]
-// fn test_execute_deposit() {
-//     let (_, _, _, res) =
-//         instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
+#[test]
+fn test_execute_deposit() {
+    let (_, _, _, res) =
+        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
 
-//     let user_deposited_on_current_period = if IS_CURRENT_PERIOD { FUNDS_AMOUNT } else { 0 };
-//     let user_deposited_on_next_period = if !IS_CURRENT_PERIOD { FUNDS_AMOUNT } else { 0 };
+    let user_deposited_on_current_period = if IS_CURRENT_PERIOD { FUNDS_AMOUNT } else { 0 };
+    let user_deposited_on_next_period = if !IS_CURRENT_PERIOD { FUNDS_AMOUNT } else { 0 };
 
-//     assert_eq!(
-//         res.unwrap().attributes,
-//         vec![
-//             attr("method", "deposit"),
-//             attr("user_address", ADDR_ALICE),
-//             attr(
-//                 "user_deposited_on_current_period",
-//                 user_deposited_on_current_period.to_string()
-//             ),
-//             attr(
-//                 "user_deposited_on_next_period",
-//                 user_deposited_on_next_period.to_string()
-//             ),
-//         ]
-//     )
-// }
+    assert_eq!(
+        res.unwrap().attributes,
+        vec![
+            attr("method", "deposit"),
+            attr("user_address", ADDR_ALICE_OSMO),
+            attr(
+                "user_deposited_on_current_period",
+                user_deposited_on_current_period.to_string()
+            ),
+            attr(
+                "user_deposited_on_next_period",
+                user_deposited_on_next_period.to_string()
+            ),
+        ]
+    )
+}
 
-// #[test]
-// fn test_execute_swap_tokens() {
-//     let (mut deps, env, info, _res) =
-//         instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
+#[test]
+fn test_execute_withdraw() {
+    let (mut deps, env, info, _res) =
+        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
 
-//     let msg = ExecuteMsg::SwapTokens {
-//         from: SYMBOL_TOKEN_IN.to_string(),
-//         to: SYMBOL_TOKEN_OUT.to_string(),
-//         amount: FUNDS_AMOUNT,
-//     };
+    let msg = ExecuteMsg::Withdraw {
+        amount: FUNDS_AMOUNT / 10,
+    };
 
-//     let res = execute(deps.as_mut(), env, info, msg);
+    let res = execute(deps.as_mut(), env, info, msg);
 
-//     assert_eq!(
-//         res.unwrap().attributes,
-//         vec![
-//             attr("method", "swap_tokens"),
-//             attr("from", SYMBOL_TOKEN_IN),
-//             attr("to", SYMBOL_TOKEN_OUT),
-//             attr("amount", FUNDS_AMOUNT.to_string())
-//         ]
-//     )
-// }
+    let user_deposited_on_current_period = if IS_CURRENT_PERIOD {
+        9 * FUNDS_AMOUNT / 10
+    } else {
+        0
+    };
+    let user_deposited_on_next_period = if !IS_CURRENT_PERIOD {
+        9 * FUNDS_AMOUNT / 10
+    } else {
+        0
+    };
 
-// #[test]
-// fn test_execute_ibc_transfer() {
-//     let (mut deps, env, info, _res) =
-//         instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
+    assert_eq!(
+        res.unwrap().attributes,
+        vec![
+            attr("method", "withdraw"),
+            attr("user_address", ADDR_ALICE_OSMO),
+            attr(
+                "user_deposited_on_current_period",
+                user_deposited_on_current_period.to_string()
+            ),
+            attr(
+                "user_deposited_on_next_period",
+                user_deposited_on_next_period.to_string()
+            ),
+        ]
+    )
+}
 
-//     let msg = ExecuteMsg::Transfer {
-//         receiver_addr: ADDR_ALICE_WASM.to_string(),
-//         channel_id: CHANNEL_ID.to_string(),
-//         token_amount: (FUNDS_AMOUNT / 10),
-//         token_symbol: SYMBOL_TOKEN_IN.to_string(),
-//     };
+#[test]
+fn test_execute_update_scheduler() {
+    let (mut deps, env, info, _res) = get_instance(ADDR_ADMIN_OSMO);
 
-//     let res = execute(deps.as_mut(), env, info, msg);
+    let msg = ExecuteMsg::UpdateScheduler {
+        address: ADDR_ALICE_OSMO.to_string(),
+    };
 
-//     assert_eq!(
-//         res.unwrap().attributes,
-//         vec![
-//             attr("method", "transfer"),
-//             attr("receiver_addr", ADDR_ALICE_WASM),
-//             attr("channel_id", CHANNEL_ID),
-//             attr("token_amount", &(FUNDS_AMOUNT / 10).to_string()),
-//             attr("token_symbol", SYMBOL_TOKEN_IN),
-//         ]
-//     )
-// }
+    let res = execute(deps.as_mut(), env, info, msg);
 
-// #[test]
-// fn test_query_get_denom() {
-//     let denom_token_out = Denoms::get(SYMBOL_TOKEN_OUT).unwrap();
+    assert_eq!(
+        res.unwrap().attributes,
+        vec![
+            attr("method", "update_scheduler"),
+            attr("scheduler", ADDR_ALICE_OSMO),
+        ]
+    )
+}
 
-//     let (deps, env, _, _) = get_instance(ADDR_ALICE);
-//     let msg = QueryMsg::GetDenom {
-//         asset_symbol: SYMBOL_TOKEN_OUT.to_string(),
-//     };
-//     let bin = query(deps.as_ref(), env, msg).unwrap();
-//     let res = from_binary::<GetDenomResponse>(&bin).unwrap();
+#[test]
+fn test_execute_update_pools_and_users() {
+    let (mut deps, env, mut info, _res) =
+        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
 
-//     assert_eq!(res.denom, denom_token_out);
-// }
+    // add 2nd user
+    let funds_amount = 600_000;
+    let funds_denom = DENOM_EEUR;
 
-// #[test]
-// fn test_query_get_nonexistent_denom() {
-//     let (deps, env, _, _) = get_instance(ADDR_ALICE);
-//     let msg = QueryMsg::GetDenom {
-//         asset_symbol: SYMBOL_TOKEN_NONEX.to_string(),
-//     };
-//     let bin = query(deps.as_ref(), env, msg);
+    let asset_list_bob: Vec<Asset> = vec![
+        Asset {
+            asset_denom: DENOM_ATOM.to_string(),
+            wallet_address: Addr::unchecked(ADDR_BOB_ATOM),
+            wallet_balance: 10_000_000,
+            weight: str_to_dec("0.3"),
+            amount_to_send_until_next_epoch: 0,
+        },
+        Asset {
+            asset_denom: DENOM_JUNO.to_string(),
+            wallet_address: Addr::unchecked(ADDR_BOB_JUNO),
+            wallet_balance: 10_000_000,
+            weight: str_to_dec("0.7"),
+            amount_to_send_until_next_epoch: 0,
+        },
+    ];
 
-//     bin.unwrap_err();
-// }
+    let user = User {
+        asset_list: asset_list_bob,
+        day_counter: 3,
+        deposited_on_current_period: funds_amount,
+        deposited_on_next_period: 0,
+        is_controlled_rebalancing: true,
+    };
 
-// #[test]
-// fn test_query_get_all_denoms() {
-//     let (deps, env, _, _) = get_instance(ADDR_ALICE);
-//     let msg = QueryMsg::GetAllDenoms {};
-//     let bin = query(deps.as_ref(), env, msg).unwrap();
-//     let res = from_binary::<GetAllDenomsResponse>(&bin).unwrap();
+    let msg = ExecuteMsg::Deposit { user };
+    info.funds = vec![coin(funds_amount, funds_denom)];
+    info.sender = Addr::unchecked(ADDR_BOB_OSMO);
 
-//     assert_eq!(
-//         res.all_assets_info.len(),
-//         ASSETS_AMOUNT_INITIAL.parse::<usize>().unwrap()
-//     );
-// }
+    let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
 
-// #[test]
-// fn test_query_get_all_pools() {
-//     let (deps, env, _, _) = get_instance(ADDR_ALICE);
-//     let msg = QueryMsg::GetAllPools {};
-//     let bin = query(deps.as_ref(), env, msg).unwrap();
-//     let res = from_binary::<GetAllPoolsResponse>(&bin).unwrap();
+    // update data
+    let pools: Vec<PoolExtracted> = vec![
+        PoolExtracted {
+            id: 1,
+            denom: DENOM_ATOM.to_string(),
+            price: str_to_dec("11.5"),
+            symbol: "uatom".to_string(),
+            channel_id: CHANNEL_ID.to_string(),
+            port_id: "transfer".to_string(),
+        },
+        PoolExtracted {
+            id: 497,
+            denom: DENOM_JUNO.to_string(),
+            price: str_to_dec("3.5"),
+            symbol: "ujuno".to_string(),
+            channel_id: CHANNEL_ID.to_string(),
+            port_id: "transfer".to_string(),
+        },
+        PoolExtracted {
+            id: 481,
+            denom: DENOM_EEUR.to_string(),
+            price: str_to_dec("1"),
+            symbol: "debug_ueeur".to_string(),
+            channel_id: CHANNEL_ID.to_string(),
+            port_id: "transfer".to_string(),
+        },
+    ];
 
-//     assert_eq!(
-//         res.all_pools.len(),
-//         POOLS_AMOUNT_INITIAL.parse::<usize>().unwrap()
-//     );
-// }
+    let users: Vec<UserExtracted> = vec![
+        UserExtracted {
+            osmo_address: ADDR_ALICE_OSMO.to_string(),
+            asset_list: vec![
+                AssetExtracted {
+                    asset_denom: DENOM_ATOM.to_string(),
+                    wallet_address: ADDR_ALICE_ATOM.to_string(),
+                    wallet_balance: 1,
+                },
+                AssetExtracted {
+                    asset_denom: DENOM_JUNO.to_string(),
+                    wallet_address: ADDR_ALICE_JUNO.to_string(),
+                    wallet_balance: 2,
+                },
+            ],
+        },
+        UserExtracted {
+            osmo_address: ADDR_BOB_OSMO.to_string(),
+            asset_list: vec![
+                AssetExtracted {
+                    asset_denom: DENOM_ATOM.to_string(),
+                    wallet_address: ADDR_BOB_ATOM.to_string(),
+                    wallet_balance: 10_000_001,
+                },
+                AssetExtracted {
+                    asset_denom: DENOM_JUNO.to_string(),
+                    wallet_address: ADDR_BOB_JUNO.to_string(),
+                    wallet_balance: 10_000_002,
+                },
+            ],
+        },
+    ];
 
-// #[test]
-// fn test_query_get_user_info() {
-//     let funds_denom = &Denoms::get(SYMBOL_TOKEN_IN).unwrap();
+    let msg = ExecuteMsg::UpdatePoolsAndUsers { pools, users };
+    info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
+    let res = execute(deps.as_mut(), env, info, msg);
 
-//     let (mut deps, env, mut info, _) = get_instance(ADDR_ALICE);
-//     let msg = ExecuteMsg::Deposit {
-//         is_controlled_rebalancing: IS_CONTROLLED_REBALANCING,
-//         is_current_period: IS_CURRENT_PERIOD,
-//     };
-//     info.funds = vec![coin(FUNDS_AMOUNT, funds_denom)];
-//     info.sender = Addr::unchecked(ADDR_BOB);
-//     let _res = execute(deps.as_mut(), env.clone(), info, msg);
+    assert_eq!(
+        res.unwrap().attributes,
+        vec![attr("method", "update_pools_and_users"),]
+    )
+}
 
-//     let msg = QueryMsg::GetUserInfo {
-//         address: ADDR_BOB.to_string(),
-//     };
-//     let bin = query(deps.as_ref(), env, msg).unwrap();
-//     let res = from_binary::<GetUserInfoResponse>(&bin).unwrap();
+#[test]
+fn test_execute_swap() {
+    let (mut deps, env, mut info, _res) =
+        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
 
-//     assert_eq!(res.deposited_on_current_period, FUNDS_AMOUNT);
-// }
+    let msg = ExecuteMsg::Swap {};
+    info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
+    let res = execute(deps.as_mut(), env, info, msg);
+
+    assert_eq!(res.unwrap().attributes, vec![attr("method", "swap"),])
+}
+
+#[test]
+fn test_execute_transfer() {
+    let (mut deps, env, mut info, _res) =
+        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
+
+    let msg = ExecuteMsg::Swap {};
+    info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
+    let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
+
+    let msg = ExecuteMsg::Transfer {};
+    info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
+    let res = execute(deps.as_mut(), env, info, msg);
+
+    assert_eq!(res.unwrap().attributes, vec![attr("method", "transfer"),])
+}
+
+#[test]
+fn test_query_pools_and_users() {
+    let (deps, env, mut _info, _res) =
+        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
+
+    let msg = QueryMsg::QueryPoolsAndUsers {};
+    let bin = query(deps.as_ref(), env, msg).unwrap();
+    let res = from_binary::<QueryPoolsAndUsers>(&bin).unwrap();
+
+    assert_eq!(
+        res.pools.len(),
+        POOLS_AMOUNT_INITIAL.parse::<usize>().unwrap()
+    );
+    assert_eq!(res.users.len(), 1);
+}
+
+#[test]
+fn test_debug_query_pools_and_users() {
+    let (deps, env, mut _info, _res) =
+        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
+
+    let msg = QueryMsg::DebugQueryPoolsAndUsers {};
+    let bin = query(deps.as_ref(), env, msg).unwrap();
+    let res = from_binary::<DebugQueryPoolsAndUsers>(&bin).unwrap();
+
+    assert_eq!(
+        res.pools.len(),
+        POOLS_AMOUNT_INITIAL.parse::<usize>().unwrap()
+    );
+    assert_eq!(res.users.len(), 1);
+}
+
+#[test]
+fn test_debug_query_assets() {
+    let (deps, env, mut _info, _res) =
+        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
+
+    let msg = QueryMsg::DebugQueryAssets {
+        address: ADDR_ALICE_OSMO.to_string(),
+    };
+    let bin = query(deps.as_ref(), env, msg).unwrap();
+    let res = from_binary::<DebugQueryAssets>(&bin).unwrap();
+
+    assert_eq!(res.asset_list.len(), 2);
+}
+
+#[test]
+fn test_debug_query_bank() {
+    let (mut deps, env, mut info, _res) =
+        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
+
+    let msg = ExecuteMsg::Swap {};
+    info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
+    let _res = execute(deps.as_mut(), env.clone(), info, msg);
+
+    let msg = QueryMsg::DebugQueryBank {};
+    let bin = query(deps.as_ref(), env, msg).unwrap();
+    let res = from_binary::<DebugQueryBank>(&bin).unwrap();
+
+    assert_eq!(res.global_denom_list.len(), 3);
+}

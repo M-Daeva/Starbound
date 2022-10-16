@@ -12,6 +12,7 @@ import {
   QueryPoolsAndUsersResponse,
   PoolExtracted,
   UserExtracted,
+  IbcStruct,
 } from "../helpers/interfaces";
 import {
   CONTRACT_ADDRESS,
@@ -64,7 +65,9 @@ async function init() {
   } = await getCwHelpers(dappClientStruct, CONTRACT_ADDRESS);
 
   // alice stargate helpers
-  const { _sgGrantStakeAuth } = await getSgHelpers(aliceClientStruct);
+  const { _sgGrantStakeAuth, _sgTransfer } = await getSgHelpers(
+    aliceClientStruct
+  );
 
   // dapp stargate helpers
   const { _sgDelegateFrom, _sgGetTokenBalances, _sgUpdatePoolList } =
@@ -380,6 +383,22 @@ async function init() {
     }
   }
 
+  const ibcStruct: IbcStruct = {
+    amount: 1_000,
+    dstPrefix: "juno",
+    sourceChannel: "channel-1110",
+    sourcePort: "transfer",
+  };
+
+  async function sgTransfer() {
+    try {
+      let tx = await _sgTransfer(ibcStruct);
+      l(tx);
+    } catch (error) {
+      l(error, "\n");
+    }
+  }
+
   return {
     _queryBalance,
     cwDeposit,
@@ -398,6 +417,7 @@ async function init() {
     cwDebugQueryAssets,
     cwDebugQueryBank,
     cwTransfer,
+    sgTransfer,
   };
 }
 

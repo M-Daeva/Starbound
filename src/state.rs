@@ -92,9 +92,9 @@ impl Asset {
 
     pub fn extract(&self) -> AssetExtracted {
         AssetExtracted {
-            asset_denom: (&self).asset_denom.to_string(),
-            wallet_address: (&self).wallet_address.to_string(),
-            wallet_balance: (&self).wallet_balance,
+            asset_denom: self.asset_denom.to_string(),
+            wallet_address: self.wallet_address.to_string(),
+            wallet_balance: self.wallet_balance,
         }
     }
 }
