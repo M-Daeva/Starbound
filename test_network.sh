@@ -26,7 +26,7 @@ echo contract code is $CONTRACT_CODE
 
 # instantiate smart contract
 INIT='{}'
-osmosisd tx wasm instantiate $CONTRACT_CODE "$INIT" --from "dapp" --label "osmo-swaper" $TXFLAG --admin $DAPP_ADDRESS
+osmosisd tx wasm instantiate $CONTRACT_CODE "$INIT" --from "dapp" --label "starbound-dev" $TXFLAG --admin $DAPP_ADDRESS
 
 # get smart contract address
 CONTRACT_ADDRESS=$(osmosisd query wasm list-contract-by-code $CONTRACT_CODE --node $RPC --chain-id $CHAIN_ID --output json | jq -r '.contracts[-1]')

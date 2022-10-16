@@ -1,0 +1,8 @@
+/node_modules/
+/public/build/
+.vscode
+/*.env
+/*.txt
+.DS_Store
+/keys
+*.todo
