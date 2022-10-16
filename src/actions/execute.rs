@@ -307,7 +307,11 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
             let (osmo_address, user) = x.unwrap();
 
             // user_payment - funds to buy coins
-            let mut user_payment = user.deposited_on_current_period / user.day_counter;
+            let mut user_payment = if user.day_counter == 0 {
+                0
+            } else {
+                user.deposited_on_current_period / user.day_counter
+            };
 
             // query user from storage and update parameters
             let mut user_updated = USERS.load(deps.storage, &osmo_address).unwrap();
