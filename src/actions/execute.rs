@@ -39,21 +39,33 @@ pub fn deposit(
         return Err(ContractError::FundsAreNotEqual {});
     }
 
+    // check if sum of weights is equal one
+    let weight_sum = user
+        .asset_list
+        .iter()
+        .fold(Decimal::zero(), |acc, cur| acc + cur.weight);
+
+    if weight_sum.ne(&Decimal::one()) {
+        return Err(ContractError::WeightsAreUnbalanced {});
+    }
+
+    // check if asset_list contains unique denoms
+    let mut list = user
+        .asset_list
+        .iter()
+        .map(|x| x.asset_denom.clone())
+        .collect::<Vec<String>>();
+
+    list.sort();
+    list.dedup();
+
+    if list.len() != user.asset_list.len() {
+        return Err(ContractError::DuplicatedAssets {});
+    }
+
     // check if user exists or create new
     let mut user_updated = match USERS.load(deps.storage, &info.sender) {
-        Ok(x) => {
-            // check if sum of weights is equal one
-            let weight_sum = x
-                .asset_list
-                .iter()
-                .fold(Decimal::zero(), |acc, cur| acc + cur.weight);
-
-            if weight_sum.ne(&Decimal::one()) {
-                return Err(ContractError::WeightsAreUnbalanced {});
-            } else {
-                x
-            }
-        }
+        Ok(x) => x,
         _ => User::default(),
     };
 

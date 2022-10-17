@@ -38,4 +38,7 @@ pub enum ContractError {
 
     #[error("Sum of weights is not equal one!")]
     WeightsAreUnbalanced {},
+
+    #[error("Assets are duplicated!")]
+    DuplicatedAssets {},
 }
