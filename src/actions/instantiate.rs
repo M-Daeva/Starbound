@@ -23,7 +23,7 @@ pub fn init(
     POOLS.save(
         deps.storage,
         "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
-        &Pool::new(1, u128_to_dec(13), "channel-0", "transfer", "uatom"),
+        &Pool::new(1, u128_to_dec(13), "channel-1110", "transfer", "uatom"),
     )?;
 
     // JUNO / OSMO

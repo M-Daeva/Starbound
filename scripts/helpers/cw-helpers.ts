@@ -150,9 +150,9 @@ async function getCwHelpers(
     l({ attributes: res.logs[0].events[2].attributes }, "\n");
   }
 
-  async function _cwDebugQueryAssets(address: string) {
+  async function _cwQueryAssets(address: string) {
     const res = await client.queryContractSmart(contractAddress, {
-      debug_query_assets: { address },
+      query_assets: { address },
     });
     l("\n", res, "\n");
   }
@@ -199,7 +199,7 @@ async function getCwHelpers(
     _cwDepositNew,
     _cwWithdrawNew,
     _cwUpdatePoolsAndUsers,
-    _cwDebugQueryAssets,
+    _cwQueryAssets,
     _cwDebugQueryBank,
   };
 }

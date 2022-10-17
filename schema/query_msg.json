@@ -5,6 +5,26 @@
     {
       "type": "object",
       "required": [
+        "query_assets"
+      ],
+      "properties": {
+        "query_assets": {
+          "type": "object",
+          "required": [
+            "address"
+          ],
+          "properties": {
+            "address": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
         "query_pools_and_users"
       ],
       "properties": {
@@ -22,26 +42,6 @@
       "properties": {
         "debug_query_pools_and_users": {
           "type": "object"
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "debug_query_assets"
-      ],
-      "properties": {
-        "debug_query_assets": {
-          "type": "object",
-          "required": [
-            "address"
-          ],
-          "properties": {
-            "address": {
-              "type": "string"
-            }
-          }
         }
       },
       "additionalProperties": false

@@ -80,9 +80,9 @@ const debugQueryPoolsAndUsers = async () => {
   return { tx, owner };
 };
 
-const debugQueryAssets = async (address: string) => {
-  const { cwDebugQueryAssets, owner } = await init();
-  const tx = await cwDebugQueryAssets(address);
+const queryAssets = async (address: string) => {
+  const { cwQueryAssets, owner } = await init();
+  const tx = await cwQueryAssets(address);
   return { tx, owner };
 };
 
@@ -93,5 +93,5 @@ export {
   debugQueryBank,
   queryPoolsAndUsers,
   debugQueryPoolsAndUsers,
-  debugQueryAssets,
+  queryAssets,
 };

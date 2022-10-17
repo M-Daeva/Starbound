@@ -6,7 +6,7 @@ use crate::{
     messages::{
         execute::ExecuteMsg,
         query::QueryMsg,
-        response::{DebugQueryAssets, DebugQueryBank, DebugQueryPoolsAndUsers, QueryPoolsAndUsers},
+        response::{DebugQueryBank, DebugQueryPoolsAndUsers, QueryAssets, QueryPoolsAndUsers},
     },
     state::{Asset, AssetExtracted, PoolExtracted, User, UserExtracted},
     tests::helpers::{
@@ -287,15 +287,15 @@ fn test_debug_query_pools_and_users() {
 }
 
 #[test]
-fn test_debug_query_assets() {
+fn test_query_assets() {
     let (deps, env, mut _info, _res) =
         instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
 
-    let msg = QueryMsg::DebugQueryAssets {
+    let msg = QueryMsg::QueryAssets {
         address: ADDR_ALICE_OSMO.to_string(),
     };
     let bin = query(deps.as_ref(), env, msg).unwrap();
-    let res = from_binary::<DebugQueryAssets>(&bin).unwrap();
+    let res = from_binary::<QueryAssets>(&bin).unwrap();
 
     assert_eq!(res.asset_list.len(), 2);
 }

@@ -8,7 +8,7 @@ async function main() {
     cwDepositBob,
     cwWithdrawAlice,
     cwMockUpdatePoolsAndUsers,
-    cwDebugQueryAssets,
+    cwQueryAssets,
     cwSwap,
     cwDebugQueryBank,
     cwTransfer,
@@ -20,28 +20,28 @@ async function main() {
   await cwDepositAlice();
   await cwDepositBob();
   await cwDebugQueryPoolsAndUsers();
-  await cwDebugQueryAssets();
+  await cwQueryAssets();
   await cwDebugQueryBank();
 
   await cwWithdrawAlice();
   await cwDebugQueryPoolsAndUsers();
-  await cwDebugQueryAssets();
+  await cwQueryAssets();
   await cwDebugQueryBank();
 
   let poolsAndUsers = await cwQueryPoolsAndUsers();
   await cwMockUpdatePoolsAndUsers();
   await cwDebugQueryPoolsAndUsers();
-  await cwDebugQueryAssets();
+  await cwQueryAssets();
   await cwDebugQueryBank();
 
   await cwSwap();
   await cwDebugQueryPoolsAndUsers();
-  await cwDebugQueryAssets();
+  await cwQueryAssets();
   await cwDebugQueryBank();
 
   await cwTransfer();
   await cwDebugQueryPoolsAndUsers();
-  await cwDebugQueryAssets();
+  await cwQueryAssets();
   await cwDebugQueryBank();
 
   let cnt = 3;
@@ -49,12 +49,12 @@ async function main() {
   while (cnt-- !== 0) {
     await cwSwap();
     await cwDebugQueryPoolsAndUsers();
-    await cwDebugQueryAssets();
+    await cwQueryAssets();
     await cwDebugQueryBank();
 
     await cwTransfer();
     await cwDebugQueryPoolsAndUsers();
-    await cwDebugQueryAssets();
+    await cwQueryAssets();
     await cwDebugQueryBank();
   }
 }

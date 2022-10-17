@@ -6,6 +6,12 @@ use crate::state::{Asset, PoolExtracted, User, UserExtracted};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
+pub struct QueryAssets {
+    pub asset_list: Vec<Asset>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct QueryPoolsAndUsers {
     pub users: Vec<UserExtracted>,
     pub pools: Vec<PoolExtracted>,
@@ -16,12 +22,6 @@ pub struct QueryPoolsAndUsers {
 pub struct DebugQueryPoolsAndUsers {
     pub users: Vec<User>,
     pub pools: Vec<PoolExtracted>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct DebugQueryAssets {
-    pub asset_list: Vec<Asset>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

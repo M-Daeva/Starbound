@@ -25,7 +25,7 @@ async function init() {
     _cwQueryPoolsAndUsers,
     _cwDebugQueryBank,
     _cwDebugQueryPoolsAndUsers,
-    _cwDebugQueryAssets,
+    _cwQueryAssets,
     owner,
   } = await getCwHelpers(userClientStruct, CONTRACT_ADDRESS);
 
@@ -85,9 +85,9 @@ async function init() {
     }
   }
 
-  async function cwDebugQueryAssets(address: string) {
+  async function cwQueryAssets(address: string) {
     try {
-      return await _cwDebugQueryAssets(address);
+      return await _cwQueryAssets(address);
     } catch (error) {
       l(error, "\n");
     }
@@ -100,7 +100,7 @@ async function init() {
     cwDebugQueryBank,
     cwQueryPoolsAndUsers,
     cwDebugQueryPoolsAndUsers,
-    cwDebugQueryAssets,
+    cwQueryAssets,
     owner,
   };
 }

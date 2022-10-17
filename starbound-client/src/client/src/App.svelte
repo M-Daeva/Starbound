@@ -8,7 +8,7 @@
     deposit,
     withdraw,
     grantStakeAuth,
-    debugQueryAssets,
+    queryAssets,
   } from "./services/wallet";
   import { onMount } from "svelte";
   import Radio from "./components/Radio.svelte";
@@ -70,7 +70,7 @@
     textAreaContent = "";
 
     const { owner, tx } = await debugQueryPoolsAndUsers();
-    const { tx: tx2 } = await debugQueryAssets(owner);
+    const { tx: tx2 } = await queryAssets(owner);
     l({ tx });
     l({ tx2 });
 

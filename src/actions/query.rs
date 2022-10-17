@@ -3,10 +3,19 @@ use cosmwasm_std::{to_binary, Binary, Deps, Env, Order, StdResult};
 
 use crate::{
     messages::response::{
-        DebugQueryAssets, DebugQueryBank, DebugQueryPoolsAndUsers, QueryPoolsAndUsers,
+        DebugQueryBank, DebugQueryPoolsAndUsers, QueryAssets, QueryPoolsAndUsers,
     },
     state::{PoolExtracted, User, UserExtracted, POOLS, STATE, USERS},
 };
+
+pub fn query_assets(deps: Deps, _env: Env, address: String) -> StdResult<Binary> {
+    let address_validated = deps.api.addr_validate(&address)?;
+    let user = USERS.load(deps.storage, &address_validated)?;
+
+    to_binary(&QueryAssets {
+        asset_list: user.asset_list,
+    })
+}
 
 pub fn query_pools_and_users(deps: Deps, _env: Env) -> StdResult<Binary> {
     let users = USERS
@@ -74,15 +83,6 @@ pub fn debug_query_pools_and_users(deps: Deps, _env: Env) -> StdResult<Binary> {
         .collect();
 
     to_binary(&DebugQueryPoolsAndUsers { users, pools })
-}
-
-pub fn debug_query_assets(deps: Deps, _env: Env, address: String) -> StdResult<Binary> {
-    let address_validated = deps.api.addr_validate(&address)?;
-    let user = USERS.load(deps.storage, &address_validated)?;
-
-    to_binary(&DebugQueryAssets {
-        asset_list: user.asset_list,
-    })
 }
 
 pub fn debug_query_bank(deps: Deps, env: Env) -> StdResult<Binary> {
