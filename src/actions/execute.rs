@@ -426,6 +426,11 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         let token_out_min_amount = String::from("1");
         let amount = global_delta_cost_list[i];
 
+        // skip if no funds
+        if amount == 0 {
+            continue;
+        }
+
         let pool = POOLS.load(deps.storage, global_denom)?;
 
         // swap eeur to osmo anyway
@@ -571,21 +576,24 @@ pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
                     })
                     .collect();
 
-                // execute ibc transfer
-                let block = IbcTimeoutBlock {
-                    revision: 5,
-                    height: 2000000,
-                };
-                let pool = POOLS.load(deps.storage, &user_asset.asset_denom).unwrap();
+                // skip if no funds
+                if amount_to_send_until_next_epoch != 0 {
+                    // execute ibc transfer
+                    let block = IbcTimeoutBlock {
+                        revision: 5,
+                        height: 2000000,
+                    };
+                    let pool = POOLS.load(deps.storage, &user_asset.asset_denom).unwrap();
 
-                let msg = CosmosMsg::Ibc(IbcMsg::Transfer {
-                    channel_id: pool.channel_id,
-                    to_address: user_asset.wallet_address.to_string(),
-                    amount: coin(amount_to_send_until_next_epoch, &user_asset.asset_denom),
-                    timeout: IbcTimeout::with_block(block),
-                });
+                    let msg = CosmosMsg::Ibc(IbcMsg::Transfer {
+                        channel_id: pool.channel_id,
+                        to_address: user_asset.wallet_address.to_string(),
+                        amount: coin(amount_to_send_until_next_epoch, &user_asset.asset_denom),
+                        timeout: IbcTimeout::with_block(block),
+                    });
 
-                msg_list.push(msg);
+                    msg_list.push(msg);
+                }
 
                 // fill asset_list_updated
                 let mut asset_updated = user_asset.clone();

@@ -26,7 +26,7 @@ async function process() {
     await cwMockUpdatePoolsAndUsers(poolsAndUsers);
     await cwSwap();
     await cwTransfer();
-  }, 60_000);
+  }, 30_000);
 }
 
 express()
