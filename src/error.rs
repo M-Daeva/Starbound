@@ -35,4 +35,7 @@ pub enum ContractError {
 
     #[error("Pool is not updated!")]
     PoolIsNotUpdated {},
+
+    #[error("Sum of weights is not equal one!")]
+    WeightsAreUnbalanced {},
 }

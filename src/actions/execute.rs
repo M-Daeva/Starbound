@@ -1,5 +1,3 @@
-use std::ops::Mul;
-
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::{
     coin, Addr, BankMsg, CosmosMsg, Decimal, DepsMut, Env, IbcMsg, IbcTimeout, IbcTimeoutBlock,
@@ -9,6 +7,8 @@ use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as PoolCoin,
     osmosis::gamm::v1beta1::{MsgSwapExactAmountIn, SwapAmountInRoute},
 };
+
+use std::ops::Mul;
 
 use crate::{
     actions::{
@@ -41,7 +41,19 @@ pub fn deposit(
 
     // check if user exists or create new
     let mut user_updated = match USERS.load(deps.storage, &info.sender) {
-        Ok(x) => x,
+        Ok(x) => {
+            // check if sum of weights is equal one
+            let weight_sum = x
+                .asset_list
+                .iter()
+                .fold(Decimal::zero(), |acc, cur| acc + cur.weight);
+
+            if weight_sum.ne(&Decimal::one()) {
+                return Err(ContractError::WeightsAreUnbalanced {});
+            } else {
+                x
+            }
+        }
         _ => User::default(),
     };
 
@@ -566,7 +578,6 @@ pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
                 // fill asset_list_updated
                 let mut asset_updated = user_asset.clone();
 
-                // asset_updated.amount_to_send_until_next_epoch = amount_to_send_until_next_epoch;
                 asset_updated.amount_to_send_until_next_epoch = 0;
                 asset_list_updated.push(asset_updated);
             }
@@ -583,7 +594,7 @@ pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
 
     // update bank
     STATE.update(deps.storage, |mut x| -> Result<_, ContractError> {
-        x.global_delta_balance_list = vec![]; // do we need it?
+        x.global_delta_balance_list = vec![];
         x.global_delta_cost_list = vec![];
         Ok(x)
     })?;

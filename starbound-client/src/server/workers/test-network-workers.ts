@@ -117,73 +117,23 @@ async function init() {
     poolsAndUsers: QueryPoolsAndUsersResponse
   ) {
     l("cwMockUpdatePoolsAndUsers");
+
+    let { pools, users } = poolsAndUsers;
+
+    pools = pools.map((pool) => {
+      return { ...pool, price: `${1.1 * +pool.price}` };
+    });
+
+    users = users.map((user) => {
+      let asset_list = user.asset_list.map((asset) => {
+        return { ...asset, wallet_balance: `${+asset.wallet_balance + 1}` };
+      });
+
+      return { ...user, asset_list };
+    });
+
     try {
-      let data: { pools: PoolExtracted[]; users: UserExtracted[] } = {
-        pools: [
-          {
-            id: "1",
-            denom:
-              "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
-            price: "11.5",
-            symbol: "uatom",
-            channel_id: "channel-1110",
-            port_id: "transfer",
-          },
-          {
-            id: "497",
-            denom:
-              "ibc/46B44899322F3CD854D2D46DEEF881958467CDD4B3B10086DA49296BBED94BED",
-            price: "3.5",
-            symbol: "ujuno",
-            channel_id: "channel-1110",
-            port_id: "transfer",
-          },
-          {
-            id: "481",
-            denom:
-              "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F",
-            price: "1",
-            symbol: "debug_ueeur",
-            channel_id: "debug_ch_id",
-            port_id: "transfer",
-          },
-        ],
-        users: [
-          {
-            osmo_address: "osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx",
-            asset_list: [
-              {
-                asset_denom: DENOMS.ATOM,
-                wallet_address: "cosmos1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyklkm75",
-                wallet_balance: "1",
-              },
-              {
-                asset_denom: DENOMS.JUNO,
-                wallet_address: "juno1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyqd4qeg",
-                wallet_balance: "2",
-              },
-            ],
-          },
-          // {
-          //   osmo_address: "osmo1chgwz55h9kepjq0fkj5supl2ta3nwu63e3ds8x",
-          //   asset_list: [
-          //     {
-          //       asset_denom: DENOMS.ATOM,
-          //       wallet_address: "cosmos1chgwz55h9kepjq0fkj5supl2ta3nwu63327q35",
-          //       wallet_balance: "10000001",
-          //     },
-
-          //     {
-          //       asset_denom: DENOMS.JUNO,
-          //       wallet_address: "juno1chgwz55h9kepjq0fkj5supl2ta3nwu638camkg",
-          //       wallet_balance: "10000002",
-          //     },
-          //   ],
-          // },
-        ],
-      };
-
-      await _cwUpdatePoolsAndUsers(data.pools, data.users);
+      await _cwUpdatePoolsAndUsers(pools, users);
     } catch (error) {
       l(error, "\n");
     }
