@@ -372,6 +372,15 @@ const DENOMS: AssetDenom = {
   CUDOS: "ibc/E09ED39F390EC51FA9F3F69BEA08B5BBE6A48B3057B2B1C3467FAAE9E58B021B",
 };
 
+interface TransferParams {
+  channel_id: string;
+  to: string;
+  amount: string;
+  denom: string;
+  block_revision: string;
+  block_height: string;
+}
+
 export { DENOMS };
 
 export type {
@@ -399,4 +408,5 @@ export type {
   ValidatorResponse,
   AssetSymbol,
   SwapStruct,
+  TransferParams,
 };

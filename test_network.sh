@@ -2,7 +2,8 @@
 
 PREFIX="osmo"
 CHAIN_ID="osmo-test-4"
-RPC="https://testnet-rpc.osmosis.zone:443"
+# RPC="https://testnet-rpc.osmosis.zone:443"
+RPC="https://osmosis-testnet-rpc.allthatnode.com:26657"
 # osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx
 SEED_ALICE=$(jq -r '.ALICE_SEED' ../.test-wallets/test_wallets.json)
 # osmo1chgwz55h9kepjq0fkj5supl2ta3nwu63e3ds8x
@@ -44,4 +45,6 @@ R="{
 \"SEED_DAPP\":\"$SEED_DAPP\"
 }"
 echo $R > config/test-network-config.json
+cp config/test-network-config.json ../starbound-client/src/client/config/test-network-config.json
+cp config/test-network-config.json ../starbound-client/src/server/config/test-network-config.json
 cd $DIR

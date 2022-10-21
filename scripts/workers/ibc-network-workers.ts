@@ -1,7 +1,13 @@
 import { l, SEP } from "../utils";
 import { getCwHelpers } from "../helpers/cw-helpers";
 import { getSgHelpers } from "../helpers/sg-helpers";
-import { IbcStruct, SwapStruct, ClientStruct } from "../helpers/interfaces";
+import {
+  IbcStruct,
+  SwapStruct,
+  ClientStruct,
+  TransferParams,
+  DENOMS,
+} from "../helpers/interfaces";
 import {
   CONTRACT_ADDRESS,
   PREFIX,
@@ -34,8 +40,13 @@ async function init() {
     _sgSwap,
     _sgTransfer,
   } = await getSgHelpers(clientStruct);
-  const { _cwDeposit, _cwGetBankBalance, _cwSwap, _cwTransfer } =
-    await getCwHelpers(clientStruct, CONTRACT_ADDRESS);
+  const {
+    _cwDeposit,
+    _cwGetBankBalance,
+    _cwSwap,
+    _cwTransfer,
+    _cwMultiTransfer,
+  } = await getCwHelpers(clientStruct, CONTRACT_ADDRESS);
 
   async function sgTransfer() {
     l(SEP, "sending ibc transfer...");
@@ -72,33 +83,66 @@ async function init() {
     }
   }
 
-  async function cwTransfer() {
-    l(SEP, "sending ibc transfer...");
-    try {
-      await _cwTransfer(1_000);
-      await _queryBalance();
-    } catch (error) {
-      l(error, "\n");
-    }
-  }
+  // async function cwTransfer() {
+  //   l(SEP, "sending ibc transfer...");
+  //   try {
+  //     await _cwTransfer(1_000);
+  //     await _queryBalance();
+  //   } catch (error) {
+  //     l(error, "\n");
+  //   }
+  // }
 
-  const swapStruct: SwapStruct = {
-    from: "OSMO",
-    to: "ATOM",
-    amount: 1_000,
+  // const swapStruct: SwapStruct = {
+  //   from: "OSMO",
+  //   to: "ATOM",
+  //   amount: 1_000,
+  // };
+
+  // async function cwSwap() {
+  //   l(SEP, "executing swap...");
+  //   try {
+  //     await _cwSwap(swapStruct);
+  //     await _queryBalance();
+  //   } catch (error) {
+  //     l(error, "\n");
+  //   }
+  // }
+
+  const junoChannel = "channel-0";
+  const junoAddr = "juno1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyqd4qeg";
+  const junoRevision = "5";
+  const junoHeight = "500000";
+  let junoAmount = "1";
+
+  let junoParams: TransferParams = {
+    channel_id: junoChannel,
+    to: junoAddr,
+    amount: junoAmount,
+    denom: DENOMS.JUNO,
+    block_revision: junoRevision,
+    block_height: junoHeight,
   };
 
-  async function cwSwap() {
-    l(SEP, "executing swap...");
+  let params: TransferParams[] = [junoParams, junoParams];
+
+  async function cwMultiTransfer() {
+    l("cwMultiTransfer");
     try {
-      await _cwSwap(swapStruct);
-      await _queryBalance();
+      await _cwMultiTransfer(params);
     } catch (error) {
       l(error, "\n");
     }
   }
 
-  return { sgTransfer, sgSwap, _queryBalance, cwDeposit, cwTransfer, cwSwap };
+  return {
+    sgTransfer,
+    sgSwap,
+    _queryBalance,
+    cwDeposit,
+    //  cwTransfer, cwSwap
+    cwMultiTransfer,
+  };
 }
 
 export { init };

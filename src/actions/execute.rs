@@ -3,11 +3,11 @@ use cosmwasm_std::{
     coin, Addr, BankMsg, CosmosMsg, Decimal, DepsMut, Env, IbcMsg, IbcTimeout, IbcTimeoutBlock,
     MessageInfo, Order, Response,
 };
+
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as PoolCoin,
     osmosis::gamm::v1beta1::{MsgSwapExactAmountIn, SwapAmountInRoute},
 };
-
 use std::ops::Mul;
 
 use crate::{
@@ -16,7 +16,7 @@ use crate::{
         vectors::{vec_div, vec_mul, vec_mul_by_num},
     },
     error::ContractError,
-    state::{Asset, Pool, PoolExtracted, User, UserExtracted, POOLS, STATE, USERS},
+    state::{Asset, Pool, PoolExtracted, TransferParams, User, UserExtracted, POOLS, STATE, USERS},
 };
 
 pub fn deposit(
@@ -622,4 +622,50 @@ pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
     Ok(Response::new()
         .add_messages(msg_list)
         .add_attributes(vec![("method", "transfer")]))
+}
+
+// function for debugging ibc transfers
+// single and multiple message options provided
+pub fn multi_transfer(
+    _deps: DepsMut,
+    env: Env,
+    _info: MessageInfo,
+    params: Vec<TransferParams>,
+) -> Result<Response, ContractError> {
+    let length = &params.len();
+
+    match length {
+        1 => {
+            let param = &params[0];
+
+            let msg = CosmosMsg::Ibc(IbcMsg::Transfer {
+                channel_id: param.channel_id.clone(),
+                to_address: param.to.clone(),
+                amount: coin(param.amount, param.denom.clone()),
+                timeout: env.block.time.plus_seconds(300).into(),
+            });
+
+            Ok(Response::new()
+                .add_message(msg)
+                .add_attributes(vec![("method", "multi_transfer")]))
+        }
+        _ => {
+            let mut msg_list = Vec::<CosmosMsg>::new();
+
+            for param in params {
+                let msg = IbcMsg::Transfer {
+                    channel_id: param.channel_id,
+                    to_address: param.to,
+                    amount: coin(param.amount, param.denom),
+                    timeout: env.block.time.plus_seconds(300).into(),
+                };
+
+                msg_list.push(msg.into());
+            }
+
+            Ok(Response::new()
+                .add_messages(msg_list)
+                .add_attributes(vec![("method", "multi_transfer")]))
+        }
+    }
 }

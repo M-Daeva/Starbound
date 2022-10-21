@@ -9,6 +9,7 @@ import {
   PoolExtracted,
   UserExtracted,
   QueryPoolsAndUsersResponse,
+  TransferParams,
 } from "./interfaces";
 
 async function getCwHelpers(
@@ -186,6 +187,17 @@ async function getCwHelpers(
     l({ attributes: res.logs[0].events[2].attributes }, "\n");
   }
 
+  async function _cwMultiTransfer(transferParams: TransferParams[]) {
+    const res = await client.execute(
+      owner,
+      contractAddress,
+      { multi_transfer: { params: transferParams } },
+      fee,
+      ""
+    );
+    l({ attributes: res.logs[0].events[2].attributes }, "\n");
+  }
+
   return {
     owner,
     _cwGetBankBalance,
@@ -201,6 +213,7 @@ async function getCwHelpers(
     _cwUpdatePoolsAndUsers,
     _cwQueryAssets,
     _cwDebugQueryBank,
+    _cwMultiTransfer,
   };
 }
 

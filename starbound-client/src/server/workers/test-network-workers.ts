@@ -1,4 +1,5 @@
 import { l } from "../utils";
+import { coin } from "@cosmjs/stargate";
 import { _mockUpdatePoolsAndUsers } from "../helpers/api-helpers";
 import { getCwHelpers } from "../helpers/cw-helpers";
 import { DENOMS } from "../helpers/interfaces";
@@ -12,6 +13,8 @@ import {
   QueryPoolsAndUsersResponse,
   PoolExtracted,
   UserExtracted,
+  TransferParams,
+  IbcStruct,
 } from "../helpers/interfaces";
 import {
   CONTRACT_ADDRESS,
@@ -47,11 +50,18 @@ async function init() {
     _cwQueryAssets,
     _cwDebugQueryBank,
     _cwTransfer,
+    _cwMultiTransfer,
+    _cwSgSend,
   } = await getCwHelpers(dappClientStruct, CONTRACT_ADDRESS);
 
   // dapp stargate helpers
-  const { _sgDelegateFrom, _sgGetTokenBalances, _sgUpdatePoolList } =
-    await getSgHelpers(dappClientStruct);
+  const {
+    _sgDelegateFrom,
+    _sgGetTokenBalances,
+    _sgUpdatePoolList,
+    _sgTransfer,
+    _sgSend,
+  } = await getSgHelpers(dappClientStruct);
 
   async function sgUpdatePoolList() {
     let pools = await _sgUpdatePoolList();
@@ -179,6 +189,66 @@ async function init() {
     }
   }
 
+  const junoChannel = "channel-1110";
+  const junoAddr = "juno1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyqd4qeg";
+  const junoRevision = "5";
+  const junoHeight = "500000";
+  let junoAmount = "1";
+
+  let junoParams: TransferParams = {
+    channel_id: junoChannel,
+    to: junoAddr,
+    amount: junoAmount,
+    denom: DENOMS.JUNO,
+    block_revision: junoRevision,
+    block_height: junoHeight,
+  };
+
+  let params: TransferParams[] = [junoParams, junoParams];
+
+  async function cwMultiTransfer() {
+    l("cwMultiTransfer");
+    try {
+      await _cwMultiTransfer(params);
+    } catch (error) {
+      l(error, "\n");
+    }
+  }
+
+  let ibcStruct: IbcStruct = {
+    amount: 1,
+    dstPrefix: "juno",
+    sourceChannel: junoChannel,
+    sourcePort: "transfer",
+  };
+
+  async function sgTransfer() {
+    try {
+      const tx = await _sgTransfer(ibcStruct);
+      l(tx, "\n");
+    } catch (error) {
+      l(error, "\n");
+    }
+  }
+
+  async function cwSgSend() {
+    try {
+      const tx = await _cwSgSend();
+      l(tx, "\n");
+    } catch (error) {
+      l(error, "\n");
+    }
+  }
+
+  async function sgSend() {
+    try {
+      const tx = await _sgSend(CONTRACT_ADDRESS, coin(500_000, "uosmo"));
+      l(tx, "\n");
+    } catch (error) {
+      l(error, "\n");
+    }
+  }
+
   return {
     _queryBalance,
     cwSwap,
@@ -192,6 +262,10 @@ async function init() {
     cwQueryAssets,
     cwDebugQueryBank,
     cwTransfer,
+    cwMultiTransfer,
+    sgTransfer,
+    cwSgSend,
+    sgSend,
   };
 }
 

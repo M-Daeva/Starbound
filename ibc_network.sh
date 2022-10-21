@@ -11,9 +11,11 @@ SEED_ALICE="harsh adult scrub stadium solution impulse company agree tomorrow po
 SEED_BOB=$(jq -r '.BOB_SEED' ../.test-wallets/test_wallets.json)
 # osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt
 SEED_DAPP=$(jq -r '.JOHN_SEED' ../.test-wallets/test_wallets.json)
+DAPP_ADDRESS="osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt"
 
 TXFLAG="--gas-prices 0.1uosmo --gas auto --gas-adjustment 1.3 -y -b block --node $RPC --chain-id $CHAIN_ID"
 BINARY="docker exec -i osmosis osmosisd"
+BINARY2="docker exec -i wasmd wasmd"
 DIR=$(pwd)
 TESTNET_DIR="$DIR/../wba-twt-testnet"
 DIR_NAME=$(basename "$PWD")
@@ -44,18 +46,6 @@ echo "starting hermes..."
 ./hermes/start.sh &> /dev/null &
 sleep 20
 
-# open ibc channel
-echo $SEP
-echo "openning ibc channel..."
-hermes --config ./hermes/config.toml create channel --a-chain $A_CHAIN \
-  --a-connection $A_CONNECTION --a-port $A_PORT --b-port $B_PORT
-
-# run chain tests
-echo $SEP
-echo "testing chain..."
-cd $DIR/scripts
-npm run ibc-network-test-chain
-
 # move binary to docker container
 echo $SEP
 echo "moving binary to docker container..."
@@ -76,13 +66,28 @@ echo $SEP
 echo "instantiating contract..."
 echo "enter password (1234567890)"
 INIT='{}'
-$BINARY tx wasm instantiate $CONTRACT_CODE $INIT --from relayer2 --label "starbound-dev" $TXFLAG --no-admin
+$BINARY tx wasm instantiate $CONTRACT_CODE $INIT --from relayer2 --label "starbound-dev" $TXFLAG --admin $DAPP_ADDRESS
 
 # get smart contract address
 echo $SEP
 echo "getting contract address..."
 CONTRACT_ADDRESS=$($BINARY query wasm list-contract-by-code $CONTRACT_CODE --node $RPC --chain-id $CHAIN_ID --output json | jq -r '.contracts[-1]')
 echo contract address is $CONTRACT_ADDRESS
+
+# get smart contract port_id
+echo $SEP
+echo "getting contract port_id..."
+$BINARY q wasm contract $CONTRACT_ADDRESS --node $RPC --chain-id $CHAIN_ID
+
+
+cd $TESTNET_DIR
+# open ibc channel
+echo $SEP
+echo "openning ibc channel..."
+hermes --config ./hermes/config.toml create channel --a-chain $A_CHAIN \
+  --a-connection $A_CONNECTION --a-port wasm.$CONTRACT_ADDRESS --b-port $B_PORT \
+	--order unordered --channel-version "ics20-1"
+	
 
 # write data to file
 echo $SEP
@@ -101,12 +106,19 @@ R="{
 echo $R > config/ibc-network-config.json
 cd $DIR
 
+# send some osmo to contract
+echo $SEP
+echo "sending osmo to contract..."
+$BINARY tx bank send $VALIDATOR_ADDR $CONTRACT_ADDRESS "1000000uosmo" --from relayer2 $TXFLAG
+$BINARY query bank balances $CONTRACT_ADDRESS
+
 # run contract tests
 echo $SEP
 echo "testing contract..."
 cd $DIR/scripts
-npm run ibc-network-test-contract
+ts-node ./tests/ibc-network-test.ts
 # docker exec -i wasmd wasmd query bank balances wasm1ll3s59aawh0qydpz2q3xmqf6pwzmj24t8l43cp
+$BINARY query bank balances $CONTRACT_ADDRESS
 
 # stop hermes
 echo $SEP

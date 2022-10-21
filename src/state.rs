@@ -1,4 +1,5 @@
-use cosmwasm_std::{Addr, Decimal};
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::{Addr, Decimal, IbcEndpoint, Uint128, Uint64};
 use cw_storage_plus::{Item, Map};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -121,3 +122,46 @@ pub struct AssetExtracted {
     pub wallet_address: String,
     pub wallet_balance: u128,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+pub struct TransferParams {
+    pub channel_id: String,
+    pub to: String,
+    pub amount: u128,
+    pub denom: String,
+    pub block_revision: u128,
+    pub block_height: u128,
+}
+
+// IBC
+
+pub const CHANNEL_INFO: Map<&str, ChannelInfo> = Map::new("channel_info");
+#[cw_serde]
+pub struct ChannelInfo {
+    /// id of this channel
+    pub id: String,
+    /// the remote channel/port we connect to
+    pub counterparty_endpoint: IbcEndpoint,
+    /// the connection this exists on (you can use to query client/consensus info)
+    pub connection_id: String,
+}
+
+pub const ORDERS: Map<(&str, u64), Order> = Map::new("swap_orders");
+#[cw_serde]
+pub struct Order {
+    pub sender: String,
+    pub amount: Uint128,
+    pub denom: String,
+    pub out_denom: String,
+    pub min_amount: Uint128,
+    /// Transfer sequence
+    pub sequence: Uint64,
+}
+
+pub const REPLY_STATES: Map<u64, MsgReplyState> = Map::new("reply_states");
+#[cw_serde]
+pub struct MsgReplyState {
+    pub channel: String,
+}
+
+pub const CHANNEL_DENOM: Map<&str, String> = Map::new("channel_denom");

@@ -117,6 +117,29 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "multi_transfer"
+      ],
+      "properties": {
+        "multi_transfer": {
+          "type": "object",
+          "required": [
+            "params"
+          ],
+          "properties": {
+            "params": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/TransferParams"
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
     }
   ],
   "definitions": {
@@ -209,6 +232,43 @@
           "$ref": "#/definitions/Decimal"
         },
         "symbol": {
+          "type": "string"
+        }
+      }
+    },
+    "TransferParams": {
+      "type": "object",
+      "required": [
+        "amount",
+        "block_height",
+        "block_revision",
+        "channel_id",
+        "denom",
+        "to"
+      ],
+      "properties": {
+        "amount": {
+          "type": "integer",
+          "format": "uint128",
+          "minimum": 0.0
+        },
+        "block_height": {
+          "type": "integer",
+          "format": "uint128",
+          "minimum": 0.0
+        },
+        "block_revision": {
+          "type": "integer",
+          "format": "uint128",
+          "minimum": 0.0
+        },
+        "channel_id": {
+          "type": "string"
+        },
+        "denom": {
+          "type": "string"
+        },
+        "to": {
           "type": "string"
         }
       }

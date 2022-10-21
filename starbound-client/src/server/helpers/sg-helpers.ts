@@ -1,4 +1,9 @@
-import { coin, DeliverTxResponse } from "@cosmjs/stargate";
+import {
+  coin,
+  DeliverTxResponse,
+  MsgSendEncodeObject,
+  Coin,
+} from "@cosmjs/stargate";
 import { MsgSwapExactAmountIn } from "osmojs/types/proto/osmosis/gamm/v1beta1/tx";
 import { MsgTransfer } from "osmojs/types/proto/ibc/applications/transfer/v1/tx";
 import { Long } from "@osmonauts/helpers";
@@ -84,9 +89,40 @@ interface PoolInfo {
 async function getSgHelpers(clientStruct: ClientStruct) {
   const { client, owner } = await getSgClient(clientStruct);
 
+  // async function _sgTransfer(ibcStruct: IbcStruct) {
+  //   const { amount, dstPrefix, sourceChannel, sourcePort } = ibcStruct;
+  //   const receiver = getAddrByPrefix(owner, dstPrefix);
+
+  //   l({ sender: owner, receiver });
+
+  //   const height = await client.getHeight();
+
+  //   const msgIbcTransfer: MsgTransfer = {
+  //     sender: owner,
+  //     receiver,
+  //     token: coin(amount, DENOMS.OSMO),
+  //     sourceChannel,
+  //     sourcePort,
+  //     timeoutHeight: {
+  //       revisionNumber: Long.fromNumber(5),
+  //       revisionHeight: Long.fromNumber(height),
+  //     },
+  //     timeoutTimestamp: Long.fromNumber(0),
+  //   };
+
+  //   const msg: EncodeObject = {
+  //     typeUrl: "/ibc.applications.transfer.v1.MsgTransfer",
+  //     value: msgIbcTransfer,
+  //   };
+
+  //   const tx = await client.signAndBroadcast(owner, [msg, msg], fee);
+
+  //   return tx;
+  // }
+
   async function _sgTransfer(ibcStruct: IbcStruct) {
     const { amount, dstPrefix, sourceChannel, sourcePort } = ibcStruct;
-    const receiver = getAddrByPrefix(owner, dstPrefix);
+    const receiver = "juno1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyqd4qeg";
 
     l({ sender: owner, receiver });
 
@@ -95,11 +131,11 @@ async function getSgHelpers(clientStruct: ClientStruct) {
     const msgIbcTransfer: MsgTransfer = {
       sender: owner,
       receiver,
-      token: coin(amount, DENOMS.OSMO),
+      token: coin(amount, DENOMS.JUNO),
       sourceChannel,
       sourcePort,
       timeoutHeight: {
-        revisionNumber: Long.fromNumber(1),
+        revisionNumber: Long.fromNumber(5),
         revisionHeight: Long.fromNumber(height),
       },
       timeoutTimestamp: Long.fromNumber(0),
@@ -110,7 +146,7 @@ async function getSgHelpers(clientStruct: ClientStruct) {
       value: msgIbcTransfer,
     };
 
-    const tx = await client.signAndBroadcast(owner, [msg], fee);
+    const tx = await client.signAndBroadcast(owner, [msg, msg], fee);
 
     return tx;
   }
@@ -338,6 +374,21 @@ async function getSgHelpers(clientStruct: ClientStruct) {
     return valid_pools;
   }
 
+  async function _sgSend(recipient: string, amount: Coin) {
+    const msg: MsgSendEncodeObject = {
+      typeUrl: "/cosmos.bank.v1beta1.MsgSend",
+      value: {
+        fromAddress: owner,
+        toAddress: recipient,
+        amount: [amount],
+      },
+    };
+
+    const tx = await client.signAndBroadcast(owner, [msg], fee);
+
+    return tx;
+  }
+
   return {
     owner,
     _sgSwap,
@@ -346,6 +397,7 @@ async function getSgHelpers(clientStruct: ClientStruct) {
     _sgDelegateFrom,
     _sgGetTokenBalances,
     _sgUpdatePoolList,
+    _sgSend,
   };
 }
 

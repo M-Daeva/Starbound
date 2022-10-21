@@ -1,4 +1,4 @@
-use crate::state::{PoolExtracted, User, UserExtracted};
+use crate::state::{PoolExtracted, TransferParams, User, UserExtracted};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -20,4 +20,7 @@ pub enum ExecuteMsg {
     },
     Swap {},
     Transfer {},
+    MultiTransfer {
+        params: Vec<TransferParams>,
+    },
 }

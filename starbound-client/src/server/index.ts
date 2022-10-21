@@ -14,19 +14,27 @@ async function process() {
     cwMockUpdatePoolsAndUsers,
     cwQueryPoolsAndUsers,
     sgDelegateFrom,
+    cwMultiTransfer,
+    sgTransfer,
+    cwSgSend,
+    sgSend,
   } = await init();
 
   // let poolsAndUsers = await cwQueryPoolsAndUsers();
   // await cwMockUpdatePoolsAndUsers(poolsAndUsers);
   // await cwSwap();
-  // await cwTransfer();
 
-  setInterval(async () => {
-    let poolsAndUsers = await cwQueryPoolsAndUsers();
-    await cwMockUpdatePoolsAndUsers(poolsAndUsers);
-    await cwSwap();
-    await cwTransfer();
-  }, 30_000);
+  await cwMultiTransfer();
+
+  // await cwTransfer();
+  // await sgTransfer();
+
+  // setInterval(async () => {
+  //   let poolsAndUsers = await cwQueryPoolsAndUsers();
+  //   await cwMockUpdatePoolsAndUsers(poolsAndUsers);
+  //   await cwSwap();
+  //   await cwTransfer();
+  // }, 30_000);
 }
 
 express()
