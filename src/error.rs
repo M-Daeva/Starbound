@@ -45,29 +45,4 @@ pub enum ContractError {
 
     #[error("Assets are duplicated!")]
     DuplicatedAssets {},
-
-    // IBC
-    #[error("Channel not found")]
-    ChannelNotFound {},
-
-    #[error("Swap order not found")]
-    OrderNotFound {},
-
-    #[error("Only supports channel with ibc version ics20-1, got {version}")]
-    InvalidIbcVersion { version: String },
-
-    #[error("Only supports unordered channel")]
-    OnlyOrderedChannel {},
-
-    #[error("Token reply result not found")]
-    TokenResultNotFound {},
-
-    #[error("Invalid amount")]
-    InvalidAmountValue {},
-
-    #[error("Denom not allowed: {denom}")]
-    DenomNotAllowed { denom: String },
-
-    #[error("Swap in progress")]
-    SwapPending {},
 }

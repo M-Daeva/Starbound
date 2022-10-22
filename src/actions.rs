@@ -1,10 +1,7 @@
 pub mod execute;
-pub mod ibc;
-pub mod ibc_msg;
 pub mod instantiate;
 pub mod migrate;
 pub mod query;
 pub mod rebalancer;
-pub mod relay;
 pub mod reply;
 pub mod vectors;

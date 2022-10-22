@@ -89,7 +89,8 @@ echo "sending osmo from relayer to contract..."
 echo "enter password (1234567890)"
 $BINARY tx bank send $ALICE_ADDRESS_OSMO $CONTRACT_ADDRESS "1000000uosmo" --from relayer2 $TXFLAG
 echo "checking contract balances..."
-$BINARY query bank balances $CONTRACT_ADDRESS
+$BINARY query bank balances $CONTRACT_ADDRESS 
+# --node $RPC --chain-id $CHAIN_ID
 
 # open ibc channel between 2 networks
 cd $TESTNET_DIR
