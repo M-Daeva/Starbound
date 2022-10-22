@@ -115,7 +115,7 @@ async function init() {
   const wasmHeight = "500000";
   let osmoAmount = "1";
 
-  let junoParams: TransferParams = {
+  let tokenParams: TransferParams = {
     channel_id: wasmChannel,
     to: wasmAddr,
     amount: osmoAmount,
@@ -124,10 +124,16 @@ async function init() {
     block_height: wasmHeight,
   };
 
-  let params: TransferParams[] = [
-    junoParams,
-    // junoParams
-  ];
+  let tokenParams2: TransferParams = {
+    channel_id: wasmChannel,
+    to: wasmAddr,
+    amount: "2",
+    denom: DENOMS.OSMO,
+    block_revision: wasmRevision,
+    block_height: wasmHeight,
+  };
+
+  let params: TransferParams[] = [tokenParams, tokenParams2];
 
   async function cwMultiTransfer() {
     l("cwMultiTransfer");

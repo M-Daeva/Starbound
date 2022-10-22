@@ -196,7 +196,12 @@ async function getCwHelpers(
       ""
     );
     l(res);
-    l(res.logs[0].events[5].attributes, "\n");
+    l(
+      res.logs[0].events[5].attributes.filter(
+        (item) => item.key === "packet_data"
+      ),
+      "\n"
+    );
   }
 
   return {
