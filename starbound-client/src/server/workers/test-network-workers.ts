@@ -190,7 +190,7 @@ async function init() {
   }
 
   const junoChannel = "channel-1110";
-  const junoAddr = "juno1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyqd4qeg";
+  const junoAddr = "juno1xjeu7n97xs0pv7lxcedat00d6vgyr9m54vefn2";
   const junoRevision = "5";
   const junoHeight = "500000";
   let junoAmount = "1";
@@ -204,7 +204,9 @@ async function init() {
     block_height: junoHeight,
   };
 
-  let params: TransferParams[] = [junoParams, junoParams];
+  let params: TransferParams[] = [junoParams, 
+//	junoParams
+	];
 
   async function cwMultiTransfer() {
     l("cwMultiTransfer");

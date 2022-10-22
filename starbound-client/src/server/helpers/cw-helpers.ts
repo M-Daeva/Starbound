@@ -195,14 +195,15 @@ async function getCwHelpers(
       fee,
       ""
     );
-    l({ attributes: res.logs[0].events[2].attributes }, "\n");
+    l(res);
+    l(res.logs[0].events[5].attributes, "\n");
   }
 
   async function _cwSgSend() {
     const res = await client.execute(
       owner,
       contractAddress,
-      { sg_send: {  } },
+      { sg_send: {} },
       fee,
       ""
     );
@@ -225,7 +226,7 @@ async function getCwHelpers(
     _cwQueryAssets,
     _cwDebugQueryBank,
     _cwMultiTransfer,
-    _cwSgSend
+    _cwSgSend,
   };
 }
 

@@ -195,7 +195,8 @@ async function getCwHelpers(
       fee,
       ""
     );
-    l({ attributes: res.logs[0].events[2].attributes }, "\n");
+    l(res);
+    l(res.logs[0].events[5].attributes, "\n");
   }
 
   return {

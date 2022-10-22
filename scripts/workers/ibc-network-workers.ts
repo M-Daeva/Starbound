@@ -109,22 +109,25 @@ async function init() {
   //   }
   // }
 
-  const junoChannel = "channel-0";
-  const junoAddr = "juno1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyqd4qeg";
-  const junoRevision = "5";
-  const junoHeight = "500000";
-  let junoAmount = "1";
+  const wasmChannel = "channel-0";
+  const wasmAddr = "wasm1chgwz55h9kepjq0fkj5supl2ta3nwu63mk04cl";
+  const wasmRevision = "5";
+  const wasmHeight = "500000";
+  let osmoAmount = "1";
 
   let junoParams: TransferParams = {
-    channel_id: junoChannel,
-    to: junoAddr,
-    amount: junoAmount,
-    denom: DENOMS.JUNO,
-    block_revision: junoRevision,
-    block_height: junoHeight,
+    channel_id: wasmChannel,
+    to: wasmAddr,
+    amount: osmoAmount,
+    denom: DENOMS.OSMO,
+    block_revision: wasmRevision,
+    block_height: wasmHeight,
   };
 
-  let params: TransferParams[] = [junoParams, junoParams];
+  let params: TransferParams[] = [
+    junoParams,
+    // junoParams
+  ];
 
   async function cwMultiTransfer() {
     l("cwMultiTransfer");

@@ -4,12 +4,16 @@ PREFIX="osmo"
 CHAIN_ID="osmo-testing"
 RPC="http://localhost:26657/"
 RPC_OSMO="http://localhost:26653/"
+
 # it's relayer seed actually
-# osmo1ll3s59aawh0qydpz2q3xmqf6pwzmj24t9ch58c | wasm1ll3s59aawh0qydpz2q3xmqf6pwzmj24t8l43cp
 SEED_ALICE="harsh adult scrub stadium solution impulse company agree tomorrow poem dirt innocent coyote slight nice digital scissors cool pact person item moon double wagon"
-# osmo1chgwz55h9kepjq0fkj5supl2ta3nwu63e3ds8x
+ALICE_ADDRESS_WASM="wasm1ll3s59aawh0qydpz2q3xmqf6pwzmj24t8l43cp"
+ALICE_ADDRESS_OSMO="osmo1ll3s59aawh0qydpz2q3xmqf6pwzmj24t9ch58c"
+
 SEED_BOB=$(jq -r '.BOB_SEED' ../.test-wallets/test_wallets.json)
-# osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt
+BOB_ADDRESS_WASM="wasm1chgwz55h9kepjq0fkj5supl2ta3nwu63mk04cl"
+BOB_ADDRESS_OSMO="osmo1chgwz55h9kepjq0fkj5supl2ta3nwu63e3ds8x"
+
 SEED_DAPP=$(jq -r '.JOHN_SEED' ../.test-wallets/test_wallets.json)
 DAPP_ADDRESS="osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt"
 
@@ -79,16 +83,22 @@ echo $SEP
 echo "getting contract port_id..."
 $BINARY q wasm contract $CONTRACT_ADDRESS --node $RPC --chain-id $CHAIN_ID
 
+# send some osmo to contract
+echo $SEP
+echo "sending osmo from relayer to contract..."
+echo "enter password (1234567890)"
+$BINARY tx bank send $ALICE_ADDRESS_OSMO $CONTRACT_ADDRESS "1000000uosmo" --from relayer2 $TXFLAG
+echo "checking contract balances..."
+$BINARY query bank balances $CONTRACT_ADDRESS
 
+# open ibc channel between 2 networks
 cd $TESTNET_DIR
-# open ibc channel
 echo $SEP
 echo "openning ibc channel..."
 hermes --config ./hermes/config.toml create channel --a-chain $A_CHAIN \
-  --a-connection $A_CONNECTION --a-port wasm.$CONTRACT_ADDRESS --b-port $B_PORT \
+  --a-connection $A_CONNECTION --a-port $A_PORT --b-port $B_PORT \
 	--order unordered --channel-version "ics20-1"
 	
-
 # write data to file
 echo $SEP
 echo "writing data to file..."
@@ -106,19 +116,26 @@ R="{
 echo $R > config/ibc-network-config.json
 cd $DIR
 
-# send some osmo to contract
-echo $SEP
-echo "sending osmo to contract..."
-$BINARY tx bank send $VALIDATOR_ADDR $CONTRACT_ADDRESS "1000000uosmo" --from relayer2 $TXFLAG
-$BINARY query bank balances $CONTRACT_ADDRESS
+# # try to transfer directly
+# echo $SEP
+# echo "trying to transfer directly..."
+# echo "enter password (1234567890)"
+# $BINARY tx ibc-transfer transfer $A_PORT "channel-0" $BOB_ADDRESS_WASM "1uosmo" --from relayer2 $TXFLAG
+# echo $SEP
+# echo "checking $BOB_ADDRESS_WASM balances..."
+# $BINARY2 query bank balances $BOB_ADDRESS_WASM --node $RPC --chain-id $CHAIN_ID
 
 # run contract tests
 echo $SEP
 echo "testing contract..."
 cd $DIR/scripts
 ts-node ./tests/ibc-network-test.ts
-# docker exec -i wasmd wasmd query bank balances wasm1ll3s59aawh0qydpz2q3xmqf6pwzmj24t8l43cp
-$BINARY query bank balances $CONTRACT_ADDRESS
+echo $SEP
+# clear packets
+cd $TESTNET_DIR
+hermes --config ./hermes/config.toml clear packets --chain $CHAIN_ID --channel "channel-0" --port $A_PORT &> /dev/null
+echo "checking $BOB_ADDRESS_WASM balances..."
+$BINARY2 query bank balances $BOB_ADDRESS_WASM --node $RPC --chain-id $CHAIN_ID
 
 # stop hermes
 echo $SEP
