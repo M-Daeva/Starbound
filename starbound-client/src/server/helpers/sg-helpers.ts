@@ -3,6 +3,7 @@ import {
   DeliverTxResponse,
   MsgSendEncodeObject,
   Coin,
+  StdFee,
 } from "@cosmjs/stargate";
 import { MsgSwapExactAmountIn } from "osmojs/types/proto/osmosis/gamm/v1beta1/tx";
 import { MsgTransfer } from "osmojs/types/proto/ibc/applications/transfer/v1/tx";
@@ -233,6 +234,11 @@ async function getSgHelpers(clientStruct: ClientStruct) {
     const msg: EncodeObject = {
       typeUrl: "/cosmos.authz.v1beta1.MsgExec",
       value: msgExec,
+    };
+
+    const fee: StdFee = {
+      amount: [coin(6250, "ujunox")],
+      gas: "250000",
     };
 
     const tx = await client.signAndBroadcast(owner, [msg], fee);

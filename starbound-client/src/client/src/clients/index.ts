@@ -8,6 +8,8 @@ import { CHAIN_ID } from "../../config/test-network-config.json";
 
 const req = createRequest({});
 
+const CHAIN_ID2 = "uni-5";
+
 const chainRegistryUrl =
   "https://github.com/cosmos/chain-registry/blob/master/testnets/osmosistestnet/chain.json";
 
@@ -124,17 +126,63 @@ async function addChain(wallet: Keplr) {
       high: 0.04,
     },
   };
+
+  let testnetChainInfo2 = {
+    chainId: "uni-5",
+    chainName: "junotestnet",
+    rpc: "https://rpc.uni.junonetwork.io/",
+    rest: "https://api.uni.junonetwork.io/",
+    stakeCurrency: {
+      coinDenom: "JUNO",
+      coinMinimalDenom: "ujunox",
+      coinDecimals: 6,
+    },
+    bip44: {
+      coinType: 118,
+    },
+    bech32Config: {
+      bech32PrefixAccAddr: "juno",
+      bech32PrefixAccPub: "junopub",
+      bech32PrefixValAddr: "junovaloper",
+      bech32PrefixValPub: "junovaloperpub",
+      bech32PrefixConsAddr: "junovalcons",
+      bech32PrefixConsPub: "junovalconspub",
+    },
+    currencies: [
+      {
+        coinDenom: "JUNO",
+        coinMinimalDenom: "ujuno",
+        coinDecimals: 6,
+      },
+    ],
+    feeCurrencies: [
+      {
+        coinDenom: "JUNO",
+        coinMinimalDenom: "ujuno",
+        coinDecimals: 6,
+      },
+    ],
+    coinType: 118,
+    gasPriceStep: {
+      low: 0.01,
+      average: 0.025,
+      high: 0.04,
+    },
+  };
+
   await wallet.experimentalSuggestChain(testnetChainInfo);
+  await wallet.experimentalSuggestChain(testnetChainInfo2);
 }
 
 async function unlockWallet(wallet: Keplr): Promise<void> {
   await wallet.enable(CHAIN_ID);
+  await wallet.enable(CHAIN_ID2);
 }
 
 async function getSigner(clientStruct: ClientStruct) {
-  const { RPC, wallet } = clientStruct;
-  const owner = (await wallet.getKey(CHAIN_ID)).bech32Address;
-  const signer = window.getOfflineSigner!(CHAIN_ID);
+  const { RPC, wallet, chainId } = clientStruct;
+  const owner = (await wallet.getKey(chainId)).bech32Address;
+  const signer = window.getOfflineSigner!(chainId);
   return { signer, owner, RPC };
 }
 

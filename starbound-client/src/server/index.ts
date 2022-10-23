@@ -5,7 +5,6 @@ import cors from "cors";
 import E from "./config";
 import { rootPath } from "./helpers";
 import { init } from "./workers/test-network-workers";
-import { DelegationStruct, DENOMS } from "./helpers/interfaces";
 
 async function process() {
   const {
@@ -13,28 +12,16 @@ async function process() {
     cwTransfer,
     cwMockUpdatePoolsAndUsers,
     cwQueryPoolsAndUsers,
-    sgDelegateFrom,
-    cwMultiTransfer,
-    sgTransfer,
-    cwSgSend,
-    sgSend,
+    sgDelegateFromAll,
   } = await init();
 
-  // let poolsAndUsers = await cwQueryPoolsAndUsers();
-  // await cwMockUpdatePoolsAndUsers(poolsAndUsers);
-  // await cwSwap();
-
-  await cwMultiTransfer();
-
-  // await cwTransfer();
-  // await sgTransfer();
-
-  // setInterval(async () => {
-  //   let poolsAndUsers = await cwQueryPoolsAndUsers();
-  //   await cwMockUpdatePoolsAndUsers(poolsAndUsers);
-  //   await cwSwap();
-  //   await cwTransfer();
-  // }, 30_000);
+  setInterval(async () => {
+    let poolsAndUsers = await cwQueryPoolsAndUsers();
+    await sgDelegateFromAll(poolsAndUsers.users);
+    await cwMockUpdatePoolsAndUsers(poolsAndUsers);
+    await cwSwap();
+    await cwTransfer();
+  }, 30_000);
 }
 
 express()

@@ -127,48 +127,6 @@ async function merge(): Promise<PoolExtracted[]> {
 //   l(r.length);
 // })();
 
-// updatePoolsAndUsers({
-//   pools: [
-//     {
-//       channel_id: "channel-0",
-//       denom:
-//         "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
-//       id: "1",
-//       port_id: "transfer",
-//       price: "13",
-//       symbol: "uatom",
-//     },
-//     {
-//       channel_id: "channel-42",
-//       denom:
-//         "ibc/46B44899322F3CD854D2D46DEEF881958467CDD4B3B10086DA49296BBED94BED",
-//       id: "497",
-//       port_id: "transfer",
-//       price: "4",
-//       symbol: "ujuno",
-//     },
-//   ],
-//   users: [
-//     {
-//       osmo_address: "osmo1j5ft99lyd36e5fyp8kh8ze7qcj00relm0md4k9",
-//       asset_list: [
-//         {
-//           asset_denom:
-//             "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
-//           wallet_address: "cosmos1j5ft99lyd36e5fyp8kh8ze7qcj00relm8q79qh",
-//           wallet_balance: "100",
-//         },
-//         {
-//           asset_denom:
-//             "ibc/46B44899322F3CD854D2D46DEEF881958467CDD4B3B10086DA49296BBED94BED",
-//           wallet_address: "juno1j5ft99lyd36e5fyp8kh8ze7qcj00relm3ja78t",
-//           wallet_balance: "10",
-//         },
-//       ],
-//     },
-//   ],
-// });
-
 async function _updatePoolsAndUsers(response: QueryPoolsAndUsersResponse) {
   let { pools, users } = response;
 
@@ -353,23 +311,24 @@ function getValidatorListUrl(chain: string) {
   return url;
 }
 
-async function requestValidators() {
+async function _requestValidators() {
   // request chain list
   let baseUrl = "https://cosmos-chain.directory/chains/";
   let { chains }: ChainsResponse = await (await fetch(baseUrl)).json();
   chains = chains.filter((chain) => chain !== "testnets");
 
-  let validatorListPromises: Promise<[string, string]>[] = [];
+  let validatorListPromises: Promise<[string, string[]]>[] = [];
 
   async function requestValidatorList(
     chain: string
-  ): Promise<[string, string]> {
+  ): Promise<[string, string[]]> {
     let url = getValidatorListUrl(chain);
     try {
       let res: ValidatorListResponse = await (await fetch(url)).json();
-      return [chain, res.validators.length.toString()];
+      // return [chain, res.validators.length.toString()];
+      return [chain, res.validators.map((item) => item.description.moniker)];
     } catch (error) {
-      return [chain, ""];
+      return [chain, [""]];
     }
   }
 
@@ -377,15 +336,13 @@ async function requestValidators() {
     validatorListPromises.push(requestValidatorList(chain));
   }
 
-  let validatorList: [string, string][] = await Promise.all(
+  let validatorList: [string, string[]][] = await Promise.all(
     validatorListPromises
   );
 
-  validatorList = validatorList.filter(([_, b]) => b !== "");
+  validatorList = validatorList.filter(([_, b]) => b[0] !== "");
 
-  l(validatorList);
+  return validatorList;
 }
 
-// requestValidators();
-
-export { _updatePoolsAndUsers, _mockUpdatePoolsAndUsers };
+export { _updatePoolsAndUsers, _mockUpdatePoolsAndUsers, _requestValidators };

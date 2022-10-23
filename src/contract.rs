@@ -68,7 +68,3 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
     migrate_contract(deps, env, msg)
 }
-
-// /// The entry point to the contract for processing replies from submessages
-// #[cfg_attr(not(feature = "library"), entry_point)]
-// pub fn reply(deps: Deps, env: Env, msg: Reply) -> Result<Response, ContractError> {}

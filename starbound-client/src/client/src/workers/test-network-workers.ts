@@ -11,11 +11,13 @@ async function init() {
   const userClientStruct: ClientStruct = {
     RPC,
     wallet,
+    chainId: "osmo-test-4",
   };
 
   const userClientStructJuno: ClientStruct = {
     RPC: "https://rpc.uni.juno.deuslabs.fi",
     wallet,
+    chainId: "uni-5",
   };
 
   // user cosmwasm helpers

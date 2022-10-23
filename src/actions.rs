@@ -3,5 +3,4 @@ pub mod instantiate;
 pub mod migrate;
 pub mod query;
 pub mod rebalancer;
-pub mod reply;
 pub mod vectors;

@@ -184,7 +184,14 @@ async function getCwHelpers(
       fee,
       ""
     );
-    l({ attributes: res.logs[0].events[2].attributes }, "\n");
+    // l({ attributes: res.logs[0].events[2].attributes }, "\n");
+    l(res, "\n");
+    l(
+      res.logs[0].events[5]?.attributes.filter(
+        (item) => item.key === "packet_data"
+      ) || "",
+      "\n"
+    );
   }
 
   async function _cwMultiTransfer(transferParams: TransferParams[]) {

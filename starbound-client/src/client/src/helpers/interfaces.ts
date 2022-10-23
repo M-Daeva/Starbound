@@ -5,6 +5,7 @@ import Decimal from "decimal.js";
 interface ClientStruct {
   RPC: string;
   wallet: Keplr;
+  chainId: string;
 }
 
 interface IbcStruct {

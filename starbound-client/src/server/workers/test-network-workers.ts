@@ -4,6 +4,7 @@ import { _mockUpdatePoolsAndUsers } from "../helpers/api-helpers";
 import { getCwHelpers } from "../helpers/cw-helpers";
 import { DENOMS } from "../helpers/interfaces";
 import { getSgHelpers } from "../helpers/sg-helpers";
+import { getAddrByPrefix } from "../clients";
 import {
   SwapStruct,
   DelegationStruct,
@@ -36,6 +37,11 @@ const bobClientStruct: ClientStruct = {
   seed: SEED_BOB,
 };
 const dappClientStruct: ClientStruct = { prefix: PREFIX, RPC, seed: SEED_DAPP };
+const dappClientStructJuno: ClientStruct = {
+  prefix: "juno",
+  RPC: "https://rpc.uni.juno.deuslabs.fi:443",
+  seed: SEED_DAPP,
+};
 
 async function init() {
   // dapp cosmwasm helpers
@@ -55,13 +61,13 @@ async function init() {
   } = await getCwHelpers(dappClientStruct, CONTRACT_ADDRESS);
 
   // dapp stargate helpers
-  const {
-    _sgDelegateFrom,
-    _sgGetTokenBalances,
-    _sgUpdatePoolList,
-    _sgTransfer,
-    _sgSend,
-  } = await getSgHelpers(dappClientStruct);
+  const { _sgUpdatePoolList, _sgTransfer, _sgSend } = await getSgHelpers(
+    dappClientStruct
+  );
+
+  const { _sgDelegateFrom, _sgGetTokenBalances } = await getSgHelpers(
+    dappClientStructJuno
+  );
 
   async function sgUpdatePoolList() {
     let pools = await _sgUpdatePoolList();
@@ -73,12 +79,12 @@ async function init() {
     l({ contract: balances });
   }
 
-  const grantStakeStruct: DelegationStruct = {
-    targetAddr: dappAddr,
-    tokenAmount: 5_000,
-    tokenDenom: DENOMS.OSMO,
-    validatorAddr: "osmovaloper1c584m4lq25h83yp6ag8hh4htjr92d954kphp96",
-  };
+  // const grantStakeStruct: DelegationStruct = {
+  //   targetAddr: dappAddr,
+  //   tokenAmount: 1_000,
+  //   tokenDenom: DENOMS.JUNO,
+  //   validatorAddr: "junovaloper1w8cpaaljwrytquj86kvp9s72lvmddcc208ghun",
+  // };
 
   async function sgDelegateFrom(stakeFromStruct: DelegationStruct) {
     try {
@@ -86,6 +92,38 @@ async function init() {
       l(tx, "\n");
     } catch (error) {
       l(error, "\n");
+    }
+  }
+
+  async function sgDelegateFromAll(users: UserExtracted[]) {
+    const denom = "ujunox";
+
+    async function delegate(user: UserExtracted) {
+      try {
+        let addr = getAddrByPrefix(user.osmo_address, "juno");
+        let balance = (await _sgGetTokenBalances(addr)).find(
+          (item) => item.symbol === denom
+        );
+        let delegation = balance !== undefined ? +balance.amount - 1000 : 0;
+
+        l(addr, balance, delegation);
+
+        if (delegation >= 1000) {
+          let tx = await _sgDelegateFrom({
+            targetAddr: addr,
+            tokenAmount: delegation,
+            tokenDenom: denom,
+            validatorAddr: "junovaloper1w8cpaaljwrytquj86kvp9s72lvmddcc208ghun",
+          });
+          l(tx);
+        }
+      } catch (error) {
+        l(error);
+      }
+    }
+
+    for (let user of users) {
+      await delegate(user);
     }
   }
 
@@ -204,9 +242,10 @@ async function init() {
     block_height: junoHeight,
   };
 
-  let params: TransferParams[] = [junoParams, 
-//	junoParams
-	];
+  let params: TransferParams[] = [
+    junoParams,
+    //	junoParams
+  ];
 
   async function cwMultiTransfer() {
     l("cwMultiTransfer");
@@ -268,6 +307,7 @@ async function init() {
     sgTransfer,
     cwSgSend,
     sgSend,
+    sgDelegateFromAll,
   };
 }
 

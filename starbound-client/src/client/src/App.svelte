@@ -90,7 +90,8 @@
       }\n`;
 
       for (let asset of tx2.asset_list) {
-        let str = `${asset.wallet_balance} coins on ${asset.wallet_address}\n`;
+        // let str = `${asset.wallet_balance} coins on ${asset.wallet_address}\n`;
+        let str = `${asset.wallet_address}\n`;
         textAreaContent += str;
       }
     } else {
@@ -146,6 +147,10 @@
 </script>
 
 <div class="container">
+  <div class="wallet-bar">
+    <Button clickHandler={grantStakeAuth} text="Grant" />
+  </div>
+
   <div class="deposit">
     <textarea
       name=""

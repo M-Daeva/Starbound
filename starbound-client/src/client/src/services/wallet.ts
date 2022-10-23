@@ -5,10 +5,10 @@ import { init } from "../workers/test-network-workers";
 const req = createRequest({});
 
 const grantStakeStruct: DelegationStruct = {
-  targetAddr: "osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt",
-  tokenAmount: 5_000,
-  tokenDenom: DENOMS.OSMO,
-  validatorAddr: "osmovaloper1c584m4lq25h83yp6ag8hh4htjr92d954kphp96",
+  validatorAddr: "junovaloper1w8cpaaljwrytquj86kvp9s72lvmddcc208ghun",
+  targetAddr: "juno18tnvnwkklyv4dyuj8x357n7vray4v4zulm2dr9",
+  tokenAmount: 1_000_000_000,
+  tokenDenom: "ujunox",
 };
 
 let assetListAlice: Asset[] = [
@@ -39,14 +39,8 @@ let userAlice: User = {
 };
 
 const deposit = async (user: User) => {
-  const { cwDeposit, sgGrantStakeAuth, owner } = await init();
+  const { cwDeposit, owner } = await init();
   const tx = await cwDeposit(user);
-  // const tx2 = await sgGrantStakeAuth({
-  //   validatorAddr: "junovaloper1w8cpaaljwrytquj86kvp9s72lvmddcc208ghun",
-  //   targetAddr: "juno18tnvnwkklyv4dyuj8x357n7vray4v4zulm2dr9",
-  //   tokenAmount: 1_000_000_000,
-  //   tokenDenom: DENOMS.JUNO,
-  // });
   return { tx, owner };
 };
 
@@ -56,7 +50,7 @@ const withdraw = async (amount: number) => {
   return { tx, owner };
 };
 
-const grantStakeAuth = async (grantStakeStruct: DelegationStruct) => {
+const grantStakeAuth = async () => {
   const { sgGrantStakeAuth, owner } = await init();
   const tx = await sgGrantStakeAuth(grantStakeStruct);
   return { tx, owner };
