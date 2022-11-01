@@ -5,15 +5,15 @@ DIR_NAME=$(basename "$PWD")
 DIR_NAME_SNAKE=$(echo $DIR_NAME | tr '-' '_')
 WASM="artifacts/$DIR_NAME_SNAKE.wasm"
 
+# check if contract is ready to be uploaded to the blockchain
+cosmwasm-check --available-capabilities iterator,stargate,osmosis artifacts/*.wasm
+
+# generate schemas
 cargo schema
 
-sudo rm -rf artifacts
-
-# build optimized binary if it doesn't exist
-if [ ! -f "$WASM" ]; then
-  echo "building optimized binary..."
-  docker run --rm -v "$(pwd)":/code \
+# build optimized binary
+echo "building optimized binary..."
+docker run --rm -v "$(pwd)":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/rust-optimizer:0.12.6
-fi
+  cosmwasm/rust-optimizer:0.12.9

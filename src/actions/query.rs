@@ -3,7 +3,8 @@ use cosmwasm_std::{to_binary, Binary, Deps, Env, Order, StdResult};
 
 use crate::{
     messages::response::{
-        DebugQueryBank, DebugQueryPoolsAndUsers, QueryAssets, QueryPoolsAndUsers,
+        DebugQueryBankResponse, DebugQueryPoolsAndUsersResponse, QueryAssetsResponse,
+        QueryPoolsAndUsersResponse,
     },
     state::{PoolExtracted, User, UserExtracted, POOLS, STATE, USERS},
 };
@@ -12,7 +13,7 @@ pub fn query_assets(deps: Deps, _env: Env, address: String) -> StdResult<Binary>
     let address_validated = deps.api.addr_validate(&address)?;
     let user = USERS.load(deps.storage, &address_validated)?;
 
-    to_binary(&QueryAssets {
+    to_binary(&QueryAssetsResponse {
         asset_list: user.asset_list,
     })
 }
@@ -47,7 +48,7 @@ pub fn query_pools_and_users(deps: Deps, _env: Env) -> StdResult<Binary> {
         })
         .collect();
 
-    to_binary(&QueryPoolsAndUsers { users, pools })
+    to_binary(&QueryPoolsAndUsersResponse { users, pools })
 }
 
 pub fn debug_query_pools_and_users(deps: Deps, _env: Env) -> StdResult<Binary> {
@@ -82,13 +83,13 @@ pub fn debug_query_pools_and_users(deps: Deps, _env: Env) -> StdResult<Binary> {
         })
         .collect();
 
-    to_binary(&DebugQueryPoolsAndUsers { users, pools })
+    to_binary(&DebugQueryPoolsAndUsersResponse { users, pools })
 }
 
 pub fn debug_query_bank(deps: Deps, env: Env) -> StdResult<Binary> {
     let state = STATE.load(deps.storage)?;
 
-    to_binary(&DebugQueryBank {
+    to_binary(&DebugQueryBankResponse {
         dapp_wallet: deps.querier.query_all_balances(env.contract.address)?,
         global_delta_balance_list: state.global_delta_balance_list,
         global_delta_cost_list: state.global_delta_cost_list,

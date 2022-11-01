@@ -1,11 +1,10 @@
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal};
 use cw_storage_plus::{Item, Map};
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 
 pub const STATE: Item<State> = Item::new("state");
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
 pub struct State {
     pub admin: Addr,
     pub scheduler: Addr,
@@ -18,8 +17,7 @@ pub struct State {
 // key - denom: &str
 pub const POOLS: Map<&str, Pool> = Map::new("pools");
 
-// TODO: update structure
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
 pub struct Pool {
     pub id: u128,
     pub price: Decimal,
@@ -43,7 +41,7 @@ impl Pool {
 // key - osmo_address: &Addr
 pub const USERS: Map<&Addr, User> = Map::new("users");
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
 pub struct User {
     pub asset_list: Vec<Asset>,
     pub is_controlled_rebalancing: bool,
@@ -64,7 +62,7 @@ impl User {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
 pub struct Asset {
     pub asset_denom: String,
     pub wallet_address: Addr,
@@ -99,7 +97,7 @@ impl Asset {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
 pub struct PoolExtracted {
     pub id: u128,
     pub denom: String,
@@ -109,20 +107,20 @@ pub struct PoolExtracted {
     pub port_id: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
 pub struct UserExtracted {
     pub osmo_address: String,
     pub asset_list: Vec<AssetExtracted>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
 pub struct AssetExtracted {
     pub asset_denom: String,
     pub wallet_address: String,
     pub wallet_balance: u128,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
 pub struct TransferParams {
     pub channel_id: String,
     pub to: String,

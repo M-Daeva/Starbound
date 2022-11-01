@@ -6,7 +6,10 @@ use crate::{
     messages::{
         execute::ExecuteMsg,
         query::QueryMsg,
-        response::{DebugQueryBank, DebugQueryPoolsAndUsers, QueryAssets, QueryPoolsAndUsers},
+        response::{
+            DebugQueryBankResponse, DebugQueryPoolsAndUsersResponse, QueryAssetsResponse,
+            QueryPoolsAndUsersResponse,
+        },
     },
     state::{Asset, AssetExtracted, PoolExtracted, User, UserExtracted},
     tests::helpers::{
@@ -261,7 +264,7 @@ fn test_query_pools_and_users() {
 
     let msg = QueryMsg::QueryPoolsAndUsers {};
     let bin = query(deps.as_ref(), env, msg).unwrap();
-    let res = from_binary::<QueryPoolsAndUsers>(&bin).unwrap();
+    let res = from_binary::<QueryPoolsAndUsersResponse>(&bin).unwrap();
 
     assert_eq!(
         res.pools.len(),
@@ -277,7 +280,7 @@ fn test_debug_query_pools_and_users() {
 
     let msg = QueryMsg::DebugQueryPoolsAndUsers {};
     let bin = query(deps.as_ref(), env, msg).unwrap();
-    let res = from_binary::<DebugQueryPoolsAndUsers>(&bin).unwrap();
+    let res = from_binary::<DebugQueryPoolsAndUsersResponse>(&bin).unwrap();
 
     assert_eq!(
         res.pools.len(),
@@ -295,7 +298,7 @@ fn test_query_assets() {
         address: ADDR_ALICE_OSMO.to_string(),
     };
     let bin = query(deps.as_ref(), env, msg).unwrap();
-    let res = from_binary::<QueryAssets>(&bin).unwrap();
+    let res = from_binary::<QueryAssetsResponse>(&bin).unwrap();
 
     assert_eq!(res.asset_list.len(), 2);
 }
@@ -311,7 +314,7 @@ fn test_debug_query_bank() {
 
     let msg = QueryMsg::DebugQueryBank {};
     let bin = query(deps.as_ref(), env, msg).unwrap();
-    let res = from_binary::<DebugQueryBank>(&bin).unwrap();
+    let res = from_binary::<DebugQueryBankResponse>(&bin).unwrap();
 
     assert_eq!(res.global_denom_list.len(), 3);
 }
