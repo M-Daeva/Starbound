@@ -45,6 +45,5 @@ R="{
 \"SEED_DAPP\":\"$SEED_DAPP\"
 }"
 echo $R > config/test-network-config.json
-cp config/test-network-config.json ../starbound-client/src/client/config/test-network-config.json
-cp config/test-network-config.json ../starbound-client/src/server/config/test-network-config.json
+cp config/test-network-config.json ../client/src/common/config/test-network-config.json
 cd $DIR
