@@ -103,7 +103,7 @@ hermes --config ./hermes/config.toml create channel --a-chain $A_CHAIN \
 # write data to file
 echo $SEP
 echo "writing data to file..."
-cd $DIR/scripts
+cd $DIR
 R="{
 \"PREFIX\":\"$PREFIX\",
 \"CHAIN_ID\":\"$CHAIN_ID\",
@@ -114,8 +114,7 @@ R="{
 \"SEED_BOB\":\"$SEED_BOB\",
 \"SEED_DAPP\":\"$SEED_DAPP\"
 }"
-echo $R > config/ibc-network-config.json
-cd $DIR
+echo $R > client/src/common/config/ibc-network-config.json
 
 # # try to transfer directly
 # echo $SEP
@@ -129,8 +128,8 @@ cd $DIR
 # run contract tests
 echo $SEP
 echo "testing contract..."
-cd $DIR/scripts
-ts-node ./tests/ibc-network-test.ts
+cd $DIR
+ts-node ./client/scripts/tests/ibc-network-test.ts
 echo $SEP
 # clear packets
 cd $TESTNET_DIR

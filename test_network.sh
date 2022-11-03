@@ -33,7 +33,7 @@ osmosisd tx wasm instantiate $CONTRACT_CODE "$INIT" --from "dapp" --label "starb
 CONTRACT_ADDRESS=$(osmosisd query wasm list-contract-by-code $CONTRACT_CODE --node $RPC --chain-id $CHAIN_ID --output json | jq -r '.contracts[-1]')
 
 # write data to file
-cd $DIR/scripts
+cd $DIR
 R="{
 \"PREFIX\":\"$PREFIX\",
 \"CHAIN_ID\":\"$CHAIN_ID\",
@@ -44,6 +44,4 @@ R="{
 \"SEED_BOB\":\"$SEED_BOB\",
 \"SEED_DAPP\":\"$SEED_DAPP\"
 }"
-echo $R > config/test-network-config.json
-cp config/test-network-config.json ../client/src/common/config/test-network-config.json
-cd $DIR
+echo $R > client/src/common/config/test-network-config.json
