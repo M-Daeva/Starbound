@@ -4,9 +4,9 @@ import { SigningStargateClient, coin, StdFee } from "@cosmjs/stargate";
 import { ClientStruct } from "../helpers/interfaces";
 import { Keplr, Window as KeplrWindow } from "@keplr-wallet/types";
 import { createRequest, l } from "../utils";
-import { CHAIN_ID } from "../config/test-network-config.json";
+import { CHAIN_ID } from "../config/testnet-config.json";
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
-import { DENOMS } from "../helpers/interfaces";
+import { DENOMS } from "../helpers/assets";
 import { OfflineSigner } from "@cosmjs/launchpad";
 import { OfflineDirectSigner } from "@cosmjs/proto-signing";
 

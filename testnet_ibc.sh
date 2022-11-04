@@ -1,4 +1,4 @@
-# script for running tests on ibc network
+# script for running relayer between testnets
 
 PREFIX="osmo"
 CHAIN_ID="osmo-test-4"

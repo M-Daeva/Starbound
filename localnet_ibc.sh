@@ -1,4 +1,4 @@
-# script for running tests on ibc network
+# script for running tests on localnets with relayer
 
 PREFIX="osmo"
 CHAIN_ID="osmo-testing"
@@ -114,7 +114,7 @@ R="{
 \"SEED_BOB\":\"$SEED_BOB\",
 \"SEED_DAPP\":\"$SEED_DAPP\"
 }"
-echo $R > client/src/common/config/ibc-network-config.json
+echo $R > client/src/common/config/localnet-ibc-config.json
 
 # # try to transfer directly
 # echo $SEP
@@ -129,7 +129,7 @@ echo $R > client/src/common/config/ibc-network-config.json
 echo $SEP
 echo "testing contract..."
 cd $DIR
-ts-node ./client/scripts/tests/ibc-network-test.ts
+ts-node ./client/tests/localnet-ibc-multitransfer-tests.ts
 echo $SEP
 # clear packets
 cd $TESTNET_DIR

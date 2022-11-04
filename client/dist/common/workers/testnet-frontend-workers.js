@@ -13,14 +13,14 @@ exports.init = void 0;
 const utils_1 = require("../utils");
 const cw_helpers_1 = require("../helpers/cw-helpers");
 const sg_helpers_1 = require("../helpers/sg-helpers");
-const clients_1 = require("../clients");
-const test_network_config_json_1 = require("../config/test-network-config.json");
+const signers_1 = require("../signers");
+const testnet_config_json_1 = require("../config/testnet-config.json");
 function init() {
     return __awaiter(this, void 0, void 0, function* () {
-        const wallet = yield (0, clients_1.initWallet)();
+        const wallet = yield (0, signers_1.initWallet)();
         const userClientStruct = {
             isKeplrType: true,
-            RPC: test_network_config_json_1.RPC,
+            RPC: testnet_config_json_1.RPC,
             wallet,
             chainId: "osmo-test-4",
         };
@@ -31,7 +31,7 @@ function init() {
             chainId: "uni-5",
         };
         // user cosmwasm helpers
-        const { _cwDepositNew, _cwWithdrawNew, _cwQueryPoolsAndUsers, _cwDebugQueryBank, _cwDebugQueryPoolsAndUsers, _cwQueryAssets, owner, } = yield (0, cw_helpers_1.getCwHelpers)(userClientStruct, test_network_config_json_1.CONTRACT_ADDRESS);
+        const { _cwDepositNew, _cwWithdrawNew, _cwQueryPoolsAndUsers, _cwDebugQueryBank, _cwDebugQueryPoolsAndUsers, _cwQueryAssets, owner, } = yield (0, cw_helpers_1.getCwHelpers)(userClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
         // user stargate helpers
         const { _sgGrantStakeAuth } = yield (0, sg_helpers_1.getSgHelpers)(userClientStructJuno);
         function sgGrantStakeAuth(grantStakeStruct) {

@@ -14,7 +14,7 @@ const encoding_1 = require("@cosmjs/encoding");
 const cosmwasm_stargate_1 = require("@cosmjs/cosmwasm-stargate");
 const stargate_1 = require("@cosmjs/stargate");
 const utils_1 = require("../utils");
-const test_network_config_json_1 = require("../config/test-network-config.json");
+const testnet_config_json_1 = require("../config/testnet-config.json");
 const proto_signing_1 = require("@cosmjs/proto-signing");
 const req = (0, utils_1.createRequest)({});
 const CHAIN_ID2 = "uni-5";
@@ -174,7 +174,7 @@ function addChain(wallet) {
 }
 function unlockWallet(wallet) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield wallet.enable(test_network_config_json_1.CHAIN_ID);
+        yield wallet.enable(testnet_config_json_1.CHAIN_ID);
         yield wallet.enable(CHAIN_ID2);
     });
 }

@@ -13,13 +13,13 @@ exports.init = void 0;
 const utils_1 = require("../utils");
 const cw_helpers_1 = require("../helpers/cw-helpers");
 const sg_helpers_1 = require("../helpers/sg-helpers");
-const interfaces_1 = require("../helpers/interfaces");
-const ibc_network_config_json_1 = require("../config/ibc-network-config.json");
+const assets_1 = require("../helpers/assets");
+const localnet_ibc_config_json_1 = require("../config/localnet-ibc-config.json");
 const clientStruct = {
     isKeplrType: false,
-    prefix: ibc_network_config_json_1.PREFIX,
-    RPC: ibc_network_config_json_1.RPC,
-    seed: ibc_network_config_json_1.SEED_ALICE,
+    prefix: localnet_ibc_config_json_1.PREFIX,
+    RPC: localnet_ibc_config_json_1.RPC,
+    seed: localnet_ibc_config_json_1.SEED_ALICE,
 };
 const fromOsmotoWasmWbaTestnet = {
     dstPrefix: "wasm",
@@ -35,7 +35,7 @@ const fromOsmoToAtom = {
 function init() {
     return __awaiter(this, void 0, void 0, function* () {
         const { _sgDelegateFrom, _sgGetTokenBalances, _sgGrantStakeAuth, _sgSwap, _sgTransfer, } = yield (0, sg_helpers_1.getSgHelpers)(clientStruct);
-        const { _cwDeposit, _cwGetBankBalance, _cwSwap, _cwTransfer, _cwMultiTransfer, } = yield (0, cw_helpers_1.getCwHelpers)(clientStruct, ibc_network_config_json_1.CONTRACT_ADDRESS);
+        const { _cwDeposit, _cwGetBankBalance, _cwSwap, _cwTransfer, _cwMultiTransfer, } = yield (0, cw_helpers_1.getCwHelpers)(clientStruct, localnet_ibc_config_json_1.CONTRACT_ADDRESS);
         function sgTransfer() {
             return __awaiter(this, void 0, void 0, function* () {
                 (0, utils_1.l)(utils_1.SEP, "sending ibc transfer...");
@@ -62,7 +62,7 @@ function init() {
         }
         function _queryBalance() {
             return __awaiter(this, void 0, void 0, function* () {
-                let balances = yield _sgGetTokenBalances(ibc_network_config_json_1.CONTRACT_ADDRESS);
+                let balances = yield _sgGetTokenBalances(localnet_ibc_config_json_1.CONTRACT_ADDRESS);
                 (0, utils_1.l)({ contract: balances });
             });
         }
@@ -110,7 +110,7 @@ function init() {
             channel_id: wasmChannel,
             to: wasmAddr,
             amount: osmoAmount,
-            denom: interfaces_1.DENOMS.OSMO,
+            denom: assets_1.DENOMS.OSMO,
             block_revision: wasmRevision,
             block_height: wasmHeight,
         };
@@ -118,7 +118,7 @@ function init() {
             channel_id: wasmChannel,
             to: wasmAddr,
             amount: "2",
-            denom: interfaces_1.DENOMS.OSMO,
+            denom: assets_1.DENOMS.OSMO,
             block_revision: wasmRevision,
             block_height: wasmHeight,
         };

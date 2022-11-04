@@ -3,8 +3,8 @@ import {
   DelegationStruct,
   User,
   Asset,
-  DENOMS,
 } from "../../../common/helpers/interfaces";
+import { DENOMS } from "../../../common/helpers/assets";
 import { init } from "../../../common/workers/testnet-frontend-workers";
 
 const req = createRequest({});

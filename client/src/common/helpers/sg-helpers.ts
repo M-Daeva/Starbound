@@ -8,7 +8,7 @@ import { Grant } from "cosmjs-types/cosmos/authz/v1beta1/authz";
 import { Timestamp } from "cosmjs-types/google/protobuf/timestamp";
 import { EncodeObject } from "@cosmjs/proto-signing/build";
 import { l } from "../utils";
-import { getSgClient, getAddrByPrefix, fee } from "../clients";
+import { getSgClient, getAddrByPrefix, fee } from "../signers";
 import {
   DelegationStruct,
   IbcStruct,
@@ -16,9 +16,9 @@ import {
   SwapStruct,
 } from "./interfaces";
 import Decimal from "decimal.js";
-import { DENOMS, PoolInfo, PoolDatabase } from "./interfaces";
+import { PoolInfo, PoolDatabase } from "./interfaces";
 import { MsgSwapExactAmountIn } from "osmojs/types/proto/osmosis/gamm/v1beta1/tx";
-import { getRoutes, getSymbolByDenom } from "./assets";
+import { getRoutes, getSymbolByDenom, DENOMS } from "./assets";
 
 async function getSgHelpers(clientStruct: ClientStruct) {
   const { client, owner } = await getSgClient(clientStruct);

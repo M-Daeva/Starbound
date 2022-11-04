@@ -17,7 +17,7 @@ const utils_1 = require("../common/utils");
 const body_parser_1 = require("body-parser");
 const cors_1 = __importDefault(require("cors"));
 const config_1 = __importDefault(require("./config"));
-const helpers_1 = require("../common/helpers");
+const utils_2 = require("../common/utils");
 const testnet_backend_workers_1 = require("../common/workers/testnet-backend-workers");
 function process() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -33,7 +33,7 @@ function process() {
 }
 (0, express_1.default)()
     .use((0, cors_1.default)(), (0, body_parser_1.text)(), (0, body_parser_1.json)())
-    .use(express_1.default.static((0, helpers_1.rootPath)("./dist/frontend")))
+    .use(express_1.default.static((0, utils_2.rootPath)("./dist/frontend")))
     .listen(config_1.default.PORT, () => {
     (0, utils_1.l)(`Ready on port ${config_1.default.PORT}`);
     process();

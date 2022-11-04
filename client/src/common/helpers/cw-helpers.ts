@@ -1,17 +1,17 @@
 import { coin } from "@cosmjs/stargate";
 import { l } from "../utils";
-import { getCwClient, getAddrByPrefix, fee } from "../clients";
+import { getCwClient, getAddrByPrefix, fee } from "../signers";
 import {
   ClientStruct,
   User,
   PoolExtracted,
   UserExtracted,
   QueryPoolsAndUsersResponse,
-  DENOMS,
   Asset,
   AssetSymbol,
   TransferParams,
 } from "./interfaces";
+import { DENOMS } from "./assets";
 
 async function getCwHelpers(
   clientStruct: ClientStruct,

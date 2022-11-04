@@ -3,7 +3,7 @@ import { l } from "../common/utils";
 import { text, json } from "body-parser";
 import cors from "cors";
 import E from "./config";
-import { rootPath } from "../common/helpers";
+import { rootPath } from "../common/utils";
 import { init } from "../common/workers/testnet-backend-workers";
 
 async function process() {

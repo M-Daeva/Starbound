@@ -1,0 +1,15 @@
+{
+  "include": [
+    "./src/backend",
+    "./scripts"
+  ],
+  "exclude": [
+    "./src/frontend",
+    "./dist"
+  ],
+  "compilerOptions": {
+    "strict": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true
+  }
+}

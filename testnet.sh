@@ -1,4 +1,4 @@
-# script for running tests on test network
+# script for storing contract on testnet
 
 PREFIX="osmo"
 CHAIN_ID="osmo-test-4"
@@ -44,4 +44,4 @@ R="{
 \"SEED_BOB\":\"$SEED_BOB\",
 \"SEED_DAPP\":\"$SEED_DAPP\"
 }"
-echo $R > client/src/common/config/test-network-config.json
+echo $R > client/src/common/config/testnet-config.json

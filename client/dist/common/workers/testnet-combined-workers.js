@@ -12,35 +12,35 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.init = void 0;
 const utils_1 = require("../utils");
 const cw_helpers_1 = require("../helpers/cw-helpers");
-const interfaces_1 = require("../helpers/interfaces");
+const assets_1 = require("../helpers/assets");
 const sg_helpers_1 = require("../helpers/sg-helpers");
-const test_network_config_json_1 = require("../config/test-network-config.json");
+const testnet_config_json_1 = require("../config/testnet-config.json");
 const aliceClientStruct = {
     isKeplrType: false,
-    prefix: test_network_config_json_1.PREFIX,
-    RPC: test_network_config_json_1.RPC,
-    seed: test_network_config_json_1.SEED_ALICE,
+    prefix: testnet_config_json_1.PREFIX,
+    RPC: testnet_config_json_1.RPC,
+    seed: testnet_config_json_1.SEED_ALICE,
 };
 const bobClientStruct = {
     isKeplrType: false,
-    prefix: test_network_config_json_1.PREFIX,
-    RPC: test_network_config_json_1.RPC,
-    seed: test_network_config_json_1.SEED_BOB,
+    prefix: testnet_config_json_1.PREFIX,
+    RPC: testnet_config_json_1.RPC,
+    seed: testnet_config_json_1.SEED_BOB,
 };
 const dappClientStruct = {
     isKeplrType: false,
-    prefix: test_network_config_json_1.PREFIX,
-    RPC: test_network_config_json_1.RPC,
-    seed: test_network_config_json_1.SEED_DAPP,
+    prefix: testnet_config_json_1.PREFIX,
+    RPC: testnet_config_json_1.RPC,
+    seed: testnet_config_json_1.SEED_DAPP,
 };
 function init() {
     return __awaiter(this, void 0, void 0, function* () {
         // alice cosmwasm helpers
-        const { owner: aliceAddr, _cwDeposit, _cwDepositNew: _cwDepositAlice, _cwWithdrawNew: _cwWithdrawAlice, } = yield (0, cw_helpers_1.getCwHelpers)(aliceClientStruct, test_network_config_json_1.CONTRACT_ADDRESS);
+        const { owner: aliceAddr, _cwDeposit, _cwDepositNew: _cwDepositAlice, _cwWithdrawNew: _cwWithdrawAlice, } = yield (0, cw_helpers_1.getCwHelpers)(aliceClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
         // bob cosmwasm helpers
-        const { owner: bobAddr, _cwDepositNew: _cwDepositBob } = yield (0, cw_helpers_1.getCwHelpers)(bobClientStruct, test_network_config_json_1.CONTRACT_ADDRESS);
+        const { owner: bobAddr, _cwDepositNew: _cwDepositBob } = yield (0, cw_helpers_1.getCwHelpers)(bobClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
         // dapp cosmwasm helpers
-        const { owner: dappAddr, _cwSwap, _cwGetPools, _cwGetPrices, _cwQueryPoolsAndUsers, _cwDebugQueryPoolsAndUsers, _cwUpdatePoolsAndUsers, _cwQueryAssets, _cwDebugQueryBank, _cwTransfer, } = yield (0, cw_helpers_1.getCwHelpers)(dappClientStruct, test_network_config_json_1.CONTRACT_ADDRESS);
+        const { owner: dappAddr, _cwSwap, _cwGetPools, _cwGetPrices, _cwQueryPoolsAndUsers, _cwDebugQueryPoolsAndUsers, _cwUpdatePoolsAndUsers, _cwQueryAssets, _cwDebugQueryBank, _cwTransfer, } = yield (0, cw_helpers_1.getCwHelpers)(dappClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
         // alice stargate helpers
         const { _sgGrantStakeAuth, _sgTransfer } = yield (0, sg_helpers_1.getSgHelpers)(aliceClientStruct);
         // dapp stargate helpers
@@ -53,7 +53,7 @@ function init() {
         }
         function _queryBalance() {
             return __awaiter(this, void 0, void 0, function* () {
-                let balances = yield _sgGetTokenBalances(test_network_config_json_1.CONTRACT_ADDRESS);
+                let balances = yield _sgGetTokenBalances(testnet_config_json_1.CONTRACT_ADDRESS);
                 (0, utils_1.l)({ contract: balances });
             });
         }
@@ -72,7 +72,7 @@ function init() {
         const grantStakeStruct = {
             targetAddr: dappAddr,
             tokenAmount: 5000,
-            tokenDenom: interfaces_1.DENOMS.OSMO,
+            tokenDenom: assets_1.DENOMS.OSMO,
             validatorAddr: "osmovaloper1c584m4lq25h83yp6ag8hh4htjr92d954kphp96",
         };
         function sgGrantStakeAuth() {
@@ -104,7 +104,7 @@ function init() {
         const stakeFromStruct = {
             targetAddr: aliceAddr,
             tokenAmount: 1000,
-            tokenDenom: interfaces_1.DENOMS.OSMO,
+            tokenDenom: assets_1.DENOMS.OSMO,
             validatorAddr: "osmovaloper1c584m4lq25h83yp6ag8hh4htjr92d954kphp96",
         };
         function sgDelegateFrom() {
@@ -168,7 +168,7 @@ function init() {
         let assetListAlice = [
             // ATOM
             {
-                asset_denom: interfaces_1.DENOMS.ATOM,
+                asset_denom: assets_1.DENOMS.ATOM,
                 wallet_address: "cosmos1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyklkm75",
                 wallet_balance: "0",
                 weight: "0.5",
@@ -176,7 +176,7 @@ function init() {
             },
             // JUNO
             {
-                asset_denom: interfaces_1.DENOMS.JUNO,
+                asset_denom: assets_1.DENOMS.JUNO,
                 wallet_address: "juno1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyqd4qeg",
                 wallet_balance: "0",
                 weight: "0.5",
@@ -205,7 +205,7 @@ function init() {
         let assetListBob = [
             // ATOM
             {
-                asset_denom: interfaces_1.DENOMS.ATOM,
+                asset_denom: assets_1.DENOMS.ATOM,
                 wallet_address: "cosmos1chgwz55h9kepjq0fkj5supl2ta3nwu63327q35",
                 wallet_balance: "10000000",
                 weight: "0.3",
@@ -213,7 +213,7 @@ function init() {
             },
             // JUNO
             {
-                asset_denom: interfaces_1.DENOMS.JUNO,
+                asset_denom: assets_1.DENOMS.JUNO,
                 wallet_address: "juno1chgwz55h9kepjq0fkj5supl2ta3nwu638camkg",
                 wallet_balance: "10000000",
                 weight: "0.7",
@@ -287,12 +287,12 @@ function init() {
                                 osmo_address: "osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx",
                                 asset_list: [
                                     {
-                                        asset_denom: interfaces_1.DENOMS.ATOM,
+                                        asset_denom: assets_1.DENOMS.ATOM,
                                         wallet_address: "cosmos1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyklkm75",
                                         wallet_balance: "1",
                                     },
                                     {
-                                        asset_denom: interfaces_1.DENOMS.JUNO,
+                                        asset_denom: assets_1.DENOMS.JUNO,
                                         wallet_address: "juno1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyqd4qeg",
                                         wallet_balance: "2",
                                     },
@@ -302,12 +302,12 @@ function init() {
                                 osmo_address: "osmo1chgwz55h9kepjq0fkj5supl2ta3nwu63e3ds8x",
                                 asset_list: [
                                     {
-                                        asset_denom: interfaces_1.DENOMS.ATOM,
+                                        asset_denom: assets_1.DENOMS.ATOM,
                                         wallet_address: "cosmos1chgwz55h9kepjq0fkj5supl2ta3nwu63327q35",
                                         wallet_balance: "10000001",
                                     },
                                     {
-                                        asset_denom: interfaces_1.DENOMS.JUNO,
+                                        asset_denom: assets_1.DENOMS.JUNO,
                                         wallet_address: "juno1chgwz55h9kepjq0fkj5supl2ta3nwu638camkg",
                                         wallet_balance: "10000002",
                                     },

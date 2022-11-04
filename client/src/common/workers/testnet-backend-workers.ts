@@ -2,9 +2,9 @@ import { l } from "../utils";
 import { coin } from "@cosmjs/stargate";
 import { _mockUpdatePoolsAndUsers } from "../helpers/api-helpers";
 import { getCwHelpers } from "../helpers/cw-helpers";
-import { DENOMS } from "../helpers/interfaces";
+import { DENOMS } from "../helpers/assets";
 import { getSgHelpers } from "../helpers/sg-helpers";
-import { getAddrByPrefix } from "../clients";
+import { getAddrByPrefix } from "../signers";
 import {
   SwapStruct,
   DelegationStruct,
@@ -24,7 +24,7 @@ import {
   SEED_ALICE,
   SEED_BOB,
   SEED_DAPP,
-} from "../config/test-network-config.json";
+} from "../config/testnet-config.json";
 
 const aliceClientStruct: ClientStruct = {
   isKeplrType: false,

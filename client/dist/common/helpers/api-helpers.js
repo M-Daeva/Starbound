@@ -11,8 +11,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports._requestValidators = exports._mockUpdatePoolsAndUsers = exports._updatePoolsAndUsers = void 0;
 const utils_1 = require("../utils");
-const clients_1 = require("../clients");
-const interfaces_1 = require("../helpers/interfaces");
+const signers_1 = require("../signers");
+const assets_1 = require("../helpers/assets");
 function requestRelayers() {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
@@ -164,12 +164,12 @@ function _mockUpdatePoolsAndUsers() {
                     osmo_address: "osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx",
                     asset_list: [
                         {
-                            asset_denom: interfaces_1.DENOMS.ATOM,
+                            asset_denom: assets_1.DENOMS.ATOM,
                             wallet_address: "cosmos1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyklkm75",
                             wallet_balance: "100",
                         },
                         {
-                            asset_denom: interfaces_1.DENOMS.JUNO,
+                            asset_denom: assets_1.DENOMS.JUNO,
                             wallet_address: "juno1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyqd4qeg",
                             wallet_balance: "200",
                         },
@@ -225,7 +225,7 @@ function requestUserFunds(addresses) {
             for (let prefix of prefixes) {
                 chainAndAddressList.push([
                     prefix[0],
-                    (0, clients_1.getAddrByPrefix)(address, prefix[1]),
+                    (0, signers_1.getAddrByPrefix)(address, prefix[1]),
                 ]);
             }
         }

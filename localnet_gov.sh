@@ -1,4 +1,5 @@
-# script for lauching osmosis local network
+# script for running osmosis localnet
+# TODO: update paths
 
 CHAIN_ID="localosmosis"
 RPC="http://localhost:26657/"

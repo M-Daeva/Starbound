@@ -1,5 +1,3 @@
-# Build results
 /target
 /artifacts
-/scripts/config
-*.json
+/client/**/config

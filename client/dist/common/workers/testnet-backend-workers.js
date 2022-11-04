@@ -13,38 +13,38 @@ exports.init = void 0;
 const utils_1 = require("../utils");
 const stargate_1 = require("@cosmjs/stargate");
 const cw_helpers_1 = require("../helpers/cw-helpers");
-const interfaces_1 = require("../helpers/interfaces");
+const assets_1 = require("../helpers/assets");
 const sg_helpers_1 = require("../helpers/sg-helpers");
-const clients_1 = require("../clients");
-const test_network_config_json_1 = require("../config/test-network-config.json");
+const signers_1 = require("../signers");
+const testnet_config_json_1 = require("../config/testnet-config.json");
 const aliceClientStruct = {
     isKeplrType: false,
-    prefix: test_network_config_json_1.PREFIX,
-    RPC: test_network_config_json_1.RPC,
-    seed: test_network_config_json_1.SEED_ALICE,
+    prefix: testnet_config_json_1.PREFIX,
+    RPC: testnet_config_json_1.RPC,
+    seed: testnet_config_json_1.SEED_ALICE,
 };
 const bobClientStruct = {
     isKeplrType: false,
-    prefix: test_network_config_json_1.PREFIX,
-    RPC: test_network_config_json_1.RPC,
-    seed: test_network_config_json_1.SEED_BOB,
+    prefix: testnet_config_json_1.PREFIX,
+    RPC: testnet_config_json_1.RPC,
+    seed: testnet_config_json_1.SEED_BOB,
 };
 const dappClientStruct = {
     isKeplrType: false,
-    prefix: test_network_config_json_1.PREFIX,
-    RPC: test_network_config_json_1.RPC,
-    seed: test_network_config_json_1.SEED_DAPP,
+    prefix: testnet_config_json_1.PREFIX,
+    RPC: testnet_config_json_1.RPC,
+    seed: testnet_config_json_1.SEED_DAPP,
 };
 const dappClientStructJuno = {
     isKeplrType: false,
     prefix: "juno",
     RPC: "https://rpc.uni.juno.deuslabs.fi:443",
-    seed: test_network_config_json_1.SEED_DAPP,
+    seed: testnet_config_json_1.SEED_DAPP,
 };
 function init() {
     return __awaiter(this, void 0, void 0, function* () {
         // dapp cosmwasm helpers
-        const { owner: dappAddr, _cwSwap, _cwGetPools, _cwGetPrices, _cwQueryPoolsAndUsers, _cwDebugQueryPoolsAndUsers, _cwUpdatePoolsAndUsers, _cwQueryAssets, _cwDebugQueryBank, _cwTransfer, _cwMultiTransfer, _cwSgSend, } = yield (0, cw_helpers_1.getCwHelpers)(dappClientStruct, test_network_config_json_1.CONTRACT_ADDRESS);
+        const { owner: dappAddr, _cwSwap, _cwGetPools, _cwGetPrices, _cwQueryPoolsAndUsers, _cwDebugQueryPoolsAndUsers, _cwUpdatePoolsAndUsers, _cwQueryAssets, _cwDebugQueryBank, _cwTransfer, _cwMultiTransfer, _cwSgSend, } = yield (0, cw_helpers_1.getCwHelpers)(dappClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
         // dapp stargate helpers
         const { _sgUpdatePoolList, _sgTransfer, _sgSend } = yield (0, sg_helpers_1.getSgHelpers)(dappClientStruct);
         const { _sgDelegateFrom, _sgGetTokenBalances } = yield (0, sg_helpers_1.getSgHelpers)(dappClientStructJuno);
@@ -56,7 +56,7 @@ function init() {
         }
         function _queryBalance() {
             return __awaiter(this, void 0, void 0, function* () {
-                let balances = yield _sgGetTokenBalances(test_network_config_json_1.CONTRACT_ADDRESS);
+                let balances = yield _sgGetTokenBalances(testnet_config_json_1.CONTRACT_ADDRESS);
                 (0, utils_1.l)({ contract: balances });
             });
         }
@@ -83,7 +83,7 @@ function init() {
                 function delegate(user) {
                     return __awaiter(this, void 0, void 0, function* () {
                         try {
-                            let addr = (0, clients_1.getAddrByPrefix)(user.osmo_address, "juno");
+                            let addr = (0, signers_1.getAddrByPrefix)(user.osmo_address, "juno");
                             let balance = (yield _sgGetTokenBalances(addr)).find((item) => item.symbol === denom);
                             let delegation = balance !== undefined ? +balance.amount - 1000 : 0;
                             (0, utils_1.l)(addr, balance, delegation);
@@ -226,7 +226,7 @@ function init() {
             channel_id: junoChannel,
             to: junoAddr,
             amount: junoAmount,
-            denom: interfaces_1.DENOMS.JUNO,
+            denom: assets_1.DENOMS.JUNO,
             block_revision: junoRevision,
             block_height: junoHeight,
         };
@@ -276,7 +276,7 @@ function init() {
         function sgSend() {
             return __awaiter(this, void 0, void 0, function* () {
                 try {
-                    const tx = yield _sgSend(test_network_config_json_1.CONTRACT_ADDRESS, (0, stargate_1.coin)(500000, "uosmo"));
+                    const tx = yield _sgSend(testnet_config_json_1.CONTRACT_ADDRESS, (0, stargate_1.coin)(500000, "uosmo"));
                     (0, utils_1.l)(tx, "\n");
                 }
                 catch (error) {

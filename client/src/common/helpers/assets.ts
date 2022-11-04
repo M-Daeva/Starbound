@@ -1,63 +1,6 @@
 import { SwapAmountInRoute } from "osmojs/types/proto/osmosis/gamm/v1beta1/tx";
 import { Long } from "@osmonauts/helpers";
-
-interface PoolInfo {
-  symbolFirst: AssetSymbol;
-  symbolSecond: AssetSymbol;
-  number: number;
-}
-
-type AssetDenom = {
-  [assetSymbol in AssetSymbol]: string;
-};
-
-type AssetSymbol =
-  | "ATOM"
-  | "OSMO"
-  | "ION"
-  | "AKT"
-  | "DVPN"
-  | "IRIS"
-  | "CRO"
-  | "XPRT"
-  | "REGEN"
-  | "NGM"
-  | "EEUR"
-  | "JUNO"
-  | "LIKE"
-  | "USTC"
-  | "BCNA"
-  | "BTSG"
-  | "XKI"
-  | "SCRT"
-  | "MED"
-  | "BOOT"
-  | "CMDX"
-  | "CHEQ"
-  | "STARS"
-  | "HUAHUA"
-  | "LUM"
-  | "DSM"
-  | "GRAV"
-  | "SOMM"
-  | "ROWAN"
-  | "NETA"
-  | "UMEE"
-  | "DEC"
-  | "PSTAKE"
-  | "DAI"
-  | "USDC"
-  | "MNTL"
-  | "WETH"
-  | "WBTC"
-  | "EVMOS"
-  | "TGD"
-  | "DOT"
-  | "ODIN"
-  | "GLTO"
-  | "GEO"
-  | "BLD"
-  | "CUDOS";
+import { AssetDenom, AssetSymbol, PoolPair } from "./interfaces";
 
 const DENOMS: AssetDenom = {
   ATOM: "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
@@ -110,7 +53,7 @@ const DENOMS: AssetDenom = {
   CUDOS: "ibc/E09ED39F390EC51FA9F3F69BEA08B5BBE6A48B3057B2B1C3467FAAE9E58B021B",
 };
 
-const POOLS: PoolInfo[] = [
+const POOLS: PoolPair[] = [
   { symbolFirst: "ATOM", symbolSecond: "OSMO", number: 1 },
   { symbolFirst: "ION", symbolSecond: "OSMO", number: 2 },
   { symbolFirst: "AKT", symbolSecond: "OSMO", number: 3 },
@@ -226,5 +169,4 @@ function getSymbolByDenom(denom: string): string {
   return list[0][0] as unknown as string;
 }
 
-export type { PoolInfo, AssetSymbol, AssetDenom };
 export { DENOMS, POOLS, getRoutes, getSymbolByDenom };

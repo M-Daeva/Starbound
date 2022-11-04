@@ -12,9 +12,9 @@ import {
   ValidatorListResponse,
   ValidatorResponse,
 } from "./interfaces";
-import { getAddrByPrefix } from "../clients";
+import { getAddrByPrefix } from "../signers";
 import { Coin } from "@cosmjs/stargate";
-import { DENOMS } from "../helpers/interfaces";
+import { DENOMS } from "../helpers/assets";
 
 async function requestRelayers() {
   const url = "https://api.mintscan.io/v1/relayer/osmosis-1/paths";

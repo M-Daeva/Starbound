@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import { rootPath } from "../common/helpers";
+import { rootPath } from "../common/utils";
 import fs from "fs";
 
 const envPath = rootPath("./config.env");

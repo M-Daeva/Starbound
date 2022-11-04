@@ -6,8 +6,8 @@ import {
   SwapStruct,
   ClientStruct,
   TransferParams,
-  DENOMS,
 } from "../helpers/interfaces";
+import { DENOMS } from "../helpers/assets";
 import {
   CONTRACT_ADDRESS,
   PREFIX,
@@ -15,7 +15,7 @@ import {
   SEED_ALICE,
   SEED_BOB,
   SEED_DAPP,
-} from "../config/ibc-network-config.json";
+} from "../config/localnet-ibc-config.json";
 
 const clientStruct: ClientStruct = {
   isKeplrType: false,

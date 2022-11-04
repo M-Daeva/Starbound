@@ -25,7 +25,7 @@
     AssetDenom,
     getSymbolByDenom,
   } from "../../common/helpers/assets";
-  import { getAddrByPrefix } from "../../common/clients";
+  import { getAddrByPrefix } from "../../common/signers";
 
   let newAsset: Asset = {
     amount_to_send_until_next_epoch: "0",
@@ -248,12 +248,6 @@
     resize: none;
   }
 
-  .content {
-    display: grid;
-    grid-template-columns: 20% 80%;
-    grid-column-gap: 10px;
-  }
-
   div {
     display: flex;
     margin-left: auto;
@@ -263,7 +257,6 @@
     align-items: center;
   }
 
-  div.display,
   div.deposit {
     color: #d117e7;
   }
@@ -273,9 +266,7 @@
     text-align: center;
   }
 
-  .deposit,
-  .collateral,
-  .nft {
+  .deposit {
     padding-top: 5px;
     padding-bottom: 5px;
     margin-top: 15px;
@@ -285,15 +276,13 @@
     border-radius: 20px;
   }
 
-  .inputs,
-  select {
+  .inputs {
     flex-direction: row;
     width: 100%;
   }
 
   .input1,
-  .input2,
-  select {
+  .input2 {
     flex-direction: column;
   }
 
@@ -308,8 +297,7 @@
   }
 
   .input1 input,
-  .input2 input,
-  select {
+  .input2 input {
     width: 100%;
   }
 
@@ -317,17 +305,6 @@
     margin-top: 10px;
     width: 30vw;
     justify-content: space-between;
-  }
-
-  select {
-    background-color: rgba(0, 0, 0, 0.3);
-    color: white;
-    outline: none;
-    border-radius: 5px;
-    width: 150px;
-    text-align: center;
-    margin-top: 10px;
-    margin-bottom: 10px;
   }
 
   div.wallet-bar {

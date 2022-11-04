@@ -125,6 +125,11 @@ interface PoolInfo {
     denom: string;
     price: Decimal;
 }
+interface PoolPair {
+    symbolFirst: AssetSymbol;
+    symbolSecond: AssetSymbol;
+    number: number;
+}
 interface ChainsResponse {
     [chains: string]: string[];
 }
@@ -247,11 +252,6 @@ interface SwapStruct {
     to: AssetSymbol;
     amount: number;
 }
-declare type AssetDenom = {
-    [assetSymbol in AssetSymbol]: string;
-};
-declare type AssetSymbol = "ATOM" | "OSMO" | "ION" | "AKT" | "DVPN" | "IRIS" | "CRO" | "XPRT" | "REGEN" | "NGM" | "EEUR" | "JUNO" | "LIKE" | "USTC" | "BCNA" | "BTSG" | "XKI" | "SCRT" | "MED" | "BOOT" | "CMDX" | "CHEQ" | "STARS" | "HUAHUA" | "LUM" | "DSM" | "GRAV" | "SOMM" | "ROWAN" | "NETA" | "UMEE" | "DEC" | "PSTAKE" | "DAI" | "USDC" | "MNTL" | "WETH" | "WBTC" | "EVMOS" | "TGD" | "DOT" | "ODIN" | "GLTO" | "GEO" | "BLD" | "CUDOS";
-declare const DENOMS: AssetDenom;
 interface TransferParams {
     channel_id: string;
     to: string;
@@ -260,5 +260,8 @@ interface TransferParams {
     block_revision: string;
     block_height: string;
 }
-export { DENOMS };
-export type { ClientStruct, DelegationStruct, IbcStruct, Asset, User, PoolExtracted, UserExtracted, AssetExtracted, QueryPoolsAndUsersResponse, RelayerList, Relayer, RelayerStruct, AssetDescription, PoolDatabase, PoolInfoRaw, PoolInfo, ChainsResponse, ChainResponse, BalancesResponse, DelegationsResponse, ValidatorListResponse, ValidatorResponse, AssetSymbol, SwapStruct, TransferParams, };
+declare type AssetDenom = {
+    [assetSymbol in AssetSymbol]: string;
+};
+declare type AssetSymbol = "ATOM" | "OSMO" | "ION" | "AKT" | "DVPN" | "IRIS" | "CRO" | "XPRT" | "REGEN" | "NGM" | "EEUR" | "JUNO" | "LIKE" | "USTC" | "BCNA" | "BTSG" | "XKI" | "SCRT" | "MED" | "BOOT" | "CMDX" | "CHEQ" | "STARS" | "HUAHUA" | "LUM" | "DSM" | "GRAV" | "SOMM" | "ROWAN" | "NETA" | "UMEE" | "DEC" | "PSTAKE" | "DAI" | "USDC" | "MNTL" | "WETH" | "WBTC" | "EVMOS" | "TGD" | "DOT" | "ODIN" | "GLTO" | "GEO" | "BLD" | "CUDOS";
+export { ClientStruct, DelegationStruct, IbcStruct, Asset, User, PoolExtracted, UserExtracted, AssetExtracted, QueryPoolsAndUsersResponse, RelayerList, Relayer, RelayerStruct, AssetDescription, PoolDatabase, PoolInfoRaw, PoolInfo, PoolPair, ChainsResponse, ChainResponse, BalancesResponse, DelegationsResponse, ValidatorListResponse, ValidatorResponse, AssetSymbol, AssetDenom, SwapStruct, TransferParams, };

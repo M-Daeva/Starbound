@@ -1,4 +1,5 @@
 import axios, { AxiosRequestConfig } from "axios";
+import path from "path";
 
 const l = console.log.bind(console);
 
@@ -6,6 +7,8 @@ const r = (num: number, digits: number = 0): number => {
   let k = 10 ** digits;
   return Math.round(k * num) / k;
 };
+
+const rootPath = (dir: string) => path.resolve(__dirname, "../../../", dir);
 
 const SEP =
   "////////////////////////////////////////////////////////////////////////////////////\n";
@@ -29,4 +32,4 @@ const createRequest = (config: Object) => {
   };
 };
 
-export { l, r, createRequest, SEP };
+export { l, r, createRequest, rootPath, SEP };

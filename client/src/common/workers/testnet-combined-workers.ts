@@ -1,7 +1,7 @@
 import { l, SEP } from "../utils";
 import { _mockUpdatePoolsAndUsers } from "../helpers/api-helpers";
 import { getCwHelpers } from "../helpers/cw-helpers";
-import { DENOMS } from "../helpers/interfaces";
+import { DENOMS } from "../helpers/assets";
 import { getSgHelpers } from "../helpers/sg-helpers";
 import {
   SwapStruct,
@@ -21,7 +21,7 @@ import {
   SEED_ALICE,
   SEED_BOB,
   SEED_DAPP,
-} from "../config/test-network-config.json";
+} from "../config/testnet-config.json";
 
 const aliceClientStruct: ClientStruct = {
   isKeplrType: false,

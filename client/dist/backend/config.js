@@ -4,9 +4,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv_1 = __importDefault(require("dotenv"));
-const helpers_1 = require("../common/helpers");
+const utils_1 = require("../common/utils");
 const fs_1 = __importDefault(require("fs"));
-const envPath = (0, helpers_1.rootPath)("./config.env");
+const envPath = (0, utils_1.rootPath)("./config.env");
 if (fs_1.default.existsSync(envPath)) {
     dotenv_1.default.config({ path: envPath });
 }

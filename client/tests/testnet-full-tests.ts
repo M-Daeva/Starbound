@@ -1,4 +1,4 @@
-import { init } from "../../src/common/workers/testnet-combined-workers";
+import { init } from "../src/common/workers/testnet-combined-workers";
 
 async function main() {
   const {
