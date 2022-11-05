@@ -25,10 +25,3 @@ pub fn vec_div(u128_vec: &[u128], dec_vec: &[Decimal]) -> Vec<u128> {
 
     temp
 }
-
-pub fn vec_mul_by_num(dec_vec: &[Decimal], num: u128) -> Vec<u128> {
-    dec_vec
-        .iter()
-        .map(|x| dec_to_u128(x.mul(u128_to_dec(num))))
-        .collect()
-}

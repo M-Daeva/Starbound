@@ -12,19 +12,8 @@
   } from "./services/wallet";
   import { onMount } from "svelte";
   import Radio from "./components/Radio.svelte";
-  import {
-    UserExtracted,
-    PoolExtracted,
-    AssetExtracted,
-    User,
-    Asset,
-  } from "../../common/helpers/interfaces";
-  import {
-    DENOMS,
-    AssetSymbol,
-    AssetDenom,
-    getSymbolByDenom,
-  } from "../../common/helpers/assets";
+  import { User, Asset } from "../../common/helpers/interfaces";
+  import { DENOMS, getSymbolByDenom } from "../../common/helpers/assets";
   import { getAddrByPrefix } from "../../common/signers";
 
   let newAsset: Asset = {
@@ -69,15 +58,15 @@
   async function updateTa() {
     textAreaContent = "";
 
-    const { owner, tx } = await debugQueryPoolsAndUsers();
-    const { tx: tx2 } = await queryAssets(owner);
-    l({ tx });
-    l({ tx2 });
+    const { owner, tx: poolsAndUsers } = await debugQueryPoolsAndUsers();
+    const { tx: assets } = await queryAssets(owner);
+    l({ poolsAndUsers });
+    l({ assets });
 
     let deposited = 0;
 
-    if (tx2 !== undefined && tx2.asset_list.length !== 0) {
-      let user = tx.users.find((user) => {
+    if (assets !== undefined && assets.asset_list.length !== 0) {
+      let user = poolsAndUsers.users.find((user) => {
         let addr = user.asset_list.map((asset) => asset.wallet_address)[0];
         return getAddrByPrefix(addr, "osmo") === owner;
       });
@@ -89,7 +78,7 @@
         Number.isNaN(deposited) ? 0 : deposited
       }\n`;
 
-      for (let asset of tx2.asset_list) {
+      for (let asset of assets.asset_list) {
         // let str = `${asset.wallet_balance} coins on ${asset.wallet_address}\n`;
         let str = `${asset.wallet_address}\n`;
         textAreaContent += str;

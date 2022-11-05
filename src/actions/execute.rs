@@ -12,8 +12,8 @@ use std::ops::Mul;
 
 use crate::{
     actions::{
-        rebalancer::{dec_to_u128, rebalance, u128_to_dec},
-        vectors::{vec_div, vec_mul, vec_mul_by_num},
+        rebalancer::{dec_to_u128, rebalance_controlled, rebalance_proportional, u128_to_dec},
+        vectors::{vec_div, vec_mul},
     },
     error::ContractError,
     state::{Asset, Pool, PoolExtracted, TransferParams, User, UserExtracted, POOLS, STATE, USERS},
@@ -374,9 +374,9 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
 
             // user_delta_costs - vector of user payments in $ to buy assets
             let user_delta_costs = if user.is_controlled_rebalancing {
-                rebalance(&user_costs, &user_weights, user_payment).unwrap()
+                rebalance_controlled(&user_costs, &user_weights, user_payment).unwrap()
             } else {
-                vec_mul_by_num(&user_weights, user_payment)
+                rebalance_proportional(&user_weights, user_payment)
             };
 
             // user_delta_costs - vector of user assets to buy

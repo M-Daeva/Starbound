@@ -242,6 +242,118 @@ fn test_execute_swap() {
 }
 
 #[test]
+fn test_execute_swap_with_updated_users() {
+    let (mut deps, env, mut info, _res) =
+        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
+
+    // add 2nd user
+    let funds_amount = 600_000;
+    let funds_denom = DENOM_EEUR;
+
+    let asset_list_bob: Vec<Asset> = vec![
+        Asset {
+            asset_denom: DENOM_ATOM.to_string(),
+            wallet_address: Addr::unchecked(ADDR_BOB_ATOM),
+            wallet_balance: 10_000_000,
+            weight: str_to_dec("0.3"),
+            amount_to_send_until_next_epoch: 0,
+        },
+        Asset {
+            asset_denom: DENOM_JUNO.to_string(),
+            wallet_address: Addr::unchecked(ADDR_BOB_JUNO),
+            wallet_balance: 10_000_000,
+            weight: str_to_dec("0.7"),
+            amount_to_send_until_next_epoch: 0,
+        },
+    ];
+
+    let user = User {
+        asset_list: asset_list_bob,
+        day_counter: 3,
+        deposited_on_current_period: funds_amount,
+        deposited_on_next_period: 0,
+        is_controlled_rebalancing: IS_CONTROLLED_REBALANCING,
+    };
+
+    let msg = ExecuteMsg::Deposit { user };
+    info.funds = vec![coin(funds_amount, funds_denom)];
+    info.sender = Addr::unchecked(ADDR_BOB_OSMO);
+
+    let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
+
+    // update data
+    let pools: Vec<PoolExtracted> = vec![
+        PoolExtracted {
+            id: 1,
+            denom: DENOM_ATOM.to_string(),
+            price: str_to_dec("11.5"),
+            symbol: "uatom".to_string(),
+            channel_id: CHANNEL_ID.to_string(),
+            port_id: "transfer".to_string(),
+        },
+        PoolExtracted {
+            id: 497,
+            denom: DENOM_JUNO.to_string(),
+            price: str_to_dec("3.5"),
+            symbol: "ujuno".to_string(),
+            channel_id: CHANNEL_ID.to_string(),
+            port_id: "transfer".to_string(),
+        },
+        PoolExtracted {
+            id: 481,
+            denom: DENOM_EEUR.to_string(),
+            price: str_to_dec("1"),
+            symbol: "debug_ueeur".to_string(),
+            channel_id: CHANNEL_ID.to_string(),
+            port_id: "transfer".to_string(),
+        },
+    ];
+
+    let users: Vec<UserExtracted> = vec![
+        UserExtracted {
+            osmo_address: ADDR_ALICE_OSMO.to_string(),
+            asset_list: vec![
+                AssetExtracted {
+                    asset_denom: DENOM_ATOM.to_string(),
+                    wallet_address: ADDR_ALICE_ATOM.to_string(),
+                    wallet_balance: 1,
+                },
+                AssetExtracted {
+                    asset_denom: DENOM_JUNO.to_string(),
+                    wallet_address: ADDR_ALICE_JUNO.to_string(),
+                    wallet_balance: 2,
+                },
+            ],
+        },
+        UserExtracted {
+            osmo_address: ADDR_BOB_OSMO.to_string(),
+            asset_list: vec![
+                AssetExtracted {
+                    asset_denom: DENOM_ATOM.to_string(),
+                    wallet_address: ADDR_BOB_ATOM.to_string(),
+                    wallet_balance: 10_000_001,
+                },
+                AssetExtracted {
+                    asset_denom: DENOM_JUNO.to_string(),
+                    wallet_address: ADDR_BOB_JUNO.to_string(),
+                    wallet_balance: 10_000_002,
+                },
+            ],
+        },
+    ];
+
+    let msg = ExecuteMsg::UpdatePoolsAndUsers { pools, users };
+    info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
+    let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
+
+    let msg = ExecuteMsg::Swap {};
+    info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
+    let res = execute(deps.as_mut(), env, info, msg);
+
+    assert_eq!(res.unwrap().attributes, vec![attr("method", "swap"),])
+}
+
+#[test]
 fn test_execute_transfer() {
     let (mut deps, env, mut info, _res) =
         instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);

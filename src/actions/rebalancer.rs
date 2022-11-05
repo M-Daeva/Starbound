@@ -1,3 +1,5 @@
+use std::ops::Mul;
+
 use cosmwasm_std::{Decimal, Uint128};
 
 use crate::error::ContractError;
@@ -47,7 +49,11 @@ fn correct_sum(r: Vec<u128>, d: u128) -> Vec<u128> {
 /// k2 - vector of target asset ratios \
 /// d - funds to buy coins \
 /// r - vector of coins to buy costs
-pub fn rebalance(x1: &Vec<u128>, k2: &Vec<Decimal>, d: u128) -> Result<Vec<u128>, ContractError> {
+pub fn rebalance_controlled(
+    x1: &Vec<u128>,
+    k2: &Vec<Decimal>,
+    d: u128,
+) -> Result<Vec<u128>, ContractError> {
     // check if x1 and k2 have same length
     if x1.len() != k2.len() {
         return Err(ContractError::NonEqualVectors {});
@@ -58,33 +64,25 @@ pub fn rebalance(x1: &Vec<u128>, k2: &Vec<Decimal>, d: u128) -> Result<Vec<u128>
         return Err(ContractError::EmptyVector {});
     }
 
-    // get min ratio that not equal zero (1)
-    let mut k2_min = Decimal::one();
+    // get result
+    let mut r = Vec::<u128>::new();
+    let d = u128_to_dec(d);
+    let s1 = u128_to_dec(x1.iter().sum::<u128>());
 
-    for &k2_item in k2 {
-        if !k2_item.is_zero() && k2_item < k2_min {
-            k2_min = k2_item;
-        }
-    }
-
-    // get max x1 for given ratios (2)
-    let mut x1_max = 0;
+    // we need to find minimal s2 where s2 = x1/k2 and s2 >= s1
+    let mut s2 = Decimal::zero();
 
     for (i, &k2_item) in k2.iter().enumerate() {
-        if k2_item == k2_min {
-            let x1_item = x1[i];
-
-            if x1_item > x1_max {
-                x1_max = x1_item;
+        // skip division by zero
+        if !k2_item.is_zero() {
+            let s2_item = u128_to_dec(x1[i]) / k2_item;
+            // always update initial value of s2 if s2_item >= s1
+            if s2_item.ge(&s1) && (s2.is_zero() || (!s2.is_zero() && s2_item < s2)) {
+                s2 = s2_item;
             }
         }
     }
 
-    // get result (3)
-    let mut r = Vec::<u128>::new();
-    let d = u128_to_dec(d);
-    let s1 = u128_to_dec(x1.iter().sum::<u128>());
-    let s2 = u128_to_dec(x1_max) / k2_min;
     let ds = s2 - s1;
 
     if d > ds && !ds.is_zero() {
@@ -102,7 +100,10 @@ pub fn rebalance(x1: &Vec<u128>, k2: &Vec<Decimal>, d: u128) -> Result<Vec<u128>
         for (i, &k2_item) in k2.iter().enumerate() {
             let x1_item = u128_to_dec(x1[i]);
 
-            r.push(dec_to_u128((s2 * k2_item - x1_item) * d / (s2 - s1)));
+            // preventing calculation error with ceil
+            r.push(dec_to_u128(
+                ((s2 * k2_item).ceil() - x1_item) * d / (s2 - s1),
+            ));
         }
     }
 
@@ -110,45 +111,124 @@ pub fn rebalance(x1: &Vec<u128>, k2: &Vec<Decimal>, d: u128) -> Result<Vec<u128>
     Ok(correct_sum(r, dec_to_u128(d)))
 }
 
+/// k2 - vector of target asset ratios \
+/// d - funds to buy coins \
+/// r - vector of coins to buy costs
+pub fn rebalance_proportional(k2: &[Decimal], d: u128) -> Vec<u128> {
+    let r = k2
+        .iter()
+        .map(|k2_item| dec_to_u128(k2_item.mul(u128_to_dec(d))))
+        .collect();
+
+    // rounding error correction
+    correct_sum(r, d)
+}
+
 #[cfg(test)]
 pub mod test {
-    use super::str_vec_to_dec_vec;
-    use crate::actions::rebalancer::rebalance;
+    use super::{correct_sum, rebalance_controlled, rebalance_proportional, str_vec_to_dec_vec};
 
     #[test]
-    // case 1
+    fn sum_correction() {
+        let r = vec![100_000007, 299_999998, 200_000000, 0];
+        let d = 600_000000;
+
+        let xd = vec![100_000007, 299_999993, 200_000000, 0];
+
+        assert_eq!(correct_sum(r, d), xd);
+    }
+
+    #[test]
+    // controlled mode case 1.1
     fn big_payment_and_s2_greater_s1() {
-        let x1 = vec![100_000000, 300_000000, 200_000000];
-        let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5"]);
-        //    let k2 = perm_vec_to_dec_vec(vec![300, 200, 500]);
+        let x1 = vec![100_000000, 300_000000, 200_000000, 0];
+        let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5", "0"]);
         let sd = 10000_000000;
 
-        let xd = vec![3080_000000, 1820_000000, 5100_000000];
+        let xd = vec![3080_000000, 1820_000000, 5100_000000, 0];
 
-        assert_eq!(rebalance(&x1, &k2, sd).unwrap(), xd);
+        assert_eq!(rebalance_controlled(&x1, &k2, sd).unwrap(), xd);
     }
 
     #[test]
-    // case 2
+    // controlled mode case 1.2
+    fn big_payment_and_s2_greater_s1_noisy() {
+        let x1 = vec![100_000049, 300_000007, 200_000011, 0];
+        let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5", "0"]);
+        let sd = 10000_000000;
+
+        let xd = vec![3079_999972, 1820_000007, 5100_000021, 0];
+
+        assert_eq!(rebalance_controlled(&x1, &k2, sd).unwrap(), xd);
+    }
+
+    #[test]
+    // controlled mode case 2.1
     fn s2_equal_s1() {
-        let x1 = vec![300_000000, 200_000000, 500_000000];
-        let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5"]);
+        let x1 = vec![300_000000, 200_000000, 500_000000, 0];
+        let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5", "0"]);
         let sd = 100_000000;
 
-        let xd = vec![30_000000, 20_000000, 50_000000];
+        let xd = vec![30_000000, 20_000000, 50_000000, 0];
 
-        assert_eq!(rebalance(&x1, &k2, sd).unwrap(), xd);
+        assert_eq!(rebalance_controlled(&x1, &k2, sd).unwrap(), xd);
     }
 
     #[test]
-    // case 3
-    fn small_payment_and_s2_greater_s1() {
-        let x1 = vec![100_000000, 300_000000, 200_000000];
-        let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5"]);
+    // controlled mode case 2.2
+    fn s2_equal_s1_noisy() {
+        let x1 = vec![300_000049, 200_000007, 500_000011, 0];
+        let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5", "0"]);
         let sd = 100_000000;
 
-        let xd = vec![38_888889, 0, 61_111111];
+        let xd = vec![29_999972, 20_000007, 50_000021, 0];
 
-        assert_eq!(rebalance(&x1, &k2, sd).unwrap(), xd);
+        assert_eq!(rebalance_controlled(&x1, &k2, sd).unwrap(), xd);
+    }
+
+    #[test]
+    // controlled mode case 3.1
+    fn small_payment_and_s2_greater_s1() {
+        let x1 = vec![100_000000, 300_000000, 200_000000, 0];
+        let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5", "0"]);
+        let sd = 100_000000;
+
+        let xd = vec![38_888889, 0, 61_111111, 0];
+
+        assert_eq!(rebalance_controlled(&x1, &k2, sd).unwrap(), xd);
+    }
+
+    #[test]
+    // controlled mode case 3.2
+    fn small_payment_and_s2_greater_s1_noisy() {
+        let x1 = vec![115_000012, 35_000007, 0];
+        let k2 = str_vec_to_dec_vec(vec!["0.3", "0.7", "0"]);
+        let sd = 200000;
+
+        let xd = vec![0, 200000, 0];
+
+        assert_eq!(rebalance_controlled(&x1, &k2, sd).unwrap(), xd);
+    }
+
+    #[test]
+    // proportional mode case 1.1
+    fn proportional() {
+        let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5", "0"]);
+        let sd = 100_000000;
+
+        let xd = vec![30_000000, 20_000000, 50_000000, 0];
+
+        assert_eq!(rebalance_proportional(&k2, sd), xd);
+    }
+
+    #[test]
+    // proportional mode case 1.2
+    fn proportional_noisy() {
+        let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5", "0"]);
+        let sd = 100_000011;
+
+        let xd = vec![30_000004, 20_000003, 50_000004, 0];
+
+        assert_eq!(rebalance_proportional(&k2, sd), xd);
     }
 }
