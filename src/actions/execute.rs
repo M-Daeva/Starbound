@@ -174,33 +174,19 @@ pub fn update_pools_and_users(
         return Err(ContractError::Unauthorized {});
     }
 
-    // // TODO: move checkings to actions
-    // // check if x1 and k2 have same length
-    // if x1.len() != k2.len() {
-    //     return Err(ContractError::NonEqualVectors {});
-    // }
-
-    // // check if vectors are not empty
-    // if k2.is_empty() {
-    //     return Err(ContractError::EmptyVector {});
-    // }
-
-    // 1) update pools info
+    // update pools info
     for pool_received in pools {
-        // parse Decimal to ensure proper type convertion
-        let price = pool_received.price.to_string().parse::<Decimal>()?;
-
         if POOLS
             .save(
                 deps.storage,
                 &pool_received.denom,
-                &Pool {
-                    id: pool_received.id,
-                    price,
-                    channel_id: pool_received.channel_id,
-                    port_id: pool_received.port_id,
-                    symbol: pool_received.symbol,
-                },
+                &Pool::new(
+                    pool_received.id,
+                    pool_received.price,
+                    &pool_received.channel_id,
+                    &pool_received.port_id,
+                    &pool_received.symbol,
+                ),
             )
             .is_err()
         {
@@ -208,7 +194,7 @@ pub fn update_pools_and_users(
         };
     }
 
-    // 2) update users info
+    // update users info
     for user_received in users {
         // validate address
         let osmo_address_received = deps.api.addr_validate(&user_received.osmo_address)?;
@@ -221,32 +207,27 @@ pub fn update_pools_and_users(
             }
         };
 
-        // update user assets
-        let mut asset_list_updated = Vec::<Asset>::new();
+        // update user assets (wallet balances)
+        user.asset_list = user
+            .asset_list
+            .iter()
+            .map(|asset| {
+                // search same denom
+                let asset_received = user_received
+                    .asset_list
+                    .iter()
+                    .find(|&x| (x.asset_denom == asset.asset_denom))
+                    .unwrap();
 
-        for asset in user.asset_list {
-            // search same denom and address asset_received
-            let asset_received = match user_received.asset_list.iter().find(|&x| {
-                (x.asset_denom == asset.asset_denom) && (x.wallet_address == asset.wallet_address)
-            }) {
-                Some(y) => y,
-                None => {
-                    return Err(ContractError::AssetIsNotFound {});
-                }
-            };
-
-            let asset_updated = Asset::new(
-                &asset.asset_denom,
-                &asset.wallet_address,
-                asset_received.wallet_balance,
-                asset.weight,
-                asset.amount_to_send_until_next_epoch,
-            );
-
-            asset_list_updated.push(asset_updated);
-        }
-
-        user.asset_list = asset_list_updated;
+                Asset::new(
+                    &asset.asset_denom,
+                    &asset.wallet_address,
+                    asset_received.wallet_balance,
+                    asset.weight,
+                    asset.amount_to_send_until_next_epoch,
+                )
+            })
+            .collect();
 
         USERS.save(deps.storage, &osmo_address_received, &user)?;
     }
