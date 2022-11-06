@@ -60,6 +60,53 @@ fn test_execute_deposit() {
     )
 }
 
+// check if user can not has multiple addresses on same asset
+#[test]
+fn test_execute_deposit_and_update_wallet_address() {
+    let (mut deps, env, mut info, _res) =
+        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
+
+    let asset_list_alice = vec![
+        Asset {
+            asset_denom: DENOM_ATOM.to_string(),
+            // new address must replace old one
+            wallet_address: Addr::unchecked(ADDR_BOB_ATOM),
+            wallet_balance: 0,
+            weight: str_to_dec("0.5"),
+            amount_to_send_until_next_epoch: 0,
+        },
+        Asset {
+            asset_denom: DENOM_JUNO.to_string(),
+            wallet_address: Addr::unchecked(ADDR_ALICE_JUNO),
+            wallet_balance: 0,
+            weight: str_to_dec("0.5"),
+            amount_to_send_until_next_epoch: 0,
+        },
+    ];
+
+    let user = User {
+        asset_list: asset_list_alice,
+        day_counter: 3,
+        deposited_on_current_period: 0,
+        deposited_on_next_period: 0,
+        is_controlled_rebalancing: IS_CONTROLLED_REBALANCING,
+    };
+
+    let msg = ExecuteMsg::Deposit { user };
+
+    // deposit without funds
+    info.funds = vec![coin(0, DENOM_EEUR)];
+    let _res = execute(deps.as_mut(), env.clone(), info, msg);
+
+    let msg = QueryMsg::QueryAssets {
+        address: ADDR_ALICE_OSMO.to_string(),
+    };
+    let bin = query(deps.as_ref(), env, msg).unwrap();
+    let res = from_binary::<QueryAssetsResponse>(&bin).unwrap();
+
+    assert_eq!(res.asset_list[0].wallet_address, ADDR_BOB_ATOM);
+}
+
 #[test]
 fn test_execute_withdraw() {
     let (mut deps, env, info, _res) =

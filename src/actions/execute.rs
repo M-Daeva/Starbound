@@ -14,6 +14,7 @@ use crate::{
     actions::{
         rebalancer::{dec_to_u128, rebalance_controlled, rebalance_proportional, u128_to_dec},
         vectors::{vec_div, vec_mul},
+        verificator::verify_deposit_data,
     },
     error::ContractError,
     state::{Asset, Pool, PoolExtracted, TransferParams, User, UserExtracted, POOLS, STATE, USERS},
@@ -25,43 +26,38 @@ pub fn deposit(
     info: MessageInfo,
     user: User,
 ) -> Result<Response, ContractError> {
-    // check funds
-    // temporary replacement for tests - there is no USDC so we used EEUR
-    let denom_token_in = "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F";
-    let funds_amount = match &info.funds.iter().find(|&x| x.denom == denom_token_in) {
-        Some(x) => x.amount.u128(),
-        None => {
-            return Err(ContractError::FundsAreNotFound {});
-        }
-    };
+    verify_deposit_data(&deps, &info, &user)?;
 
-    if funds_amount != (user.deposited_on_current_period + user.deposited_on_next_period) {
-        return Err(ContractError::FundsAreNotEqual {});
-    }
-
-    // check if sum of weights is equal one
-    let weight_sum = user
+    // update asset list
+    let asset_list_updated: Vec<Asset> = user
         .asset_list
         .iter()
-        .fold(Decimal::zero(), |acc, cur| acc + cur.weight);
-
-    if weight_sum.ne(&Decimal::one()) {
-        return Err(ContractError::WeightsAreUnbalanced {});
-    }
-
-    // check if asset_list contains unique denoms
-    let mut list = user
-        .asset_list
-        .iter()
-        .map(|x| x.asset_denom.clone())
-        .collect::<Vec<String>>();
-
-    list.sort();
-    list.dedup();
-
-    if list.len() != user.asset_list.len() {
-        return Err(ContractError::DuplicatedAssets {});
-    }
+        .map(|asset| {
+            // search same denom asset
+            match user
+                .asset_list
+                .iter()
+                .find(|&x| (x.asset_denom == asset.asset_denom))
+            {
+                // update weight if it is found
+                Some(y) => Asset::new(
+                    &y.asset_denom,
+                    &asset.wallet_address,
+                    y.wallet_balance,
+                    asset.weight,
+                    y.amount_to_send_until_next_epoch,
+                ),
+                // add new if it is not found
+                None => Asset::new(
+                    asset.asset_denom.as_str(),
+                    &asset.wallet_address,
+                    asset.wallet_balance,
+                    asset.weight,
+                    0,
+                ),
+            }
+        })
+        .collect();
 
     // check if user exists or create new
     let mut user_updated = match USERS.load(deps.storage, &info.sender) {
@@ -69,55 +65,11 @@ pub fn deposit(
         _ => User::default(),
     };
 
+    user_updated.asset_list = asset_list_updated;
     user_updated.is_controlled_rebalancing = user.is_controlled_rebalancing;
     user_updated.deposited_on_current_period += user.deposited_on_current_period;
     user_updated.deposited_on_next_period += user.deposited_on_next_period;
     user_updated.day_counter = user.day_counter;
-
-    // update asset list
-    let mut asset_list_updated = Vec::<Asset>::new();
-
-    for asset in user.asset_list {
-        // check if asset exists in pool list
-        if POOLS.load(deps.storage, &asset.asset_denom).is_err() {
-            return Err(ContractError::AssetIsNotFound {});
-        };
-
-        // CAN NOT VALIDATE ADDRESSES FROM OTHER NETWORKS
-        // https://testnet.mintscan.io/osmosis-testnet/txs/44709BCDFFAC51C1AB1245FB7AF31D14B3607357E18A57A569BD82E66DB12F06
-        // validate wallet address
-        //let wallet_address = deps.api.addr_validate(asset.wallet_address.as_str())?;
-        let wallet_address = Addr::unchecked(&asset.wallet_address);
-
-        // parse Decimal to ensure proper type convertion
-        let weight = asset.weight.to_string().parse::<Decimal>()?;
-
-        // search same denom and address asset
-        let asset_updated = match user_updated.asset_list.iter().find(|&x| {
-            (x.asset_denom == asset.asset_denom) && (x.wallet_address == asset.wallet_address)
-        }) {
-            // update weight if it is found
-            Some(y) => Asset::new(
-                &y.asset_denom,
-                &y.wallet_address,
-                y.wallet_balance,
-                weight,
-                y.amount_to_send_until_next_epoch,
-            ),
-            // add new if it is not found
-            None => Asset::new(
-                asset.asset_denom.as_str(),
-                &wallet_address,
-                asset.wallet_balance,
-                weight,
-                0,
-            ),
-        };
-
-        asset_list_updated.push(asset_updated);
-    }
-
-    user_updated.asset_list = asset_list_updated;
 
     // update user storage
     USERS.save(deps.storage, &info.sender, &user_updated)?;
@@ -142,7 +94,6 @@ pub fn withdraw(
     info: MessageInfo,
     amount: u128,
 ) -> Result<Response, ContractError> {
-    // check funds
     // temporary replacement for tests - there is no USDC so we used EEUR
     let denom_token_out = "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F";
 
@@ -222,6 +173,17 @@ pub fn update_pools_and_users(
     if info.sender != state.admin || info.sender != state.scheduler {
         return Err(ContractError::Unauthorized {});
     }
+
+    // // TODO: move checkings to actions
+    // // check if x1 and k2 have same length
+    // if x1.len() != k2.len() {
+    //     return Err(ContractError::NonEqualVectors {});
+    // }
+
+    // // check if vectors are not empty
+    // if k2.is_empty() {
+    //     return Err(ContractError::EmptyVector {});
+    // }
 
     // 1) update pools info
     for pool_received in pools {
@@ -374,7 +336,7 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
 
             // user_delta_costs - vector of user payments in $ to buy assets
             let user_delta_costs = if user.is_controlled_rebalancing {
-                rebalance_controlled(&user_costs, &user_weights, user_payment).unwrap()
+                rebalance_controlled(&user_costs, &user_weights, user_payment)
             } else {
                 rebalance_proportional(&user_weights, user_payment)
             };

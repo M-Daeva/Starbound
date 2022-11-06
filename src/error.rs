@@ -5,7 +5,7 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum Never {}
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
@@ -45,4 +45,10 @@ pub enum ContractError {
 
     #[error("Assets are duplicated!")]
     DuplicatedAssets {},
+
+    #[error("Unexpected funds were found!")]
+    UnexpectedFunds {},
+
+    #[error("Weight is out of range!")]
+    WeightIsOutOfRange {},
 }

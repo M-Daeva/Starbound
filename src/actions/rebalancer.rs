@@ -2,8 +2,6 @@ use std::ops::Mul;
 
 use cosmwasm_std::{Decimal, Uint128};
 
-use crate::error::ContractError;
-
 pub fn str_to_dec(s: &str) -> Decimal {
     s.to_string().parse::<Decimal>().unwrap()
 }
@@ -49,22 +47,7 @@ fn correct_sum(r: Vec<u128>, d: u128) -> Vec<u128> {
 /// k2 - vector of target asset ratios \
 /// d - funds to buy coins \
 /// r - vector of coins to buy costs
-pub fn rebalance_controlled(
-    x1: &Vec<u128>,
-    k2: &Vec<Decimal>,
-    d: u128,
-) -> Result<Vec<u128>, ContractError> {
-    // check if x1 and k2 have same length
-    if x1.len() != k2.len() {
-        return Err(ContractError::NonEqualVectors {});
-    }
-
-    // check if vectors are not empty
-    if k2.is_empty() {
-        return Err(ContractError::EmptyVector {});
-    }
-
-    // get result
+pub fn rebalance_controlled(x1: &[u128], k2: &[Decimal], d: u128) -> Vec<u128> {
     let mut r = Vec::<u128>::new();
     let d = u128_to_dec(d);
     let s1 = u128_to_dec(x1.iter().sum::<u128>());
@@ -108,7 +91,7 @@ pub fn rebalance_controlled(
     }
 
     // rounding error correction
-    Ok(correct_sum(r, dec_to_u128(d)))
+    correct_sum(r, dec_to_u128(d))
 }
 
 /// k2 - vector of target asset ratios \
@@ -147,7 +130,7 @@ pub mod test {
 
         let xd = vec![3080_000000, 1820_000000, 5100_000000, 0];
 
-        assert_eq!(rebalance_controlled(&x1, &k2, sd).unwrap(), xd);
+        assert_eq!(rebalance_controlled(&x1, &k2, sd), xd);
     }
 
     #[test]
@@ -159,7 +142,7 @@ pub mod test {
 
         let xd = vec![3079_999972, 1820_000007, 5100_000021, 0];
 
-        assert_eq!(rebalance_controlled(&x1, &k2, sd).unwrap(), xd);
+        assert_eq!(rebalance_controlled(&x1, &k2, sd), xd);
     }
 
     #[test]
@@ -171,7 +154,7 @@ pub mod test {
 
         let xd = vec![30_000000, 20_000000, 50_000000, 0];
 
-        assert_eq!(rebalance_controlled(&x1, &k2, sd).unwrap(), xd);
+        assert_eq!(rebalance_controlled(&x1, &k2, sd), xd);
     }
 
     #[test]
@@ -183,7 +166,7 @@ pub mod test {
 
         let xd = vec![29_999972, 20_000007, 50_000021, 0];
 
-        assert_eq!(rebalance_controlled(&x1, &k2, sd).unwrap(), xd);
+        assert_eq!(rebalance_controlled(&x1, &k2, sd), xd);
     }
 
     #[test]
@@ -195,7 +178,7 @@ pub mod test {
 
         let xd = vec![38_888889, 0, 61_111111, 0];
 
-        assert_eq!(rebalance_controlled(&x1, &k2, sd).unwrap(), xd);
+        assert_eq!(rebalance_controlled(&x1, &k2, sd), xd);
     }
 
     #[test]
@@ -207,7 +190,7 @@ pub mod test {
 
         let xd = vec![0, 200000, 0];
 
-        assert_eq!(rebalance_controlled(&x1, &k2, sd).unwrap(), xd);
+        assert_eq!(rebalance_controlled(&x1, &k2, sd), xd);
     }
 
     #[test]
