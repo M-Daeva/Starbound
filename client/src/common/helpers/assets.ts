@@ -1,5 +1,5 @@
-import { SwapAmountInRoute } from "osmojs/types/proto/osmosis/gamm/v1beta1/tx";
-import { Long } from "@osmonauts/helpers";
+import { SwapAmountInRoute } from "osmojs/types/codegen/osmosis/gamm/v1beta1/tx";
+import Long from "osmojs/node_modules/long";
 import { AssetDenom, AssetSymbol, PoolPair } from "./interfaces";
 
 const DENOMS: AssetDenom = {

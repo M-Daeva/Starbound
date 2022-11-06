@@ -1,7 +1,6 @@
 <script lang="ts">
   import Button from "./components/Button.svelte";
   import { createRequest, l } from "../../common/utils";
-  import { baseURL } from "./config";
   import {
     queryPoolsAndUsers,
     debugQueryPoolsAndUsers,
@@ -12,7 +11,7 @@
   } from "./services/wallet";
   import { onMount } from "svelte";
   import Radio from "./components/Radio.svelte";
-  import { User, Asset } from "../../common/helpers/interfaces";
+  import type { User, Asset } from "../../common/helpers/interfaces";
   import { DENOMS, getSymbolByDenom } from "../../common/helpers/assets";
   import { getAddrByPrefix } from "../../common/signers";
 

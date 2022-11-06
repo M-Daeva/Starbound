@@ -1,5 +1,5 @@
 import { createRequest, l } from "../../../common/utils";
-import {
+import type {
   DelegationStruct,
   User,
   Asset,

@@ -1,13 +1,13 @@
 import { coin, MsgSendEncodeObject, Coin } from "@cosmjs/stargate";
-import { MsgTransfer } from "osmojs/types/proto/ibc/applications/transfer/v1/tx";
-import { Long } from "@osmonauts/helpers";
+import { MsgTransfer } from "osmojs/types/codegen/ibc/applications/transfer/v1/tx";
+import Long from "osmojs/node_modules/long";
 import { MsgGrant, MsgExec } from "cosmjs-types/cosmos/authz/v1beta1/tx";
 import { StakeAuthorization } from "cosmjs-types/cosmos/staking/v1beta1/authz";
 import { MsgDelegate } from "cosmjs-types/cosmos/staking/v1beta1/tx";
 import { Grant } from "cosmjs-types/cosmos/authz/v1beta1/authz";
 import { Timestamp } from "cosmjs-types/google/protobuf/timestamp";
 import { EncodeObject } from "@cosmjs/proto-signing/build";
-import { l } from "../utils";
+import { l, createRequest } from "../utils";
 import { getSgClient, getAddrByPrefix, fee } from "../signers";
 import {
   DelegationStruct,
@@ -17,8 +17,10 @@ import {
 } from "./interfaces";
 import Decimal from "decimal.js";
 import { PoolInfo, PoolDatabase } from "./interfaces";
-import { MsgSwapExactAmountIn } from "osmojs/types/proto/osmosis/gamm/v1beta1/tx";
+import { MsgSwapExactAmountIn } from "osmojs/types/codegen/osmosis/gamm/v1beta1/tx";
 import { getRoutes, getSymbolByDenom, DENOMS } from "./assets";
+
+const req = createRequest({});
 
 async function getSgHelpers(clientStruct: ClientStruct) {
   const { client, owner } = await getSgClient(clientStruct);
@@ -156,7 +158,7 @@ async function getSgHelpers(clientStruct: ClientStruct) {
       "https://api-osmosis.imperator.co/pools/v2/all?low_liquidity=false";
 
     // download pools info
-    let poolDatabase: PoolDatabase = await (await fetch(url)).json();
+    let poolDatabase: PoolDatabase = await req.get(url);
 
     // skip low liquidity pools
     let valid_pools: PoolInfo[] = [];

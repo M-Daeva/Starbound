@@ -1,4 +1,4 @@
-import { l } from "../utils";
+import { l, createRequest } from "../utils";
 import {
   RelayerList,
   RelayerStruct,
@@ -16,10 +16,12 @@ import { getAddrByPrefix } from "../signers";
 import { Coin } from "@cosmjs/stargate";
 import { DENOMS } from "../helpers/assets";
 
+const req = createRequest({});
+
 async function requestRelayers() {
   const url = "https://api.mintscan.io/v1/relayer/osmosis-1/paths";
 
-  let data = (await (await fetch(url)).json()) as RelayerList;
+  let data = (await req.get(url)) as RelayerList;
 
   let temp: RelayerStruct[] = [];
 
@@ -81,7 +83,7 @@ async function requestPools() {
     "https://api-osmosis.imperator.co/pools/v2/all?low_liquidity=false";
 
   // download pools info
-  let poolDatabase: PoolDatabase = await (await fetch(url)).json();
+  let poolDatabase: PoolDatabase = await req.get(url);
 
   // skip low liquidity pools
   let valid_pools = Object.entries(poolDatabase).filter(
@@ -119,13 +121,6 @@ async function merge(): Promise<PoolExtracted[]> {
 
   return temp;
 }
-
-// request pools data
-// (async () => {
-//   let r = await merge();
-//   l(r);
-//   l(r.length);
-// })();
 
 async function _updatePoolsAndUsers(response: QueryPoolsAndUsersResponse) {
   let { pools, users } = response;
@@ -226,7 +221,7 @@ function getBalanceUrl(chain: string, address: string) {
 async function requestUserFunds(addresses: string[]) {
   // request chain list
   let baseUrl = "https://cosmos-chain.directory/chains/";
-  let { chains }: ChainsResponse = await (await fetch(baseUrl)).json();
+  let { chains }: ChainsResponse = await req.get(baseUrl);
   chains = chains.filter((chain) => chain !== "testnets");
 
   // iterate over chain list
@@ -234,7 +229,7 @@ async function requestUserFunds(addresses: string[]) {
 
   async function requestChain(chain: string): Promise<[string, string]> {
     try {
-      let res: ChainResponse = await (await fetch(baseUrl + chain)).json();
+      let res: ChainResponse = await req.get(baseUrl + chain);
       return [chain, res.bech32_prefix];
     } catch (error) {
       return ["", ""];
@@ -274,10 +269,10 @@ async function requestUserFunds(addresses: string[]) {
   ): Promise<[string, Coin]> {
     try {
       let balance: BalancesResponse = await (
-        await fetch(getBalanceUrl(chain, address))
+        await req.get(getBalanceUrl(chain, address))
       ).json();
       let delegation: DelegationsResponse = await (
-        await fetch(getDelegationsUrl(chain, address))
+        await req.get(getDelegationsUrl(chain, address))
       ).json();
 
       let { denom } = delegation.delegation_responses[0].balance;
@@ -314,7 +309,7 @@ function getValidatorListUrl(chain: string) {
 async function _requestValidators() {
   // request chain list
   let baseUrl = "https://cosmos-chain.directory/chains/";
-  let { chains }: ChainsResponse = await (await fetch(baseUrl)).json();
+  let { chains }: ChainsResponse = await req.get(baseUrl);
   chains = chains.filter((chain) => chain !== "testnets");
 
   let validatorListPromises: Promise<[string, string[]]>[] = [];
@@ -324,7 +319,7 @@ async function _requestValidators() {
   ): Promise<[string, string[]]> {
     let url = getValidatorListUrl(chain);
     try {
-      let res: ValidatorListResponse = await (await fetch(url)).json();
+      let res: ValidatorListResponse = await req.get(url);
       // return [chain, res.validators.length.toString()];
       return [chain, res.validators.map((item) => item.description.moniker)];
     } catch (error) {
