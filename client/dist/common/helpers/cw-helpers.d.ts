@@ -12,8 +12,8 @@ declare function getCwHelpers(clientStruct: ClientStruct, contractAddress: strin
         users: User[];
     }>;
     _cwQueryPoolsAndUsers: () => Promise<QueryPoolsAndUsersResponse>;
-    _cwDepositNew: (user: User) => Promise<readonly import("@cosmjs/cosmwasm-stargate").Attribute[]>;
-    _cwWithdrawNew: (tokenAmount: number) => Promise<readonly import("@cosmjs/cosmwasm-stargate").Attribute[]>;
+    _cwDepositNew: (user: User) => Promise<readonly import("@cosmjs/stargate").Attribute[]>;
+    _cwWithdrawNew: (tokenAmount: number) => Promise<readonly import("@cosmjs/stargate").Attribute[]>;
     _cwUpdatePoolsAndUsers: (pools: PoolExtracted[], users: UserExtracted[]) => Promise<void>;
     _cwQueryAssets: (address: string) => Promise<{
         asset_list: Asset[];

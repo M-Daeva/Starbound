@@ -1,7 +1,10 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getSymbolByDenom = exports.getRoutes = exports.POOLS = exports.DENOMS = void 0;
-const helpers_1 = require("@osmonauts/helpers");
+const long_1 = __importDefault(require("osmojs/node_modules/long"));
 const DENOMS = {
     ATOM: "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
     OSMO: "uosmo",
@@ -129,7 +132,7 @@ function getRoutes(symbolFirst, symbolSecond) {
             (pool.symbolFirst === symbolSecond && pool.symbolSecond === symbolFirst)) {
             return [
                 {
-                    poolId: helpers_1.Long.fromNumber(pool.number),
+                    poolId: long_1.default.fromNumber(pool.number),
                     tokenOutDenom: DENOMS[symbolSecond],
                 },
             ];
@@ -137,14 +140,14 @@ function getRoutes(symbolFirst, symbolSecond) {
         // fill pool list with first symbol pools
         if (pool.symbolFirst === symbolFirst && pool.symbolSecond === "OSMO") {
             poolFirst.push({
-                poolId: helpers_1.Long.fromNumber(pool.number),
+                poolId: long_1.default.fromNumber(pool.number),
                 tokenOutDenom: DENOMS.OSMO,
             });
         }
         // fill pool list with second symbol pools
         if (pool.symbolFirst === symbolSecond && pool.symbolSecond === "OSMO") {
             poolSecond.push({
-                poolId: helpers_1.Long.fromNumber(pool.number),
+                poolId: long_1.default.fromNumber(pool.number),
                 tokenOutDenom: DENOMS[symbolSecond],
             });
         }

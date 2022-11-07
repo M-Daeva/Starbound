@@ -1,8 +1,8 @@
 import { DelegationStruct, User } from "../helpers/interfaces";
 declare function init(): Promise<{
     sgGrantStakeAuth: (grantStakeStruct: DelegationStruct) => Promise<import("@cosmjs/stargate").DeliverTxResponse | undefined>;
-    cwDeposit: (userAlice: User) => Promise<readonly import("@cosmjs/cosmwasm-stargate").Attribute[] | undefined>;
-    cwWithdraw: (amount: number) => Promise<readonly import("@cosmjs/cosmwasm-stargate").Attribute[] | undefined>;
+    cwDeposit: (userAlice: User) => Promise<readonly import("@cosmjs/stargate").Attribute[] | undefined>;
+    cwWithdraw: (amount: number) => Promise<readonly import("@cosmjs/stargate").Attribute[] | undefined>;
     cwDebugQueryBank: () => Promise<void>;
     cwQueryPoolsAndUsers: () => Promise<import("../helpers/interfaces").QueryPoolsAndUsersResponse | undefined>;
     cwDebugQueryPoolsAndUsers: () => Promise<{

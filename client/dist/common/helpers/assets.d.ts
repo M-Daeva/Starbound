@@ -1,4 +1,4 @@
-import { SwapAmountInRoute } from "osmojs/types/proto/osmosis/gamm/v1beta1/tx";
+import { SwapAmountInRoute } from "osmojs/types/codegen/osmosis/gamm/v1beta1/tx";
 import { AssetDenom, AssetSymbol, PoolPair } from "./interfaces";
 declare const DENOMS: AssetDenom;
 declare const POOLS: PoolPair[];

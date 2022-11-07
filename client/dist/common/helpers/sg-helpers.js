@@ -14,13 +14,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getSgHelpers = void 0;
 const stargate_1 = require("@cosmjs/stargate");
-const helpers_1 = require("@osmonauts/helpers");
+const long_1 = __importDefault(require("osmojs/node_modules/long"));
 const authz_1 = require("cosmjs-types/cosmos/staking/v1beta1/authz");
 const tx_1 = require("cosmjs-types/cosmos/staking/v1beta1/tx");
 const utils_1 = require("../utils");
 const signers_1 = require("../signers");
 const decimal_js_1 = __importDefault(require("decimal.js"));
 const assets_1 = require("./assets");
+const req = (0, utils_1.createRequest)({});
 function getSgHelpers(clientStruct) {
     return __awaiter(this, void 0, void 0, function* () {
         const { client, owner } = yield (0, signers_1.getSgClient)(clientStruct);
@@ -37,10 +38,10 @@ function getSgHelpers(clientStruct) {
                     sourceChannel,
                     sourcePort,
                     timeoutHeight: {
-                        revisionNumber: helpers_1.Long.fromNumber(1),
-                        revisionHeight: helpers_1.Long.fromNumber(height),
+                        revisionNumber: long_1.default.fromNumber(1),
+                        revisionHeight: long_1.default.fromNumber(height),
                     },
-                    timeoutTimestamp: helpers_1.Long.fromNumber(0),
+                    timeoutTimestamp: long_1.default.fromNumber(0),
                 };
                 const msg = {
                     typeUrl: "/ibc.applications.transfer.v1.MsgTransfer",
@@ -71,7 +72,7 @@ function getSgHelpers(clientStruct) {
             return __awaiter(this, void 0, void 0, function* () {
                 const { targetAddr, tokenAmount, tokenDenom, validatorAddr } = delegationStruct;
                 const timestamp = {
-                    seconds: helpers_1.Long.fromNumber(1700000000),
+                    seconds: long_1.default.fromNumber(1700000000),
                     nanos: 0,
                 };
                 const grant = {
@@ -134,7 +135,7 @@ function getSgHelpers(clientStruct) {
             return __awaiter(this, void 0, void 0, function* () {
                 let url = "https://api-osmosis.imperator.co/pools/v2/all?low_liquidity=false";
                 // download pools info
-                let poolDatabase = yield (yield fetch(url)).json();
+                let poolDatabase = yield req.get(url);
                 // skip low liquidity pools
                 let valid_pools = [];
                 Object.entries(poolDatabase).forEach(([key, [assetFirst, assetSecond]]) => {

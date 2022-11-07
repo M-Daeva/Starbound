@@ -210,7 +210,11 @@
   {/each}
 </div>
 
-<style>
+<style global lang="postcss">
+  @tailwind base;
+  @tailwind components;
+  @tailwind utilities;
+
   :global(body) {
     background-color: rgb(52, 42, 11);
     color: #0084f6;

@@ -13,11 +13,12 @@ exports._requestValidators = exports._mockUpdatePoolsAndUsers = exports._updateP
 const utils_1 = require("../utils");
 const signers_1 = require("../signers");
 const assets_1 = require("../helpers/assets");
+const req = (0, utils_1.createRequest)({});
 function requestRelayers() {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
         const url = "https://api.mintscan.io/v1/relayer/osmosis-1/paths";
-        let data = (yield (yield fetch(url)).json());
+        let data = (yield req.get(url));
         let temp = [];
         for (let item of data.sendable) {
             let { chain_id, paths } = item;
@@ -64,7 +65,7 @@ function requestPools() {
     return __awaiter(this, void 0, void 0, function* () {
         const url = "https://api-osmosis.imperator.co/pools/v2/all?low_liquidity=false";
         // download pools info
-        let poolDatabase = yield (yield fetch(url)).json();
+        let poolDatabase = yield req.get(url);
         // skip low liquidity pools
         let valid_pools = Object.entries(poolDatabase).filter(([_, [v0]]) => v0.liquidity > 100000);
         return valid_pools;
@@ -96,12 +97,6 @@ function merge() {
         return temp;
     });
 }
-// request pools data
-// (async () => {
-//   let r = await merge();
-//   l(r);
-//   l(r.length);
-// })();
 function _updatePoolsAndUsers(response) {
     return __awaiter(this, void 0, void 0, function* () {
         let { pools, users } = response;
@@ -193,14 +188,14 @@ function requestUserFunds(addresses) {
     return __awaiter(this, void 0, void 0, function* () {
         // request chain list
         let baseUrl = "https://cosmos-chain.directory/chains/";
-        let { chains } = yield (yield fetch(baseUrl)).json();
+        let { chains } = yield req.get(baseUrl);
         chains = chains.filter((chain) => chain !== "testnets");
         // iterate over chain list
         let chainPromises = [];
         function requestChain(chain) {
             return __awaiter(this, void 0, void 0, function* () {
                 try {
-                    let res = yield (yield fetch(baseUrl + chain)).json();
+                    let res = yield req.get(baseUrl + chain);
                     return [chain, res.bech32_prefix];
                 }
                 catch (error) {
@@ -235,8 +230,8 @@ function requestUserFunds(addresses) {
             var _a;
             return __awaiter(this, void 0, void 0, function* () {
                 try {
-                    let balance = yield (yield fetch(getBalanceUrl(chain, address))).json();
-                    let delegation = yield (yield fetch(getDelegationsUrl(chain, address))).json();
+                    let balance = yield (yield req.get(getBalanceUrl(chain, address))).json();
+                    let delegation = yield (yield req.get(getDelegationsUrl(chain, address))).json();
                     let { denom } = delegation.delegation_responses[0].balance;
                     let balanceHolded = +(((_a = balance.balances.find((coin) => coin.denom === denom)) === null || _a === void 0 ? void 0 : _a.amount) || "0");
                     let balanceStaked = +delegation.delegation_responses[0].balance.amount;
@@ -268,14 +263,14 @@ function _requestValidators() {
     return __awaiter(this, void 0, void 0, function* () {
         // request chain list
         let baseUrl = "https://cosmos-chain.directory/chains/";
-        let { chains } = yield (yield fetch(baseUrl)).json();
+        let { chains } = yield req.get(baseUrl);
         chains = chains.filter((chain) => chain !== "testnets");
         let validatorListPromises = [];
         function requestValidatorList(chain) {
             return __awaiter(this, void 0, void 0, function* () {
                 let url = getValidatorListUrl(chain);
                 try {
-                    let res = yield (yield fetch(url)).json();
+                    let res = yield req.get(url);
                     // return [chain, res.validators.length.toString()];
                     return [chain, res.validators.map((item) => item.description.moniker)];
                 }
