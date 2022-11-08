@@ -5,6 +5,9 @@ import cors from "cors";
 import E from "./config";
 import { rootPath } from "../common/utils";
 import { init } from "../common/workers/testnet-backend-workers";
+import dashboard from "./routes/dashboard";
+import assets from "./routes/assets";
+import bank from "./routes/bank";
 
 async function process() {
   const {
@@ -27,8 +30,11 @@ async function process() {
 express()
   .use(cors(), text(), json())
   .use(express.static(rootPath("./dist/frontend")))
+  .use("/dashboard", dashboard)
+  .use("/assets", assets)
+  .use("/bank", bank)
 
   .listen(E.PORT, () => {
     l(`Ready on port ${E.PORT}`);
-    process();
+    // process();
   });
