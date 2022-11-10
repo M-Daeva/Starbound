@@ -82,7 +82,7 @@
     <h3>Deposited on next period: {1000}</h3>
     <h3>Portfolio networth: {1000}</h3>
     <Doughnut
-      class="canvas"
+      class="canvas mt-2"
       {data}
       options={{ responsive: true, radius: "90%" }}
     />
@@ -91,23 +91,26 @@
   <div class="table-container">
     <div class="overflow-x-auto">
       <table class="table table-compact w-full">
-        <thead>
-          <tr>
+        <thead class="bg-black flex text-white w-full">
+          <tr class="flex w-full mb-4">
             {#each Object.keys(row).map((item) => item[0].toUpperCase() + item.slice(1)) as key}
-              <th>{key}</th>
+              <th class="p-4 w-1/4">{key}</th>
             {/each}
           </tr>
         </thead>
 
-        <tbody>
+        <tbody
+          class="bg-grey-light flex flex-col items-center justify-between overflow-y-scroll w-full"
+          style="height: 50vh;"
+        >
           {#each rows as { asset, price, holded, staked, cost, allocation }}
-            <tr>
-              <td>{asset}</td>
-              <td>{price}</td>
-              <td>{holded}</td>
-              <td>{staked}</td>
-              <td>{cost}</td>
-              <td>{allocation}</td>
+            <tr class="flex w-full mb-4">
+              <td class="p-4 w-1/4">{asset}</td>
+              <td class="p-4 w-1/4">{price}</td>
+              <td class="p-4 w-1/4">{holded}</td>
+              <td class="p-4 w-1/4">{staked}</td>
+              <td class="p-4 w-1/4">{cost}</td>
+              <td class="p-4 w-1/4">{allocation}</td>
             </tr>
           {/each}
         </tbody>

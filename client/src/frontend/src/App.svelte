@@ -17,20 +17,22 @@
   <div class="container bg-indigo-900 text-amber-200">
     <nav>
       <ul class="my-5">
-        <li class="wrapper bg-amber-200">
+        <li class="wrapper">
           <Link
-            class="my-link btn btn-primary bg-amber-200"
+            class="my-link tab tab-xs tab-lifted bg-amber-200 hover:bg-amber-400"
             to={paths.dashboard}>Dashboard</Link
           >
         </li>
-        <li class="wrapper bg-amber-200">
-          <Link class="my-link btn btn-primary bg-amber-200" to={paths.assets}
-            >Assets</Link
+        <li class="wrapper">
+          <Link
+            class="my-link tab tab-xs tab-lifted bg-amber-200 hover:bg-amber-400"
+            to={paths.assets}>Assets</Link
           >
         </li>
-        <li class="wrapper bg-amber-200">
-          <Link class="my-link btn btn-primary bg-amber-200" to={paths.bank}
-            >Bank</Link
+        <li class="wrapper">
+          <Link
+            class="my-link tab tab-xs tab-lifted bg-amber-200 hover:bg-amber-400"
+            to={paths.bank}>Bank</Link
           >
         </li>
       </ul>
