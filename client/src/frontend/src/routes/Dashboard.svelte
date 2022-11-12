@@ -12,6 +12,11 @@
   import { Doughnut } from "svelte-chartjs";
   import Decimal from "decimal.js";
 
+  let options = {
+    responsive: true,
+    radius: "90%",
+  };
+
   const data = {
     labels: [
       "Atom",
@@ -74,69 +79,42 @@
   };
 
   let rows: Row[] = [...new Array(35)].map((_) => row);
+
+  const stablecoin = "EEUR";
 </script>
 
-<div class="container">
-  <div class="chart-container">
-    <h3>Deposited on current period: {1000}</h3>
-    <h3>Deposited on next period: {1000}</h3>
-    <h3>Portfolio networth: {1000}</h3>
-    <Doughnut
-      class="canvas mt-2"
-      {data}
-      options={{ responsive: true, radius: "90%" }}
-    />
+<div class="flex justify-between px-4" style="height: 85vh">
+  <div class="w-4/12">
+    <div class="ml-12">
+      <h2>Current Period Balance: {1000} {stablecoin}</h2>
+      <h2>Next period balance: {1000} {stablecoin}</h2>
+      <h2>Portfolio Net Worth: {1000} {stablecoin}</h2>
+    </div>
+    <Doughnut class="mt-6" {data} {options} />
   </div>
 
-  <div class="table-container">
-    <div class="overflow-x-auto">
-      <table class="table table-compact w-full">
-        <thead class="bg-black flex text-white w-full">
-          <tr class="flex w-full mb-4">
-            {#each Object.keys(row).map((item) => item[0].toUpperCase() + item.slice(1)) as key}
-              <th class="p-4 w-1/4">{key}</th>
+  <div class="w-7/12 overflow-x-auto">
+    <table class="table table-compact w-full ">
+      <thead class="bg-black flex text-white w-full pr-4">
+        <tr class="flex w-full mb-1">
+          {#each Object.keys(row) as key}
+            <th class="bg-black p-4 w-1/4 text-center">{key}</th>
+          {/each}
+        </tr>
+      </thead>
+
+      <tbody
+        class="bg-grey-light flex flex-col items-center justify-start overflow-y-scroll w-full"
+        style="max-height: 72vh; min-height: fit-content;"
+      >
+        {#each rows as row}
+          <tr class="flex w-full mt-4 first:mt-0">
+            {#each Object.values(row) as rowValue}
+              <td class="p-2.5 w-1/4 text-center">{rowValue}</td>
             {/each}
           </tr>
-        </thead>
-
-        <tbody
-          class="bg-grey-light flex flex-col items-center justify-between overflow-y-scroll w-full"
-          style="height: 50vh;"
-        >
-          {#each rows as { asset, price, holded, staked, cost, allocation }}
-            <tr class="flex w-full mb-4">
-              <td class="p-4 w-1/4">{asset}</td>
-              <td class="p-4 w-1/4">{price}</td>
-              <td class="p-4 w-1/4">{holded}</td>
-              <td class="p-4 w-1/4">{staked}</td>
-              <td class="p-4 w-1/4">{cost}</td>
-              <td class="p-4 w-1/4">{allocation}</td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
+        {/each}
+      </tbody>
+    </table>
   </div>
 </div>
-
-<style>
-  .container {
-    display: flex;
-    justify-content: space-around;
-  }
-
-  .chart-container {
-    width: 30vw;
-    display: block;
-    margin: 0 auto;
-  }
-
-  .table-container {
-    width: 60vw;
-  }
-
-  /* .container:global(.canvas) {
-    display: block;
-    margin: 0 auto;
-  } */
-</style>

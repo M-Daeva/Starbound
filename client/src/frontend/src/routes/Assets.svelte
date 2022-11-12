@@ -2,8 +2,7 @@
   import { DENOMS } from "../../../common/helpers/assets";
 
   interface Row {
-    logo: string;
-    asset: string;
+    asset: { logo: string; symbol: string };
     address: string;
     ratio: string;
     validator: string;
@@ -11,10 +10,12 @@
   }
 
   let row = {
-    logo: "https://raw.githubusercontent.com/cosmos/chain-registry/68df154360a341831f557ee30119dbbec1a77ca8/osmosis/images/osmo.svg",
-    asset: "OSMO",
+    asset: {
+      logo: "https://raw.githubusercontent.com/cosmos/chain-registry/68df154360a341831f557ee30119dbbec1a77ca8/osmosis/images/osmo.svg",
+      symbol: "OSMO",
+    },
     address: "osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx",
-    ratio: "0.2",
+    ratio: "20",
     validator: "Imperator",
     isGranted: false,
   };
@@ -24,60 +25,131 @@
   let denoms = Object.keys(DENOMS);
 </script>
 
-<div class="container flex justify-around bg-indigo-600 my-2">
-  <select value={DENOMS[0]}>
-    {#each denoms as denom}
-      <option value={denom}>
-        {denom}
-      </option>
-    {/each}
-  </select>
-  <input type="text" />
-  <button>Add</button>
-</div>
+<div class="flex flex-col px-4 -mt-3" style="height: 87vh">
+  <div
+    class="container flex justify-around items-center py-2 pr-28 text-amber-200 font-medium my-2"
+    style="background-color: rgb(42 48 60);"
+  >
+    <div class="flex flex-row justify-center items-center w-4/12">
+      <label for="sybol-selector" class="mr-3">Select Asset</label>
+      <select id="sybol-selector" class="w-28 m-0" value={DENOMS[0]}>
+        {#each denoms as denom}
+          <option value={denom}>
+            {denom}
+          </option>
+        {/each}
+      </select>
+    </div>
+    <div class="flex flex-row justify-center items-center w-4/12">
+      <label for="weight-selector" class="mr-3">Specify Weight in %</label>
+      <input
+        id="weight-selector"
+        type="number"
+        min="1"
+        max="100"
+        class="w-24 m-0 text-center"
+      />
+    </div>
+    <div class="flex justify-end w-3/12 pr-1">
+      <button class="btn btn-secondary m-0 w-28">Add Asset</button>
+    </div>
+  </div>
 
-<div class="table-container">
-  <div class="overflow-x-auto">
+  <div class="w-full overflow-x-auto mt-1">
     <table class="table table-compact w-full">
-      <thead class="bg-black flex text-white w-full">
-        <tr class="flex w-full mb-4">
-          {#each Object.keys(row).map((item) => item[0].toUpperCase() + item.slice(1)) as key}
-            <th class="p-4 w-1/4">
-              {key}
-              <a href="#"
-                ><svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="ml-1 w-3 h-3"
-                  aria-hidden="true"
-                  fill="currentColor"
-                  viewBox="0 0 320 512"
-                  ><path
-                    d="M27.66 224h264.7c24.6 0 36.89-29.78 19.54-47.12l-132.3-136.8c-5.406-5.406-12.47-8.107-19.53-8.107c-7.055 0-14.09 2.701-19.45 8.107L8.119 176.9C-9.229 194.2 3.055 224 27.66 224zM292.3 288H27.66c-24.6 0-36.89 29.77-19.54 47.12l132.5 136.8C145.9 477.3 152.1 480 160 480c7.053 0 14.12-2.703 19.53-8.109l132.3-136.8C329.2 317.8 316.9 288 292.3 288z"
-                  /></svg
-                ></a
-              >
-            </th>
-          {/each}
+      <thead class="bg-black flex text-white w-full pr-4">
+        <tr class="flex w-full mb-1">
+          <th
+            class="flex flex-row justify-start items-center bg-black p-4 w-1/4 text-center"
+          >
+            <span class="mr-1 ml-5">ASSET</span>
+            <img
+              class="hover:cursor-pointer"
+              src="src/public/up-down-arrow.svg"
+              alt="arrow"
+            />
+          </th>
+          <th
+            class="flex flex-row justify-start items-center bg-black p-4 w-1/4 text-center"
+          >
+            <span class="mr-1 ml-5">ADDRESS</span>
+            <img
+              class="hover:cursor-pointer"
+              src="src/public/up-down-arrow.svg"
+              alt="arrow"
+            />
+          </th>
+          <th
+            class="flex flex-row justify-start items-center bg-black p-4 w-1/4 text-center"
+          >
+            <span class="mr-1 ml-12">WEIGHT in %</span>
+            <img
+              class="hover:cursor-pointer"
+              src="src/public/up-down-arrow.svg"
+              alt="arrow"
+            />
+          </th>
+          <th
+            class="flex flex-row justify-start items-center bg-black p-4 w-1/4 text-center"
+          >
+            <span class="mr-1 ml-5">VALIDATOR</span>
+            <img
+              class="hover:cursor-pointer"
+              src="src/public/up-down-arrow.svg"
+              alt="arrow"
+            />
+          </th>
+          <th
+            class="flex flex-row justify-start items-center bg-black p-4 w-1/4 text-center"
+          >
+            <span class="mr-1">GRANT STATUS</span>
+            <img
+              class="hover:cursor-pointer"
+              src="src/public/up-down-arrow.svg"
+              alt="arrow"
+            />
+          </th>
         </tr>
       </thead>
 
       <tbody
-        class="bg-grey-light flex flex-col items-center justify-between overflow-y-scroll w-full"
-        style="height: 50vh;"
+        class="bg-grey-light flex flex-col items-center justify-start overflow-y-scroll w-full"
+        style="max-height: 63vh; min-height: fit-content;"
       >
-        {#each rows as { logo, asset, address, ratio, validator, isGranted }}
-          <tr class="flex w-full mb-4">
-            <td class="p-4 w-1/12"
-              ><img class="w-1/2" src={logo} alt="logo" /></td
+        {#each rows as { asset, address, ratio, validator, isGranted }}
+          <tr class="flex justify-start items-stretch w-full mt-4 first:mt-0">
+            <td class="flex flex-row justify-start items-center w-2/12 pl-5">
+              <img class="w-2/12" src={asset.logo} alt="logo" />
+              <span>{asset.symbol}</span></td
             >
-            <td class="p-4 w-1/4">{asset}</td>
-            <td class="p-4 w-1/4"><input type="text" value={address} /></td>
-            <td class="p-4 w-1/4"><input type="number" value={ratio} /></td>
-            <td class="p-4 w-1/4">{validator}</td>
-            <td class="p-4 w-1/4"
-              ><button>{isGranted ? "Revoke" : "Grant"}</button></td
+            <td class="flex justify-center items-center w-4/12 p-0 -ml-20"
+              ><input
+                type="text"
+                class="m-0 text-center"
+                style="width: 90%;"
+                value={address}
+              /></td
             >
-            <td class="p-4 w-1/12"><button>❌</button></td>
+            <td class="flex justify-start items-center w-2/12"
+              ><input
+                type="number"
+                min="0"
+                max="100"
+                class="w-24 m-0 text-center ml-6"
+                value={ratio}
+              /></td
+            >
+            <td class="flex justify-start items-center w-3/12 pl-14"
+              >{validator}</td
+            >
+            <td class="flex justify-center items-center w-1/12"
+              ><button class="btn btn-secondary m-0 w-28 -ml-10"
+                >{isGranted ? "Revoke" : "Grant"}</button
+              ></td
+            >
+            <td class="flex justify-center items-center w-1/12"
+              ><button class="btn btn-circle m-0">❌</button></td
+            >
           </tr>
         {/each}
       </tbody>

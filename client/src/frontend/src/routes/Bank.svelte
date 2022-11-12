@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   // @ts-nocheck
 
   import { Line } from "svelte-chartjs";
@@ -14,13 +14,19 @@
     CategoryScale,
   } from "chart.js";
 
-  import Button from "../components/Button.svelte";
-
   const data = {
-    labels: ["January", "February", "March", "April", "May", "June", "July"],
+    labels: [
+      "01/01/01",
+      "02/01/01",
+      "03/01/01",
+      "04/01/01",
+      "05/01/01",
+      "06/01/01",
+      "07/01/01",
+    ],
     datasets: [
       {
-        label: "My First dataset",
+        label: "Current schedule",
         fill: true,
         lineTension: 0.3,
         backgroundColor: "rgba(225, 204,230, .3)",
@@ -38,10 +44,10 @@
         pointHoverBorderWidth: 2,
         pointRadius: 1,
         pointHitRadius: 10,
-        data: [65, 59, 80, 81, 56, 55, 40],
+        data: [100, 200, 300, 400, 500, 600],
       },
       {
-        label: "My Second dataset",
+        label: "Estimated schedule",
         fill: true,
         lineTension: 0.3,
         backgroundColor: "rgba(184, 185, 210, .3)",
@@ -59,7 +65,7 @@
         pointHoverBorderWidth: 2,
         pointRadius: 1,
         pointHitRadius: 10,
-        data: [28, 48, 40, 19, 86, 27, 90],
+        data: [100, 250, 400, 550, 700, 700],
       },
     ],
   };
@@ -73,39 +79,101 @@
     PointElement,
     CategoryScale
   );
+
+  let time = "30:00:00";
+
+  function getTime() {
+    time = new Date().toTimeString().split(" ")[0];
+  }
+
+  setInterval(getTime, 1000);
+
+  let stablecoin = "EEUR";
 </script>
 
-<div class="container flex justify-center my-2">
-  <div class="chart w-2/6">
-    <Line {data} options={{ responsive: true }} />
-  </div>
+<div class="flex flex-col px-4 -mt-3 text-amber-200" style="height: 87vh">
+  <p class="font-bold text-xl text-center">
+    Rebalancing in<input
+      class="bg-transparent outline-none border-none select-none w-24"
+      type="text"
+      bind:value={time}
+      readonly
+    />
+  </p>
 
-  <div class="container">
-    <div class="wallet-bar">
-      <Button clickHandler={() => {}} text="Grant" />
+  <div class="flex flex-row justify-between">
+    <div class="chart w-6/12">
+      <h2 class="text-center font-medium text-lg">Cumulative Payments</h2>
+      <Line class="mt-2" {data} options={{ responsive: true }} />
     </div>
 
-    <div class="deposit">
-      <div class="inputs">
-        <div class="input1">
-          <label for="currentPeriod">Payment on current period</label>
-          <input type="text" id="currentPeriod" />
+    <div class="flex justify-around w-6/12">
+      <div
+        class="flex flex-col justify-start items-center p-3"
+        style="background-color: rgb(42 48 60);"
+      >
+        <div>
+          <div>
+            <label class="mb-1" for="currentPeriod"
+              >Current Period Payment in {stablecoin}</label
+            >
+            <input
+              class="w-full text-center mx-0 mb-5"
+              type="number"
+              min="0"
+              max="1000000"
+              id="currentPeriod"
+            />
+          </div>
+          <div>
+            <label class="mb-1" for="nextPeriod"
+              >Next Period Payment in {stablecoin}</label
+            >
+            <input
+              class="w-full text-center mx-0 mb-5"
+              type="number"
+              min="0"
+              max="1000000"
+              id="nextPeriod"
+            />
+          </div>
         </div>
-        <div class="input1">
-          <label for="nextPeriod">Payment on next period</label>
-          <input type="text" id="nextPeriod" />
+        <div>
+          <label class="mb-1" for="period">Current Investment Period End</label>
+          <input class="w-full text-center mx-0 mb-5" type="date" id="period" />
+        </div>
+        <div class="controls">
+          <button class="btn btn-secondary mt-2">Deposit</button>
         </div>
       </div>
-      <div class="inputs">
-        <div class="input2">
-          <label for="period">Period in days</label>
-          <input type="text" id="period" />
+
+      <div>
+        <div class="font-medium text-lg">
+          <h2>Current Period Balance: {1000.123456} {stablecoin}</h2>
+          <h2>Next period balance: {0} {stablecoin}</h2>
+          <h2>Current Period Expires in: {30} days</h2>
         </div>
-      </div>
-      <div class="controls">
-        <Button clickHandler={() => {}} text="Deposit" />
-        <Button clickHandler={() => {}} text="Withdraw" />
-        <Button clickHandler={() => {}} text="Add asset" />
+
+        <div
+          class="flex flex-col justify-start items-center mt-20 pb-3"
+          style="background-color: rgb(42 48 60);"
+        >
+          <div class="mt-6">
+            <label class="mb-1" for="currentPeriod"
+              >Withdrawal Amount in {stablecoin}</label
+            >
+            <input
+              class="w-full text-center mx-0 mb-5"
+              type="number"
+              min="0"
+              max="1000000"
+              id="currentPeriod"
+            />
+          </div>
+          <div class="controls">
+            <button class="btn btn-secondary mt-2">Withdraw</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>

@@ -14,65 +14,43 @@
 </script>
 
 <Router>
-  <div class="container bg-indigo-900 text-amber-200">
-    <nav>
-      <ul class="my-5">
-        <li class="wrapper">
-          <Link
-            class="my-link tab tab-xs tab-lifted bg-amber-200 hover:bg-amber-400"
-            to={paths.dashboard}>Dashboard</Link
-          >
-        </li>
-        <li class="wrapper">
-          <Link
-            class="my-link tab tab-xs tab-lifted bg-amber-200 hover:bg-amber-400"
-            to={paths.assets}>Assets</Link
-          >
-        </li>
-        <li class="wrapper">
-          <Link
-            class="my-link tab tab-xs tab-lifted bg-amber-200 hover:bg-amber-400"
-            to={paths.bank}>Bank</Link
-          >
-        </li>
-      </ul>
-    </nav>
+  <div class="bg-indigo-900 text-amber-200">
+    <header
+      class="flex justify-between items-center px-3 mb-5 border-white border-b-2"
+    >
+      <div class="flex justify-center align-middle items-center w-4/12 -mt-2">
+        <img class="w-1/12" src="src/public/s.png" alt="logo" />
+        <h1 class="font-bold text-3xl -ml-2 -mb-1">tarbound</h1>
+      </div>
+      <nav class="w-6/12 font-medium text-xl">
+        <ul class="my-5 flex justify-around">
+          <li>
+            <Link
+              class="text-center hover:no-underline visited:text-amber-200"
+              to={paths.dashboard}>Dashboard</Link
+            >
+          </li>
+          <li>
+            <Link
+              class="text-center hover:no-underline visited:text-amber-200"
+              to={paths.assets}>Assets</Link
+            >
+          </li>
+          <li>
+            <Link
+              class="text-center hover:no-underline visited:text-amber-200"
+              to={paths.bank}>Bank</Link
+            >
+          </li>
+        </ul>
+      </nav>
+      <button class="btn btn-primary mt-1.5 mr-1">Connect Wallet</button>
+    </header>
 
     <div>
       <Route primary={false} path={paths.dashboard}><Dashboard /></Route>
       <Route primary={false} path={paths.assets}><Assets /></Route>
-      <Route path={paths.bank}><Bank /></Route>
+      <Route primary={false} path={paths.bank}><Bank /></Route>
     </div>
   </div>
 </Router>
-
-<style>
-  nav {
-    display: flex;
-    justify-content: center;
-  }
-
-  ul {
-    list-style-type: none;
-    width: 80vw;
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-  }
-
-  li {
-    display: inline-block;
-    padding: 5px;
-    width: 100px;
-    border-radius: 3px;
-    text-align: center;
-  }
-
-  .wrapper :global(.my-link) {
-    color: rgb(49, 46, 129);
-  }
-
-  .wrapper :global(.my-link):hover {
-    text-decoration: none;
-  }
-</style>
