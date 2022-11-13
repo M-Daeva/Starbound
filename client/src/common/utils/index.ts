@@ -8,6 +8,10 @@ const r = (num: number, digits: number = 0): number => {
   return Math.round(k * num) / k;
 };
 
+function getLast<T>(arr: T[]) {
+  return arr[arr.length - 1];
+}
+
 const rootPath = (dir: string) => path.resolve(__dirname, "../../../", dir);
 
 const SEP =
@@ -32,4 +36,4 @@ const createRequest = (config: Object) => {
   };
 };
 
-export { l, r, createRequest, rootPath, SEP };
+export { l, r, createRequest, rootPath, SEP, getLast };

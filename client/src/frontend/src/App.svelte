@@ -1,9 +1,19 @@
 <script lang="ts">
   import { Router, Link, Route } from "svelte-navigator";
-  import Home from "./routes/Home.svelte";
   import Dashboard from "./routes/Dashboard.svelte";
   import Assets from "./routes/Assets.svelte";
   import Bank from "./routes/Bank.svelte";
+
+  import { DENOMS } from "../../common/helpers/assets";
+  import { getAddrByPrefix } from "../../common/signers";
+  import type {
+    NetworkData,
+    ChainResponse,
+    AssetListItem,
+  } from "../../common/helpers/interfaces";
+  import { l, createRequest } from "../../common/utils";
+  import { baseURL } from "./config";
+  import { onMount } from "svelte";
 
   const paths = {
     home: "/",
@@ -11,6 +21,33 @@
     assets: "/assets",
     bank: "/bank",
   };
+
+  let rows: AssetListItem[] = [];
+
+  onMount(async () => {
+    let chainRegistry: NetworkData[] = await createRequest({}).get(
+      baseURL + "/api/chain-registry"
+    );
+
+    for (let item of chainRegistry) {
+      rows = [
+        ...rows,
+        {
+          asset: {
+            logo: item.img,
+            symbol: item.symbol,
+          },
+          address: getAddrByPrefix(
+            "osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx",
+            item.prefix
+          ),
+          ratio: "20",
+          validator: "Imperator",
+          isGranted: false,
+        },
+      ];
+    }
+  });
 </script>
 
 <Router>
@@ -49,7 +86,7 @@
 
     <div>
       <Route primary={false} path={paths.dashboard}><Dashboard /></Route>
-      <Route primary={false} path={paths.assets}><Assets /></Route>
+      <Route primary={false} path={paths.assets}><Assets {rows} /></Route>
       <Route primary={false} path={paths.bank}><Bank /></Route>
     </div>
   </div>

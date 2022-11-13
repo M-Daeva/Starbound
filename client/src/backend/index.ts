@@ -1,5 +1,5 @@
 import express from "express";
-import { l } from "../common/utils";
+import { l, createRequest } from "../common/utils";
 import { text, json } from "body-parser";
 import cors from "cors";
 import E from "./config";
@@ -8,6 +8,7 @@ import { init } from "../common/workers/testnet-backend-workers";
 import dashboard from "./routes/dashboard";
 import assets from "./routes/assets";
 import bank from "./routes/bank";
+import api from "./routes/api";
 
 async function process() {
   const {
@@ -33,8 +34,13 @@ express()
   .use("/dashboard", dashboard)
   .use("/assets", assets)
   .use("/bank", bank)
+  .use("/api", api)
 
-  .listen(E.PORT, () => {
+  .listen(E.PORT, async () => {
     l(`Ready on port ${E.PORT}`);
     // process();
+    let isChainRegistryUpdated = await createRequest({}).get(
+      E.BASE_URL + "/api/update-chain-registry"
+    );
+    l({ isChainRegistryUpdated });
   });

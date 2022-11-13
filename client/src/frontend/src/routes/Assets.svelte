@@ -1,28 +1,31 @@
 <script lang="ts">
   import { DENOMS } from "../../../common/helpers/assets";
+  import type { AssetListItem } from "../../../common/helpers/interfaces";
+  import { l, createRequest } from "../../../common/utils";
 
-  interface Row {
-    asset: { logo: string; symbol: string };
-    address: string;
-    ratio: string;
-    validator: string;
-    isGranted: boolean;
-  }
-
-  let row = {
-    asset: {
-      logo: "https://raw.githubusercontent.com/cosmos/chain-registry/68df154360a341831f557ee30119dbbec1a77ca8/osmosis/images/osmo.svg",
-      symbol: "OSMO",
-    },
-    address: "osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx",
-    ratio: "20",
-    validator: "Imperator",
-    isGranted: false,
-  };
-
-  let rows: Row[] = [...new Array(35)].map((_) => row);
+  export let rows: AssetListItem[] = [];
 
   let denoms = Object.keys(DENOMS);
+  let currentSymbol = "";
+
+  function removeAsset(address: string) {
+    rows = rows.filter((row) => row.address !== address);
+  }
+
+  function addAsset(currentSymbol: string) {
+    let { address, asset } = rows.find(
+      ({ asset: { symbol } }) => symbol === currentSymbol
+    );
+
+    let currentAsset: AssetListItem = {
+      address,
+      asset,
+      isGranted: false,
+      ratio: "20",
+      validator: "Imperator",
+    };
+    rows = [...rows, currentAsset];
+  }
 </script>
 
 <div class="flex flex-col px-4 -mt-3" style="height: 87vh">
@@ -32,7 +35,7 @@
   >
     <div class="flex flex-row justify-center items-center w-4/12">
       <label for="sybol-selector" class="mr-3">Select Asset</label>
-      <select id="sybol-selector" class="w-28 m-0" value={DENOMS[0]}>
+      <select id="sybol-selector" class="w-28 m-0" bind:value={currentSymbol}>
         {#each denoms as denom}
           <option value={denom}>
             {denom}
@@ -51,7 +54,10 @@
       />
     </div>
     <div class="flex justify-end w-3/12 pr-1">
-      <button class="btn btn-secondary m-0 w-28">Add Asset</button>
+      <button
+        class="btn btn-secondary m-0 w-28"
+        on:click={() => addAsset(currentSymbol)}>Add Asset</button
+      >
     </div>
   </div>
 
@@ -120,7 +126,7 @@
           <tr class="flex justify-start items-stretch w-full mt-4 first:mt-0">
             <td class="flex flex-row justify-start items-center w-2/12 pl-5">
               <img class="w-2/12" src={asset.logo} alt="logo" />
-              <span>{asset.symbol}</span></td
+              <span class="ml-1">{asset.symbol}</span></td
             >
             <td class="flex justify-center items-center w-4/12 p-0 -ml-20"
               ><input
@@ -148,7 +154,10 @@
               ></td
             >
             <td class="flex justify-center items-center w-1/12"
-              ><button class="btn btn-circle m-0">❌</button></td
+              ><button
+                class="btn btn-circle m-0"
+                on:click={() => removeAsset(address)}>❌</button
+              ></td
             >
           </tr>
         {/each}

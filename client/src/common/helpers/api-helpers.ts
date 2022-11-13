@@ -1,4 +1,4 @@
-import { l, createRequest } from "../utils";
+import { l, createRequest, getLast } from "../utils";
 import {
   RelayerList,
   RelayerStruct,
@@ -11,12 +11,153 @@ import {
   DelegationsResponse,
   ValidatorListResponse,
   ValidatorResponse,
+  NetworkData,
+  AssetList,
 } from "./interfaces";
 import { getAddrByPrefix } from "../signers";
 import { Coin } from "@cosmjs/stargate";
 import { DENOMS } from "../helpers/assets";
+import { parse } from "node-html-parser";
 
 const req = createRequest({});
+
+async function queryNetworkFactory(url: string, route: string) {
+  try {
+    let res = await req.get(url);
+    let attrs = parse(res).querySelectorAll("a.js-navigation-open");
+    let names: string[] = [];
+
+    for (let attr of attrs) {
+      let rawAttr = getLast(attr.rawAttrs.split(" "));
+      if (!rawAttr.includes("tree")) continue;
+      let rawName = getLast(rawAttr.split(route)).slice(0, -1);
+
+      let code = rawName.charCodeAt(0);
+      if (rawName !== "testnets" && code >= 97 && code < 123)
+        names.push(rawName);
+    }
+
+    return names;
+  } catch (error) {
+    l(error);
+    return [];
+  }
+}
+
+async function queryMainnetNames() {
+  return await queryNetworkFactory(
+    "https://github.com/cosmos/chain-registry",
+    "master/"
+  );
+}
+
+async function queryTestnetNames() {
+  return await queryNetworkFactory(
+    "https://github.com/cosmos/chain-registry/tree/master/testnets",
+    "testnets/"
+  );
+}
+
+async function queryNetworkNames() {
+  let promises = [queryMainnetNames(), queryTestnetNames()];
+  let [main, test] = await Promise.all(promises);
+  return { main, test };
+}
+
+async function mainnetQuerier(chainUrl: string, assetListUrl: string) {
+  let data: NetworkData = {
+    prefix: "",
+    main: "",
+    test: "",
+    img: "",
+    symbol: "",
+    denom: "",
+    exponent: 0,
+  };
+
+  let promises: [Promise<ChainResponse>, Promise<AssetList>] = [
+    req.get(chainUrl),
+    req.get(assetListUrl),
+  ];
+
+  try {
+    let [chainRes, assetListRes] = await Promise.all(promises);
+    let { logo_URIs, symbol, denom_units } = assetListRes.assets[0];
+    let imgUrl = logo_URIs?.svg || logo_URIs.png;
+    let { denom, exponent } = getLast(denom_units);
+
+    data = {
+      ...data,
+      prefix: chainRes.bech32_prefix,
+      main: chainRes,
+      img: imgUrl,
+      symbol,
+      denom,
+      exponent,
+    };
+  } catch (error) {}
+
+  return data;
+}
+
+async function testnetQuerier(chainUrl: string) {
+  let data: NetworkData = {
+    prefix: "",
+    main: "",
+    test: "",
+    img: "",
+    symbol: "",
+    denom: "",
+    exponent: 0,
+  };
+
+  try {
+    let chainRes: ChainResponse = await req.get(chainUrl);
+
+    data = {
+      ...data,
+      prefix: chainRes.bech32_prefix,
+      test: chainRes,
+    };
+  } catch (error) {}
+
+  return data;
+}
+
+async function queryNetworksData(mainList: string[], testList: string[]) {
+  let promises: Promise<NetworkData>[] = [];
+
+  for (let chainName of mainList) {
+    let chainUrl = `https://raw.githubusercontent.com/cosmos/chain-registry/master/${chainName}/chain.json`;
+    let assetListUrl = `https://raw.githubusercontent.com/cosmos/chain-registry/master/${chainName}/assetlist.json`;
+    promises.push(mainnetQuerier(chainUrl, assetListUrl));
+  }
+
+  for (let chainName of testList) {
+    let chainUrl = `https://raw.githubusercontent.com/cosmos/chain-registry/master/testnets/${chainName}/chain.json`;
+    promises.push(testnetQuerier(chainUrl));
+  }
+
+  let rawNetworkData = await Promise.all(promises);
+
+  let networkData = rawNetworkData.filter((item) => item.main !== "");
+  let testnetData = rawNetworkData.filter((item) => item.test !== "");
+
+  for (let networkDataItem of networkData) {
+    for (let testnetDataItem of testnetData) {
+      if (networkDataItem.prefix === testnetDataItem.prefix) {
+        networkDataItem.test = testnetDataItem.test;
+      }
+    }
+  }
+
+  return networkData;
+}
+
+async function getChainRegistry() {
+  let { main, test } = await queryNetworkNames();
+  return await queryNetworksData(main, test);
+}
 
 async function requestRelayers() {
   const url = "https://api.mintscan.io/v1/relayer/osmosis-1/paths";
@@ -244,7 +385,7 @@ async function requestUserFunds(addresses: string[]) {
   prefixes = prefixes
     .filter(([a, b]) => a !== "" || b !== "")
     .map(([a, b]) => {
-      if (a === "likecoin") return [a, "like"]; // fix likecoin bench32prefix
+      if (a === "likecoin") return [a, "like"]; // fix likecoin bech32prefix
       return [a, b];
     });
 
@@ -340,4 +481,9 @@ async function _requestValidators() {
   return validatorList;
 }
 
-export { _updatePoolsAndUsers, _mockUpdatePoolsAndUsers, _requestValidators };
+export {
+  _updatePoolsAndUsers,
+  _mockUpdatePoolsAndUsers,
+  _requestValidators,
+  getChainRegistry,
+};

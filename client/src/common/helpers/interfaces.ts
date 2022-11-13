@@ -2,6 +2,8 @@ import { Coin } from "@cosmjs/stargate";
 import { Keplr } from "@keplr-wallet/types";
 import Decimal from "decimal.js";
 
+// TODO: split to different files for better navigation
+
 interface ClientStruct {
   isKeplrType: boolean;
   RPC: string;
@@ -149,6 +151,7 @@ interface PoolPair {
   number: number;
 }
 
+// TODO: rename
 interface ChainsResponse {
   [chains: string]: string[];
 }
@@ -288,6 +291,47 @@ interface TransferParams {
   block_height: string;
 }
 
+interface NetworkData {
+  prefix: string;
+  main: ChainResponse | string;
+  test: ChainResponse | string;
+  img: string;
+  symbol: string;
+  exponent: number;
+  denom: string;
+}
+
+interface AssetList {
+  $schema: string;
+  chain_name: string;
+  assets: {
+    description: string;
+    denom_units: {
+      denom: string;
+      exponent: number;
+      aliases: string[];
+    }[];
+    base: string;
+    name: string;
+    display: string;
+    symbol: string;
+    logo_URIs: {
+      png: string;
+      svg?: string;
+    };
+    coingecko_id: string;
+    keywords: string[];
+  }[];
+}
+
+interface AssetListItem {
+  asset: { logo: string; symbol: string };
+  address: string;
+  ratio: string;
+  validator: string;
+  isGranted: boolean;
+}
+
 type AssetDenom = {
   [assetSymbol in AssetSymbol]: string;
 };
@@ -340,7 +384,11 @@ type AssetSymbol =
   | "BLD"
   | "CUDOS";
 
+export type { NetworkData };
+
 export {
+  AssetListItem,
+  AssetList,
   ClientStruct,
   DelegationStruct,
   IbcStruct,
