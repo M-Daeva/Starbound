@@ -5,7 +5,7 @@
   import Bank from "./routes/Bank.svelte";
 
   import { DENOMS } from "../../common/helpers/assets";
-  import { getAddrByPrefix } from "../../common/signers";
+  import { getAddrByPrefix, initWalletList } from "../../common/signers";
   import type {
     NetworkData,
     ChainResponse,
@@ -22,30 +22,35 @@
     bank: "/bank",
   };
 
+  let chainRegistry: NetworkData[] = [];
   let rows: AssetListItem[] = [];
 
   onMount(async () => {
-    let chainRegistry: NetworkData[] = await createRequest({}).get(
-      baseURL + "/api/chain-registry"
-    );
+    try {
+      chainRegistry = await createRequest({}).get(
+        baseURL + "/api/chain-registry"
+      );
 
-    for (let item of chainRegistry) {
-      rows = [
-        ...rows,
-        {
-          asset: {
-            logo: item.img,
-            symbol: item.symbol,
+      for (let item of chainRegistry) {
+        rows = [
+          ...rows,
+          {
+            asset: {
+              logo: item.img,
+              symbol: item.symbol,
+            },
+            address: getAddrByPrefix(
+              "osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx",
+              item.prefix
+            ),
+            ratio: "20",
+            validator: "Imperator",
+            isGranted: false,
           },
-          address: getAddrByPrefix(
-            "osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx",
-            item.prefix
-          ),
-          ratio: "20",
-          validator: "Imperator",
-          isGranted: false,
-        },
-      ];
+        ];
+      }
+    } catch (error) {
+      l(error);
     }
   });
 </script>
@@ -81,7 +86,10 @@
           </li>
         </ul>
       </nav>
-      <button class="btn btn-primary mt-1.5 mr-1">Connect Wallet</button>
+      <button
+        class="btn btn-primary mt-1.5 mr-1"
+        on:click={() => initWalletList(chainRegistry)}>Connect Wallet</button
+      >
     </header>
 
     <div>

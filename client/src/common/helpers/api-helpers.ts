@@ -84,7 +84,9 @@ async function mainnetQuerier(chainUrl: string, assetListUrl: string) {
     let [chainRes, assetListRes] = await Promise.all(promises);
     let { logo_URIs, symbol, denom_units } = assetListRes.assets[0];
     let imgUrl = logo_URIs?.svg || logo_URIs.png;
-    let { denom, exponent } = getLast(denom_units);
+    // let { denom, exponent } = getLast(denom_units);
+    let { exponent } = getLast(denom_units);
+    let { denom } = denom_units[0];
 
     data = {
       ...data,

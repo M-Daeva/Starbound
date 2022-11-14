@@ -1,8 +1,12 @@
 import { fromBech32, toBech32 } from "@cosmjs/encoding";
 import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
 import { SigningStargateClient, coin, StdFee } from "@cosmjs/stargate";
-import { ClientStruct } from "../helpers/interfaces";
-import { Keplr, Window as KeplrWindow } from "@keplr-wallet/types";
+import {
+  ClientStruct,
+  NetworkData,
+  ChainResponse,
+} from "../helpers/interfaces";
+import { Keplr, Window as KeplrWindow, ChainInfo } from "@keplr-wallet/types";
 import { createRequest, l } from "../utils";
 import { CHAIN_ID } from "../config/testnet-config.json";
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
@@ -35,6 +39,112 @@ function detectWallet() {
   }
 
   return keplr;
+}
+
+function getChainInfo(asset: NetworkData, isMain: boolean) {
+  let network = (isMain ? asset.main : asset.test) as unknown as ChainResponse;
+
+  try {
+    // l({
+    //   chain_id: network.chain_id,
+    //   exp: asset.exponent,
+    //   den: asset.denom,
+    //   rpc: network.apis.rpc[0].address,
+    //   rest: network.apis.rest[0].address,
+    // });
+
+    let chainInfo: ChainInfo = {
+      chainId: network.chain_id,
+      chainName: network.chain_name,
+      rpc: network.apis.rpc[0].address,
+      rest: network.apis.rest[0].address,
+      stakeCurrency: {
+        coinDenom: asset.symbol,
+        coinMinimalDenom: asset.denom,
+        coinDecimals: asset.exponent,
+      },
+      bip44: { coinType: 118 },
+      bech32Config: {
+        bech32PrefixAccAddr: `${network.bech32_prefix}`,
+        bech32PrefixAccPub: `${network.bech32_prefix}pub`,
+        bech32PrefixValAddr: `${network.bech32_prefix}valoper`,
+        bech32PrefixValPub: `${network.bech32_prefix}valoperpub`,
+        bech32PrefixConsAddr: `${network.bech32_prefix}valcons`,
+        bech32PrefixConsPub: `${network.bech32_prefix}valconspub`,
+      },
+      currencies: [
+        {
+          coinDenom: asset.symbol,
+          coinMinimalDenom: asset.denom,
+          coinDecimals: asset.exponent,
+        },
+      ],
+      feeCurrencies: [
+        {
+          coinDenom: asset.symbol,
+          coinMinimalDenom: asset.denom,
+          coinDecimals: asset.exponent,
+        },
+      ],
+    };
+
+    if (network.chain_id === "osmo-test-4") {
+      l(chainInfo);
+    }
+
+    return chainInfo;
+  } catch (error) {
+    return;
+  }
+}
+
+async function addChainList(wallet: Keplr, chainRegistry: NetworkData[]) {
+  for (let asset of chainRegistry) {
+    if (typeof asset.main !== "string") {
+      let chainInfo = getChainInfo(asset, true);
+      if (!chainInfo) continue;
+      await wallet.experimentalSuggestChain(chainInfo);
+    }
+
+    if (typeof asset.test !== "string") {
+      let chainInfo = getChainInfo(asset, false);
+      if (!chainInfo) continue;
+      await wallet.experimentalSuggestChain(chainInfo);
+    }
+  }
+}
+
+async function unlockWalletList(
+  wallet: Keplr,
+  chainRegistry: NetworkData[]
+): Promise<void> {
+  let promises: Promise<void>[] = [];
+
+  for (let asset of chainRegistry) {
+    if (typeof asset.main !== "string") {
+      let chainInfo = getChainInfo(asset, true);
+      if (!chainInfo) continue;
+      promises.push(wallet.enable(chainInfo.chainId));
+    }
+
+    if (typeof asset.test !== "string") {
+      let chainInfo = getChainInfo(asset, false);
+      if (!chainInfo) continue;
+      promises.push(wallet.enable(chainInfo.chainId));
+    }
+  }
+
+  await Promise.all(promises);
+}
+
+async function initWalletList(chainRegistry: NetworkData[]) {
+  let wallet = detectWallet();
+  if (!wallet) return;
+
+  await addChainList(wallet, chainRegistry); // add network to Keplr
+  await unlockWalletList(wallet, chainRegistry); // give permission for the webpage to access Keplr
+
+  return wallet;
 }
 
 async function addChain(wallet: Keplr) {
@@ -237,4 +347,11 @@ async function initWallet() {
   return wallet;
 }
 
-export { initWallet, getSgClient, getCwClient, getAddrByPrefix, fee };
+export {
+  initWallet,
+  getSgClient,
+  getCwClient,
+  getAddrByPrefix,
+  fee,
+  initWalletList,
+};
