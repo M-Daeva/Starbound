@@ -73,6 +73,7 @@ async function mainnetQuerier(chainUrl: string, assetListUrl: string) {
     symbol: "",
     denom: "",
     exponent: 0,
+    coinGeckoId: undefined,
   };
 
   let promises: [Promise<ChainResponse>, Promise<AssetList>] = [
@@ -82,9 +83,9 @@ async function mainnetQuerier(chainUrl: string, assetListUrl: string) {
 
   try {
     let [chainRes, assetListRes] = await Promise.all(promises);
-    let { logo_URIs, symbol, denom_units } = assetListRes.assets[0];
+    let { logo_URIs, symbol, denom_units, coingecko_id } =
+      assetListRes.assets[0];
     let imgUrl = logo_URIs?.svg || logo_URIs.png;
-    // let { denom, exponent } = getLast(denom_units);
     let { exponent } = getLast(denom_units);
     let { denom } = denom_units[0];
 
@@ -96,6 +97,7 @@ async function mainnetQuerier(chainUrl: string, assetListUrl: string) {
       symbol,
       denom,
       exponent,
+      coinGeckoId: coingecko_id,
     };
   } catch (error) {}
 
@@ -111,6 +113,7 @@ async function testnetQuerier(chainUrl: string) {
     symbol: "",
     denom: "",
     exponent: 0,
+    coinGeckoId: undefined,
   };
 
   try {

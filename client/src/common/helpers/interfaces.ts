@@ -299,6 +299,7 @@ interface NetworkData {
   symbol: string;
   exponent: number;
   denom: string;
+  coinGeckoId: undefined | string;
 }
 
 interface AssetList {

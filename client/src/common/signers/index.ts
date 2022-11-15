@@ -7,19 +7,13 @@ import {
   ChainResponse,
 } from "../helpers/interfaces";
 import { Keplr, Window as KeplrWindow, ChainInfo } from "@keplr-wallet/types";
-import { createRequest, l } from "../utils";
+import { l } from "../utils";
 import { CHAIN_ID } from "../config/testnet-config.json";
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
-import { DENOMS } from "../helpers/assets";
 import { OfflineSigner } from "@cosmjs/launchpad";
 import { OfflineDirectSigner } from "@cosmjs/proto-signing";
 
-const req = createRequest({});
-
 const CHAIN_ID2 = "uni-5";
-
-const chainRegistryUrl =
-  "https://github.com/cosmos/chain-registry/blob/master/testnets/osmosistestnet/chain.json";
 
 const fee: StdFee = {
   amount: [coin(0, "uosmo")],
@@ -51,7 +45,13 @@ function getChainInfo(asset: NetworkData, isMain: boolean) {
     //   den: asset.denom,
     //   rpc: network.apis.rpc[0].address,
     //   rest: network.apis.rest[0].address,
+    //   cg: asset.coinGeckoId,
     // });
+
+    // fix for juno testnet and mainnet denoms
+    if (network.chain_id.includes("uni-")) {
+      asset.denom = "ujunox";
+    }
 
     let chainInfo: ChainInfo = {
       chainId: network.chain_id,
@@ -62,6 +62,7 @@ function getChainInfo(asset: NetworkData, isMain: boolean) {
         coinDenom: asset.symbol,
         coinMinimalDenom: asset.denom,
         coinDecimals: asset.exponent,
+        coinGeckoId: asset.coinGeckoId,
       },
       bip44: { coinType: 118 },
       bech32Config: {
@@ -77,6 +78,7 @@ function getChainInfo(asset: NetworkData, isMain: boolean) {
           coinDenom: asset.symbol,
           coinMinimalDenom: asset.denom,
           coinDecimals: asset.exponent,
+          coinGeckoId: asset.coinGeckoId,
         },
       ],
       feeCurrencies: [
@@ -84,13 +86,10 @@ function getChainInfo(asset: NetworkData, isMain: boolean) {
           coinDenom: asset.symbol,
           coinMinimalDenom: asset.denom,
           coinDecimals: asset.exponent,
+          coinGeckoId: asset.coinGeckoId,
         },
       ],
     };
-
-    if (network.chain_id === "osmo-test-4") {
-      l(chainInfo);
-    }
 
     return chainInfo;
   } catch (error) {
