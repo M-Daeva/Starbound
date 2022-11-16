@@ -52,6 +52,13 @@
     } catch (error) {
       l(error);
     }
+
+    try {
+      let validatorList = await createRequest({}).get(
+        baseURL + "/api/get-validators"
+      );
+      l(validatorList);
+    } catch (error) {}
   });
 </script>
 

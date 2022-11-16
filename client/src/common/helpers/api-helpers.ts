@@ -166,6 +166,7 @@ async function getChainRegistry() {
 
 async function requestRelayers() {
   const url = "https://api.mintscan.io/v1/relayer/osmosis-1/paths";
+  // const url = "https://api.mintscan.io/v1/relayer/osmo-test-4/paths" // testnet
 
   let data = (await req.get(url)) as RelayerList;
 
@@ -240,7 +241,8 @@ async function requestPools() {
 }
 
 // merge requestRelayers with requestPools to validate asset symbols
-async function merge(): Promise<PoolExtracted[]> {
+// and filter IBC active networks
+async function getActiveNetworksInfo(): Promise<PoolExtracted[]> {
   let relayers = await requestRelayers();
   let pools = await requestPools();
 
@@ -271,7 +273,7 @@ async function merge(): Promise<PoolExtracted[]> {
 async function _updatePoolsAndUsers(response: QueryPoolsAndUsersResponse) {
   let { pools, users } = response;
 
-  let poolsData = await merge();
+  let poolsData = await getActiveNetworksInfo();
 
   for (let pool of pools) {
     for (let poolsDataItem of poolsData) {
@@ -458,18 +460,18 @@ async function _requestValidators() {
   let { chains }: ChainsResponse = await req.get(baseUrl);
   chains = chains.filter((chain) => chain !== "testnets");
 
-  let validatorListPromises: Promise<[string, string[]]>[] = [];
+  let validatorListPromises: Promise<[string, ValidatorResponse[]]>[] = [];
 
   async function requestValidatorList(
     chain: string
-  ): Promise<[string, string[]]> {
+  ): Promise<[string, ValidatorResponse[]]> {
     let url = getValidatorListUrl(chain);
     try {
       let res: ValidatorListResponse = await req.get(url);
-      // return [chain, res.validators.length.toString()];
-      return [chain, res.validators.map((item) => item.description.moniker)];
+
+      return [chain, res.validators];
     } catch (error) {
-      return [chain, [""]];
+      return [chain, []];
     }
   }
 
@@ -477,11 +479,11 @@ async function _requestValidators() {
     validatorListPromises.push(requestValidatorList(chain));
   }
 
-  let validatorList: [string, string[]][] = await Promise.all(
+  let validatorList: [string, ValidatorResponse[]][] = await Promise.all(
     validatorListPromises
   );
 
-  validatorList = validatorList.filter(([_, b]) => b[0] !== "");
+  validatorList = validatorList.filter(([_, b]) => b.length);
 
   return validatorList;
 }
@@ -491,4 +493,6 @@ export {
   _mockUpdatePoolsAndUsers,
   _requestValidators,
   getChainRegistry,
+  getActiveNetworksInfo,
+  requestUserFunds,
 };

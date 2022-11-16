@@ -10,6 +10,8 @@ import assets from "./routes/assets";
 import bank from "./routes/bank";
 import api from "./routes/api";
 
+let req = createRequest({ baseURL: E.BASE_URL + "/api" });
+
 async function process() {
   const {
     cwSwap,
@@ -28,6 +30,17 @@ async function process() {
   }, 30_000);
 }
 
+async function initStorages() {
+  let promises = [
+    req.get("/update-chain-registry"),
+    req.get("/update-active-networks-info"),
+    req.get("/update-validators"),
+  ];
+
+  let res = await Promise.all(promises);
+  l({ isStorageUpdated: res });
+}
+
 express()
   .use(cors(), text(), json())
   .use(express.static(rootPath("./dist/frontend")))
@@ -39,8 +52,7 @@ express()
   .listen(E.PORT, async () => {
     l(`Ready on port ${E.PORT}`);
     // process();
-    let isChainRegistryUpdated = await createRequest({}).get(
-      E.BASE_URL + "/api/update-chain-registry"
-    );
-    l({ isChainRegistryUpdated });
+
+    await initStorages();
+    setInterval(initStorages, 5 * 60 * 1000);
   });
