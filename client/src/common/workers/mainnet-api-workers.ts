@@ -1,7 +1,7 @@
 import { l } from "../utils";
 import {
   _updatePoolsAndUsers,
-  _requestValidators,
+  getValidators as _requestValidators,
 } from "../helpers/api-helpers";
 import { PoolExtracted, UserExtracted } from "../helpers/interfaces";
 

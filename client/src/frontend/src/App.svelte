@@ -28,7 +28,7 @@
   onMount(async () => {
     try {
       chainRegistry = await createRequest({}).get(
-        baseURL + "/api/chain-registry"
+        baseURL + "/api/get-chain-registry"
       );
 
       for (let item of chainRegistry) {

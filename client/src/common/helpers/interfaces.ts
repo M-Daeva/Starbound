@@ -276,6 +276,14 @@ interface ValidatorResponse {
   min_self_delegation: string;
 }
 
+interface IbcResponse {
+  source: string;
+  destination: string;
+  channel_id: string;
+  token_symbol: string;
+  token_name: string;
+}
+
 interface SwapStruct {
   from: AssetSymbol;
   to: AssetSymbol;
@@ -413,6 +421,7 @@ export {
   DelegationsResponse,
   ValidatorListResponse,
   ValidatorResponse,
+  IbcResponse,
   AssetSymbol,
   AssetDenom,
   SwapStruct,

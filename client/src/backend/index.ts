@@ -8,7 +8,7 @@ import { init } from "../common/workers/testnet-backend-workers";
 import dashboard from "./routes/dashboard";
 import assets from "./routes/assets";
 import bank from "./routes/bank";
-import api from "./routes/api";
+import { api, ROUTES as API_ROUTES } from "./routes/api";
 
 let req = createRequest({ baseURL: E.BASE_URL + "/api" });
 
@@ -31,13 +31,14 @@ async function process() {
 }
 
 async function initStorages() {
-  let promises = [
-    req.get("/update-chain-registry"),
-    req.get("/update-active-networks-info"),
-    req.get("/update-validators"),
-  ];
-
-  let res = await Promise.all(promises);
+  let res = await Promise.all(
+    [
+      API_ROUTES.updateChainRegistry,
+      API_ROUTES.updateIbcChannels,
+      API_ROUTES.updatePools,
+      API_ROUTES.updateValidators,
+    ].map(req.get)
+  );
   l({ isStorageUpdated: res });
 }
 

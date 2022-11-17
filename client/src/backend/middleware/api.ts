@@ -1,39 +1,45 @@
 import {
-  getChainRegistry,
-  requestUserFunds,
-  getActiveNetworksInfo,
-  _requestValidators,
+  getChainRegistry as _getChainRegistry,
+  getIbcChannnels as _getIbcChannnels,
+  getPools as _getPools,
+  getValidators as _getValidators,
+  getUserFunds,
 } from "../../common/helpers/api-helpers";
 import type {
   NetworkData,
   PoolExtracted,
   ValidatorResponse,
+  IbcResponse,
+  AssetDescription,
 } from "../../common/helpers/interfaces";
 import { l } from "../../common/utils";
 
 // simple caching
 let chainRegistryStorage: NetworkData[] = [];
-let activeNetworksInfoStorage: PoolExtracted[] = [];
-let validatorListStorage: [string, ValidatorResponse[]][] = [];
+let ibcChannellsStorage: IbcResponse[] = [];
+let poolsStorage: [string, AssetDescription[]][] = [];
+let validatorsStorage: [string, ValidatorResponse[]][] = [];
 
-async function _updateChainRegistryGetHandler() {
+async function updateChainRegistry() {
   let isStorageUpdated = false;
+
   try {
-    chainRegistryStorage = await getChainRegistry();
+    chainRegistryStorage = await _getChainRegistry();
     isStorageUpdated = true;
   } catch (error) {}
 
   return isStorageUpdated;
 }
 
-async function _chainRegistryGetHandler() {
+async function getChainRegistry() {
   return chainRegistryStorage;
 }
 
-async function _updateActiveNetworksInfoGetHandler() {
+async function updateIbcChannels() {
   let isStorageUpdated = false;
+
   try {
-    activeNetworksInfoStorage = await getActiveNetworksInfo();
+    ibcChannellsStorage = await _getIbcChannnels();
     isStorageUpdated = true;
   } catch (error) {
     l(error);
@@ -42,30 +48,48 @@ async function _updateActiveNetworksInfoGetHandler() {
   return isStorageUpdated;
 }
 
-async function _getActiveNetworksInfoGetHandler() {
-  return activeNetworksInfoStorage;
+async function getIbcChannnels() {
+  return ibcChannellsStorage;
 }
 
-async function _updateValidatorsGetHandler() {
+async function updatePools() {
   let isStorageUpdated = false;
+
   try {
-    validatorListStorage = await _requestValidators();
+    poolsStorage = await _getPools();
     isStorageUpdated = true;
   } catch (error) {}
 
   return isStorageUpdated;
 }
 
-async function _getValidatorsGetHandler() {
-  return validatorListStorage;
+async function getPools() {
+  return poolsStorage;
+}
+
+async function updateValidators() {
+  let isStorageUpdated = false;
+
+  try {
+    validatorsStorage = await _getValidators();
+    isStorageUpdated = true;
+  } catch (error) {}
+
+  return isStorageUpdated;
+}
+
+async function getValidators() {
+  return validatorsStorage;
 }
 
 export {
-  _updateChainRegistryGetHandler,
-  _chainRegistryGetHandler,
-  _updateActiveNetworksInfoGetHandler,
-  _getActiveNetworksInfoGetHandler,
-  _updateValidatorsGetHandler,
-  _getValidatorsGetHandler,
-  requestUserFunds as _requestUserFundsGetHandler,
+  updateChainRegistry,
+  getChainRegistry,
+  updateIbcChannels,
+  getIbcChannnels,
+  updatePools,
+  getPools,
+  updateValidators,
+  getValidators,
+  getUserFunds,
 };

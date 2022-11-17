@@ -1,62 +1,73 @@
 import { Request, Response } from "express";
 import {
-  _chainRegistryGetHandler,
-  _updateChainRegistryGetHandler,
-  _getActiveNetworksInfoGetHandler,
-  _updateActiveNetworksInfoGetHandler,
-  _getValidatorsGetHandler,
-  _updateValidatorsGetHandler,
-  _requestUserFundsGetHandler,
+  updateChainRegistry as _updateChainRegistry,
+  getChainRegistry as _getChainRegistry,
+  updateIbcChannels as _updateIbcChannels,
+  getIbcChannnels as _getIbcChannnels,
+  updatePools as _updatePools,
+  getPools as _getPools,
+  updateValidators as _updateValidators,
+  getValidators as _getValidators,
+  getUserFunds as _getUserFunds,
 } from "../middleware/api";
 
-async function updateChainRegistryGetHandler(_req: Request, res: Response) {
-  let data = await _updateChainRegistryGetHandler();
+async function updateChainRegistry(_req: Request, res: Response) {
+  let data = await _updateChainRegistry();
   res.send(data);
 }
 
-async function chainRegistryGetHandler(_req: Request, res: Response) {
-  let data = await _chainRegistryGetHandler();
+async function getChainRegistry(_req: Request, res: Response) {
+  let data = await _getChainRegistry();
   res.send(data);
 }
 
-async function updateActiveNetworksInfoGetHandler(
-  _req: Request,
-  res: Response
-) {
-  let data = await _updateActiveNetworksInfoGetHandler();
+async function updateIbcChannels(_req: Request, res: Response) {
+  let data = await _updateIbcChannels();
   res.send(data);
 }
 
-async function getActiveNetworksInfoGetHandler(_req: Request, res: Response) {
-  let data = await _getActiveNetworksInfoGetHandler();
+async function getIbcChannnels(_req: Request, res: Response) {
+  let data = await _getIbcChannnels();
   res.send(data);
 }
 
-async function updateValidatorsGetHandler(_req: Request, res: Response) {
-  let data = await _updateValidatorsGetHandler();
+async function updatePools(_req: Request, res: Response) {
+  let data = await _updatePools();
   res.send(data);
 }
 
-async function getValidatorsGetHandler(_req: Request, res: Response) {
-  let data = await _getValidatorsGetHandler();
+async function getPools(_req: Request, res: Response) {
+  let data = await _getPools();
   res.send(data);
 }
 
-async function requestUserFundsGetHandler(req: Request, res: Response) {
+async function updateValidators(_req: Request, res: Response) {
+  let data = await _updateValidators();
+  res.send(data);
+}
+
+async function getValidators(_req: Request, res: Response) {
+  let data = await _getValidators();
+  res.send(data);
+}
+
+async function getUserFunds(req: Request, res: Response) {
   let { adresses } = req.query as unknown as {
     adresses: string[] | undefined;
   };
   if (!adresses) return;
-  let data = await _requestUserFundsGetHandler(adresses);
+  let data = await _getUserFunds(adresses);
   res.send(data);
 }
 
 export {
-  updateChainRegistryGetHandler,
-  chainRegistryGetHandler,
-  updateActiveNetworksInfoGetHandler,
-  getActiveNetworksInfoGetHandler,
-  updateValidatorsGetHandler,
-  getValidatorsGetHandler,
-  requestUserFundsGetHandler,
+  updateChainRegistry,
+  getChainRegistry,
+  updateIbcChannels,
+  getIbcChannnels,
+  updatePools,
+  getPools,
+  updateValidators,
+  getValidators,
+  getUserFunds,
 };
