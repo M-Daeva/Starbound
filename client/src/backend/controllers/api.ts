@@ -9,6 +9,7 @@ import {
   updateValidators as _updateValidators,
   getValidators as _getValidators,
   getUserFunds as _getUserFunds,
+  filterChainRegistry as _filterChainRegistry,
 } from "../middleware/api";
 
 async function updateChainRegistry(_req: Request, res: Response) {
@@ -60,6 +61,11 @@ async function getUserFunds(req: Request, res: Response) {
   res.send(data);
 }
 
+async function filterChainRegistry(_req: Request, res: Response) {
+  let data = await _filterChainRegistry();
+  res.send(data);
+}
+
 export {
   updateChainRegistry,
   getChainRegistry,
@@ -70,4 +76,5 @@ export {
   updateValidators,
   getValidators,
   getUserFunds,
+  filterChainRegistry,
 };

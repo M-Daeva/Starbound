@@ -167,11 +167,26 @@ async function getChainRegistry() {
 }
 
 async function getIbcChannnels() {
-  const url = "https://api-osmosis.imperator.co/ibc/v1/info";
+  //const url = "https://api-osmosis.imperator.co/ibc/v1/info";
+  const url = "https://api-osmosis.imperator.co/ibc/v1/all?dex=osmosis";
 
   try {
-    let res: IbcResponse[] = await req.get(url);
-    return res.filter((item) => item.source === "osmosis-1");
+    let channels: IbcResponse[] = await req.get(url);
+    let fromOsmoChannels: IbcResponse[] = [];
+    let toOsmoChannels: string[] = [];
+
+    // split channels by direction
+    for (let item of channels) {
+      let { size_queue, token_symbol, source } = item;
+      if (size_queue >= 5) continue; // allow using channels with some txs in queue
+      if (token_symbol === "OSMO") fromOsmoChannels.push(item);
+      else toOsmoChannels.push(source);
+    }
+
+    // use bidirectional channels
+    return fromOsmoChannels.filter(({ destination }) =>
+      toOsmoChannels.includes(destination)
+    );
   } catch (error) {
     return [];
   }
@@ -247,7 +262,7 @@ async function getPools() {
 
   // skip low liquidity pools
   let valid_pools = Object.entries(poolDatabase).filter(
-    ([_, [v0]]) => v0.liquidity > 100_000
+    ([_, [v0]]) => v0.liquidity > 1_000
   );
 
   return valid_pools;
@@ -256,15 +271,95 @@ async function getPools() {
 function filterChainRegistry(
   chainRegistry: NetworkData[],
   ibcChannels: IbcResponse[],
-  pools: [string, AssetDescription[]][]
-): NetworkData[] {
-  let ibcChannelSymbols = ibcChannels.map(({ token_symbol }) => token_symbol);
-  let poolSymbols = pools.map(([k, [v1, v2]]) => v1.symbol);
-
-  return chainRegistry.filter(
-    ({ symbol }) =>
-      ibcChannelSymbols.includes(symbol) && poolSymbols.includes(symbol)
+  pools: [string, AssetDescription[]][],
+  validators: [string, ValidatorResponse[]][]
+): {
+  chainRegistry: NetworkData[];
+  ibcChannels: IbcResponse[];
+  pools: [string, AssetDescription[]][];
+  activeNetworks: PoolExtracted[];
+} {
+  const ibcChannelDestinations = ibcChannels.map(
+    ({ destination }) => destination
   );
+  const osmoPools = pools.filter(([k, [v1, v2]]) => v2.symbol === "OSMO");
+
+  const poolSymbols = osmoPools.map(([k, [v1, v2]]) => v1.symbol);
+
+  const validatorsChains = validators.map((item) => item[0]);
+
+  let chainRegistryFiltered = chainRegistry.filter(({ symbol, main }) => {
+    if (typeof main === "string") return false;
+    return (
+      ibcChannelDestinations.includes(main.chain_id) &&
+      poolSymbols.includes(symbol) &&
+      validatorsChains.includes(main.chain_name)
+    );
+  });
+
+  const osmoChainRegistry = chainRegistry.find(
+    ({ symbol }) => symbol === "OSMO"
+  );
+  if (typeof osmoChainRegistry !== "undefined") {
+    chainRegistryFiltered.push(osmoChainRegistry);
+  }
+
+  chainRegistryFiltered = chainRegistryFiltered.sort((a, b) =>
+    a.symbol > b.symbol ? 1 : -1
+  );
+
+  const chainRegistryFilteredSymbols = chainRegistryFiltered.map(
+    ({ symbol }) => symbol
+  );
+
+  const chainRegistryFilteredDestinations = chainRegistryFiltered.map(
+    ({ main }) => {
+      if (typeof main === "string") return "";
+      return main.chain_id;
+    }
+  );
+
+  const ibcChannelsFiltered = ibcChannels.filter(({ destination }) =>
+    chainRegistryFilteredDestinations.includes(destination)
+  );
+
+  const poolsFiltered = osmoPools.filter(([k, [v1, v2]]) =>
+    chainRegistryFilteredSymbols.includes(v1.symbol)
+  );
+
+  let activeNetworks: PoolExtracted[] = [];
+
+  for (let chainRegistry of chainRegistryFiltered) {
+    const { main } = chainRegistry;
+    if (typeof main === "string") continue;
+
+    const pool = poolsFiltered.find(
+      ([k, [v1, v2]]) => v1.symbol === chainRegistry.symbol
+    );
+    if (typeof pool === "undefined") continue;
+    const [key, [v0, v1]] = pool;
+
+    const ibcChannel = ibcChannelsFiltered.find(
+      ({ destination }) => destination === main.chain_id
+    );
+    if (typeof ibcChannel === "undefined") continue;
+
+    activeNetworks.push({
+      channel_id: ibcChannel.channel_id,
+      denom: v0.denom,
+      id: key,
+      port_id: "transfer",
+      price: v0.price.toString(),
+      symbol: chainRegistry.symbol,
+    });
+  }
+
+  return {
+    chainRegistry: chainRegistryFiltered,
+    ibcChannels: ibcChannelsFiltered,
+    pools: poolsFiltered,
+    activeNetworks,
+  };
 }
 
 // merge requestRelayers with requestPools to validate asset symbols

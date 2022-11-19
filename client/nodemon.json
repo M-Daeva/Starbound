@@ -1,6 +1,7 @@
 {
   "watch": [
-    "./src/backend"
+    "./src/backend",
+    "./src/common"
   ],
   "ext": ".ts,.js",
   "ignore": [],

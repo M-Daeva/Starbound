@@ -9,6 +9,7 @@ import {
   updateValidators,
   getValidators,
   getUserFunds,
+  filterChainRegistry,
 } from "../controllers/api";
 
 const router = express.Router();
@@ -27,6 +28,8 @@ const ROUTES = {
   getValidators: "/get-validators",
 
   getUserFunds: "/get-user-funds",
+
+  filterChainRegistry: "/filter-chain-registry",
 };
 
 router.get(ROUTES.updateChainRegistry, updateChainRegistry);
@@ -42,5 +45,7 @@ router.get(ROUTES.updateValidators, updateValidators);
 router.get(ROUTES.getValidators, getValidators);
 
 router.get(ROUTES.getUserFunds, getUserFunds);
+
+router.get(ROUTES.filterChainRegistry, filterChainRegistry);
 
 export { router as api, ROUTES };

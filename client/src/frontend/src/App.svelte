@@ -3,17 +3,31 @@
   import Dashboard from "./routes/Dashboard.svelte";
   import Assets from "./routes/Assets.svelte";
   import Bank from "./routes/Bank.svelte";
-
+  import type { Coin } from "@cosmjs/stargate";
   import { DENOMS } from "../../common/helpers/assets";
   import { getAddrByPrefix, initWalletList } from "../../common/signers";
   import type {
     NetworkData,
     ChainResponse,
     AssetListItem,
+    IbcResponse,
+    AssetDescription,
+    ValidatorResponse,
   } from "../../common/helpers/interfaces";
   import { l, createRequest } from "../../common/utils";
   import { baseURL } from "./config";
   import { onMount } from "svelte";
+  import {
+    chainRegistryStorage,
+    ibcChannellsStorage,
+    poolsStorage,
+    userFundsStorage,
+    validatorsStorage,
+    getRegistryChannelsPools,
+    getValidators,
+    getUserFunds,
+  } from "./services/storage";
+  import { get } from "svelte/store";
 
   const paths = {
     home: "/",
@@ -25,11 +39,15 @@
   let chainRegistry: NetworkData[] = [];
   let rows: AssetListItem[] = [];
 
+  // chainRegistryStorage.subscribe((value) => (chainRegistry = value));
+
   onMount(async () => {
     try {
-      chainRegistry = await createRequest({}).get(
-        baseURL + "/api/get-chain-registry"
+      chainRegistryStorage.set(
+        (await getRegistryChannelsPools()).chainRegistry
       );
+
+      chainRegistry = get(chainRegistryStorage);
 
       for (let item of chainRegistry) {
         rows = [
@@ -52,13 +70,6 @@
     } catch (error) {
       l(error);
     }
-
-    try {
-      let validatorList = await createRequest({}).get(
-        baseURL + "/api/get-validators"
-      );
-      l(validatorList);
-    } catch (error) {}
   });
 </script>
 

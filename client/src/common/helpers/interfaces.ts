@@ -282,6 +282,10 @@ interface IbcResponse {
   channel_id: string;
   token_symbol: string;
   token_name: string;
+  token_liquidity: number;
+  last_tx: string;
+  size_queue: number;
+  duration_minutes: number;
 }
 
 interface SwapStruct {

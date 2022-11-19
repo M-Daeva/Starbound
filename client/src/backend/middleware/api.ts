@@ -4,10 +4,10 @@ import {
   getPools as _getPools,
   getValidators as _getValidators,
   getUserFunds,
+  filterChainRegistry as _filterChainRegistry,
 } from "../../common/helpers/api-helpers";
 import type {
   NetworkData,
-  PoolExtracted,
   ValidatorResponse,
   IbcResponse,
   AssetDescription,
@@ -32,7 +32,14 @@ async function updateChainRegistry() {
 }
 
 async function getChainRegistry() {
-  return chainRegistryStorage;
+  const { activeNetworks, chainRegistry, ibcChannels, pools } =
+    _filterChainRegistry(
+      chainRegistryStorage,
+      ibcChannellsStorage,
+      poolsStorage,
+      validatorsStorage
+    );
+  return chainRegistry;
 }
 
 async function updateIbcChannels() {
@@ -49,7 +56,14 @@ async function updateIbcChannels() {
 }
 
 async function getIbcChannnels() {
-  return ibcChannellsStorage;
+  const { activeNetworks, chainRegistry, ibcChannels, pools } =
+    _filterChainRegistry(
+      chainRegistryStorage,
+      ibcChannellsStorage,
+      poolsStorage,
+      validatorsStorage
+    );
+  return ibcChannels;
 }
 
 async function updatePools() {
@@ -64,7 +78,14 @@ async function updatePools() {
 }
 
 async function getPools() {
-  return poolsStorage;
+  const { activeNetworks, chainRegistry, ibcChannels, pools } =
+    _filterChainRegistry(
+      chainRegistryStorage,
+      ibcChannellsStorage,
+      poolsStorage,
+      validatorsStorage
+    );
+  return pools;
 }
 
 async function updateValidators() {
@@ -82,6 +103,15 @@ async function getValidators() {
   return validatorsStorage;
 }
 
+async function filterChainRegistry() {
+  return _filterChainRegistry(
+    chainRegistryStorage,
+    ibcChannellsStorage,
+    poolsStorage,
+    validatorsStorage
+  );
+}
+
 export {
   updateChainRegistry,
   getChainRegistry,
@@ -92,4 +122,5 @@ export {
   updateValidators,
   getValidators,
   getUserFunds,
+  filterChainRegistry,
 };

@@ -2,29 +2,51 @@
   import { DENOMS } from "../../../common/helpers/assets";
   import type { AssetListItem } from "../../../common/helpers/interfaces";
   import { l, createRequest } from "../../../common/utils";
+  import { getAddrByPrefix } from "../../../common/signers";
+  import {
+    chainRegistryStorage,
+    ibcChannellsStorage,
+    poolsStorage,
+    userFundsStorage,
+    validatorsStorage,
+    getRegistryChannelsPools,
+  } from "../services/storage";
+  import { get } from "svelte/store";
+  import { onMount } from "svelte";
 
   export let rows: AssetListItem[] = [];
 
-  let denoms = Object.keys(DENOMS);
+  let ratio: number = 1;
+  let denoms: string[] = [];
   let currentSymbol = "";
+
+  chainRegistryStorage.subscribe((value) => {
+    denoms = value.map((item) => item.symbol);
+  });
 
   function removeAsset(address: string) {
     rows = rows.filter((row) => row.address !== address);
   }
 
   function addAsset(currentSymbol: string) {
-    let { address, asset } = rows.find(
-      ({ asset: { symbol } }) => symbol === currentSymbol
+    let registryItem = get(chainRegistryStorage).find(
+      ({ symbol }) => symbol === currentSymbol
     );
 
     let currentAsset: AssetListItem = {
-      address,
-      asset,
+      address: getAddrByPrefix(
+        "osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx",
+        registryItem.prefix
+      ),
+      asset: { symbol: registryItem.symbol, logo: registryItem.img },
       isGranted: false,
-      ratio: "20",
+      ratio: ratio.toString(),
       validator: "Imperator",
     };
-    rows = [...rows, currentAsset];
+    rows = [
+      ...rows.filter((row) => row.asset.symbol !== currentSymbol),
+      currentAsset,
+    ];
   }
 </script>
 
@@ -51,6 +73,7 @@
         min="1"
         max="100"
         class="w-24 m-0 text-center"
+        bind:value={ratio}
       />
     </div>
     <div class="flex justify-end w-3/12 pr-1">
