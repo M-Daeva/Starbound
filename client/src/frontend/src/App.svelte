@@ -37,9 +37,6 @@
   };
 
   let chainRegistry: NetworkData[] = [];
-  let rows: AssetListItem[] = [];
-
-  // chainRegistryStorage.subscribe((value) => (chainRegistry = value));
 
   onMount(async () => {
     try {
@@ -48,25 +45,6 @@
       );
 
       chainRegistry = get(chainRegistryStorage);
-
-      for (let item of chainRegistry) {
-        rows = [
-          ...rows,
-          {
-            asset: {
-              logo: item.img,
-              symbol: item.symbol,
-            },
-            address: getAddrByPrefix(
-              "osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx",
-              item.prefix
-            ),
-            ratio: "20",
-            validator: "Imperator",
-            isGranted: false,
-          },
-        ];
-      }
     } catch (error) {
       l(error);
     }
@@ -112,7 +90,7 @@
 
     <div>
       <Route primary={false} path={paths.dashboard}><Dashboard /></Route>
-      <Route primary={false} path={paths.assets}><Assets {rows} /></Route>
+      <Route primary={false} path={paths.assets}><Assets /></Route>
       <Route primary={false} path={paths.bank}><Bank /></Route>
     </div>
   </div>

@@ -3,6 +3,7 @@ import type {
   IbcResponse,
   AssetDescription,
   ValidatorResponse,
+  AssetListItem,
 } from "../../../common/helpers/interfaces";
 import type { Coin } from "@cosmjs/stargate";
 import { writable } from "svelte/store";
@@ -10,11 +11,15 @@ import type { Writable } from "svelte/store";
 import { createRequest } from "../../../common/utils";
 import { baseURL } from "../config";
 
+// api storages
 let chainRegistryStorage: Writable<NetworkData[]> = writable([]);
 let ibcChannellsStorage: Writable<IbcResponse[]> = writable([]);
 let poolsStorage: Writable<[string, AssetDescription[]][]> = writable([]);
 let validatorsStorage: Writable<[string, ValidatorResponse[]][]> = writable([]);
 let userFundsStorage: Writable<[string, Coin][]> = writable([]);
+
+// frontend storages
+let assetListStorage: Writable<AssetListItem[]> = writable([]);
 
 let req = createRequest({ baseURL: baseURL + "/api" });
 
@@ -70,6 +75,7 @@ export {
   poolsStorage,
   validatorsStorage,
   userFundsStorage,
+  assetListStorage,
   getRegistryChannelsPools,
   getPools,
   getValidators,

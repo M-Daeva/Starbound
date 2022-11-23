@@ -9,30 +9,39 @@
     poolsStorage,
     userFundsStorage,
     validatorsStorage,
+    assetListStorage,
     getRegistryChannelsPools,
+    getValidators,
   } from "../services/storage";
   import { get } from "svelte/store";
   import { onMount } from "svelte";
+  import { Description } from "cosmjs-types/cosmos/staking/v1beta1/staking";
 
-  export let rows: AssetListItem[] = [];
-
+  let assetList: AssetListItem[] = [];
   let ratio: number = 1;
   let denoms: string[] = [];
   let currentSymbol = "";
+
+  assetListStorage.subscribe((value) => {
+    assetList = value;
+    l({ assetList });
+  });
 
   chainRegistryStorage.subscribe((value) => {
     denoms = value.map((item) => item.symbol);
   });
 
   function removeAsset(address: string) {
-    rows = rows.filter((row) => row.address !== address);
+    assetListStorage.update((items) =>
+      items.filter((row) => row.address !== address)
+    );
   }
 
   function addAsset(currentSymbol: string) {
     let registryItem = get(chainRegistryStorage).find(
       ({ symbol }) => symbol === currentSymbol
     );
-
+    // TODO: get address from wallet
     let currentAsset: AssetListItem = {
       address: getAddrByPrefix(
         "osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx",
@@ -40,14 +49,56 @@
       ),
       asset: { symbol: registryItem.symbol, logo: registryItem.img },
       isGranted: false,
-      ratio: ratio.toString(),
-      validator: "Imperator",
+      ratio,
+      validator: getValidatorListBySymbol(currentSymbol)[0].operator_address,
     };
-    rows = [
+
+    assetListStorage.update((rows) => [
       ...rows.filter((row) => row.asset.symbol !== currentSymbol),
       currentAsset,
-    ];
+    ]);
   }
+
+  function updateValidator(currentSymbol: string, currentMoniker: string) {
+    currentMoniker = currentMoniker.trim();
+    let validatorList = getValidatorListBySymbol(currentSymbol);
+    let currentValidator = validatorList.find(
+      ({ description: { moniker } }) => moniker === currentMoniker
+    );
+
+    assetListStorage.update((rows) =>
+      rows.map((row) => {
+        if (row.asset.symbol === currentSymbol) {
+          return { ...row, validator: currentValidator.operator_address };
+        }
+        return row;
+      })
+    );
+  }
+
+  // TODO: sort list
+  function getValidatorListBySymbol(currentSymbol: string) {
+    let fullValidatorList = get(validatorsStorage);
+    let currentChain = get(chainRegistryStorage).find(
+      ({ symbol }) => symbol === currentSymbol
+    ).main;
+
+    if (typeof currentChain === "string") return [];
+    let currentChainName = currentChain.chain_name;
+
+    return fullValidatorList.find(
+      ([chainName]) => chainName === currentChainName
+    )[1];
+  }
+
+  // TODO: add sorting handlers on arrows
+  // TODO: add handler on grant button
+
+  onMount(async () => {
+    try {
+      validatorsStorage.set(await getValidators());
+    } catch (error) {}
+  });
 </script>
 
 <div class="flex flex-col px-4 -mt-3" style="height: 87vh">
@@ -56,8 +107,8 @@
     style="background-color: rgb(42 48 60);"
   >
     <div class="flex flex-row justify-center items-center w-4/12">
-      <label for="sybol-selector" class="mr-3">Select Asset</label>
-      <select id="sybol-selector" class="w-28 m-0" bind:value={currentSymbol}>
+      <label for="symbol-selector" class="mr-3">Select Asset</label>
+      <select id="symbol-selector" class="w-28 m-0" bind:value={currentSymbol}>
         {#each denoms as denom}
           <option value={denom}>
             {denom}
@@ -145,7 +196,7 @@
         class="bg-grey-light flex flex-col items-center justify-start overflow-y-scroll w-full"
         style="max-height: 63vh; min-height: fit-content;"
       >
-        {#each rows as { asset, address, ratio, validator, isGranted }}
+        {#each assetList as { asset, address, ratio, validator, isGranted }}
           <tr class="flex justify-start items-stretch w-full mt-4 first:mt-0">
             <td class="flex flex-row justify-start items-center w-2/12 pl-5">
               <img class="w-2/12" src={asset.logo} alt="logo" />
@@ -156,7 +207,7 @@
                 type="text"
                 class="m-0 text-center"
                 style="width: 90%;"
-                value={address}
+                bind:value={address}
               /></td
             >
             <td class="flex justify-start items-center w-2/12"
@@ -165,12 +216,24 @@
                 min="0"
                 max="100"
                 class="w-24 m-0 text-center ml-6"
-                value={ratio}
+                bind:value={ratio}
               /></td
             >
-            <td class="flex justify-start items-center w-3/12 pl-14"
-              >{validator}</td
-            >
+
+            <td class="flex justify-start items-center w-3/12">
+              <select
+                on:change={(e) =>
+                  updateValidator(asset.symbol, e.currentTarget.value)}
+                class="w-40 m-0"
+              >
+                {#each getValidatorListBySymbol(asset.symbol) as validator2}
+                  <option selected={validator === validator2.operator_address}>
+                    {validator2.description.moniker}
+                  </option>
+                {/each}
+              </select>
+            </td>
+
             <td class="flex justify-center items-center w-1/12"
               ><button class="btn btn-secondary m-0 w-28 -ml-10"
                 >{isGranted ? "Revoke" : "Grant"}</button

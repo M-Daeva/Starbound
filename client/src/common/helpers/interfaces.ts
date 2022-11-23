@@ -340,7 +340,7 @@ interface AssetList {
 interface AssetListItem {
   asset: { logo: string; symbol: string };
   address: string;
-  ratio: string;
+  ratio: number;
   validator: string;
   isGranted: boolean;
 }
