@@ -21,15 +21,40 @@
   let ratio: number = 1;
   let denoms: string[] = [];
   let currentSymbol = "";
+  let sortingConfig: {
+    key: keyof AssetListItem;
+    order: "asc" | "desc";
+  } = { key: "address", order: "asc" };
 
   assetListStorage.subscribe((value) => {
     assetList = value;
-    l({ assetList });
   });
 
   chainRegistryStorage.subscribe((value) => {
     denoms = value.map((item) => item.symbol);
   });
+
+  // TODO: use monikers to sort validators
+  function sortAssets(list: AssetListItem[]) {
+    let sign = sortingConfig.order === "asc" ? 1 : -1;
+    let { key } = sortingConfig;
+
+    return list.sort((a, b) => {
+      if (key === "asset") {
+        return a.asset.symbol > b.asset.symbol ? sign : -sign;
+      }
+      return a[key] > b[key] ? sign : -sign;
+    });
+  }
+
+  function sortAndUpdateAssets(key: keyof AssetListItem) {
+    sortingConfig = {
+      key,
+      order: sortingConfig.order === "asc" ? "desc" : "asc",
+    };
+
+    assetListStorage.update((list) => sortAssets(list));
+  }
 
   function removeAsset(address: string) {
     assetListStorage.update((items) =>
@@ -53,10 +78,12 @@
       validator: getValidatorListBySymbol(currentSymbol)[0].operator_address,
     };
 
-    assetListStorage.update((rows) => [
-      ...rows.filter((row) => row.asset.symbol !== currentSymbol),
-      currentAsset,
-    ]);
+    assetListStorage.update((rows) =>
+      sortAssets([
+        ...rows.filter((row) => row.asset.symbol !== currentSymbol),
+        currentAsset,
+      ])
+    );
   }
 
   function updateValidator(currentSymbol: string, currentMoniker: string) {
@@ -76,7 +103,6 @@
     );
   }
 
-  // TODO: sort list
   function getValidatorListBySymbol(currentSymbol: string) {
     let fullValidatorList = get(validatorsStorage);
     let currentChain = get(chainRegistryStorage).find(
@@ -86,12 +112,17 @@
     if (typeof currentChain === "string") return [];
     let currentChainName = currentChain.chain_name;
 
-    return fullValidatorList.find(
-      ([chainName]) => chainName === currentChainName
-    )[1];
+    // TODO: improve sorting
+    return fullValidatorList
+      .find(([chainName]) => chainName === currentChainName)[1]
+      .sort((a, b) =>
+        a.description.moniker.toLowerCase() >
+        b.description.moniker.toLowerCase()
+          ? 1
+          : -1
+      );
   }
 
-  // TODO: add sorting handlers on arrows
   // TODO: add handler on grant button
 
   onMount(async () => {
@@ -143,51 +174,76 @@
             class="flex flex-row justify-start items-center bg-black p-4 w-1/4 text-center"
           >
             <span class="mr-1 ml-5">ASSET</span>
-            <img
-              class="hover:cursor-pointer"
-              src="src/public/up-down-arrow.svg"
-              alt="arrow"
-            />
+            <button
+              on:click={() => sortAndUpdateAssets("asset")}
+              class="bg-transparent outline-none border-none my-auto"
+            >
+              <img
+                class="hover:cursor-pointer"
+                src="src/public/up-down-arrow.svg"
+                alt="arrow"
+              />
+            </button>
           </th>
           <th
             class="flex flex-row justify-start items-center bg-black p-4 w-1/4 text-center"
           >
             <span class="mr-1 ml-5">ADDRESS</span>
-            <img
-              class="hover:cursor-pointer"
-              src="src/public/up-down-arrow.svg"
-              alt="arrow"
-            />
+            <button
+              on:click={() => sortAndUpdateAssets("address")}
+              class="bg-transparent outline-none border-none my-auto"
+            >
+              <img
+                class="hover:cursor-pointer"
+                src="src/public/up-down-arrow.svg"
+                alt="arrow"
+              />
+            </button>
           </th>
           <th
             class="flex flex-row justify-start items-center bg-black p-4 w-1/4 text-center"
           >
             <span class="mr-1 ml-12">WEIGHT in %</span>
-            <img
-              class="hover:cursor-pointer"
-              src="src/public/up-down-arrow.svg"
-              alt="arrow"
-            />
+            <button
+              on:click={() => sortAndUpdateAssets("ratio")}
+              class="bg-transparent outline-none border-none my-auto"
+            >
+              <img
+                class="hover:cursor-pointer"
+                src="src/public/up-down-arrow.svg"
+                alt="arrow"
+              />
+            </button>
           </th>
           <th
             class="flex flex-row justify-start items-center bg-black p-4 w-1/4 text-center"
           >
             <span class="mr-1 ml-5">VALIDATOR</span>
-            <img
-              class="hover:cursor-pointer"
-              src="src/public/up-down-arrow.svg"
-              alt="arrow"
-            />
+            <button
+              on:click={() => sortAndUpdateAssets("validator")}
+              class="bg-transparent outline-none border-none my-auto"
+            >
+              <img
+                class="hover:cursor-pointer"
+                src="src/public/up-down-arrow.svg"
+                alt="arrow"
+              />
+            </button>
           </th>
           <th
             class="flex flex-row justify-start items-center bg-black p-4 w-1/4 text-center"
           >
             <span class="mr-1">GRANT STATUS</span>
-            <img
-              class="hover:cursor-pointer"
-              src="src/public/up-down-arrow.svg"
-              alt="arrow"
-            />
+            <button
+              on:click={() => sortAndUpdateAssets("isGranted")}
+              class="bg-transparent outline-none border-none my-auto"
+            >
+              <img
+                class="hover:cursor-pointer"
+                src="src/public/up-down-arrow.svg"
+                alt="arrow"
+              />
+            </button>
           </th>
         </tr>
       </thead>
@@ -226,9 +282,9 @@
                   updateValidator(asset.symbol, e.currentTarget.value)}
                 class="w-40 m-0"
               >
-                {#each getValidatorListBySymbol(asset.symbol) as validator2}
-                  <option selected={validator === validator2.operator_address}>
-                    {validator2.description.moniker}
+                {#each getValidatorListBySymbol(asset.symbol) as { operator_address, description: { moniker } }}
+                  <option selected={validator === operator_address}>
+                    {moniker}
                   </option>
                 {/each}
               </select>
