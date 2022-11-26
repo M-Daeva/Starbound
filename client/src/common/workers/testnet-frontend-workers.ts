@@ -2,7 +2,11 @@ import { l } from "../utils";
 import { getCwHelpers } from "../helpers/cw-helpers";
 import { getSgHelpers } from "../helpers/sg-helpers";
 import { initWallet } from "../signers";
-import { DelegationStruct, ClientStruct, User } from "../helpers/interfaces";
+import type {
+  DelegationStruct,
+  ClientStruct,
+  User,
+} from "../helpers/interfaces";
 import { CONTRACT_ADDRESS, RPC } from "../config/testnet-config.json";
 
 async function init() {

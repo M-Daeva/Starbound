@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { DENOMS } from "../../../common/helpers/assets";
-  import type { AssetListItem } from "../../../common/helpers/interfaces";
-  import { l, createRequest } from "../../../common/utils";
-  import { getAddrByPrefix } from "../../../common/signers";
+  import type {
+    AssetListItem,
+    DelegationStruct,
+  } from "../../../common/helpers/interfaces";
+  import { l } from "../../../common/utils";
   import {
     chainRegistryStorage,
     ibcChannellsStorage,
@@ -10,12 +11,15 @@
     userFundsStorage,
     validatorsStorage,
     assetListStorage,
+    authzHandlerListStorage,
     getRegistryChannelsPools,
     getValidators,
+    cwHandlerStorage,
   } from "../services/storage";
   import { get } from "svelte/store";
   import { onMount } from "svelte";
-  import { Description } from "cosmjs-types/cosmos/staking/v1beta1/staking";
+  import { getAddrByPrefix, initWalletList } from "../../../common/signers";
+  import { getSgHelpers } from "../../../common/helpers/sg-helpers";
 
   let assetList: AssetListItem[] = [];
   let ratio: number = 1;
@@ -33,6 +37,90 @@
   chainRegistryStorage.subscribe((value) => {
     denoms = value.map((item) => item.symbol);
   });
+
+  async function addAuthzHandler(currentSymbol: string, validator: string) {
+    const DAPP_ADDR = "osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt";
+    const chainType: "main" | "test" = "test";
+
+    let authzHandlerList = get(authzHandlerListStorage);
+    const chain = get(chainRegistryStorage).find(
+      ({ symbol }) => symbol === currentSymbol
+    );
+
+    if (typeof chain[chainType] === "string") return;
+
+    try {
+      const RPC = chain[chainType].apis.rpc[0].address;
+      const chainId = chain[chainType].chain_id;
+      const wallet = await initWalletList([chain]);
+
+      // // update address
+      // const currentAddress = (await wallet.getKey(chain[chainType].chain_id))
+      //   .bech32Address;
+
+      // const accs = await wallet
+      //   .getOfflineSigner(chain[chainType].chain_id)
+      //   .getAccounts();
+
+      // l({ accs });
+
+      // assetListStorage.update((rows) => {
+      //   let currentAsset = rows.find(
+      //     ({ address }) => address === currentAddress
+      //   );
+      //   currentAsset.address = currentAddress;
+
+      //   return sortAssets([
+      //     ...rows.filter((row) => row.address !== currentAddress),
+      //     currentAsset,
+      //   ]);
+      // });
+
+      l({
+        RPC,
+        wallet,
+        chainId,
+      });
+
+      // add handlers
+      const { _sgGrantStakeAuth } = await getSgHelpers({
+        isKeplrType: true,
+        RPC,
+        wallet,
+        chainId,
+      });
+      const delegationStruct: DelegationStruct = {
+        tokenAmount: 1e15,
+        tokenDenom: chain.denom,
+        targetAddr: getAddrByPrefix(DAPP_ADDR, chain.prefix),
+        validatorAddr: validator,
+      };
+
+      authzHandlerList = [
+        ...authzHandlerList.filter(({ symbol }) => symbol !== currentSymbol),
+        {
+          symbol: currentSymbol,
+          grant: async () => await _sgGrantStakeAuth(delegationStruct),
+        },
+      ];
+      authzHandlerListStorage.set(authzHandlerList);
+      l(get(authzHandlerListStorage));
+    } catch (error) {
+      l({ error });
+    }
+  }
+
+  async function tryGrant(currentSymbol: string) {
+    try {
+      const { grant } = get(authzHandlerListStorage).find(
+        ({ symbol }) => symbol === currentSymbol
+      );
+      let tx = await grant();
+      l({ tx });
+    } catch (error) {
+      l({ error });
+    }
+  }
 
   // TODO: use monikers to sort validators
   function sortAssets(list: AssetListItem[]) {
@@ -66,10 +154,10 @@
     let registryItem = get(chainRegistryStorage).find(
       ({ symbol }) => symbol === currentSymbol
     );
-    // TODO: get address from wallet
+
     let currentAsset: AssetListItem = {
       address: getAddrByPrefix(
-        "osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx",
+        get(cwHandlerStorage).address,
         registryItem.prefix
       ),
       asset: { symbol: registryItem.symbol, logo: registryItem.img },
@@ -123,7 +211,7 @@
       );
   }
 
-  // TODO: add handler on grant button
+  // TODO: add handler on revoke button
 
   onMount(async () => {
     try {
@@ -290,11 +378,17 @@
               </select>
             </td>
 
-            <td class="flex justify-center items-center w-1/12"
-              ><button class="btn btn-secondary m-0 w-28 -ml-10"
-                >{isGranted ? "Revoke" : "Grant"}</button
-              ></td
-            >
+            <td class="flex justify-center items-center w-1/12">
+              <button
+                class="btn btn-secondary m-0 w-28 -ml-10"
+                on:click={isGranted
+                  ? () => l("Revoke")
+                  : async () => {
+                      await addAuthzHandler(asset.symbol, validator);
+                      await tryGrant(asset.symbol);
+                    }}>{isGranted ? "Revoke" : "Grant"}</button
+              >
+            </td>
             <td class="flex justify-center items-center w-1/12"
               ><button
                 class="btn btn-circle m-0"

@@ -4,6 +4,8 @@ import type {
   AssetDescription,
   ValidatorResponse,
   AssetListItem,
+  AuthzHandler,
+  CwHandler,
 } from "../../../common/helpers/interfaces";
 import type { Coin } from "@cosmjs/stargate";
 import { writable } from "svelte/store";
@@ -19,7 +21,13 @@ let validatorsStorage: Writable<[string, ValidatorResponse[]][]> = writable([]);
 let userFundsStorage: Writable<[string, Coin][]> = writable([]);
 
 // frontend storages
+
+// to store assets from asset page
 let assetListStorage: Writable<AssetListItem[]> = writable([]);
+// to store multichain grant and revoke handlers
+let authzHandlerListStorage: Writable<AuthzHandler[]> = writable([]);
+// to store osmosis address and contract handlers
+let cwHandlerStorage: Writable<CwHandler> = writable();
 
 let req = createRequest({ baseURL: baseURL + "/api" });
 
@@ -76,6 +84,8 @@ export {
   validatorsStorage,
   userFundsStorage,
   assetListStorage,
+  authzHandlerListStorage,
+  cwHandlerStorage,
   getRegistryChannelsPools,
   getPools,
   getValidators,

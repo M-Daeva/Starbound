@@ -292,6 +292,11 @@ async function unlockWallet(wallet: Keplr): Promise<void> {
   await wallet.enable(CHAIN_ID2);
 }
 
+/**
+ *
+ * @param clientStruct - requires RPC, wallet, chainId or RPC, prefix, seed
+ * @returns
+ */
 async function getSigner(clientStruct: ClientStruct) {
   let { isKeplrType, RPC, wallet, chainId, prefix, seed } = clientStruct;
   let owner: string;

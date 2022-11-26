@@ -23,6 +23,7 @@
     poolsStorage,
     userFundsStorage,
     validatorsStorage,
+    cwHandlerStorage,
     getRegistryChannelsPools,
     getValidators,
     getUserFunds,
@@ -36,15 +37,48 @@
     bank: "/bank",
   };
 
+  const localSorageKey = "starbound-osmo-address";
+
   let chainRegistry: NetworkData[] = [];
+
+  // init wallet, add osmo chain, save address to localSorage
+  async function initCwHandler() {
+    const CONTRACT_ADDR = "";
+    const chainType: "main" | "test" = "test";
+
+    const chain = get(chainRegistryStorage).find(
+      ({ symbol }) => symbol === "OSMO"
+    );
+
+    if (typeof chain[chainType] === "string") return;
+
+    try {
+      const RPC = chain[chainType].apis.rpc[0].address;
+      const chainId = chain[chainType].chain_id;
+      const wallet = await initWalletList([chain]);
+      let address = (await wallet.getKey(chain[chainType].chain_id))
+        .bech32Address;
+      cwHandlerStorage.set({ address });
+
+      // TODO: encode address
+      localStorage.setItem(localSorageKey, address);
+    } catch (error) {
+      l({ error });
+    }
+
+    l(get(cwHandlerStorage));
+  }
 
   onMount(async () => {
     try {
       chainRegistryStorage.set(
         (await getRegistryChannelsPools()).chainRegistry
       );
-
       chainRegistry = get(chainRegistryStorage);
+
+      const address = localStorage.getItem(localSorageKey) || "";
+      if (address === "") throw new Error("Connect wallet first");
+      cwHandlerStorage.set({ address });
     } catch (error) {
       l(error);
     }
@@ -82,9 +116,8 @@
           </li>
         </ul>
       </nav>
-      <button
-        class="btn btn-primary mt-1.5 mr-1"
-        on:click={() => initWalletList(chainRegistry)}>Connect Wallet</button
+      <button class="btn btn-primary mt-1.5 mr-1" on:click={initCwHandler}
+        >Connect Wallet</button
       >
     </header>
 

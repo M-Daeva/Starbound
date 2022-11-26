@@ -1,4 +1,4 @@
-import { Coin } from "@cosmjs/stargate";
+import { Coin, DeliverTxResponse } from "@cosmjs/stargate";
 import { Keplr } from "@keplr-wallet/types";
 import Decimal from "decimal.js";
 
@@ -314,6 +314,16 @@ interface NetworkData {
   coinGeckoId: undefined | string;
 }
 
+interface AuthzHandler {
+  symbol: string;
+  grant: () => Promise<DeliverTxResponse>;
+  // TODO: add revoke
+}
+
+interface CwHandler {
+  address: string;
+}
+
 interface AssetList {
   $schema: string;
   chain_name: string;
@@ -430,4 +440,6 @@ export {
   AssetDenom,
   SwapStruct,
   TransferParams,
+  AuthzHandler,
+  CwHandler,
 };
