@@ -38,6 +38,7 @@
     denoms = value.map((item) => item.symbol);
   });
 
+  // TODO: try to find better RPC provider
   async function addAuthzHandler(currentSymbol: string, validator: string) {
     const DAPP_ADDR = "osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt";
     const chainType: "main" | "test" = "test";
@@ -83,7 +84,7 @@
       });
 
       // add handlers
-      const { _sgGrantStakeAuth } = await getSgHelpers({
+      const { _sgGrantStakeAuth, _sgRevokeStakeAuth } = await getSgHelpers({
         isKeplrType: true,
         RPC,
         wallet,
@@ -101,6 +102,7 @@
         {
           symbol: currentSymbol,
           grant: async () => await _sgGrantStakeAuth(delegationStruct),
+          revoke: async () => await _sgRevokeStakeAuth(delegationStruct),
         },
       ];
       authzHandlerListStorage.set(authzHandlerList);
@@ -122,7 +124,18 @@
     }
   }
 
-  // TODO: use monikers to sort validators
+  async function tryRevoke(currentSymbol: string) {
+    try {
+      const { revoke } = get(authzHandlerListStorage).find(
+        ({ symbol }) => symbol === currentSymbol
+      );
+      let tx = await revoke();
+      l({ tx });
+    } catch (error) {
+      l({ error });
+    }
+  }
+
   function sortAssets(list: AssetListItem[]) {
     let sign = sortingConfig.order === "asc" ? 1 : -1;
     let { key } = sortingConfig;
@@ -161,7 +174,6 @@
         registryItem.prefix
       ),
       asset: { symbol: registryItem.symbol, logo: registryItem.img },
-      isGranted: false,
       ratio,
       validator: getValidatorListBySymbol(currentSymbol)[0].operator_address,
     };
@@ -211,8 +223,6 @@
       );
   }
 
-  // TODO: add handler on revoke button
-
   onMount(async () => {
     try {
       validatorsStorage.set(await getValidators());
@@ -259,7 +269,7 @@
       <thead class="bg-black flex text-white w-full pr-4">
         <tr class="flex w-full mb-1">
           <th
-            class="flex flex-row justify-start items-center bg-black p-4 w-1/4 text-center"
+            class="flex flex-row justify-start items-center bg-black p-4 w-1/6 text-center"
           >
             <span class="mr-1 ml-5">ASSET</span>
             <button
@@ -274,7 +284,7 @@
             </button>
           </th>
           <th
-            class="flex flex-row justify-start items-center bg-black p-4 w-1/4 text-center"
+            class="flex flex-row justify-start items-center bg-black p-4 pl-14 w-1/4 text-center"
           >
             <span class="mr-1 ml-5">ADDRESS</span>
             <button
@@ -289,9 +299,9 @@
             </button>
           </th>
           <th
-            class="flex flex-row justify-start items-center bg-black p-4 w-1/4 text-center"
+            class="flex flex-row justify-start items-center bg-black p-4 pl-10 w-1/6 text-center"
           >
-            <span class="mr-1 ml-12">WEIGHT in %</span>
+            <span class="mr-1">WEIGHT in %</span>
             <button
               on:click={() => sortAndUpdateAssets("ratio")}
               class="bg-transparent outline-none border-none my-auto"
@@ -304,34 +314,14 @@
             </button>
           </th>
           <th
-            class="flex flex-row justify-start items-center bg-black p-4 w-1/4 text-center"
+            class="flex flex-row justify-start items-center bg-black p-4 pl-8 w-1/6 text-center"
           >
             <span class="mr-1 ml-5">VALIDATOR</span>
-            <button
-              on:click={() => sortAndUpdateAssets("validator")}
-              class="bg-transparent outline-none border-none my-auto"
-            >
-              <img
-                class="hover:cursor-pointer"
-                src="src/public/up-down-arrow.svg"
-                alt="arrow"
-              />
-            </button>
           </th>
           <th
-            class="flex flex-row justify-start items-center bg-black p-4 w-1/4 text-center"
+            class="flex flex-row justify-start items-center bg-black p-4 pl-11 w-1/4 text-center"
           >
-            <span class="mr-1">GRANT STATUS</span>
-            <button
-              on:click={() => sortAndUpdateAssets("isGranted")}
-              class="bg-transparent outline-none border-none my-auto"
-            >
-              <img
-                class="hover:cursor-pointer"
-                src="src/public/up-down-arrow.svg"
-                alt="arrow"
-              />
-            </button>
+            <span class="mr-1">GRANT CONTROL</span>
           </th>
         </tr>
       </thead>
@@ -340,7 +330,7 @@
         class="bg-grey-light flex flex-col items-center justify-start overflow-y-scroll w-full"
         style="max-height: 63vh; min-height: fit-content;"
       >
-        {#each assetList as { asset, address, ratio, validator, isGranted }}
+        {#each assetList as { asset, address, ratio, validator }}
           <tr class="flex justify-start items-stretch w-full mt-4 first:mt-0">
             <td class="flex flex-row justify-start items-center w-2/12 pl-5">
               <img class="w-2/12" src={asset.logo} alt="logo" />
@@ -357,14 +347,14 @@
             <td class="flex justify-start items-center w-2/12"
               ><input
                 type="number"
-                min="0"
+                min="1"
                 max="100"
                 class="w-24 m-0 text-center ml-6"
                 bind:value={ratio}
               /></td
             >
 
-            <td class="flex justify-start items-center w-3/12">
+            <td class="flex justify-start items-center w-2/12">
               <select
                 on:change={(e) =>
                   updateValidator(asset.symbol, e.currentTarget.value)}
@@ -378,17 +368,25 @@
               </select>
             </td>
 
-            <td class="flex justify-center items-center w-1/12">
+            <td
+              class="flex justify-around items-center w-2/12 bg-opacity-90 bg-slate-800"
+            >
               <button
-                class="btn btn-secondary m-0 w-28 -ml-10"
-                on:click={isGranted
-                  ? () => l("Revoke")
-                  : async () => {
-                      await addAuthzHandler(asset.symbol, validator);
-                      await tryGrant(asset.symbol);
-                    }}>{isGranted ? "Revoke" : "Grant"}</button
+                class="btn btn-secondary m-0 w-20"
+                on:click={async () => {
+                  await addAuthzHandler(asset.symbol, validator);
+                  await tryGrant(asset.symbol);
+                }}>Grant</button
+              >
+              <button
+                class="btn btn-warning m-0 w-20"
+                on:click={async () => {
+                  await addAuthzHandler(asset.symbol, validator);
+                  await tryRevoke(asset.symbol);
+                }}>Revoke</button
               >
             </td>
+
             <td class="flex justify-center items-center w-1/12"
               ><button
                 class="btn btn-circle m-0"

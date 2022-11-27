@@ -317,7 +317,7 @@ interface NetworkData {
 interface AuthzHandler {
   symbol: string;
   grant: () => Promise<DeliverTxResponse>;
-  // TODO: add revoke
+  revoke: () => Promise<DeliverTxResponse>;
 }
 
 interface CwHandler {
@@ -352,7 +352,6 @@ interface AssetListItem {
   address: string;
   ratio: number;
   validator: string;
-  isGranted: boolean;
 }
 
 type AssetDenom = {

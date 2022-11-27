@@ -1,7 +1,11 @@
 import { coin, MsgSendEncodeObject, Coin } from "@cosmjs/stargate";
 import { MsgTransfer } from "osmojs/types/codegen/ibc/applications/transfer/v1/tx";
 import Long from "osmojs/node_modules/long";
-import { MsgGrant, MsgExec } from "cosmjs-types/cosmos/authz/v1beta1/tx";
+import {
+  MsgGrant,
+  MsgExec,
+  MsgRevoke,
+} from "cosmjs-types/cosmos/authz/v1beta1/tx";
 import { StakeAuthorization } from "cosmjs-types/cosmos/staking/v1beta1/authz";
 import { MsgDelegate } from "cosmjs-types/cosmos/staking/v1beta1/tx";
 import { Grant } from "cosmjs-types/cosmos/authz/v1beta1/authz";
@@ -115,6 +119,25 @@ async function getSgHelpers(clientStruct: ClientStruct) {
     return tx;
   }
 
+  async function _sgRevokeStakeAuth(delegationStruct: DelegationStruct) {
+    const { targetAddr } = delegationStruct;
+    l({ targetAddr });
+    const msgRevoke: MsgRevoke = {
+      granter: owner,
+      grantee: targetAddr,
+      msgTypeUrl: "/cosmos.staking.v1beta1.MsgDelegate",
+    };
+
+    const msg: EncodeObject = {
+      typeUrl: "/cosmos.authz.v1beta1.MsgRevoke",
+      value: msgRevoke,
+    };
+
+    const tx = await client.signAndBroadcast(owner, [msg], fee);
+
+    return tx;
+  }
+
   async function _sgDelegateFrom(delegationStruct: DelegationStruct) {
     const { targetAddr, tokenAmount, tokenDenom, validatorAddr } =
       delegationStruct;
@@ -197,6 +220,7 @@ async function getSgHelpers(clientStruct: ClientStruct) {
     _sgSwap,
     _sgTransfer,
     _sgGrantStakeAuth,
+    _sgRevokeStakeAuth,
     _sgDelegateFrom,
     _sgGetTokenBalances,
     _sgUpdatePoolList,
