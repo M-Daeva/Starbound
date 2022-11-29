@@ -15,6 +15,7 @@ import {
   NetworkData,
   AssetList,
   AssetDescription,
+  UserBalance,
 } from "./interfaces";
 import { getAddrByPrefix } from "../signers";
 import { Coin } from "@cosmjs/stargate";
@@ -411,10 +412,10 @@ async function _updatePoolsAndUsers(response: QueryPoolsAndUsersResponse) {
   for (let user of users) {
     for (let asset of user.asset_list) {
       for (let userFunds of usersFundsList) {
-        let [address, { amount }] = userFunds;
+        let [address, { holded, staked }] = userFunds;
 
         if (asset.wallet_address === address) {
-          asset.wallet_balance = amount;
+          asset.wallet_balance = (+holded.amount + +staked.amount).toString();
         }
       }
     }
@@ -531,33 +532,33 @@ async function getUserFunds(addresses: string[]) {
   }
 
   // create address and coin list
-  let balancePromises: Promise<[string, Coin]>[] = [];
+  let balancePromises: Promise<[string, UserBalance]>[] = [];
 
   async function _requestBalances(
     chain: string,
     address: string
-  ): Promise<[string, Coin]> {
+  ): Promise<[string, UserBalance]> {
     try {
-      let balance: BalancesResponse = await (
-        await req.get(_getBalanceUrl(chain, address))
-      ).json();
-      let delegation: DelegationsResponse = await (
-        await req.get(_getDelegationsUrl(chain, address))
-      ).json();
+      let balance: BalancesResponse = await await req.get(
+        _getBalanceUrl(chain, address)
+      );
+      let delegation: DelegationsResponse = await await req.get(
+        _getDelegationsUrl(chain, address)
+      );
 
       let { denom } = delegation.delegation_responses[0].balance;
-      let balanceHolded = +(
-        balance.balances.find((coin) => coin.denom === denom)?.amount || "0"
-      );
-      let balanceStaked = +delegation.delegation_responses[0].balance.amount;
-      let coin: Coin = {
-        amount: (balanceHolded + balanceStaked).toString(),
-        denom,
+      let balanceHolded =
+        balance.balances.find((coin) => coin.denom === denom)?.amount || "0";
+      let balanceStaked = delegation.delegation_responses[0].balance.amount;
+
+      let coin: UserBalance = {
+        holded: { amount: balanceHolded, denom },
+        staked: { amount: balanceStaked, denom },
       };
       return [address, coin];
     } catch (error) {
       let coin: Coin = { amount: "0", denom: "" };
-      return [address, coin];
+      return [address, { holded: coin, staked: coin }];
     }
   }
 
@@ -565,8 +566,10 @@ async function getUserFunds(addresses: string[]) {
     balancePromises.push(_requestBalances(chain, address));
   }
 
-  let balanceList: [string, Coin][] = await Promise.all(balancePromises);
-  balanceList = balanceList.filter(([_, { amount }]) => amount !== "0");
+  let balanceList: [string, UserBalance][] = await Promise.all(balancePromises);
+  balanceList = balanceList.filter(
+    ([_, { holded, staked }]) => holded.amount !== "0" || staked.amount !== "0"
+  );
 
   return balanceList;
 }

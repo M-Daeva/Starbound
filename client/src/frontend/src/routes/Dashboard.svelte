@@ -11,6 +11,15 @@
   } from "chart.js";
   import { Doughnut } from "svelte-chartjs";
   import Decimal from "decimal.js";
+  import {
+    chainRegistryStorage,
+    userFundsStorage,
+    poolsStorage,
+    getUserFunds,
+    getPools,
+  } from "../services/storage";
+  import { get } from "svelte/store";
+  import { l } from "../../../common/utils";
 
   let options = {
     responsive: true,
@@ -60,7 +69,7 @@
 
   ChartJS.register(Title, Tooltip, Legend, ArcElement, CategoryScale);
 
-  interface Row {
+  interface DashboardAsset {
     asset: string;
     price: Decimal;
     holded: Decimal;
@@ -69,7 +78,7 @@
     allocation: Decimal;
   }
 
-  let row: Row = {
+  let row: DashboardAsset = {
     asset: "ATOM",
     price: new Decimal("12"),
     holded: new Decimal("10.5"),
@@ -78,9 +87,32 @@
     allocation: new Decimal("19.2"),
   };
 
-  let rows: Row[] = [...new Array(35)].map((_) => row);
+  let dashboardAssetList: DashboardAsset[] = [];
+
+  userFundsStorage.subscribe((value) => {
+    dashboardAssetList = value.map(([addr, { holded, staked }]) => {
+      let res: DashboardAsset = {
+        asset: staked.denom,
+        price: new Decimal(0),
+        holded: new Decimal(holded.amount),
+        staked: new Decimal(staked.amount),
+        cost: 0,
+        allocation: new Decimal(0),
+      };
+
+      return res;
+    });
+  });
 
   const stablecoin = "EEUR";
+
+  onMount(async () => {
+    try {
+      // poolsStorage.set(await getPools());
+    } catch (error) {}
+
+    // l(get(poolsStorage));
+  });
 </script>
 
 <div class="flex justify-between px-4" style="height: 85vh">
@@ -107,9 +139,9 @@
         class="bg-grey-light flex flex-col items-center justify-start overflow-y-scroll w-full"
         style="max-height: 72vh; min-height: fit-content;"
       >
-        {#each rows as row}
+        {#each dashboardAssetList as dashboardAsset}
           <tr class="flex w-full mt-4 first:mt-0">
-            {#each Object.values(row) as rowValue}
+            {#each Object.values(dashboardAsset) as rowValue}
               <td class="p-2.5 w-1/4 text-center">{rowValue}</td>
             {/each}
           </tr>

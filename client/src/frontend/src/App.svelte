@@ -79,6 +79,10 @@
       const address = localStorage.getItem(localSorageKey) || "";
       if (address === "") throw new Error("Connect wallet first");
       cwHandlerStorage.set({ address });
+
+      userFundsStorage.set(
+        await getUserFunds(["osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx"])
+      );
     } catch (error) {
       l(error);
     }

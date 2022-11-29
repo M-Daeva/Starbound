@@ -320,6 +320,11 @@ interface AuthzHandler {
   revoke: () => Promise<DeliverTxResponse>;
 }
 
+interface UserBalance {
+  holded: Coin;
+  staked: Coin;
+}
+
 interface CwHandler {
   address: string;
 }
@@ -441,4 +446,5 @@ export {
   TransferParams,
   AuthzHandler,
   CwHandler,
+  UserBalance,
 };

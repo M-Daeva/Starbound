@@ -6,11 +6,12 @@ import type {
   AssetListItem,
   AuthzHandler,
   CwHandler,
+  UserBalance,
 } from "../../../common/helpers/interfaces";
 import type { Coin } from "@cosmjs/stargate";
 import { writable } from "svelte/store";
 import type { Writable } from "svelte/store";
-import { createRequest } from "../../../common/utils";
+import { createRequest, l } from "../../../common/utils";
 import { baseURL } from "../config";
 
 // api storages
@@ -18,7 +19,7 @@ let chainRegistryStorage: Writable<NetworkData[]> = writable([]);
 let ibcChannellsStorage: Writable<IbcResponse[]> = writable([]);
 let poolsStorage: Writable<[string, AssetDescription[]][]> = writable([]);
 let validatorsStorage: Writable<[string, ValidatorResponse[]][]> = writable([]);
-let userFundsStorage: Writable<[string, Coin][]> = writable([]);
+let userFundsStorage: Writable<[string, UserBalance][]> = writable([]);
 
 // frontend storages
 
@@ -68,10 +69,16 @@ async function getValidators(): Promise<[string, ValidatorResponse[]][]> {
   }
 }
 
-// request user funds for all networks
-async function getUserFunds(): Promise<[string, Coin][]> {
+// request funds for all networks for given list of different users addresses
+async function getUserFunds(
+  adresses: string[]
+): Promise<[string, UserBalance][]> {
   try {
-    return await req.get("/get-user-funds");
+    return await req.get("/get-user-funds", {
+      params: {
+        adresses,
+      },
+    });
   } catch (error) {
     return [];
   }
