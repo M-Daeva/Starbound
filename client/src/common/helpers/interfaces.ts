@@ -325,6 +325,11 @@ interface UserBalance {
   staked: Coin;
 }
 
+interface UserAdressesWithBalances {
+  osmoAddr: string;
+  assetList: { address: string; holded: Coin; staked: Coin }[];
+}
+
 interface CwHandler {
   address: string;
 }
@@ -447,4 +452,5 @@ export {
   AuthzHandler,
   CwHandler,
   UserBalance,
+  UserAdressesWithBalances,
 };

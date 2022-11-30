@@ -3,14 +3,17 @@ import {
   getIbcChannnels as _getIbcChannnels,
   getPools as _getPools,
   getValidators as _getValidators,
-  getUserFunds,
+  getUserFunds as _getUserFunds,
   filterChainRegistry as _filterChainRegistry,
 } from "../../common/helpers/api-helpers";
+import { init } from "../../common/workers/testnet-backend-workers";
 import type {
   NetworkData,
   ValidatorResponse,
   IbcResponse,
   AssetDescription,
+  UserBalance,
+  QueryPoolsAndUsersResponse,
 } from "../../common/helpers/interfaces";
 import { l } from "../../common/utils";
 
@@ -19,6 +22,8 @@ let chainRegistryStorage: NetworkData[] = [];
 let ibcChannellsStorage: IbcResponse[] = [];
 let poolsStorage: [string, AssetDescription[]][] = [];
 let validatorsStorage: [string, ValidatorResponse[]][] = [];
+let userFundsStorage: [string, UserBalance][] = [];
+let poolsAndUsersStorage: QueryPoolsAndUsersResponse = { pools: [], users: [] };
 
 async function updateChainRegistry() {
   let isStorageUpdated = false;
@@ -103,6 +108,23 @@ async function getValidators() {
   return validatorsStorage;
 }
 
+async function updateUserFunds() {
+  let isStorageUpdated = false;
+
+  try {
+    userFundsStorage = (await _getUserFunds(poolsAndUsersStorage)).map(
+      ({ address, holded, staked }) => [address, { holded, staked }]
+    );
+    isStorageUpdated = true;
+  } catch (error) {}
+
+  return isStorageUpdated;
+}
+
+async function getUserFunds() {
+  return userFundsStorage;
+}
+
 async function filterChainRegistry() {
   return _filterChainRegistry(
     chainRegistryStorage,
@@ -110,6 +132,22 @@ async function filterChainRegistry() {
     poolsStorage,
     validatorsStorage
   );
+}
+
+async function updatePoolsAndUsers() {
+  let isStorageUpdated = false;
+  const { cwQueryPoolsAndUsers } = await init();
+
+  try {
+    poolsAndUsersStorage = await cwQueryPoolsAndUsers();
+    isStorageUpdated = true;
+  } catch (error) {}
+
+  return isStorageUpdated;
+}
+
+async function getPoolsAndUsers() {
+  return poolsAndUsersStorage;
 }
 
 export {
@@ -121,6 +159,9 @@ export {
   getPools,
   updateValidators,
   getValidators,
+  updateUserFunds,
   getUserFunds,
+  updatePoolsAndUsers,
+  getPoolsAndUsers,
   filterChainRegistry,
 };

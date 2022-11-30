@@ -16,6 +16,7 @@ import {
   AssetList,
   AssetDescription,
   UserBalance,
+  UserAdressesWithBalances,
 } from "./interfaces";
 import { getAddrByPrefix } from "../signers";
 import { Coin } from "@cosmjs/stargate";
@@ -193,65 +194,56 @@ async function getIbcChannnels() {
   }
 }
 
-async function requestRelayers() {
-  const url = "https://api.mintscan.io/v1/relayer/osmosis-1/paths";
-  // const url = "https://api.mintscan.io/v1/relayer/osmo-test-4/paths" // testnet
+async function requestRelayers(): Promise<RelayerStruct[]> {
+  const url = "https://api-osmosis.imperator.co/ibc/v1/all?dex=osmosis";
 
-  let data = (await req.get(url)) as RelayerList;
+  let relayerStructList: RelayerStruct[] = [];
+  let ibcResponseList: IbcResponse[] = []; // from osmo channels only
+  let poolList: [string, AssetDescription[]][] = [];
+  let channels: IbcResponse[] = []; // all channels
 
-  let temp: RelayerStruct[] = [];
+  await Promise.all([
+    (async () => {
+      try {
+        ibcResponseList = await getIbcChannnels();
+      } catch (error) {}
+    })(),
+    (async () => {
+      try {
+        poolList = await getPools();
+      } catch (error) {}
+    })(),
+    (async () => {
+      try {
+        channels = await req.get(url);
+      } catch (error) {}
+    })(),
+  ]);
 
-  for (let item of data.sendable) {
-    let { chain_id, paths } = item;
+  for (let [k, [{ symbol, denom }, v1]] of poolList) {
+    if (v1.symbol !== "OSMO") continue;
 
-    let maxChannel = {
-      symbol: "",
-      channel_id: "",
-      port_id: "",
-      denom: "",
-      transfer: 0,
-    };
+    const toOsmoChannel = channels.find(
+      ({ token_symbol }) => token_symbol === symbol
+    );
+    if (!toOsmoChannel) continue;
 
-    for (let item of paths) {
-      // skip 'transfer/' and 'cw20' denoms
-      let targetPath = item.stats.past.vol.receive?.find((item) => {
-        let st = item.denom.slice(0, 4);
-        return st !== "tran" && st !== "cw20";
-      });
+    const fromOsmoChannel = ibcResponseList.find(
+      ({ destination }) => destination === toOsmoChannel.source
+    );
+    if (!fromOsmoChannel) continue;
 
-      // if (targetPath !== undefined) l(targetPath);
-      let txNum = +item.stats.past.tx_num.transfer;
-
-      if (targetPath !== undefined && txNum > maxChannel.transfer) {
-        let { channel_id, port_id } = item;
-
-        maxChannel = {
-          symbol: targetPath.denom,
-          channel_id,
-          port_id,
-          denom: "ibc/",
-          transfer: txNum,
-        };
-      }
-    }
-
-    let { channel_id, port_id, denom, symbol } = maxChannel;
-
-    temp.push({
-      symbol,
-      chain_id,
+    const { destination, channel_id } = fromOsmoChannel;
+    relayerStructList.push({
+      chain_id: destination,
       channel_id,
-      port_id,
+      port_id: "transfer",
       denom,
+      symbol,
     });
   }
 
-  temp = temp.filter(
-    ({ channel_id, denom }) =>
-      channel_id !== "" && denom !== undefined && denom.slice(0, 3) === "ibc"
-  );
-
-  return temp;
+  return relayerStructList;
 }
 
 async function getPools() {
@@ -371,13 +363,11 @@ async function getActiveNetworksInfo(): Promise<PoolExtracted[]> {
 
   let temp: PoolExtracted[] = [];
 
-  for (let i in pools) {
-    const [key, [v0, v1]] = pools[i];
-
+  for (let [key, [v0, v1]] of pools) {
     if (v1.denom !== "uosmo") continue;
 
     for (let relayer of relayers) {
-      if (relayer.symbol.slice(1).toUpperCase() === v0.symbol) {
+      if (relayer.symbol === v0.symbol) {
         temp.push({
           channel_id: relayer.channel_id,
           denom: v0.denom,
@@ -406,13 +396,12 @@ async function _updatePoolsAndUsers(response: QueryPoolsAndUsersResponse) {
     }
   }
 
-  let osmoAddressList = users.map((user) => user.osmo_address);
-  let usersFundsList = await getUserFunds(osmoAddressList);
+  let usersFundsList = await getUserFunds(response);
 
   for (let user of users) {
     for (let asset of user.asset_list) {
       for (let userFunds of usersFundsList) {
-        let [address, { holded, staked }] = userFunds;
+        let { address, holded, staked } = userFunds;
 
         if (asset.wallet_address === address) {
           asset.wallet_balance = (+holded.amount + +staked.amount).toString();
@@ -489,7 +478,9 @@ function _getBalanceUrl(chain: string, address: string) {
   return url;
 }
 
-async function getUserFunds(addresses: string[]) {
+async function getUserFunds(
+  queryPoolsAndUsersResponse: QueryPoolsAndUsersResponse
+) {
   // request chain list
   let baseUrl = "https://cosmos-chain.directory/chains/";
   let { chains }: ChainsResponse = await req.get(baseUrl);
@@ -519,59 +510,85 @@ async function getUserFunds(addresses: string[]) {
       return [a, b];
     });
 
-  // create chain and address list
-  let chainAndAddressList: [string, string][] = [];
+  const { users } = queryPoolsAndUsersResponse;
 
-  for (let address of addresses) {
-    for (let prefix of prefixes) {
-      chainAndAddressList.push([
-        prefix[0],
-        getAddrByPrefix(address, prefix[1]),
-      ]);
+  // transform {osmoAddr, {address, holded, staked}[]}[] nested structure
+  // to {chain, osmoAddr, address, holded, staked}[] flat structure
+  let userAdressesWithBalancesPromises: Promise<{
+    chain: string;
+    osmoAddr: string;
+    address: string;
+    holded: Coin;
+    staked: Coin;
+  }>[] = [];
+
+  for (let { osmo_address, asset_list } of users) {
+    for (let { wallet_address } of asset_list) {
+      for (let [chain, prefix] of prefixes) {
+        let walletAddressPrefix = wallet_address.split("1")[0];
+        if (walletAddressPrefix === prefix) {
+          let getPromise = async () => {
+            let balance: BalancesResponse = {
+              balances: [],
+              pagination: { next_key: null, total: "1" },
+            };
+            let delegation: DelegationsResponse = {
+              delegation_responses: [],
+              pagination: { next_key: null, total: "1" },
+            };
+
+            try {
+              await Promise.all([
+                (async () => {
+                  try {
+                    balance = await req.get(
+                      _getBalanceUrl(chain, wallet_address)
+                    );
+                  } catch (error) {}
+                })(),
+
+                (async () => {
+                  try {
+                    delegation = await req.get(
+                      _getDelegationsUrl(chain, wallet_address)
+                    );
+                  } catch (error) {}
+                })(),
+              ]);
+
+              // TODO: add checkings
+              let { denom } = delegation.delegation_responses[0].balance;
+              let balanceHolded =
+                balance.balances.find((coin) => coin.denom === denom)?.amount ||
+                "0";
+              let balanceStaked =
+                delegation.delegation_responses[0].balance.amount;
+
+              return {
+                chain,
+                osmoAddr: osmo_address,
+                address: wallet_address,
+                holded: { amount: balanceHolded, denom },
+                staked: { amount: balanceStaked, denom },
+              };
+            } catch (error) {
+              return {
+                chain,
+                osmoAddr: osmo_address,
+                address: wallet_address,
+                holded: { amount: "", denom: "" },
+                staked: { amount: "", denom: "" },
+              };
+            }
+          };
+
+          userAdressesWithBalancesPromises.push(getPromise());
+        }
+      }
     }
   }
 
-  // create address and coin list
-  let balancePromises: Promise<[string, UserBalance]>[] = [];
-
-  async function _requestBalances(
-    chain: string,
-    address: string
-  ): Promise<[string, UserBalance]> {
-    try {
-      let balance: BalancesResponse = await await req.get(
-        _getBalanceUrl(chain, address)
-      );
-      let delegation: DelegationsResponse = await await req.get(
-        _getDelegationsUrl(chain, address)
-      );
-
-      let { denom } = delegation.delegation_responses[0].balance;
-      let balanceHolded =
-        balance.balances.find((coin) => coin.denom === denom)?.amount || "0";
-      let balanceStaked = delegation.delegation_responses[0].balance.amount;
-
-      let coin: UserBalance = {
-        holded: { amount: balanceHolded, denom },
-        staked: { amount: balanceStaked, denom },
-      };
-      return [address, coin];
-    } catch (error) {
-      let coin: Coin = { amount: "0", denom: "" };
-      return [address, { holded: coin, staked: coin }];
-    }
-  }
-
-  for (let [chain, address] of chainAndAddressList) {
-    balancePromises.push(_requestBalances(chain, address));
-  }
-
-  let balanceList: [string, UserBalance][] = await Promise.all(balancePromises);
-  balanceList = balanceList.filter(
-    ([_, { holded, staked }]) => holded.amount !== "0" || staked.amount !== "0"
-  );
-
-  return balanceList;
+  return await Promise.all(userAdressesWithBalancesPromises);
 }
 
 function _getValidatorListUrl(chain: string) {
