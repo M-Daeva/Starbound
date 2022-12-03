@@ -7,12 +7,13 @@ import type {
   AuthzHandler,
   CwHandler,
   UserBalance,
+  PoolExtracted,
 } from "../../../common/helpers/interfaces";
-import type { Coin } from "@cosmjs/stargate";
-import { writable } from "svelte/store";
-import type { Writable } from "svelte/store";
+import { type Writable, get, writable } from "svelte/store";
 import { createRequest, l } from "../../../common/utils";
 import { baseURL } from "../config";
+
+// TODO: replace some writable storages with readable
 
 // api storages
 let chainRegistryStorage: Writable<NetworkData[]> = writable([]);
@@ -23,12 +24,17 @@ let userFundsStorage: Writable<[string, UserBalance][]> = writable([]);
 
 // frontend storages
 
-// to store assets from asset page
+// assets from asset page
 let assetListStorage: Writable<AssetListItem[]> = writable([]);
-// to store multichain grant and revoke handlers
+// multichain grant and revoke handlers
 let authzHandlerListStorage: Writable<AuthzHandler[]> = writable([]);
-// to store osmosis address and contract handlers
+// osmosis address and contract handlers
 let cwHandlerStorage: Writable<CwHandler> = writable();
+// assets sorting config
+let sortingConfigStorage: Writable<{
+  key: keyof AssetListItem;
+  order: "asc" | "desc";
+}> = writable({ key: "address", order: "asc" });
 
 let req = createRequest({ baseURL: baseURL + "/api" });
 
@@ -69,18 +75,51 @@ async function getValidators(): Promise<[string, ValidatorResponse[]][]> {
   }
 }
 
-// request funds for all networks for given list of different users addresses
+// request funds for all networks for given user osmo address
 async function getUserFunds(
-  adresses: string[]
+  userOsmoAddress: string
 ): Promise<[string, UserBalance][]> {
   try {
     return await req.get("/get-user-funds", {
       params: {
-        adresses,
+        userOsmoAddress,
       },
     });
   } catch (error) {
     return [];
+  }
+}
+
+// request all data for given user osmo address (for user funds)
+async function getAll(userOsmoAddress: string): Promise<{
+  activeNetworks: PoolExtracted[];
+  chainRegistry: NetworkData[];
+  ibcChannels: IbcResponse[];
+  pools: [string, AssetDescription[]][];
+  validatorsStorage: [string, ValidatorResponse[]][];
+  userFunds: [string, UserBalance][];
+}> {
+  try {
+    return await req.get("/get-all", {
+      params: {
+        userOsmoAddress,
+      },
+    });
+  } catch (error) {}
+}
+
+async function initAll() {
+  try {
+    const data = await getAll(get(cwHandlerStorage).address);
+    l({ data });
+
+    // order matters!
+    validatorsStorage.set(data.validatorsStorage);
+    poolsStorage.set(data.pools);
+    chainRegistryStorage.set(data.chainRegistry);
+    userFundsStorage.set(data.userFunds);
+  } catch (error) {
+    l(error);
   }
 }
 
@@ -93,8 +132,11 @@ export {
   assetListStorage,
   authzHandlerListStorage,
   cwHandlerStorage,
+  sortingConfigStorage,
   getRegistryChannelsPools,
   getPools,
   getValidators,
   getUserFunds,
+  getAll,
+  initAll,
 };

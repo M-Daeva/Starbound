@@ -14,6 +14,8 @@
     CategoryScale,
   } from "chart.js";
 
+  // TODO: add checking on assets submit
+
   const data = {
     labels: [
       "01/01/01",

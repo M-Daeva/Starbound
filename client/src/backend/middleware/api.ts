@@ -17,12 +17,13 @@ import type {
 } from "../../common/helpers/interfaces";
 import { l } from "../../common/utils";
 
-// simple caching
+// client specific storages
 let chainRegistryStorage: NetworkData[] = [];
 let ibcChannellsStorage: IbcResponse[] = [];
 let poolsStorage: [string, AssetDescription[]][] = [];
 let validatorsStorage: [string, ValidatorResponse[]][] = [];
 let userFundsStorage: [string, UserBalance][] = [];
+// contract specific storage
 let poolsAndUsersStorage: QueryPoolsAndUsersResponse = { pools: [], users: [] };
 
 async function updateChainRegistry() {
@@ -108,6 +109,7 @@ async function getValidators() {
   return validatorsStorage;
 }
 
+// transforms contract response to all users address-balance list
 async function updateUserFunds() {
   let isStorageUpdated = false;
 
@@ -121,17 +123,18 @@ async function updateUserFunds() {
   return isStorageUpdated;
 }
 
-async function getUserFunds() {
-  return userFundsStorage;
-}
-
-async function filterChainRegistry() {
-  return _filterChainRegistry(
-    chainRegistryStorage,
-    ibcChannellsStorage,
-    poolsStorage,
-    validatorsStorage
+// filters all users address-balance list by specified user osmo address
+async function getUserFunds(userOsmoAddress: string) {
+  const userAssets = poolsAndUsersStorage.users.find(
+    ({ osmo_address }) => osmo_address === userOsmoAddress
   );
+  if (!userAssets) return [];
+
+  const addressList = userAssets.asset_list.map(
+    ({ wallet_address }) => wallet_address
+  );
+
+  return userFundsStorage.filter(([address]) => addressList.includes(address));
 }
 
 async function updatePoolsAndUsers() {
@@ -150,6 +153,52 @@ async function getPoolsAndUsers() {
   return poolsAndUsersStorage;
 }
 
+async function filterChainRegistry() {
+  return _filterChainRegistry(
+    chainRegistryStorage,
+    ibcChannellsStorage,
+    poolsStorage,
+    validatorsStorage
+  );
+}
+
+async function updateAll() {
+  // request contract data
+  const resCw = await updatePoolsAndUsers();
+
+  // process it and request data from other sources
+  const res = await Promise.all([
+    updateChainRegistry(),
+    updateIbcChannels(),
+    updatePools(),
+    updateValidators(),
+    updateUserFunds(),
+  ]);
+
+  return { isStorageUpdated: [resCw, ...res] };
+}
+
+async function getAll(userOsmoAddress: string) {
+  const { activeNetworks, chainRegistry, ibcChannels, pools } =
+    _filterChainRegistry(
+      chainRegistryStorage,
+      ibcChannellsStorage,
+      poolsStorage,
+      validatorsStorage
+    );
+
+  let userFunds = await getUserFunds(userOsmoAddress);
+
+  return {
+    activeNetworks,
+    chainRegistry,
+    ibcChannels,
+    pools,
+    validatorsStorage,
+    userFunds,
+  };
+}
+
 export {
   updateChainRegistry,
   getChainRegistry,
@@ -164,4 +213,6 @@ export {
   updatePoolsAndUsers,
   getPoolsAndUsers,
   filterChainRegistry,
+  updateAll,
+  getAll,
 };

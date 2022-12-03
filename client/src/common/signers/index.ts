@@ -351,6 +351,18 @@ async function initWallet() {
   return wallet;
 }
 
+// get address by chain_id using installed by default networks
+async function getAddrByChainId(chainId: string = "osmosis-1") {
+  let wallet = detectWallet();
+  if (wallet === undefined) return;
+
+  wallet = wallet as Keplr;
+  await unlockWallet(wallet); // give permission for the webpage to access Keplr
+
+  let address = (await wallet.getKey(chainId)).bech32Address;
+  return address;
+}
+
 export {
   initWallet,
   getSgClient,
@@ -358,4 +370,5 @@ export {
   getAddrByPrefix,
   fee,
   initWalletList,
+  getAddrByChainId,
 };

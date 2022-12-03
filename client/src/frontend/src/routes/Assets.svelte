@@ -12,6 +12,7 @@
     validatorsStorage,
     assetListStorage,
     authzHandlerListStorage,
+    sortingConfigStorage,
     getRegistryChannelsPools,
     getValidators,
     cwHandlerStorage,
@@ -20,22 +21,33 @@
   import { onMount } from "svelte";
   import { getAddrByPrefix, initWalletList } from "../../../common/signers";
   import { getSgHelpers } from "../../../common/helpers/sg-helpers";
+  import { getAssetInfoByAddress } from "../services/helpers";
 
   let assetList: AssetListItem[] = [];
   let ratio: number = 1;
   let denoms: string[] = [];
   let currentSymbol = "";
-  let sortingConfig: {
-    key: keyof AssetListItem;
-    order: "asc" | "desc";
-  } = { key: "address", order: "asc" };
+  // let sortingConfig: {
+  //   key: keyof AssetListItem;
+  //   order: "asc" | "desc";
+  // } = { key: "address", order: "asc" };
+
+  userFundsStorage.subscribe((value) => {
+    value.forEach(([k]) => addAsset(getAssetInfoByAddress(k).asset.symbol));
+
+    l({ userFundsStorage: "userFundsStorage", time: Date.now() });
+  });
 
   assetListStorage.subscribe((value) => {
     assetList = value;
+
+    l({ assetListStorage: "assetListStorage", time: Date.now() });
   });
 
   chainRegistryStorage.subscribe((value) => {
     denoms = value.map((item) => item.symbol);
+
+    l({ chainRegistryStorage: "chainRegistryStorage", time: Date.now() });
   });
 
   // TODO: try to find better RPC provider
@@ -54,28 +66,6 @@
       const RPC = chain[chainType].apis.rpc[0].address;
       const chainId = chain[chainType].chain_id;
       const wallet = await initWalletList([chain]);
-
-      // // update address
-      // const currentAddress = (await wallet.getKey(chain[chainType].chain_id))
-      //   .bech32Address;
-
-      // const accs = await wallet
-      //   .getOfflineSigner(chain[chainType].chain_id)
-      //   .getAccounts();
-
-      // l({ accs });
-
-      // assetListStorage.update((rows) => {
-      //   let currentAsset = rows.find(
-      //     ({ address }) => address === currentAddress
-      //   );
-      //   currentAsset.address = currentAddress;
-
-      //   return sortAssets([
-      //     ...rows.filter((row) => row.address !== currentAddress),
-      //     currentAsset,
-      //   ]);
-      // });
 
       l({
         RPC,
@@ -137,8 +127,8 @@
   }
 
   function sortAssets(list: AssetListItem[]) {
-    let sign = sortingConfig.order === "asc" ? 1 : -1;
-    let { key } = sortingConfig;
+    const { key, order } = get(sortingConfigStorage);
+    let sign = order === "asc" ? 1 : -1;
 
     return list.sort((a, b) => {
       if (key === "asset") {
@@ -149,10 +139,12 @@
   }
 
   function sortAndUpdateAssets(key: keyof AssetListItem) {
-    sortingConfig = {
-      key,
-      order: sortingConfig.order === "asc" ? "desc" : "asc",
-    };
+    sortingConfigStorage.update(({ order }) => {
+      return {
+        key,
+        order: order === "asc" ? "desc" : "asc",
+      };
+    });
 
     assetListStorage.update((list) => sortAssets(list));
   }
@@ -223,11 +215,7 @@
       );
   }
 
-  onMount(async () => {
-    try {
-      validatorsStorage.set(await getValidators());
-    } catch (error) {}
-  });
+  onMount(async () => {});
 </script>
 
 <div class="flex flex-col px-4 -mt-3" style="height: 87vh">

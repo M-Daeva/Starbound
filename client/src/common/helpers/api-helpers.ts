@@ -19,9 +19,10 @@ import {
   UserAdressesWithBalances,
 } from "./interfaces";
 import { getAddrByPrefix } from "../signers";
-import { Coin } from "@cosmjs/stargate";
+import { Coin, coin } from "@cosmjs/stargate";
 import { DENOMS } from "../helpers/assets";
 import { parse } from "node-html-parser";
+import { chains as chainRegistryList } from "chain-registry";
 
 const req = createRequest({});
 
@@ -410,7 +411,7 @@ async function _updatePoolsAndUsers(response: QueryPoolsAndUsersResponse) {
     }
   }
 
-  l({ pools, users: users[0].asset_list });
+  l({ fn: "_updatePoolsAndUsers", pools, users: users[0].asset_list });
   return { pools, users };
 }
 
@@ -556,28 +557,29 @@ async function getUserFunds(
                 })(),
               ]);
 
-              // TODO: add checkings
-              let { denom } = delegation.delegation_responses[0].balance;
+              let denom =
+                chainRegistryList.find(({ chain_name }) => chain_name === chain)
+                  ?.fees?.fee_tokens[0].denom || "ucosm";
               let balanceHolded =
                 balance.balances.find((coin) => coin.denom === denom)?.amount ||
                 "0";
               let balanceStaked =
-                delegation.delegation_responses[0].balance.amount;
+                delegation?.delegation_responses[0]?.balance.amount || "0";
 
               return {
                 chain,
                 osmoAddr: osmo_address,
                 address: wallet_address,
-                holded: { amount: balanceHolded, denom },
-                staked: { amount: balanceStaked, denom },
+                holded: coin(balanceHolded, denom),
+                staked: coin(balanceStaked, denom),
               };
             } catch (error) {
               return {
                 chain,
                 osmoAddr: osmo_address,
                 address: wallet_address,
-                holded: { amount: "", denom: "" },
-                staked: { amount: "", denom: "" },
+                holded: coin(0, "ucosm"),
+                staked: coin(0, "ucosm"),
               };
             }
           };

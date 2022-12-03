@@ -30,16 +30,23 @@ async function process() {
   }, 30_000);
 }
 
+// async function initStorages() {
+//   let res = await Promise.all(
+//     [
+//       API_ROUTES.updateChainRegistry,
+//       API_ROUTES.updateIbcChannels,
+//       API_ROUTES.updatePools,
+//       API_ROUTES.updatePoolsAndUsers,
+//       API_ROUTES.updateValidators,
+//       API_ROUTES.updateUserFunds,
+//     ].map(req.get)
+//   );
+//   l({ isStorageUpdated: res });
+// }
+
 async function initStorages() {
-  let res = await Promise.all(
-    [
-      API_ROUTES.updateChainRegistry,
-      API_ROUTES.updateIbcChannels,
-      API_ROUTES.updatePools,
-      API_ROUTES.updateValidators,
-    ].map(req.get)
-  );
-  l({ isStorageUpdated: res });
+  let res = await req.get(API_ROUTES.updateAll);
+  l(res);
 }
 
 express()

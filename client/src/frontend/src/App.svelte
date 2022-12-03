@@ -3,32 +3,18 @@
   import Dashboard from "./routes/Dashboard.svelte";
   import Assets from "./routes/Assets.svelte";
   import Bank from "./routes/Bank.svelte";
-  import type { Coin } from "@cosmjs/stargate";
-  import { DENOMS } from "../../common/helpers/assets";
-  import { getAddrByPrefix, initWalletList } from "../../common/signers";
-  import type {
-    NetworkData,
-    ChainResponse,
-    AssetListItem,
-    IbcResponse,
-    AssetDescription,
-    ValidatorResponse,
-  } from "../../common/helpers/interfaces";
-  import { l, createRequest } from "../../common/utils";
-  import { baseURL } from "./config";
-  import { onMount } from "svelte";
+  import { l } from "../../common/utils";
   import {
     chainRegistryStorage,
-    ibcChannellsStorage,
     poolsStorage,
     userFundsStorage,
     validatorsStorage,
     cwHandlerStorage,
-    getRegistryChannelsPools,
-    getValidators,
-    getUserFunds,
+    getAll,
+    initAll,
   } from "./services/storage";
   import { get } from "svelte/store";
+  import { getAddrByChainId } from "../../common/signers";
 
   const paths = {
     home: "/",
@@ -39,29 +25,14 @@
 
   const localSorageKey = "starbound-osmo-address";
 
-  let chainRegistry: NetworkData[] = [];
-
   // init wallet, add osmo chain, save address to localSorage
   async function initCwHandler() {
-    const CONTRACT_ADDR = "";
-    const chainType: "main" | "test" = "test";
-
-    const chain = get(chainRegistryStorage).find(
-      ({ symbol }) => symbol === "OSMO"
-    );
-
-    if (typeof chain[chainType] === "string") return;
-
     try {
-      const RPC = chain[chainType].apis.rpc[0].address;
-      const chainId = chain[chainType].chain_id;
-      const wallet = await initWalletList([chain]);
-      let address = (await wallet.getKey(chain[chainType].chain_id))
-        .bech32Address;
+      const address = await getAddrByChainId();
       cwHandlerStorage.set({ address });
-
       // TODO: encode address
       localStorage.setItem(localSorageKey, address);
+      await initAll();
     } catch (error) {
       l({ error });
     }
@@ -69,24 +40,17 @@
     l(get(cwHandlerStorage));
   }
 
-  onMount(async () => {
-    try {
-      chainRegistryStorage.set(
-        (await getRegistryChannelsPools()).chainRegistry
-      );
-      chainRegistry = get(chainRegistryStorage);
-
-      const address = localStorage.getItem(localSorageKey) || "";
-      if (address === "") throw new Error("Connect wallet first");
-      cwHandlerStorage.set({ address });
-
-      userFundsStorage.set(
-        await getUserFunds(["osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx"])
-      );
-    } catch (error) {
-      l(error);
+  // init storages
+  (async () => {
+    const address = localStorage.getItem(localSorageKey) || "";
+    if (address === "") {
+      // TODO: add connect wallet error modal window
+      l("Connect wallet first!");
+      return;
     }
-  });
+    cwHandlerStorage.set({ address });
+    await initAll();
+  })();
 </script>
 
 <Router>

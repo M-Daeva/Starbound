@@ -19,9 +19,11 @@ async function init() {
     chainId: "osmo-test-4",
   };
 
+  // TODO: use chain registry storage
   const userClientStructJuno: ClientStruct = {
     isKeplrType: true,
-    RPC: "https://rpc.uni.juno.deuslabs.fi",
+    //RPC: "https://rpc.uni.juno.deuslabs.fi:443",
+    RPC: "https://rpc.uni.junonetwork.io:443",
     wallet,
     chainId: "uni-5",
   };

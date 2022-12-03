@@ -330,6 +330,15 @@ interface UserAdressesWithBalances {
   assetList: { address: string; holded: Coin; staked: Coin }[];
 }
 
+interface DashboardAsset {
+  asset: string;
+  price: Decimal;
+  holded: Decimal;
+  staked: Decimal;
+  cost: Decimal;
+  allocation: Decimal;
+}
+
 interface CwHandler {
   address: string;
 }
@@ -453,4 +462,5 @@ export {
   CwHandler,
   UserBalance,
   UserAdressesWithBalances,
+  DashboardAsset,
 };

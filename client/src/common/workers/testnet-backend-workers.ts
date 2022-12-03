@@ -47,7 +47,8 @@ const dappClientStruct: ClientStruct = {
 const dappClientStructJuno: ClientStruct = {
   isKeplrType: false,
   prefix: "juno",
-  RPC: "https://rpc.uni.juno.deuslabs.fi:443",
+  //RPC: "https://rpc.uni.juno.deuslabs.fi:443",
+  RPC: "https://rpc.uni.junonetwork.io:443",
   seed: SEED_DAPP,
 };
 
