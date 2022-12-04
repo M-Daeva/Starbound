@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Decimal};
+use cosmwasm_std::{Addr, Decimal, Uint128};
 use cw_storage_plus::{Item, Map};
 
 pub const STATE: Item<State> = Item::new("state");
@@ -45,9 +45,9 @@ pub const USERS: Map<&Addr, User> = Map::new("users");
 pub struct User {
     pub asset_list: Vec<Asset>,
     pub is_controlled_rebalancing: bool,
-    pub day_counter: u128,
-    pub deposited_on_current_period: u128,
-    pub deposited_on_next_period: u128,
+    pub day_counter: Uint128,
+    pub deposited_on_current_period: Uint128,
+    pub deposited_on_next_period: Uint128,
 }
 
 impl User {
@@ -55,9 +55,9 @@ impl User {
         User {
             is_controlled_rebalancing: true,
             asset_list: Vec::<Asset>::new(),
-            day_counter: 30,
-            deposited_on_current_period: 0,
-            deposited_on_next_period: 0,
+            day_counter: Uint128::from(30_u128),
+            deposited_on_current_period: Uint128::zero(),
+            deposited_on_next_period: Uint128::zero(),
         }
     }
 }
@@ -66,18 +66,18 @@ impl User {
 pub struct Asset {
     pub asset_denom: String,
     pub wallet_address: Addr,
-    pub wallet_balance: u128,
+    pub wallet_balance: Uint128,
     pub weight: Decimal,
-    pub amount_to_send_until_next_epoch: u128,
+    pub amount_to_send_until_next_epoch: Uint128,
 }
 
 impl Asset {
     pub fn new(
         asset_denom: &str,
         wallet_address: &Addr,
-        wallet_balance: u128,
+        wallet_balance: Uint128,
         weight: Decimal,
-        amount_to_send_until_next_epoch: u128,
+        amount_to_send_until_next_epoch: Uint128,
     ) -> Self {
         Asset {
             asset_denom: asset_denom.to_string(),
@@ -92,7 +92,7 @@ impl Asset {
         AssetExtracted {
             asset_denom: self.asset_denom.to_string(),
             wallet_address: self.wallet_address.to_string(),
-            wallet_balance: self.wallet_balance,
+            wallet_balance: self.wallet_balance.u128(),
         }
     }
 }

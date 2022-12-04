@@ -1,14 +1,12 @@
 import { l, SEP } from "../utils";
 import { _mockUpdatePoolsAndUsers } from "../helpers/api-helpers";
-import { getCwHelpers } from "../helpers/cw-helpers";
+
 import { DENOMS } from "../helpers/assets";
 import { getSgHelpers } from "../helpers/sg-helpers";
 import {
   SwapStruct,
   DelegationStruct,
   ClientStruct,
-  User,
-  Asset,
   QueryPoolsAndUsersResponse,
   PoolExtracted,
   UserExtracted,
@@ -22,6 +20,9 @@ import {
   SEED_BOB,
   SEED_DAPP,
 } from "../config/testnet-config.json";
+
+import { User, Asset } from "../codegen/Starbound.types";
+import { getCwHelpers } from "../helpers/cw-helpers-codegen";
 
 const aliceClientStruct: ClientStruct = {
   isKeplrType: false,
@@ -230,7 +231,7 @@ async function init() {
     {
       asset_denom: DENOMS.ATOM,
       wallet_address: "cosmos1chgwz55h9kepjq0fkj5supl2ta3nwu63327q35",
-      wallet_balance: "10000000",
+      wallet_balance: `${1_000}`,
       weight: "0.3",
       amount_to_send_until_next_epoch: "0",
     },
@@ -238,7 +239,7 @@ async function init() {
     {
       asset_denom: DENOMS.JUNO,
       wallet_address: "juno1chgwz55h9kepjq0fkj5supl2ta3nwu638camkg",
-      wallet_balance: "10000000",
+      wallet_balance: `${1_000}`,
       weight: "0.7",
       amount_to_send_until_next_epoch: "0",
     },
@@ -247,7 +248,7 @@ async function init() {
   let userBob: User = {
     asset_list: assetListBob,
     day_counter: "3",
-    deposited_on_current_period: `${600_000}`,
+    deposited_on_current_period: `${6_000}`,
     deposited_on_next_period: "0",
     is_controlled_rebalancing: false, // TODO: try true
   };

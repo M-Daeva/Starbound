@@ -1,4 +1,4 @@
-use cosmwasm_std::{attr, coin, from_binary, Addr};
+use cosmwasm_std::{attr, coin, from_binary, Addr, Uint128};
 
 use crate::{
     actions::rebalancer::str_to_dec,
@@ -71,24 +71,24 @@ fn test_execute_deposit_and_update_wallet_address() {
             asset_denom: DENOM_ATOM.to_string(),
             // new address must replace old one
             wallet_address: Addr::unchecked(ADDR_BOB_ATOM),
-            wallet_balance: 0,
+            wallet_balance: Uint128::zero(),
             weight: str_to_dec("0.5"),
-            amount_to_send_until_next_epoch: 0,
+            amount_to_send_until_next_epoch: Uint128::zero(),
         },
         Asset {
             asset_denom: DENOM_JUNO.to_string(),
             wallet_address: Addr::unchecked(ADDR_ALICE_JUNO),
-            wallet_balance: 0,
+            wallet_balance: Uint128::zero(),
             weight: str_to_dec("0.5"),
-            amount_to_send_until_next_epoch: 0,
+            amount_to_send_until_next_epoch: Uint128::zero(),
         },
     ];
 
     let user = User {
         asset_list: asset_list_alice,
-        day_counter: 3,
-        deposited_on_current_period: 0,
-        deposited_on_next_period: 0,
+        day_counter: Uint128::from(3_u128),
+        deposited_on_current_period: Uint128::zero(),
+        deposited_on_next_period: Uint128::zero(),
         is_controlled_rebalancing: IS_CONTROLLED_REBALANCING,
     };
 
@@ -178,24 +178,24 @@ fn test_execute_update_pools_and_users() {
         Asset {
             asset_denom: DENOM_ATOM.to_string(),
             wallet_address: Addr::unchecked(ADDR_BOB_ATOM),
-            wallet_balance: 10_000_000,
+            wallet_balance: Uint128::from(10_000_000_u128),
             weight: str_to_dec("0.3"),
-            amount_to_send_until_next_epoch: 0,
+            amount_to_send_until_next_epoch: Uint128::zero(),
         },
         Asset {
             asset_denom: DENOM_JUNO.to_string(),
             wallet_address: Addr::unchecked(ADDR_BOB_JUNO),
-            wallet_balance: 10_000_000,
+            wallet_balance: Uint128::from(10_000_000_u128),
             weight: str_to_dec("0.7"),
-            amount_to_send_until_next_epoch: 0,
+            amount_to_send_until_next_epoch: Uint128::zero(),
         },
     ];
 
     let user = User {
         asset_list: asset_list_bob,
-        day_counter: 3,
-        deposited_on_current_period: funds_amount,
-        deposited_on_next_period: 0,
+        day_counter: Uint128::from(3_u128),
+        deposited_on_current_period: Uint128::from(funds_amount),
+        deposited_on_next_period: Uint128::zero(),
         is_controlled_rebalancing: true,
     };
 
@@ -301,24 +301,24 @@ fn test_execute_swap_with_updated_users() {
         Asset {
             asset_denom: DENOM_ATOM.to_string(),
             wallet_address: Addr::unchecked(ADDR_BOB_ATOM),
-            wallet_balance: 10_000_000,
+            wallet_balance: Uint128::from(10_000_000_u128),
             weight: str_to_dec("0.3"),
-            amount_to_send_until_next_epoch: 0,
+            amount_to_send_until_next_epoch: Uint128::zero(),
         },
         Asset {
             asset_denom: DENOM_JUNO.to_string(),
             wallet_address: Addr::unchecked(ADDR_BOB_JUNO),
-            wallet_balance: 10_000_000,
+            wallet_balance: Uint128::from(10_000_000_u128),
             weight: str_to_dec("0.7"),
-            amount_to_send_until_next_epoch: 0,
+            amount_to_send_until_next_epoch: Uint128::zero(),
         },
     ];
 
     let user = User {
         asset_list: asset_list_bob,
-        day_counter: 3,
-        deposited_on_current_period: funds_amount,
-        deposited_on_next_period: 0,
+        day_counter: Uint128::from(3_u128),
+        deposited_on_current_period: Uint128::from(funds_amount),
+        deposited_on_next_period: Uint128::zero(),
         is_controlled_rebalancing: IS_CONTROLLED_REBALANCING,
     };
 

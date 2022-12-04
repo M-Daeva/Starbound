@@ -171,7 +171,9 @@ pub fn verify_deposit_data(
         None => 0,
     };
 
-    if funds_amount != (user.deposited_on_current_period + user.deposited_on_next_period) {
+    if funds_amount
+        != (user.deposited_on_current_period.u128() + user.deposited_on_next_period.u128())
+    {
         return Err(ContractError::FundsAreNotEqual {});
     }
 
@@ -224,7 +226,7 @@ pub fn verify_deposit_data(
 
 #[cfg(test)]
 mod test {
-    use cosmwasm_std::{coin, Addr, StdError::GenericErr};
+    use cosmwasm_std::{coin, Addr, StdError::GenericErr, Uint128};
 
     use crate::{
         actions::rebalancer::str_to_dec,
@@ -280,8 +282,10 @@ mod test {
         let is_current_period = IS_CURRENT_PERIOD;
         let is_controlled_rebalancing = IS_CONTROLLED_REBALANCING;
 
-        let user_deposited_on_current_period = if is_current_period { funds_amount } else { 0 };
-        let user_deposited_on_next_period = if !is_current_period { funds_amount } else { 0 };
+        let user_deposited_on_current_period =
+            Uint128::from(if is_current_period { funds_amount } else { 0 });
+        let user_deposited_on_next_period =
+            Uint128::from(if !is_current_period { funds_amount } else { 0 });
 
         let (mut deps, env, mut info, _) = get_instance(ADDR_ADMIN_OSMO);
 
@@ -289,22 +293,22 @@ mod test {
             Asset::new(
                 DENOM_ATOM,
                 &Addr::unchecked(ADDR_ALICE_ATOM),
-                0,
+                Uint128::zero(),
                 str_to_dec("0.5"),
-                0,
+                Uint128::zero(),
             ),
             Asset::new(
                 DENOM_JUNO,
                 &Addr::unchecked(ADDR_ALICE_JUNO),
-                0,
+                Uint128::zero(),
                 str_to_dec("0.5"),
-                0,
+                Uint128::zero(),
             ),
         ];
 
         let user = User {
             asset_list: asset_list_alice,
-            day_counter: 3,
+            day_counter: Uint128::from(3_u128),
             deposited_on_current_period: user_deposited_on_current_period,
             deposited_on_next_period: user_deposited_on_next_period,
             is_controlled_rebalancing,
@@ -324,22 +328,22 @@ mod test {
             Asset::new(
                 DENOM_ATOM,
                 &Addr::unchecked(ADDR_ALICE_ATOM),
-                0,
+                Uint128::zero(),
                 str_to_dec("0"),
-                0,
+                Uint128::zero(),
             ),
             Asset::new(
                 DENOM_JUNO,
                 &Addr::unchecked(ADDR_ALICE_JUNO),
-                0,
+                Uint128::zero(),
                 str_to_dec("1.5"),
-                0,
+                Uint128::zero(),
             ),
         ];
 
         let user = User {
             asset_list: asset_list_alice,
-            day_counter: 3,
+            day_counter: Uint128::from(3_u128),
             deposited_on_current_period: user_deposited_on_current_period,
             deposited_on_next_period: user_deposited_on_next_period,
             is_controlled_rebalancing,
@@ -357,22 +361,22 @@ mod test {
             Asset::new(
                 DENOM_ATOM,
                 &Addr::unchecked(ADDR_ALICE_ATOM),
-                0,
+                Uint128::zero(),
                 str_to_dec("0.7"),
-                0,
+                Uint128::zero(),
             ),
             Asset::new(
                 DENOM_JUNO,
                 &Addr::unchecked(ADDR_ALICE_JUNO),
-                0,
+                Uint128::zero(),
                 str_to_dec("0.5"),
-                0,
+                Uint128::zero(),
             ),
         ];
 
         let user = User {
             asset_list: asset_list_alice,
-            day_counter: 3,
+            day_counter: Uint128::from(3_u128),
             deposited_on_current_period: user_deposited_on_current_period,
             deposited_on_next_period: user_deposited_on_next_period,
             is_controlled_rebalancing,
@@ -388,29 +392,29 @@ mod test {
             Asset::new(
                 DENOM_ATOM,
                 &Addr::unchecked(ADDR_ALICE_ATOM),
-                0,
+                Uint128::zero(),
                 str_to_dec("0.3"),
-                0,
+                Uint128::zero(),
             ),
             Asset::new(
                 DENOM_JUNO,
                 &Addr::unchecked(ADDR_ALICE_JUNO),
-                0,
+                Uint128::zero(),
                 str_to_dec("0.4"),
-                0,
+                Uint128::zero(),
             ),
             Asset::new(
                 DENOM_ATOM,
                 &Addr::unchecked(ADDR_ALICE_ATOM),
-                0,
+                Uint128::zero(),
                 str_to_dec("0.3"),
-                0,
+                Uint128::zero(),
             ),
         ];
 
         let user = User {
             asset_list: asset_list_alice,
-            day_counter: 3,
+            day_counter: Uint128::from(3_u128),
             deposited_on_current_period: user_deposited_on_current_period,
             deposited_on_next_period: user_deposited_on_next_period,
             is_controlled_rebalancing,
@@ -426,22 +430,22 @@ mod test {
             Asset::new(
                 DENOM_NONEXISTENT,
                 &Addr::unchecked(ADDR_ALICE_ATOM),
-                0,
+                Uint128::zero(),
                 str_to_dec("0.6"),
-                0,
+                Uint128::zero(),
             ),
             Asset::new(
                 DENOM_JUNO,
                 &Addr::unchecked(ADDR_ALICE_JUNO),
-                0,
+                Uint128::zero(),
                 str_to_dec("0.4"),
-                0,
+                Uint128::zero(),
             ),
         ];
 
         let user = User {
             asset_list: asset_list_alice,
-            day_counter: 3,
+            day_counter: Uint128::from(3_u128),
             deposited_on_current_period: user_deposited_on_current_period,
             deposited_on_next_period: user_deposited_on_next_period,
             is_controlled_rebalancing,
@@ -457,22 +461,22 @@ mod test {
             Asset::new(
                 DENOM_ATOM,
                 &Addr::unchecked(ADDR_INVALID),
-                0,
+                Uint128::zero(),
                 str_to_dec("0.6"),
-                0,
+                Uint128::zero(),
             ),
             Asset::new(
                 DENOM_JUNO,
                 &Addr::unchecked(ADDR_ALICE_JUNO),
-                0,
+                Uint128::zero(),
                 str_to_dec("0.4"),
-                0,
+                Uint128::zero(),
             ),
         ];
 
         let user = User {
             asset_list: asset_list_alice,
-            day_counter: 3,
+            day_counter: Uint128::from(3_u128),
             deposited_on_current_period: user_deposited_on_current_period,
             deposited_on_next_period: user_deposited_on_next_period,
             is_controlled_rebalancing,

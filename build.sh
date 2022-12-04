@@ -11,6 +11,15 @@ cosmwasm-check --available-capabilities iterator,stargate,osmosis artifacts/*.wa
 # generate schemas
 cargo schema
 
+# generate contract-to-client interface
+cosmwasm-ts-codegen generate \
+  --plugin client \
+	--plugin message-composer \
+  --schema ./schema \
+  --out ./client/src/common/codegen \
+  --name $DIR_NAME \
+  --no-bundle
+
 # build optimized binary
 echo "building optimized binary..."
 docker run --rm -v "$(pwd)":/code \

@@ -60,7 +60,7 @@ docker cp "artifacts/$DIR_NAME_SNAKE.wasm" "$IMAGE_NAME:/$DIR_NAME_SNAKE.wasm"
 echo $SEP
 echo "storing contract..."
 echo "enter password (1234567890)"
-CONTRACT_CODE=$($BINARY tx wasm store "/$DIR_NAME_SNAKE.wasm" --from relayer2 $TXFLAG --output json | jq -r '.logs[0].events[-1].attributes[0].value')
+CONTRACT_CODE=$($BINARY tx wasm store "/$DIR_NAME_SNAKE.wasm" --from relayer2 $TXFLAG --output json | jq -r '.logs[0].events[-1].attributes[1].value')
 echo contract code is $CONTRACT_CODE
 
 #---------- SMART CONTRACT INTERACTION ------------------------

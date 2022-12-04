@@ -20,7 +20,7 @@ WASM="artifacts/$DIR_NAME_SNAKE.wasm"
 
 # you must manually import all accounts from mnemonic via
 # osmosisd keys add $user --recover
-CONTRACT_CODE=$(osmosisd tx wasm store $WASM --from dapp $TXFLAG --output json | jq -r '.logs[0].events[-1].attributes[0].value')
+CONTRACT_CODE=$(osmosisd tx wasm store $WASM --from dapp $TXFLAG --output json | jq -r '.logs[0].events[-1].attributes[1].value')
 echo contract code is $CONTRACT_CODE
 
 #---------- SMART CONTRACT INTERACTION ------------------------

@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::{
     coin, Addr, BankMsg, CosmosMsg, Decimal, DepsMut, Env, IbcMsg, IbcTimeout, IbcTimeoutBlock,
-    MessageInfo, Order, Response,
+    MessageInfo, Order, Response, Uint128,
 };
 
 use osmosis_std::types::{
@@ -53,7 +53,7 @@ pub fn deposit(
                     &asset.wallet_address,
                     asset.wallet_balance,
                     asset.weight,
-                    0,
+                    Uint128::zero(),
                 ),
             }
         })
@@ -105,16 +105,17 @@ pub fn withdraw(
     };
 
     // check withdraw amount
-    if amount > user.deposited_on_next_period + user.deposited_on_current_period {
+    if amount > user.deposited_on_next_period.u128() + user.deposited_on_current_period.u128() {
         return Err(ContractError::WithdrawAmountIsExceeded {});
     }
 
     // subtract from deposited_on_next_period first
-    if amount > user.deposited_on_next_period {
-        user.deposited_on_current_period -= amount - user.deposited_on_next_period;
-        user.deposited_on_next_period = 0;
+    if amount > user.deposited_on_next_period.u128() {
+        user.deposited_on_current_period -=
+            Uint128::from(amount - user.deposited_on_next_period.u128());
+        user.deposited_on_next_period = Uint128::zero();
     } else {
-        user.deposited_on_next_period -= amount;
+        user.deposited_on_next_period -= Uint128::from(amount);
     }
 
     let msg = CosmosMsg::Bank(BankMsg::Send {
@@ -222,7 +223,7 @@ pub fn update_pools_and_users(
                 Asset::new(
                     &asset.asset_denom,
                     &asset.wallet_address,
-                    asset_received.wallet_balance,
+                    Uint128::from(asset_received.wallet_balance),
                     asset.weight,
                     asset.amount_to_send_until_next_epoch,
                 )
@@ -274,25 +275,25 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
             let (osmo_address, user) = x.unwrap();
 
             // user_payment - funds to buy coins
-            let mut user_payment = if user.day_counter == 0 {
-                0
+            let mut user_payment = if user.day_counter.u128() == 0 {
+                0_u128
             } else {
-                user.deposited_on_current_period / user.day_counter
+                user.deposited_on_current_period.u128() / user.day_counter.u128()
             };
 
             // query user from storage and update parameters
             let mut user_updated = USERS.load(deps.storage, &osmo_address).unwrap();
 
-            if user.day_counter != 0 {
-                user_updated.day_counter -= 1;
-                if user_updated.deposited_on_current_period < user_payment {
-                    user_payment = user_updated.deposited_on_current_period;
+            if user.day_counter.u128() != 0 {
+                user_updated.day_counter -= Uint128::one();
+                if user_updated.deposited_on_current_period.u128() < user_payment {
+                    user_payment = user_updated.deposited_on_current_period.u128();
                 }
-                user_updated.deposited_on_current_period -= user_payment;
+                user_updated.deposited_on_current_period -= Uint128::from(user_payment);
             } else {
-                user_updated.day_counter = 30;
+                user_updated.day_counter = Uint128::from(30_u128);
                 user_updated.deposited_on_current_period = user.deposited_on_next_period;
-                user_updated.deposited_on_next_period = 0;
+                user_updated.deposited_on_next_period = Uint128::zero();
             }
 
             // user_weights - vector of target asset ratios
@@ -308,7 +309,7 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
                 let pool = POOLS.load(deps.storage, &user_asset.asset_denom).unwrap();
 
                 user_weights.push(user_asset.weight);
-                user_balances.push(user_asset.wallet_balance);
+                user_balances.push(user_asset.wallet_balance.u128());
                 user_prices.push(pool.price);
             }
 
@@ -327,7 +328,7 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
 
             // update user data about assets that will be bought
             for (i, &item) in user_delta_balances.iter().enumerate() {
-                user_updated.asset_list[i].amount_to_send_until_next_epoch = item;
+                user_updated.asset_list[i].amount_to_send_until_next_epoch = Uint128::from(item);
             }
 
             // save updated user in separate vector
@@ -342,9 +343,9 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
                     .find(|x| &x.asset_denom == global_denom)
                 {
                     Some(y) => y.amount_to_send_until_next_epoch,
-                    None => 0,
+                    None => Uint128::zero(),
                 };
-                global_delta_balance_list[i] += balance_by_denom;
+                global_delta_balance_list[i] += balance_by_denom.u128();
 
                 // fill global_delta_cost_list
                 for (j, user_asset) in user.asset_list.iter().enumerate() {
@@ -460,7 +461,7 @@ pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
         user_list_updated.iter().for_each(|(_osmo_address, user)| {
             for user_asset in &user.asset_list {
                 if &user_asset.asset_denom == global_denom {
-                    users_assets[i] += user_asset.amount_to_send_until_next_epoch;
+                    users_assets[i] += user_asset.amount_to_send_until_next_epoch.u128();
                 }
             }
         });
@@ -495,7 +496,7 @@ pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
                     .unwrap();
 
                 let ratio = correction_ratios[index];
-                let amount = u128_to_dec(user_asset.amount_to_send_until_next_epoch);
+                let amount = u128_to_dec(user_asset.amount_to_send_until_next_epoch.u128());
                 let mut amount_to_send_until_next_epoch = dec_to_u128(amount.mul(ratio));
 
                 // correct sendable funds
@@ -541,7 +542,7 @@ pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
                 // fill asset_list_updated
                 let mut asset_updated = user_asset.clone();
 
-                asset_updated.amount_to_send_until_next_epoch = 0;
+                asset_updated.amount_to_send_until_next_epoch = Uint128::zero();
                 asset_list_updated.push(asset_updated);
             }
             user_updated.asset_list = asset_list_updated;

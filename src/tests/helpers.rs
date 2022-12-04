@@ -1,7 +1,7 @@
 use cosmwasm_std::{
     coin,
     testing::{mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage},
-    Addr, Empty, Env, MessageInfo, OwnedDeps, Response,
+    Addr, Empty, Env, MessageInfo, OwnedDeps, Response, Uint128,
 };
 
 use crate::{
@@ -70,24 +70,24 @@ pub fn instantiate_and_deposit(
         Asset {
             asset_denom: DENOM_ATOM.to_string(),
             wallet_address: Addr::unchecked(ADDR_ALICE_ATOM),
-            wallet_balance: 0,
+            wallet_balance: Uint128::zero(),
             weight: str_to_dec("0.5"),
-            amount_to_send_until_next_epoch: 0,
+            amount_to_send_until_next_epoch: Uint128::zero(),
         },
         Asset {
             asset_denom: DENOM_JUNO.to_string(),
             wallet_address: Addr::unchecked(ADDR_ALICE_JUNO),
-            wallet_balance: 0,
+            wallet_balance: Uint128::zero(),
             weight: str_to_dec("0.5"),
-            amount_to_send_until_next_epoch: 0,
+            amount_to_send_until_next_epoch: Uint128::zero(),
         },
     ];
 
     let user = User {
         asset_list: asset_list_alice,
-        day_counter: 3,
-        deposited_on_current_period: user_deposited_on_current_period,
-        deposited_on_next_period: user_deposited_on_next_period,
+        day_counter: Uint128::from(3_u128),
+        deposited_on_current_period: Uint128::from(user_deposited_on_current_period),
+        deposited_on_next_period: Uint128::from(user_deposited_on_next_period),
         is_controlled_rebalancing,
     };
 
