@@ -47,6 +47,9 @@
 
   // displays mainnet balances
   userFundsStorage.subscribe((value) => {
+    const zero = new Decimal(0);
+    const multiplier = new Decimal(100);
+
     const initialAssetList = value.map(
       ([addr, { holded: _holded, staked: _staked }]) => {
         const {
@@ -72,15 +75,13 @@
           holded,
           staked,
           cost,
-          allocation: new Decimal(0),
+          allocation: zero,
         };
 
         return res;
       }
     );
 
-    const zero = new Decimal(0);
-    const multiplier = new Decimal(100);
     const totalCost = new Decimal(
       initialAssetList
         .map(({ cost }) => cost)

@@ -1,10 +1,15 @@
 import { l, createRequest, getLast } from "../utils";
+import { Coin, coin } from "@cosmjs/stargate";
+import { DENOMS } from "../helpers/assets";
+import { parse } from "node-html-parser";
+import { chains as chainRegistryList } from "chain-registry";
 import {
-  RelayerList,
-  RelayerStruct,
-  PoolDatabase,
   PoolExtracted,
   QueryPoolsAndUsersResponse,
+} from "../codegen/Starbound.types";
+import {
+  RelayerStruct,
+  PoolDatabase,
   ChainsResponse,
   ChainResponse,
   BalancesResponse,
@@ -15,14 +20,7 @@ import {
   NetworkData,
   AssetList,
   AssetDescription,
-  UserBalance,
-  UserAdressesWithBalances,
 } from "./interfaces";
-import { getAddrByPrefix } from "../signers";
-import { Coin, coin } from "@cosmjs/stargate";
-import { DENOMS } from "../helpers/assets";
-import { parse } from "node-html-parser";
-import { chains as chainRegistryList } from "chain-registry";
 
 const req = createRequest({});
 
@@ -384,7 +382,7 @@ async function getActiveNetworksInfo(): Promise<PoolExtracted[]> {
   return temp;
 }
 
-async function _updatePoolsAndUsers(response: QueryPoolsAndUsersResponse) {
+async function updatePoolsAndUsers(response: QueryPoolsAndUsersResponse) {
   let { pools, users } = response;
 
   let poolsData = await getActiveNetworksInfo();
@@ -411,11 +409,11 @@ async function _updatePoolsAndUsers(response: QueryPoolsAndUsersResponse) {
     }
   }
 
-  l({ fn: "_updatePoolsAndUsers", pools, users: users[0].asset_list });
+  l({ fn: "updatePoolsAndUsers", pools, users: users[0].asset_list });
   return { pools, users };
 }
 
-async function _mockUpdatePoolsAndUsers(): Promise<QueryPoolsAndUsersResponse> {
+async function mockUpdatePoolsAndUsers(): Promise<QueryPoolsAndUsersResponse> {
   let data = {
     pools: [
       {
@@ -633,8 +631,8 @@ async function getValidators() {
 }
 
 export {
-  _updatePoolsAndUsers,
-  _mockUpdatePoolsAndUsers,
+  updatePoolsAndUsers,
+  mockUpdatePoolsAndUsers,
   getChainRegistry,
   getIbcChannnels,
   getPools,

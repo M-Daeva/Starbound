@@ -29,7 +29,7 @@ const req = createRequest({});
 async function getSgHelpers(clientStruct: ClientStruct) {
   const { client, owner } = await getSgClient(clientStruct);
 
-  async function _sgTransfer(ibcStruct: IbcStruct) {
+  async function sgTransfer(ibcStruct: IbcStruct) {
     const { amount, dstPrefix, sourceChannel, sourcePort } = ibcStruct;
     const receiver = getAddrByPrefix(owner, dstPrefix);
 
@@ -60,7 +60,7 @@ async function getSgHelpers(clientStruct: ClientStruct) {
     return tx;
   }
 
-  async function _sgSwap(swapStruct: SwapStruct) {
+  async function sgSwap(swapStruct: SwapStruct) {
     const { amount, from, to } = swapStruct;
 
     const msgSwapExactAmountIn: MsgSwapExactAmountIn = {
@@ -80,7 +80,7 @@ async function getSgHelpers(clientStruct: ClientStruct) {
     return tx;
   }
 
-  async function _sgGrantStakeAuth(delegationStruct: DelegationStruct) {
+  async function sgGrantStakeAuth(delegationStruct: DelegationStruct) {
     const { targetAddr, tokenAmount, tokenDenom, validatorAddr } =
       delegationStruct;
 
@@ -119,7 +119,7 @@ async function getSgHelpers(clientStruct: ClientStruct) {
     return tx;
   }
 
-  async function _sgRevokeStakeAuth(delegationStruct: DelegationStruct) {
+  async function sgRevokeStakeAuth(delegationStruct: DelegationStruct) {
     const { targetAddr } = delegationStruct;
     l({ targetAddr });
     const msgRevoke: MsgRevoke = {
@@ -138,7 +138,7 @@ async function getSgHelpers(clientStruct: ClientStruct) {
     return tx;
   }
 
-  async function _sgDelegateFrom(delegationStruct: DelegationStruct) {
+  async function sgDelegateFrom(delegationStruct: DelegationStruct) {
     const { targetAddr, tokenAmount, tokenDenom, validatorAddr } =
       delegationStruct;
 
@@ -168,7 +168,7 @@ async function getSgHelpers(clientStruct: ClientStruct) {
     return tx;
   }
 
-  async function _sgGetTokenBalances(addr: string = owner) {
+  async function sgGetTokenBalances(addr: string = owner) {
     let balances = await client.getAllBalances(addr);
     return balances.map(({ amount, denom }) => ({
       amount,
@@ -176,7 +176,7 @@ async function getSgHelpers(clientStruct: ClientStruct) {
     }));
   }
 
-  async function _sgUpdatePoolList() {
+  async function sgUpdatePoolList() {
     let url =
       "https://api-osmosis.imperator.co/pools/v2/all?low_liquidity=false";
 
@@ -202,7 +202,7 @@ async function getSgHelpers(clientStruct: ClientStruct) {
     return valid_pools;
   }
 
-  async function _sgSend(recipient: string, amount: Coin) {
+  async function sgSend(recipient: string, amount: Coin) {
     const msg: MsgSendEncodeObject = {
       typeUrl: "/cosmos.bank.v1beta1.MsgSend",
       value: {
@@ -217,14 +217,14 @@ async function getSgHelpers(clientStruct: ClientStruct) {
 
   return {
     owner,
-    _sgSwap,
-    _sgTransfer,
-    _sgGrantStakeAuth,
-    _sgRevokeStakeAuth,
-    _sgDelegateFrom,
-    _sgGetTokenBalances,
-    _sgUpdatePoolList,
-    _sgSend,
+    sgSwap,
+    sgTransfer,
+    sgGrantStakeAuth,
+    sgRevokeStakeAuth,
+    sgDelegateFrom,
+    sgGetTokenBalances,
+    sgUpdatePoolList,
+    sgSend,
   };
 }
 

@@ -1,13 +1,7 @@
-import { createRequest, l } from "../../../common/utils";
-import type {
-  DelegationStruct,
-  User,
-  Asset,
-} from "../../../common/helpers/interfaces";
 import { DENOMS } from "../../../common/helpers/assets";
 import { init } from "../../../common/workers/testnet-frontend-workers";
-
-const req = createRequest({});
+import type { User, Asset } from "../../../common/codegen/Starbound.types";
+import type { DelegationStruct } from "../../../common/helpers/interfaces";
 
 const grantStakeStruct: DelegationStruct = {
   validatorAddr: "junovaloper1w8cpaaljwrytquj86kvp9s72lvmddcc208ghun",

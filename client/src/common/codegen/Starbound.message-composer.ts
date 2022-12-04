@@ -19,7 +19,7 @@ export interface StarboundMessage {
   withdraw: ({
     amount
   }: {
-    amount: number;
+    amount: Uint128;
   }, funds?: Coin[]) => MsgExecuteContractEncodeObject;
   updateScheduler: ({
     address
@@ -79,7 +79,7 @@ export class StarboundMessageComposer implements StarboundMessage {
   withdraw = ({
     amount
   }: {
-    amount: number;
+    amount: Uint128;
   }, funds?: Coin[]): MsgExecuteContractEncodeObject => {
     return {
       typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",

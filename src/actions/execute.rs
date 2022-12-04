@@ -92,7 +92,7 @@ pub fn withdraw(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    amount: u128,
+    amount: Uint128,
 ) -> Result<Response, ContractError> {
     // temporary replacement for tests - there is no USDC so we used EEUR
     let denom_token_out = "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F";
@@ -105,22 +105,26 @@ pub fn withdraw(
     };
 
     // check withdraw amount
-    if amount > user.deposited_on_next_period.u128() + user.deposited_on_current_period.u128() {
+    if amount.u128()
+        > user.deposited_on_next_period.u128() + user.deposited_on_current_period.u128()
+    {
         return Err(ContractError::WithdrawAmountIsExceeded {});
     }
 
+    // TODO: use Uint128 methods
+
     // subtract from deposited_on_next_period first
-    if amount > user.deposited_on_next_period.u128() {
+    if amount.u128() > user.deposited_on_next_period.u128() {
         user.deposited_on_current_period -=
-            Uint128::from(amount - user.deposited_on_next_period.u128());
+            Uint128::from(amount.u128() - user.deposited_on_next_period.u128());
         user.deposited_on_next_period = Uint128::zero();
     } else {
-        user.deposited_on_next_period -= Uint128::from(amount);
+        user.deposited_on_next_period -= amount;
     }
 
     let msg = CosmosMsg::Bank(BankMsg::Send {
         to_address: info.sender.to_string(),
-        amount: vec![coin(amount, denom_token_out)],
+        amount: vec![coin(amount.u128(), denom_token_out)],
     });
 
     USERS.save(deps.storage, &info.sender, &user)?;
@@ -223,7 +227,7 @@ pub fn update_pools_and_users(
                 Asset::new(
                     &asset.asset_denom,
                     &asset.wallet_address,
-                    Uint128::from(asset_received.wallet_balance),
+                    asset_received.wallet_balance,
                     asset.weight,
                     asset.amount_to_send_until_next_epoch,
                 )
@@ -386,7 +390,7 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         // if other asset is needed add extra route
         if global_denom != "uosmo" {
             routes.push(SwapAmountInRoute {
-                pool_id: pool.id.try_into().unwrap(),
+                pool_id: pool.id.u128().try_into().unwrap(),
                 token_out_denom: global_denom.to_string(),
             });
         }
@@ -411,8 +415,14 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
 
     // update bank
     STATE.update(deps.storage, |mut x| -> Result<_, ContractError> {
-        x.global_delta_balance_list = global_delta_balance_list;
-        x.global_delta_cost_list = global_delta_cost_list;
+        x.global_delta_balance_list = global_delta_balance_list
+            .iter()
+            .map(|&x| Uint128::from(x))
+            .collect();
+        x.global_delta_cost_list = global_delta_cost_list
+            .iter()
+            .map(|&x| Uint128::from(x))
+            .collect();
         x.global_denom_list = global_denom_list;
         x.global_price_list = global_price_list;
         Ok(x)
@@ -585,7 +595,7 @@ pub fn multi_transfer(
             let msg = CosmosMsg::Ibc(IbcMsg::Transfer {
                 channel_id: param.channel_id.clone(),
                 to_address: param.to.clone(),
-                amount: coin(param.amount, param.denom.clone()),
+                amount: coin(param.amount.u128(), param.denom.clone()),
                 timeout: env.block.time.plus_seconds(300).into(),
             });
 
@@ -600,7 +610,7 @@ pub fn multi_transfer(
                 let msg = IbcMsg::Transfer {
                     channel_id: param.channel_id,
                     to_address: param.to,
-                    amount: coin(param.amount, param.denom),
+                    amount: coin(param.amount.u128(), param.denom),
                     timeout: env.block.time.plus_seconds(300).into(),
                 };
 

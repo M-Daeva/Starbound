@@ -1,3 +1,5 @@
+import { init } from "../../common/workers/testnet-backend-workers";
+import { l } from "../../common/utils";
 import {
   getChainRegistry as _getChainRegistry,
   getIbcChannnels as _getIbcChannnels,
@@ -6,16 +8,14 @@ import {
   getUserFunds as _getUserFunds,
   filterChainRegistry as _filterChainRegistry,
 } from "../../common/helpers/api-helpers";
-import { init } from "../../common/workers/testnet-backend-workers";
+import { type QueryPoolsAndUsersResponse } from "../../common/codegen/Starbound.types";
 import type {
   NetworkData,
   ValidatorResponse,
   IbcResponse,
   AssetDescription,
   UserBalance,
-  QueryPoolsAndUsersResponse,
 } from "../../common/helpers/interfaces";
-import { l } from "../../common/utils";
 
 // client specific storages
 let chainRegistryStorage: NetworkData[] = [];
@@ -34,7 +34,7 @@ async function updateChainRegistry() {
     isStorageUpdated = true;
   } catch (error) {}
 
-  return isStorageUpdated;
+  return { fn: "updateChainRegistry", isStorageUpdated };
 }
 
 async function getChainRegistry() {
@@ -58,7 +58,7 @@ async function updateIbcChannels() {
     l(error);
   }
 
-  return isStorageUpdated;
+  return { fn: "updateIbcChannels", isStorageUpdated };
 }
 
 async function getIbcChannnels() {
@@ -80,7 +80,7 @@ async function updatePools() {
     isStorageUpdated = true;
   } catch (error) {}
 
-  return isStorageUpdated;
+  return { fn: "updatePools", isStorageUpdated };
 }
 
 async function getPools() {
@@ -102,7 +102,7 @@ async function updateValidators() {
     isStorageUpdated = true;
   } catch (error) {}
 
-  return isStorageUpdated;
+  return { fn: "updateValidators", isStorageUpdated };
 }
 
 async function getValidators() {
@@ -120,7 +120,7 @@ async function updateUserFunds() {
     isStorageUpdated = true;
   } catch (error) {}
 
-  return isStorageUpdated;
+  return { fn: "updateUserFunds", isStorageUpdated };
 }
 
 // filters all users address-balance list by specified user osmo address
@@ -146,7 +146,7 @@ async function updatePoolsAndUsers() {
     isStorageUpdated = true;
   } catch (error) {}
 
-  return isStorageUpdated;
+  return { fn: "updatePoolsAndUsers", isStorageUpdated };
 }
 
 async function getPoolsAndUsers() {
@@ -175,7 +175,7 @@ async function updateAll() {
     updateUserFunds(),
   ]);
 
-  return { isStorageUpdated: [resCw, ...res] };
+  return [resCw, ...res];
 }
 
 async function getAll(userOsmoAddress: string) {

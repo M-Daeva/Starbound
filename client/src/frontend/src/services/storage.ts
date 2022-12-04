@@ -1,3 +1,7 @@
+import { type Writable, get, writable } from "svelte/store";
+import { createRequest, l } from "../../../common/utils";
+import { baseURL } from "../config";
+import { type PoolExtracted } from "../../../common/codegen/Starbound.types";
 import type {
   NetworkData,
   IbcResponse,
@@ -7,11 +11,7 @@ import type {
   AuthzHandler,
   CwHandler,
   UserBalance,
-  PoolExtracted,
 } from "../../../common/helpers/interfaces";
-import { type Writable, get, writable } from "svelte/store";
-import { createRequest, l } from "../../../common/utils";
-import { baseURL } from "../config";
 
 // TODO: replace some writable storages with readable
 

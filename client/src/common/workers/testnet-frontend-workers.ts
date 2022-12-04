@@ -2,11 +2,8 @@ import { l } from "../utils";
 import { getCwHelpers } from "../helpers/cw-helpers";
 import { getSgHelpers } from "../helpers/sg-helpers";
 import { initWallet } from "../signers";
-import type {
-  DelegationStruct,
-  ClientStruct,
-  User,
-} from "../helpers/interfaces";
+import { type User } from "../codegen/Starbound.types";
+import type { DelegationStruct, ClientStruct } from "../helpers/interfaces";
 import { CONTRACT_ADDRESS, RPC } from "../config/testnet-config.json";
 
 async function init() {
@@ -30,17 +27,19 @@ async function init() {
 
   // user cosmwasm helpers
   const {
-    _cwDepositNew,
-    _cwWithdrawNew,
-    _cwQueryPoolsAndUsers,
-    _cwDebugQueryBank,
-    _cwDebugQueryPoolsAndUsers,
-    _cwQueryAssets,
+    cwDeposit: _cwDeposit,
+    cwWithdraw: _cwWithdraw,
+    cwQueryPoolsAndUsers: _cwQueryPoolsAndUsers,
+    cwDebugQueryBank: _cwDebugQueryBank,
+    cwDebugQueryPoolsAndUsers: _cwDebugQueryPoolsAndUsers,
+    cwQueryAssets: _cwQueryAssets,
     owner,
   } = await getCwHelpers(userClientStruct, CONTRACT_ADDRESS);
 
   // user stargate helpers
-  const { _sgGrantStakeAuth } = await getSgHelpers(userClientStructJuno);
+  const { sgGrantStakeAuth: _sgGrantStakeAuth } = await getSgHelpers(
+    userClientStructJuno
+  );
 
   async function sgGrantStakeAuth(grantStakeStruct: DelegationStruct) {
     try {
@@ -54,7 +53,7 @@ async function init() {
 
   async function cwDeposit(userAlice: User) {
     try {
-      const tx = await _cwDepositNew(userAlice);
+      const tx = await _cwDeposit(userAlice);
       return tx;
     } catch (error) {
       l(error, "\n");
@@ -63,7 +62,7 @@ async function init() {
 
   async function cwWithdraw(amount: number) {
     try {
-      const tx = await _cwWithdrawNew(amount);
+      const tx = await _cwWithdraw(amount);
       return tx;
     } catch (error) {
       l(error, "\n");

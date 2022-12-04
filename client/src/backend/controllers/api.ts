@@ -92,7 +92,7 @@ async function updateAll(_req: Request, res: Response) {
 }
 
 async function getAll(req: Request, res: Response) {
-  let { userOsmoAddress } = req.query as unknown as {
+  let { userOsmoAddress } = req.query as {
     userOsmoAddress: string | undefined;
   };
   if (!userOsmoAddress) return;

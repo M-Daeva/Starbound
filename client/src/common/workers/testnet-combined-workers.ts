@@ -1,17 +1,18 @@
 import { l, SEP } from "../utils";
-import { _mockUpdatePoolsAndUsers } from "../helpers/api-helpers";
+import { mockUpdatePoolsAndUsers as _mockUpdatePoolsAndUsers } from "../helpers/api-helpers";
 import { getCwHelpers } from "../helpers/cw-helpers";
 import { DENOMS } from "../helpers/assets";
 import { getSgHelpers } from "../helpers/sg-helpers";
 import {
-  SwapStruct,
-  DelegationStruct,
-  ClientStruct,
   User,
   Asset,
   QueryPoolsAndUsersResponse,
   PoolExtracted,
   UserExtracted,
+} from "../codegen/Starbound.types";
+import {
+  DelegationStruct,
+  ClientStruct,
   IbcStruct,
 } from "../helpers/interfaces";
 import {
@@ -46,13 +47,12 @@ async function init() {
   // alice cosmwasm helpers
   const {
     owner: aliceAddr,
-    _cwDeposit,
-    _cwDepositNew: _cwDepositAlice,
-    _cwWithdrawNew: _cwWithdrawAlice,
+    cwDeposit: _cwDepositAlice,
+    cwWithdraw: _cwWithdrawAlice,
   } = await getCwHelpers(aliceClientStruct, CONTRACT_ADDRESS);
 
   // bob cosmwasm helpers
-  const { owner: bobAddr, _cwDepositNew: _cwDepositBob } = await getCwHelpers(
+  const { owner: bobAddr, cwDeposit: _cwDepositBob } = await getCwHelpers(
     bobClientStruct,
     CONTRACT_ADDRESS
   );
@@ -60,44 +60,34 @@ async function init() {
   // dapp cosmwasm helpers
   const {
     owner: dappAddr,
-    _cwSwap,
-    _cwGetPools,
-    _cwGetPrices,
-    _cwQueryPoolsAndUsers,
-    _cwDebugQueryPoolsAndUsers,
-    _cwUpdatePoolsAndUsers,
-    _cwQueryAssets,
-    _cwDebugQueryBank,
-    _cwTransfer,
+    cwSwap: _cwSwap,
+    cwQueryPoolsAndUsers: _cwQueryPoolsAndUsers,
+    cwDebugQueryPoolsAndUsers: _cwDebugQueryPoolsAndUsers,
+    cwUpdatePoolsAndUsers: _cwUpdatePoolsAndUsers,
+    cwQueryAssets: _cwQueryAssets,
+    cwDebugQueryBank: _cwDebugQueryBank,
+    cwTransfer: _cwTransfer,
   } = await getCwHelpers(dappClientStruct, CONTRACT_ADDRESS);
 
   // alice stargate helpers
-  const { _sgGrantStakeAuth, _sgTransfer } = await getSgHelpers(
-    aliceClientStruct
-  );
+  const { sgGrantStakeAuth: _sgGrantStakeAuth, sgTransfer: _sgTransfer } =
+    await getSgHelpers(aliceClientStruct);
 
   // dapp stargate helpers
-  const { _sgDelegateFrom, _sgGetTokenBalances, _sgUpdatePoolList } =
-    await getSgHelpers(dappClientStruct);
+  const {
+    sgDelegateFrom: _sgDelegateFrom,
+    sgGetTokenBalances: _sgGetTokenBalances,
+    sgUpdatePoolList: _sgUpdatePoolList,
+  } = await getSgHelpers(dappClientStruct);
 
   async function sgUpdatePoolList() {
     let pools = await _sgUpdatePoolList();
     l({ pools });
   }
 
-  async function _queryBalance() {
+  async function queryBalance() {
     let balances = await _sgGetTokenBalances(CONTRACT_ADDRESS);
     l({ contract: balances });
-  }
-
-  async function cwDeposit() {
-    l(SEP, "depositing...");
-    try {
-      await _cwDeposit(10_000);
-      // await _queryBalance();
-    } catch (error) {
-      l(error, "\n");
-    }
   }
 
   const grantStakeStruct: DelegationStruct = {
@@ -145,24 +135,6 @@ async function init() {
     try {
       const tx = await _sgDelegateFrom(stakeFromStruct);
       l(tx, "\n");
-    } catch (error) {
-      l(error, "\n");
-    }
-  }
-
-  async function cwGetPools() {
-    l(SEP, "querying pools...");
-    try {
-      await _cwGetPools();
-    } catch (error) {
-      l(error, "\n");
-    }
-  }
-
-  async function cwGetPrices() {
-    l(SEP, "querying prices...");
-    try {
-      await _cwGetPrices();
     } catch (error) {
       l(error, "\n");
     }
@@ -407,14 +379,11 @@ async function init() {
   }
 
   return {
-    _queryBalance,
-    cwDeposit,
+    queryBalance,
     sgGrantStakeAuth,
     cwSwap,
     sgDelegateFrom,
     sgUpdatePoolList,
-    cwGetPools,
-    cwGetPrices,
     cwDebugQueryPoolsAndUsers,
     cwQueryPoolsAndUsers,
     cwDepositAlice,

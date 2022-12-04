@@ -8,8 +8,8 @@ pub const STATE: Item<State> = Item::new("state");
 pub struct State {
     pub admin: Addr,
     pub scheduler: Addr,
-    pub global_delta_balance_list: Vec<u128>,
-    pub global_delta_cost_list: Vec<u128>,
+    pub global_delta_balance_list: Vec<Uint128>,
+    pub global_delta_cost_list: Vec<Uint128>,
     pub global_denom_list: Vec<String>,
     pub global_price_list: Vec<Decimal>,
 }
@@ -19,7 +19,7 @@ pub const POOLS: Map<&str, Pool> = Map::new("pools");
 
 #[cw_serde]
 pub struct Pool {
-    pub id: u128,
+    pub id: Uint128,
     pub price: Decimal,
     pub symbol: String,
     pub channel_id: String,
@@ -27,7 +27,7 @@ pub struct Pool {
 }
 
 impl Pool {
-    pub fn new(id: u128, price: Decimal, channel_id: &str, port_id: &str, symbol: &str) -> Self {
+    pub fn new(id: Uint128, price: Decimal, channel_id: &str, port_id: &str, symbol: &str) -> Self {
         Pool {
             id,
             price,
@@ -54,7 +54,7 @@ impl User {
     pub fn default() -> Self {
         User {
             is_controlled_rebalancing: true,
-            asset_list: Vec::<Asset>::new(),
+            asset_list: vec![],
             day_counter: Uint128::from(30_u128),
             deposited_on_current_period: Uint128::zero(),
             deposited_on_next_period: Uint128::zero(),
@@ -92,14 +92,14 @@ impl Asset {
         AssetExtracted {
             asset_denom: self.asset_denom.to_string(),
             wallet_address: self.wallet_address.to_string(),
-            wallet_balance: self.wallet_balance.u128(),
+            wallet_balance: self.wallet_balance,
         }
     }
 }
 
 #[cw_serde]
 pub struct PoolExtracted {
-    pub id: u128,
+    pub id: Uint128,
     pub denom: String,
     pub price: Decimal,
     pub symbol: String,
@@ -117,15 +117,15 @@ pub struct UserExtracted {
 pub struct AssetExtracted {
     pub asset_denom: String,
     pub wallet_address: String,
-    pub wallet_balance: u128,
+    pub wallet_balance: Uint128,
 }
 
 #[cw_serde]
 pub struct TransferParams {
     pub channel_id: String,
     pub to: String,
-    pub amount: u128,
+    pub amount: Uint128,
     pub denom: String,
-    pub block_revision: u128,
-    pub block_height: u128,
+    pub block_revision: Uint128,
+    pub block_height: Uint128,
 }

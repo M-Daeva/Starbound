@@ -1,20 +1,18 @@
 import { l } from "../utils";
 import { coin } from "@cosmjs/stargate";
-import { _mockUpdatePoolsAndUsers } from "../helpers/api-helpers";
+import { mockUpdatePoolsAndUsers as _mockUpdatePoolsAndUsers } from "../helpers/api-helpers";
 import { getCwHelpers } from "../helpers/cw-helpers";
 import { DENOMS } from "../helpers/assets";
 import { getSgHelpers } from "../helpers/sg-helpers";
 import { getAddrByPrefix } from "../signers";
 import {
-  SwapStruct,
-  DelegationStruct,
-  ClientStruct,
-  User,
-  Asset,
   QueryPoolsAndUsersResponse,
-  PoolExtracted,
   UserExtracted,
   TransferParams,
+} from "../codegen/Starbound.types";
+import {
+  DelegationStruct,
+  ClientStruct,
   IbcStruct,
 } from "../helpers/interfaces";
 import {
@@ -56,27 +54,27 @@ async function init() {
   // dapp cosmwasm helpers
   const {
     owner: dappAddr,
-    _cwSwap,
-    _cwGetPools,
-    _cwGetPrices,
-    _cwQueryPoolsAndUsers,
-    _cwDebugQueryPoolsAndUsers,
-    _cwUpdatePoolsAndUsers,
-    _cwQueryAssets,
-    _cwDebugQueryBank,
-    _cwTransfer,
-    _cwMultiTransfer,
-    _cwSgSend,
+    cwSwap: _cwSwap,
+    cwQueryPoolsAndUsers: _cwQueryPoolsAndUsers,
+    cwDebugQueryPoolsAndUsers: _cwDebugQueryPoolsAndUsers,
+    cwUpdatePoolsAndUsers: _cwUpdatePoolsAndUsers,
+    cwQueryAssets: _cwQueryAssets,
+    cwDebugQueryBank: _cwDebugQueryBank,
+    cwTransfer: _cwTransfer,
+    cwMultiTransfer: _cwMultiTransfer,
   } = await getCwHelpers(dappClientStruct, CONTRACT_ADDRESS);
 
   // dapp stargate helpers
-  const { _sgUpdatePoolList, _sgTransfer, _sgSend } = await getSgHelpers(
-    dappClientStruct
-  );
+  const {
+    sgUpdatePoolList: _sgUpdatePoolList,
+    sgTransfer: _sgTransfer,
+    sgSend: _sgSend,
+  } = await getSgHelpers(dappClientStruct);
 
-  const { _sgDelegateFrom, _sgGetTokenBalances } = await getSgHelpers(
-    dappClientStructJuno
-  );
+  const {
+    sgDelegateFrom: _sgDelegateFrom,
+    sgGetTokenBalances: _sgGetTokenBalances,
+  } = await getSgHelpers(dappClientStructJuno);
 
   async function sgUpdatePoolList() {
     let pools = await _sgUpdatePoolList();
@@ -133,22 +131,6 @@ async function init() {
 
     for (let user of users) {
       await delegate(user);
-    }
-  }
-
-  async function cwGetPools() {
-    try {
-      await _cwGetPools();
-    } catch (error) {
-      l(error, "\n");
-    }
-  }
-
-  async function cwGetPrices() {
-    try {
-      await _cwGetPrices();
-    } catch (error) {
-      l(error, "\n");
     }
   }
 
@@ -281,15 +263,6 @@ async function init() {
     }
   }
 
-  async function cwSgSend() {
-    try {
-      const tx = await _cwSgSend();
-      l(tx, "\n");
-    } catch (error) {
-      l(error, "\n");
-    }
-  }
-
   async function sgSend() {
     try {
       const tx = await _sgSend(CONTRACT_ADDRESS, coin(500_000, "uosmo"));
@@ -304,8 +277,6 @@ async function init() {
     cwSwap,
     sgDelegateFrom,
     sgUpdatePoolList,
-    cwGetPools,
-    cwGetPrices,
     cwDebugQueryPoolsAndUsers,
     cwQueryPoolsAndUsers,
     cwMockUpdatePoolsAndUsers,
@@ -314,7 +285,6 @@ async function init() {
     cwTransfer,
     cwMultiTransfer,
     sgTransfer,
-    cwSgSend,
     sgSend,
     sgDelegateFromAll,
   };

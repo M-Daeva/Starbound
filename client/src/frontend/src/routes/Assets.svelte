@@ -27,27 +27,17 @@
   let ratio: number = 1;
   let denoms: string[] = [];
   let currentSymbol = "";
-  // let sortingConfig: {
-  //   key: keyof AssetListItem;
-  //   order: "asc" | "desc";
-  // } = { key: "address", order: "asc" };
 
   userFundsStorage.subscribe((value) => {
     value.forEach(([k]) => addAsset(getAssetInfoByAddress(k).asset.symbol));
-
-    l({ userFundsStorage: "userFundsStorage", time: Date.now() });
   });
 
   assetListStorage.subscribe((value) => {
     assetList = value;
-
-    l({ assetListStorage: "assetListStorage", time: Date.now() });
   });
 
   chainRegistryStorage.subscribe((value) => {
     denoms = value.map((item) => item.symbol);
-
-    l({ chainRegistryStorage: "chainRegistryStorage", time: Date.now() });
   });
 
   // TODO: try to find better RPC provider
@@ -74,7 +64,7 @@
       });
 
       // add handlers
-      const { _sgGrantStakeAuth, _sgRevokeStakeAuth } = await getSgHelpers({
+      const { sgGrantStakeAuth, sgRevokeStakeAuth } = await getSgHelpers({
         isKeplrType: true,
         RPC,
         wallet,
@@ -91,8 +81,8 @@
         ...authzHandlerList.filter(({ symbol }) => symbol !== currentSymbol),
         {
           symbol: currentSymbol,
-          grant: async () => await _sgGrantStakeAuth(delegationStruct),
-          revoke: async () => await _sgRevokeStakeAuth(delegationStruct),
+          grant: async () => await sgGrantStakeAuth(delegationStruct),
+          revoke: async () => await sgRevokeStakeAuth(delegationStruct),
         },
       ];
       authzHandlerListStorage.set(authzHandlerList);

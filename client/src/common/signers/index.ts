@@ -1,17 +1,17 @@
 import { fromBech32, toBech32 } from "@cosmjs/encoding";
 import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
 import { SigningStargateClient, coin, StdFee } from "@cosmjs/stargate";
-import {
-  ClientStruct,
-  NetworkData,
-  ChainResponse,
-} from "../helpers/interfaces";
 import { Keplr, Window as KeplrWindow, ChainInfo } from "@keplr-wallet/types";
 import { l } from "../utils";
 import { CHAIN_ID } from "../config/testnet-config.json";
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 import { OfflineSigner } from "@cosmjs/launchpad";
 import { OfflineDirectSigner } from "@cosmjs/proto-signing";
+import {
+  ClientStruct,
+  NetworkData,
+  ChainResponse,
+} from "../helpers/interfaces";
 
 const CHAIN_ID2 = "uni-5";
 
@@ -26,12 +26,7 @@ declare global {
 
 function detectWallet() {
   const { keplr } = window;
-
-  if (!keplr) {
-    l("You need to install Keplr");
-    return;
-  }
-
+  if (!keplr) l("You need to install Keplr");
   return keplr;
 }
 
@@ -39,15 +34,6 @@ function getChainInfo(asset: NetworkData, isMain: boolean) {
   let network = (isMain ? asset.main : asset.test) as unknown as ChainResponse;
 
   try {
-    // l({
-    //   chain_id: network.chain_id,
-    //   exp: asset.exponent,
-    //   den: asset.denom,
-    //   rpc: network.apis.rpc[0].address,
-    //   rest: network.apis.rest[0].address,
-    //   cg: asset.coinGeckoId,
-    // });
-
     // fix for juno testnet and mainnet denoms
     if (network.chain_id.includes("uni-")) {
       asset.denom = "ujunox";
@@ -139,10 +125,8 @@ async function unlockWalletList(
 async function initWalletList(chainRegistry: NetworkData[]) {
   let wallet = detectWallet();
   if (!wallet) return;
-
   await addChainList(wallet, chainRegistry); // add network to Keplr
   await unlockWalletList(wallet, chainRegistry); // give permission for the webpage to access Keplr
-
   return wallet;
 }
 
@@ -342,25 +326,18 @@ function getAddrByPrefix(address: string, prefix: string): string {
 
 async function initWallet() {
   let wallet = detectWallet();
-  if (wallet === undefined) return;
-
-  wallet = wallet as Keplr;
+  if (!wallet) return;
   await addChain(wallet); // add network to Keplr
   await unlockWallet(wallet); // give permission for the webpage to access Keplr
-
   return wallet;
 }
 
 // get address by chain_id using installed by default networks
 async function getAddrByChainId(chainId: string = "osmosis-1") {
   let wallet = detectWallet();
-  if (wallet === undefined) return;
-
-  wallet = wallet as Keplr;
+  if (!wallet) return;
   await unlockWallet(wallet); // give permission for the webpage to access Keplr
-
-  let address = (await wallet.getKey(chainId)).bech32Address;
-  return address;
+  return (await wallet.getKey(chainId)).bech32Address;
 }
 
 export {

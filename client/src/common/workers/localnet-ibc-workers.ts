@@ -1,13 +1,9 @@
 import { l, SEP } from "../utils";
 import { getCwHelpers } from "../helpers/cw-helpers";
 import { getSgHelpers } from "../helpers/sg-helpers";
-import {
-  IbcStruct,
-  SwapStruct,
-  ClientStruct,
-  TransferParams,
-} from "../helpers/interfaces";
 import { DENOMS } from "../helpers/assets";
+import { TransferParams, Asset, User } from "../codegen/Starbound.types";
+import { IbcStruct, SwapStruct, ClientStruct } from "../helpers/interfaces";
 import {
   CONTRACT_ADDRESS,
   PREFIX,
@@ -17,7 +13,7 @@ import {
   SEED_DAPP,
 } from "../config/localnet-ibc-config.json";
 
-const clientStruct: ClientStruct = {
+const aliceClientStruct: ClientStruct = {
   isKeplrType: false,
   prefix: PREFIX,
   RPC,
@@ -38,20 +34,16 @@ const fromOsmoToAtom: SwapStruct = {
 };
 
 async function init() {
+  // alice cosmwasm helpers
+  const { cwDeposit: _cwDeposit, cwMultiTransfer: _cwMultiTransfer } =
+    await getCwHelpers(aliceClientStruct, CONTRACT_ADDRESS);
+
+  // alice stargate helpers
   const {
-    _sgDelegateFrom,
-    _sgGetTokenBalances,
-    _sgGrantStakeAuth,
-    _sgSwap,
-    _sgTransfer,
-  } = await getSgHelpers(clientStruct);
-  const {
-    _cwDeposit,
-    _cwGetBankBalance,
-    _cwSwap,
-    _cwTransfer,
-    _cwMultiTransfer,
-  } = await getCwHelpers(clientStruct, CONTRACT_ADDRESS);
+    sgGetTokenBalances: _sgGetTokenBalances,
+    sgSwap: _sgSwap,
+    sgTransfer: _sgTransfer,
+  } = await getSgHelpers(aliceClientStruct);
 
   async function sgTransfer() {
     l(SEP, "sending ibc transfer...");
@@ -78,10 +70,37 @@ async function init() {
     l({ contract: balances });
   }
 
+  let assetListAlice: Asset[] = [
+    // ATOM
+    {
+      asset_denom: DENOMS.ATOM,
+      wallet_address: "cosmos1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyklkm75",
+      wallet_balance: "0",
+      weight: "0.5",
+      amount_to_send_until_next_epoch: "0",
+    },
+    // JUNO
+    {
+      asset_denom: DENOMS.JUNO,
+      wallet_address: "juno1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyqd4qeg",
+      wallet_balance: "0",
+      weight: "0.5",
+      amount_to_send_until_next_epoch: "0",
+    },
+  ];
+
+  let userAlice: User = {
+    asset_list: assetListAlice,
+    day_counter: "3",
+    deposited_on_current_period: `${100}`,
+    deposited_on_next_period: "0",
+    is_controlled_rebalancing: false,
+  };
+
   async function cwDeposit() {
     l(SEP, "depositing...");
     try {
-      await _cwDeposit(10_000);
+      await _cwDeposit(userAlice);
       await _queryBalance();
     } catch (error) {
       l(error, "\n");
@@ -152,9 +171,7 @@ async function init() {
   return {
     sgTransfer,
     sgSwap,
-    _queryBalance,
     cwDeposit,
-    //  cwTransfer, cwSwap
     cwMultiTransfer,
   };
 }

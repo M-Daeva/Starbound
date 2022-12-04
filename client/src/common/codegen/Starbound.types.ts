@@ -11,7 +11,7 @@ export type ExecuteMsg = {
   };
 } | {
   withdraw: {
-    amount: number;
+    amount: Uint128;
   };
 } | {
   update_scheduler: {
@@ -51,7 +51,7 @@ export interface Asset {
 export interface PoolExtracted {
   channel_id: string;
   denom: string;
-  id: number;
+  id: Uint128;
   port_id: string;
   price: Decimal;
   symbol: string;
@@ -63,12 +63,12 @@ export interface UserExtracted {
 export interface AssetExtracted {
   asset_denom: string;
   wallet_address: string;
-  wallet_balance: number;
+  wallet_balance: Uint128;
 }
 export interface TransferParams {
-  amount: number;
-  block_height: number;
-  block_revision: number;
+  amount: Uint128;
+  block_height: Uint128;
+  block_revision: Uint128;
   channel_id: string;
   denom: string;
   to: string;
@@ -87,8 +87,8 @@ export type QueryMsg = {
 export type MigrateMsg = string;
 export interface DebugQueryBankResponse {
   dapp_wallet: Coin[];
-  global_delta_balance_list: number[];
-  global_delta_cost_list: number[];
+  global_delta_balance_list: Uint128[];
+  global_delta_cost_list: Uint128[];
   global_denom_list: string[];
   global_price_list: Decimal[];
 }

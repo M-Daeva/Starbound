@@ -113,7 +113,7 @@ fn test_execute_withdraw() {
         instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
 
     let msg = ExecuteMsg::Withdraw {
-        amount: FUNDS_AMOUNT / 10,
+        amount: Uint128::from(FUNDS_AMOUNT / 10),
     };
 
     let res = execute(deps.as_mut(), env, info, msg);
@@ -208,7 +208,7 @@ fn test_execute_update_pools_and_users() {
     // update data
     let pools: Vec<PoolExtracted> = vec![
         PoolExtracted {
-            id: 1,
+            id: Uint128::one(),
             denom: DENOM_ATOM.to_string(),
             price: str_to_dec("11.5"),
             symbol: "uatom".to_string(),
@@ -216,7 +216,7 @@ fn test_execute_update_pools_and_users() {
             port_id: "transfer".to_string(),
         },
         PoolExtracted {
-            id: 497,
+            id: Uint128::from(497_u128),
             denom: DENOM_JUNO.to_string(),
             price: str_to_dec("3.5"),
             symbol: "ujuno".to_string(),
@@ -224,7 +224,7 @@ fn test_execute_update_pools_and_users() {
             port_id: "transfer".to_string(),
         },
         PoolExtracted {
-            id: 481,
+            id: Uint128::from(481_u128),
             denom: DENOM_EEUR.to_string(),
             price: str_to_dec("1"),
             symbol: "debug_ueeur".to_string(),
@@ -240,12 +240,12 @@ fn test_execute_update_pools_and_users() {
                 AssetExtracted {
                     asset_denom: DENOM_ATOM.to_string(),
                     wallet_address: ADDR_ALICE_ATOM.to_string(),
-                    wallet_balance: 1,
+                    wallet_balance: Uint128::one(),
                 },
                 AssetExtracted {
                     asset_denom: DENOM_JUNO.to_string(),
                     wallet_address: ADDR_ALICE_JUNO.to_string(),
-                    wallet_balance: 2,
+                    wallet_balance: Uint128::from(2_u128),
                 },
             ],
         },
@@ -255,12 +255,12 @@ fn test_execute_update_pools_and_users() {
                 AssetExtracted {
                     asset_denom: DENOM_ATOM.to_string(),
                     wallet_address: ADDR_BOB_ATOM.to_string(),
-                    wallet_balance: 10_000_001,
+                    wallet_balance: Uint128::from(10_000_001_u128),
                 },
                 AssetExtracted {
                     asset_denom: DENOM_JUNO.to_string(),
                     wallet_address: ADDR_BOB_JUNO.to_string(),
-                    wallet_balance: 10_000_002,
+                    wallet_balance: Uint128::from(10_000_002_u128),
                 },
             ],
         },
@@ -331,7 +331,7 @@ fn test_execute_swap_with_updated_users() {
     // update data
     let pools: Vec<PoolExtracted> = vec![
         PoolExtracted {
-            id: 1,
+            id: Uint128::one(),
             denom: DENOM_ATOM.to_string(),
             price: str_to_dec("11.5"),
             symbol: "uatom".to_string(),
@@ -339,7 +339,7 @@ fn test_execute_swap_with_updated_users() {
             port_id: "transfer".to_string(),
         },
         PoolExtracted {
-            id: 497,
+            id: Uint128::from(497_u128),
             denom: DENOM_JUNO.to_string(),
             price: str_to_dec("3.5"),
             symbol: "ujuno".to_string(),
@@ -347,7 +347,7 @@ fn test_execute_swap_with_updated_users() {
             port_id: "transfer".to_string(),
         },
         PoolExtracted {
-            id: 481,
+            id: Uint128::from(481_u128),
             denom: DENOM_EEUR.to_string(),
             price: str_to_dec("1"),
             symbol: "debug_ueeur".to_string(),
@@ -363,12 +363,12 @@ fn test_execute_swap_with_updated_users() {
                 AssetExtracted {
                     asset_denom: DENOM_ATOM.to_string(),
                     wallet_address: ADDR_ALICE_ATOM.to_string(),
-                    wallet_balance: 1,
+                    wallet_balance: Uint128::one(),
                 },
                 AssetExtracted {
                     asset_denom: DENOM_JUNO.to_string(),
                     wallet_address: ADDR_ALICE_JUNO.to_string(),
-                    wallet_balance: 2,
+                    wallet_balance: Uint128::from(2_u128),
                 },
             ],
         },
@@ -378,12 +378,12 @@ fn test_execute_swap_with_updated_users() {
                 AssetExtracted {
                     asset_denom: DENOM_ATOM.to_string(),
                     wallet_address: ADDR_BOB_ATOM.to_string(),
-                    wallet_balance: 10_000_001,
+                    wallet_balance: Uint128::from(10_000_001_u128),
                 },
                 AssetExtracted {
                     asset_denom: DENOM_JUNO.to_string(),
                     wallet_address: ADDR_BOB_JUNO.to_string(),
-                    wallet_balance: 10_000_002,
+                    wallet_balance: Uint128::from(10_000_002_u128),
                 },
             ],
         },

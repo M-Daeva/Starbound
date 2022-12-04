@@ -1,5 +1,5 @@
 #[cfg(not(feature = "library"))]
-use cosmwasm_std::{DepsMut, Env, MessageInfo, Response};
+use cosmwasm_std::{DepsMut, Env, MessageInfo, Response, Uint128};
 use cw2::set_contract_version;
 
 use crate::{
@@ -23,14 +23,26 @@ pub fn init(
     POOLS.save(
         deps.storage,
         "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
-        &Pool::new(1, u128_to_dec(13), "channel-1110", "transfer", "uatom"),
+        &Pool::new(
+            Uint128::one(),
+            u128_to_dec(13),
+            "channel-1110",
+            "transfer",
+            "uatom",
+        ),
     )?;
 
     // JUNO / OSMO
     POOLS.save(
         deps.storage,
         "ibc/46B44899322F3CD854D2D46DEEF881958467CDD4B3B10086DA49296BBED94BED",
-        &Pool::new(497, u128_to_dec(4), "channel-1110", "transfer", "ujuno"),
+        &Pool::new(
+            Uint128::from(497_u128),
+            u128_to_dec(4),
+            "channel-1110",
+            "transfer",
+            "ujuno",
+        ),
     )?;
 
     // EEUR / OSMO
@@ -38,7 +50,7 @@ pub fn init(
         deps.storage,
         "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F",
         &Pool::new(
-            481,
+            Uint128::from(481_u128),
             u128_to_dec(1),
             "debug_ch_id",
             "transfer",

@@ -27,47 +27,6 @@ interface DelegationStruct {
   validatorAddr: string;
 }
 
-interface Asset {
-  asset_denom: string;
-  wallet_address: string;
-  wallet_balance: string;
-  weight: string;
-  amount_to_send_until_next_epoch: string;
-}
-
-interface User {
-  asset_list: Asset[];
-  is_controlled_rebalancing: boolean;
-  day_counter: string;
-  deposited_on_current_period: string;
-  deposited_on_next_period: string;
-}
-
-interface PoolExtracted {
-  id: string;
-  denom: string;
-  price: string;
-  symbol: string;
-  channel_id: string;
-  port_id: string;
-}
-
-interface UserExtracted {
-  osmo_address: string;
-  asset_list: AssetExtracted[];
-}
-
-interface AssetExtracted {
-  asset_denom: string;
-  wallet_address: string;
-  wallet_balance: string;
-}
-
-interface QueryPoolsAndUsersResponse {
-  users: UserExtracted[];
-  pools: PoolExtracted[];
-}
-
 interface RelayerList {
   sendable: Relayer[];
 }
@@ -294,15 +253,6 @@ interface SwapStruct {
   amount: number;
 }
 
-interface TransferParams {
-  channel_id: string;
-  to: string;
-  amount: string;
-  denom: string;
-  block_revision: string;
-  block_height: string;
-}
-
 interface NetworkData {
   prefix: string;
   main: ChainResponse | string;
@@ -433,12 +383,6 @@ export {
   ClientStruct,
   DelegationStruct,
   IbcStruct,
-  Asset,
-  User,
-  PoolExtracted,
-  UserExtracted,
-  AssetExtracted,
-  QueryPoolsAndUsersResponse,
   RelayerList,
   Relayer,
   RelayerStruct,
@@ -457,7 +401,6 @@ export {
   AssetSymbol,
   AssetDenom,
   SwapStruct,
-  TransferParams,
   AuthzHandler,
   CwHandler,
   UserBalance,

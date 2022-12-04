@@ -60,7 +60,9 @@ docker cp "artifacts/$DIR_NAME_SNAKE.wasm" "$IMAGE_NAME:/$DIR_NAME_SNAKE.wasm"
 echo $SEP
 echo "storing contract..."
 echo "enter password (1234567890)"
-CONTRACT_CODE=$($BINARY tx wasm store "/$DIR_NAME_SNAKE.wasm" --from relayer2 $TXFLAG --output json | jq -r '.logs[0].events[-1].attributes[1].value')
+# it uses old versions of osmosisd and wasmd so contract code can be found
+# in '.logs[0].events[-1].attributes[0].value' instead of '.logs[0].events[-1].attributes[1].value'
+CONTRACT_CODE=$($BINARY tx wasm store "/$DIR_NAME_SNAKE.wasm" --from relayer2 $TXFLAG --output json | jq -r '.logs[0].events[-1].attributes[0].value')
 echo contract code is $CONTRACT_CODE
 
 #---------- SMART CONTRACT INTERACTION ------------------------
@@ -90,7 +92,6 @@ echo "enter password (1234567890)"
 $BINARY tx bank send $ALICE_ADDRESS_OSMO $CONTRACT_ADDRESS "1000000uosmo" --from relayer2 $TXFLAG
 echo "checking contract balances..."
 $BINARY query bank balances $CONTRACT_ADDRESS 
-# --node $RPC --chain-id $CHAIN_ID
 
 # open ibc channel between 2 networks
 cd $TESTNET_DIR

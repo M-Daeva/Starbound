@@ -69,7 +69,7 @@ export interface StarboundInterface extends StarboundReadOnlyInterface {
   withdraw: ({
     amount
   }: {
-    amount: number;
+    amount: Uint128;
   }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
   updateScheduler: ({
     address
@@ -124,7 +124,7 @@ export class StarboundClient extends StarboundQueryClient implements StarboundIn
   withdraw = async ({
     amount
   }: {
-    amount: number;
+    amount: Uint128;
   }, fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
     return await this.client.execute(this.sender, this.contractAddress, {
       withdraw: {

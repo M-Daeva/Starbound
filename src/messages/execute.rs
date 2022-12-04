@@ -1,5 +1,6 @@
 use crate::state::{PoolExtracted, TransferParams, User, UserExtracted};
 use cosmwasm_schema::cw_serde;
+use cosmwasm_std::Uint128;
 
 #[cw_serde]
 pub enum ExecuteMsg {
@@ -7,7 +8,7 @@ pub enum ExecuteMsg {
         user: User,
     },
     Withdraw {
-        amount: u128,
+        amount: Uint128,
     },
     UpdateScheduler {
         address: String,

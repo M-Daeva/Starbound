@@ -1,14 +1,14 @@
 import { l } from "../utils";
+import { PoolExtracted, UserExtracted } from "../codegen/Starbound.types";
 import {
-  _updatePoolsAndUsers,
-  getValidators as _requestValidators,
+  updatePoolsAndUsers as _updatePoolsAndUsers,
+  getValidators as _getValidators,
 } from "../helpers/api-helpers";
-import { PoolExtracted, UserExtracted } from "../helpers/interfaces";
 
-async function requestValidators() {
-  l("requestValidators");
+async function getValidators() {
+  l("getValidators");
   try {
-    let res = await _requestValidators();
+    let res = await _getValidators();
     l(res);
   } catch (error) {
     l(error, "\n");
@@ -66,4 +66,4 @@ async function updatePoolsAndUsers() {
   }
 }
 
-export { requestValidators, updatePoolsAndUsers };
+export { getValidators, updatePoolsAndUsers };

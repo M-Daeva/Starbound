@@ -1,208 +1,107 @@
-import { coin } from "@cosmjs/stargate";
 import { l } from "../utils";
-import { getCwClient, getAddrByPrefix, fee } from "../signers";
+import { getCwClient, fee } from "../signers";
+import { ClientStruct } from "./interfaces";
+import { DENOMS } from "./assets";
+import { MsgExecuteContractEncodeObject } from "cosmwasm";
+import { StarboundClient } from "../codegen/Starbound.client";
+import { StarboundMessageComposer } from "../codegen/Starbound.message-composer";
 import {
-  ClientStruct,
   User,
+  Coin,
   PoolExtracted,
   UserExtracted,
-  QueryPoolsAndUsersResponse,
-  Asset,
-  AssetSymbol,
   TransferParams,
-} from "./interfaces";
-import { DENOMS } from "./assets";
+} from "../codegen/Starbound.types";
 
 async function getCwHelpers(
   clientStruct: ClientStruct,
   contractAddress: string
 ) {
-  const { client, owner } = await getCwClient(clientStruct);
+  const { client: _client, owner } = await getCwClient(clientStruct);
+  const composer = new StarboundMessageComposer(owner, contractAddress);
+  const client = new StarboundClient(_client, owner, contractAddress);
 
-  async function _cwGetPools() {
-    let res = await client.queryContractSmart(contractAddress, {
-      get_pools: {},
-    });
-    l("\n", res, "\n");
+  async function _msgWrapper(msg: MsgExecuteContractEncodeObject) {
+    const tx = await _client.signAndBroadcast(owner, [msg], fee);
+    l("\n", tx, "\n");
+    return tx;
   }
 
-  async function _cwGetPrices() {
-    let res = await client.queryContractSmart(contractAddress, {
-      get_prices: {},
-    });
-    l("\n", res, "\n");
-  }
-
-  async function _cwGetBankBalance() {
-    let res = await client.queryContractSmart(contractAddress, {
-      get_bank_balance: {},
-    });
-    l("\n", res, "\n");
-  }
-
-  async function _cwDeposit(tokenAmount: number) {
-    const res = await client.execute(
-      owner,
-      contractAddress,
-      { deposit: {} },
-      fee,
-      "",
-      [coin(tokenAmount, DENOMS.OSMO)]
-    );
-    l({ attributes: res.logs[0].events[2].attributes }, "\n");
-  }
-
-  async function _cwDebugQueryPoolsAndUsers() {
-    let res: { pools: PoolExtracted[]; users: User[] } =
-      await client.queryContractSmart(contractAddress, {
-        debug_query_pools_and_users: {},
-      });
-    l("\n", res, "\n");
-    return res;
-  }
-
-  async function _cwQueryPoolsAndUsers() {
-    let res: QueryPoolsAndUsersResponse = await client.queryContractSmart(
-      contractAddress,
-      {
-        query_pools_and_users: {},
-      }
-    );
-    l("\n", res, "\n");
-    return res;
-  }
-
-  async function _cwDepositNew(user: User) {
+  async function cwDeposit(user: User) {
     const { deposited_on_current_period, deposited_on_next_period } = user;
-    let tokenAmount = +deposited_on_current_period + +deposited_on_next_period;
-
-    const res = await client.execute(
-      owner,
-      contractAddress,
-      { deposit: { user } },
-      fee,
-      "",
-      [coin(tokenAmount, DENOMS.EEUR)]
-    );
-    const { attributes } = res.logs[0].events[2];
-    l({ attributes }, "\n");
-    return attributes;
+    const tokenAmount =
+      +deposited_on_current_period + +deposited_on_next_period;
+    const funds: Coin = { amount: `${tokenAmount}`, denom: DENOMS.EEUR };
+    return await _msgWrapper(composer.deposit({ user }, [funds]));
   }
 
-  async function _cwWithdrawNew(tokenAmount: number) {
-    const res = await client.execute(
-      owner,
-      contractAddress,
-      { withdraw: { amount: tokenAmount.toString() } },
-      fee,
-      ""
-    );
-    const { attributes } = res.logs[0].events[2];
-    l({ attributes }, "\n");
-    return attributes;
+  async function cwWithdraw(tokenAmount: number) {
+    return await _msgWrapper(composer.withdraw({ amount: `${tokenAmount}` }));
   }
 
-  async function _cwUpdatePoolsAndUsers(
+  async function cwUpdateScheduler(address: string) {
+    return await _msgWrapper(composer.updateScheduler({ address }));
+  }
+
+  async function cwUpdatePoolsAndUsers(
     pools: PoolExtracted[],
     users: UserExtracted[]
   ) {
-    const res = await client.execute(
-      owner,
-      contractAddress,
-      { update_pools_and_users: { pools, users } },
-      fee,
-      ""
-    );
-    l({ attributes: res.logs[0].events[2].attributes }, "\n");
+    return await _msgWrapper(composer.updatePoolsAndUsers({ pools, users }));
   }
 
-  async function _cwQueryAssets(address: string) {
-    const res: { asset_list: Asset[] } = await client.queryContractSmart(
-      contractAddress,
-      {
-        query_assets: { address },
-      }
-    );
+  async function cwSwap() {
+    return await _msgWrapper(composer.swap());
+  }
+
+  async function cwTransfer() {
+    return await _msgWrapper(composer.transfer());
+  }
+
+  async function cwMultiTransfer(params: TransferParams[]) {
+    return await _msgWrapper(composer.multiTransfer({ params }));
+  }
+
+  async function cwQueryAssets(address: string) {
+    const res = await client.queryAssets({ address });
     l("\n", res, "\n");
     return res;
   }
 
-  async function _cwSwap() {
-    const res = await client.execute(
-      owner,
-      contractAddress,
-      { swap: {} },
-      fee,
-      ""
-    );
-    l({ attributes: res.logs[0].events[2].attributes }, "\n");
+  async function cwQueryPoolsAndUsers() {
+    const res = await client.queryPoolsAndUsers();
+    // l("\n", res, "\n");
+    return res;
   }
 
-  async function _cwDebugQueryBank() {
-    const res = await client.queryContractSmart(contractAddress, {
-      debug_query_bank: {},
-    });
+  async function cwDebugQueryPoolsAndUsers() {
+    const res = await client.debugQueryPoolsAndUsers();
     l("\n", res, "\n");
+    return res;
   }
 
-  async function _cwTransfer() {
-    const res = await client.execute(
-      owner,
-      contractAddress,
-      { transfer: {} },
-      fee,
-      ""
-    );
-    // l({ attributes: res.logs[0].events[2].attributes }, "\n");
-    l(res, "\n");
-    l(
-      res.logs[0].events[5]?.attributes.filter(
-        (item) => item.key === "packet_data"
-      ) || "",
-      "\n"
-    );
-  }
-
-  async function _cwMultiTransfer(transferParams: TransferParams[]) {
-    const res = await client.execute(
-      owner,
-      contractAddress,
-      { multi_transfer: { params: transferParams } },
-      fee,
-      ""
-    );
-    l(res);
-    l(res.logs[0].events[5].attributes, "\n");
-  }
-
-  async function _cwSgSend() {
-    const res = await client.execute(
-      owner,
-      contractAddress,
-      { sg_send: {} },
-      fee,
-      ""
-    );
-    l({ attributes: res.logs[0].events[2].attributes }, "\n");
+  async function cwDebugQueryBank() {
+    const res = await client.debugQueryBank();
+    l("\n", res, "\n");
+    return res;
   }
 
   return {
     owner,
-    _cwGetBankBalance,
-    _cwDeposit,
-    _cwTransfer,
-    _cwSwap,
-    _cwGetPools,
-    _cwGetPrices,
-    _cwDebugQueryPoolsAndUsers,
-    _cwQueryPoolsAndUsers,
-    _cwDepositNew,
-    _cwWithdrawNew,
-    _cwUpdatePoolsAndUsers,
-    _cwQueryAssets,
-    _cwDebugQueryBank,
-    _cwMultiTransfer,
-    _cwSgSend,
+
+    cwDeposit,
+    cwWithdraw,
+    cwUpdateScheduler,
+
+    cwUpdatePoolsAndUsers,
+    cwSwap,
+    cwTransfer,
+    cwMultiTransfer,
+
+    cwQueryAssets,
+    cwQueryPoolsAndUsers,
+    cwDebugQueryPoolsAndUsers,
+    cwDebugQueryBank,
   };
 }
 

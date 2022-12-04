@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Coin, Decimal};
+use cosmwasm_std::{Coin, Decimal, Uint128};
 
 use crate::state::{Asset, PoolExtracted, User, UserExtracted};
 
@@ -23,8 +23,8 @@ pub struct DebugQueryPoolsAndUsersResponse {
 #[cw_serde]
 pub struct DebugQueryBankResponse {
     pub dapp_wallet: Vec<Coin>,
-    pub global_delta_balance_list: Vec<u128>,
-    pub global_delta_cost_list: Vec<u128>,
+    pub global_delta_balance_list: Vec<Uint128>,
+    pub global_delta_cost_list: Vec<Uint128>,
     pub global_denom_list: Vec<String>,
     pub global_price_list: Vec<Decimal>,
 }
