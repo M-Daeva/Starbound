@@ -3,7 +3,7 @@ import { getCwHelpers } from "../helpers/cw-helpers";
 import { getSgHelpers } from "../helpers/sg-helpers";
 import { initWallet } from "../signers";
 import { type User } from "../codegen/Starbound.types";
-import type { DelegationStruct, ClientStruct } from "../helpers/interfaces";
+import type { ClientStruct } from "../helpers/interfaces";
 import { CONTRACT_ADDRESS, RPC } from "../config/testnet-config.json";
 
 async function init() {
@@ -16,15 +16,6 @@ async function init() {
     chainId: "osmo-test-4",
   };
 
-  // TODO: use chain registry storage
-  const userClientStructJuno: ClientStruct = {
-    isKeplrType: true,
-    //RPC: "https://rpc.uni.juno.deuslabs.fi:443",
-    RPC: "https://rpc.uni.junonetwork.io:443",
-    wallet,
-    chainId: "uni-5",
-  };
-
   // user cosmwasm helpers
   const {
     cwDeposit: _cwDeposit,
@@ -35,21 +26,6 @@ async function init() {
     cwQueryAssets: _cwQueryAssets,
     owner,
   } = await getCwHelpers(userClientStruct, CONTRACT_ADDRESS);
-
-  // user stargate helpers
-  const { sgGrantStakeAuth: _sgGrantStakeAuth } = await getSgHelpers(
-    userClientStructJuno
-  );
-
-  async function sgGrantStakeAuth(grantStakeStruct: DelegationStruct) {
-    try {
-      const tx = await _sgGrantStakeAuth(grantStakeStruct);
-      l(tx, "\n");
-      return tx;
-    } catch (error) {
-      l(error, "\n");
-    }
-  }
 
   async function cwDeposit(userAlice: User) {
     try {
@@ -103,7 +79,6 @@ async function init() {
   }
 
   return {
-    sgGrantStakeAuth,
     cwDeposit,
     cwWithdraw,
     cwDebugQueryBank,

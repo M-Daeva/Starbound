@@ -1,8 +1,17 @@
 <script lang="ts">
   // @ts-nocheck
 
+  import { l } from "../../../common/utils";
+  import {
+    deposit as _deposit,
+    withdraw as _withdraw,
+    queryPoolsAndUsers as _queryPoolsAndUsers,
+  } from "../services/wallet";
   import { Line } from "svelte-chartjs";
-
+  import { DENOMS } from "../../../common/helpers/assets";
+  import { get } from "svelte/store";
+  import type { Asset, User } from "../../../common/codegen/Starbound.types";
+  import { calcTimeDiff } from "../services/helpers";
   import {
     Chart as ChartJS,
     Title,
@@ -13,8 +22,81 @@
     PointElement,
     CategoryScale,
   } from "chart.js";
+  import {
+    chainRegistryStorage,
+    ibcChannellsStorage,
+    poolsStorage,
+    userFundsStorage,
+    validatorsStorage,
+    assetListStorage,
+    authzHandlerListStorage,
+    sortingConfigStorage,
+    getRegistryChannelsPools,
+    getValidators,
+    cwHandlerStorage,
+  } from "../services/storage";
 
   // TODO: add checking on assets submit
+
+  const stablecoinExponent = 6; // axelar USDC/ e-money EEUR
+
+  let user: User = {
+    asset_list: [],
+    day_counter: "3",
+    deposited_on_current_period: `${1_000_000}`,
+    deposited_on_next_period: "0",
+    is_controlled_rebalancing: false,
+  };
+
+  async function deposit() {
+    const chainRegistry = get(chainRegistryStorage);
+
+    const assetList: Asset[] = get(assetListStorage).map(
+      ({ address, asset: { symbol }, ratio }) => {
+        const { denom } = chainRegistry.find((item) => item.symbol === symbol);
+        l({ denom });
+
+        let asset: Asset = {
+          asset_denom: denom,
+          wallet_address: address,
+          wallet_balance: "0",
+          weight: `${ratio / 100}`,
+          amount_to_send_until_next_epoch: "0", // contract doesn't read this field on deposit
+        };
+
+        const userFunds = get(userFundsStorage); // returns [] if user is not registered
+        if (userFunds.length) {
+          const [_k, { holded, staked }] = userFunds.find(
+            ([k]) => k === address
+          );
+
+          asset.wallet_balance = `${+holded.amount + +staked.amount}`;
+        }
+
+        return asset;
+      }
+    );
+
+    user = {
+      ...user,
+      asset_list: assetList,
+    };
+
+    const userToSend: User = {
+      ...user,
+      deposited_on_current_period: `${
+        +user.deposited_on_current_period * 10 ** stablecoinExponent
+      }`,
+      deposited_on_next_period: `${
+        +user.deposited_on_next_period * 10 ** stablecoinExponent
+      }`,
+      day_counter: `${calcTimeDiff(user.day_counter)}`,
+    };
+
+    l({ userToSend });
+
+    await _deposit(userToSend);
+  }
 
   const data = {
     labels: [
@@ -90,7 +172,7 @@
 
   setInterval(getTime, 1000);
 
-  let stablecoin = "EEUR";
+  const stablecoin = "EEUR";
 </script>
 
 <div class="flex flex-col px-4 -mt-3 text-amber-200" style="height: 87vh">
@@ -125,6 +207,7 @@
               min="0"
               max="1000000"
               id="currentPeriod"
+              bind:value={user.deposited_on_current_period}
             />
           </div>
           <div>
@@ -137,15 +220,23 @@
               min="0"
               max="1000000"
               id="nextPeriod"
+              bind:value={user.deposited_on_next_period}
             />
           </div>
         </div>
         <div>
           <label class="mb-1" for="period">Current Investment Period End</label>
-          <input class="w-full text-center mx-0 mb-5" type="date" id="period" />
+          <input
+            class="w-full text-center mx-0 mb-5"
+            type="date"
+            id="period"
+            bind:value={user.day_counter}
+          />
         </div>
         <div class="controls">
-          <button class="btn btn-secondary mt-2">Deposit</button>
+          <button class="btn btn-secondary mt-2" on:click={deposit}
+            >Deposit</button
+          >
         </div>
       </div>
 
@@ -173,7 +264,11 @@
             />
           </div>
           <div class="controls">
-            <button class="btn btn-secondary mt-2">Withdraw</button>
+            <button
+              class="btn btn-secondary mt-2"
+              on:click={async () => l(await _queryPoolsAndUsers())}
+              >Withdraw</button
+            >
           </div>
         </div>
       </div>

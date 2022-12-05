@@ -1,90 +1,64 @@
-import { DENOMS } from "../../../common/helpers/assets";
 import { init } from "../../../common/workers/testnet-frontend-workers";
-import type { User, Asset } from "../../../common/codegen/Starbound.types";
-import type { DelegationStruct } from "../../../common/helpers/interfaces";
+import type { User } from "../../../common/codegen/Starbound.types";
+import { getAddrByChainId } from "../../../common/signers";
+import { get } from "svelte/store";
+import { l } from "../../../common/utils";
+import { cwHandlerStorage, initAll } from "../services/storage";
 
-const grantStakeStruct: DelegationStruct = {
-  validatorAddr: "junovaloper1w8cpaaljwrytquj86kvp9s72lvmddcc208ghun",
-  targetAddr: "juno18tnvnwkklyv4dyuj8x357n7vray4v4zulm2dr9",
-  tokenAmount: 1_000_000_000,
-  tokenDenom: "ujunox",
-};
+const localSorageKey = "starbound-osmo-address";
 
-let assetListAlice: Asset[] = [
-  // ATOM
-  {
-    asset_denom: DENOMS.ATOM,
-    wallet_address: "cosmos1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyklkm75",
-    wallet_balance: "0",
-    weight: "0.5",
-    amount_to_send_until_next_epoch: "0",
-  },
-  // JUNO
-  {
-    asset_denom: DENOMS.JUNO,
-    wallet_address: "juno1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyqd4qeg",
-    wallet_balance: "0",
-    weight: "0.5",
-    amount_to_send_until_next_epoch: "0",
-  },
-];
+async function deposit(user: User) {
+  const { cwDeposit } = await init();
+  return await cwDeposit(user);
+}
 
-let userAlice: User = {
-  asset_list: assetListAlice,
-  day_counter: "3",
-  deposited_on_current_period: `${1_000_000}`,
-  deposited_on_next_period: "0",
-  is_controlled_rebalancing: false,
-};
+async function withdraw(amount: number) {
+  const { cwWithdraw } = await init();
+  return await cwWithdraw(amount);
+}
 
-const deposit = async (user: User) => {
-  const { cwDeposit, owner } = await init();
-  const tx = await cwDeposit(user);
-  return { tx, owner };
-};
+async function debugQueryBank() {
+  const { cwDebugQueryBank } = await init();
+  return await cwDebugQueryBank();
+}
 
-const withdraw = async (amount: number) => {
-  const { cwWithdraw, owner } = await init();
-  const tx = await cwWithdraw(amount);
-  return { tx, owner };
-};
+async function queryPoolsAndUsers() {
+  const { cwQueryPoolsAndUsers } = await init();
+  return await cwQueryPoolsAndUsers();
+}
 
-const grantStakeAuth = async () => {
-  const { sgGrantStakeAuth, owner } = await init();
-  const tx = await sgGrantStakeAuth(grantStakeStruct);
-  return { tx, owner };
-};
+async function debugQueryPoolsAndUsers() {
+  const { cwDebugQueryPoolsAndUsers } = await init();
+  return await cwDebugQueryPoolsAndUsers();
+}
 
-const debugQueryBank = async () => {
-  const { cwDebugQueryBank, owner } = await init();
-  const tx = await cwDebugQueryBank();
-  return { tx, owner };
-};
+async function queryAssets(address: string) {
+  const { cwQueryAssets } = await init();
+  return await cwQueryAssets(address);
+}
 
-const queryPoolsAndUsers = async () => {
-  const { cwQueryPoolsAndUsers, owner } = await init();
-  const tx = await cwQueryPoolsAndUsers();
-  return { tx, owner };
-};
+// init wallet, add osmo chain, save address to localSorage
+async function initCwHandler() {
+  try {
+    const address = await getAddrByChainId();
+    cwHandlerStorage.set({ address });
+    // TODO: encode address
+    localStorage.setItem(localSorageKey, address);
+    await initAll();
+  } catch (error) {
+    l({ error });
+  }
 
-const debugQueryPoolsAndUsers = async () => {
-  const { cwDebugQueryPoolsAndUsers, owner } = await init();
-  const tx = await cwDebugQueryPoolsAndUsers();
-  return { tx, owner };
-};
-
-const queryAssets = async (address: string) => {
-  const { cwQueryAssets, owner } = await init();
-  const tx = await cwQueryAssets(address);
-  return { tx, owner };
-};
+  l(get(cwHandlerStorage));
+}
 
 export {
+  localSorageKey,
   deposit,
   withdraw,
-  grantStakeAuth,
   debugQueryBank,
   queryPoolsAndUsers,
   debugQueryPoolsAndUsers,
   queryAssets,
+  initCwHandler,
 };

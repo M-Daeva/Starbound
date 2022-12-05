@@ -1,4 +1,14 @@
 <script lang="ts">
+  import { Doughnut } from "svelte-chartjs";
+  import Decimal from "decimal.js";
+  import { userFundsStorage } from "../services/storage";
+  import { l } from "../../../common/utils";
+  import { type DashboardAsset } from "../../../common/helpers/interfaces";
+  import {
+    getAssetInfoByAddress,
+    trimPrice,
+    generateColorList,
+  } from "../services/helpers";
   import {
     Chart as ChartJS,
     Title,
@@ -7,14 +17,10 @@
     ArcElement,
     CategoryScale,
   } from "chart.js";
-  import { Doughnut } from "svelte-chartjs";
-  import Decimal from "decimal.js";
-  import { userFundsStorage } from "../services/storage";
-  import { l } from "../../../common/utils";
-  import { type DashboardAsset } from "../../../common/helpers/interfaces";
-  import { getAssetInfoByAddress } from "../services/helpers";
 
   // TODO: query stablecoins data from contract
+
+  const stablecoin = "EEUR";
 
   let dashboardAssetList: DashboardAsset[] = [];
 
@@ -31,19 +37,6 @@
     responsive: true,
     radius: "90%",
   };
-
-  // removes additional digits on display
-  function trimPrice(price: string) {
-    // if price looks like "15000" return it unchanged
-    if (!price.includes(".")) return price;
-
-    // if price looks like "0.0000011" return it unchanged
-    let [prefix, postfix]: string[] = price.split(".");
-    if (prefix === "0") return price;
-
-    // if price looks like "3.0000011" return "3.00"
-    return `${prefix}.${postfix.slice(0, 2)}`;
-  }
 
   // displays mainnet balances
   userFundsStorage.subscribe((value) => {
@@ -118,20 +111,6 @@
 
     ChartJS.register(Title, Tooltip, Legend, ArcElement, CategoryScale);
   });
-
-  const stablecoin = "EEUR";
-
-  function generateColorList(quantity: number, baseColorList: string[]) {
-    let temp: string[] = [];
-
-    const a = Math.floor(quantity / baseColorList.length);
-    const b = quantity % baseColorList.length;
-
-    for (let i = 0; i < a; i++) {
-      temp = [...temp, ...baseColorList];
-    }
-    return [...temp, ...baseColorList.slice(0, b)];
-  }
 </script>
 
 <div class="flex justify-between px-4" style="height: 85vh">

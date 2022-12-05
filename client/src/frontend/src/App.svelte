@@ -15,6 +15,7 @@
   } from "./services/storage";
   import { get } from "svelte/store";
   import { getAddrByChainId } from "../../common/signers";
+  import { localSorageKey, initCwHandler } from "./services/wallet";
 
   const paths = {
     home: "/",
@@ -22,23 +23,6 @@
     assets: "/assets",
     bank: "/bank",
   };
-
-  const localSorageKey = "starbound-osmo-address";
-
-  // init wallet, add osmo chain, save address to localSorage
-  async function initCwHandler() {
-    try {
-      const address = await getAddrByChainId();
-      cwHandlerStorage.set({ address });
-      // TODO: encode address
-      localStorage.setItem(localSorageKey, address);
-      await initAll();
-    } catch (error) {
-      l({ error });
-    }
-
-    l(get(cwHandlerStorage));
-  }
 
   // init storages
   (async () => {
