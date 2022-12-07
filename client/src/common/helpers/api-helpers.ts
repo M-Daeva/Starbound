@@ -74,7 +74,8 @@ async function _mainnetQuerier(chainUrl: string, assetListUrl: string) {
     test: "",
     img: "",
     symbol: "",
-    denom: "",
+    denomNative: "",
+    denomIbc: "",
     exponent: 0,
     coinGeckoId: undefined,
   };
@@ -98,7 +99,7 @@ async function _mainnetQuerier(chainUrl: string, assetListUrl: string) {
       main: chainRes,
       img: imgUrl,
       symbol,
-      denom,
+      denomNative: denom,
       exponent,
       coinGeckoId: coingecko_id,
     };
@@ -114,7 +115,8 @@ async function _testnetQuerier(chainUrl: string) {
     test: "",
     img: "",
     symbol: "",
-    denom: "",
+    denomNative: "",
+    denomIbc: "",
     exponent: 0,
     coinGeckoId: undefined,
   };
@@ -345,6 +347,17 @@ function filterChainRegistry(
       symbol: chainRegistry.symbol,
     });
   }
+
+  chainRegistryFiltered = chainRegistryFiltered.map((item) => {
+    const pool = poolsFiltered.find(
+      ([k, [v0, v1]]) => v0.symbol === item.symbol
+    );
+    if (!pool) return item;
+
+    const [k, [v0, v1]] = pool;
+
+    return { ...item, denomIbc: v0.denom };
+  });
 
   return {
     chainRegistry: chainRegistryFiltered,

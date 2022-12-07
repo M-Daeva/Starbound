@@ -72,7 +72,7 @@
       });
       const delegationStruct: DelegationStruct = {
         tokenAmount: 1e15,
-        tokenDenom: chain.denom,
+        tokenDenom: chain.denomNative,
         targetAddr: getAddrByPrefix(DAPP_ADDR, chain.prefix),
         validatorAddr: validator,
       };

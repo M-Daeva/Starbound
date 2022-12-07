@@ -11,7 +11,7 @@
   import { DENOMS } from "../../../common/helpers/assets";
   import { get } from "svelte/store";
   import type { Asset, User } from "../../../common/codegen/Starbound.types";
-  import { calcTimeDiff } from "../services/helpers";
+  import { calcTimeDiff, displayTxLink } from "../services/helpers";
   import {
     Chart as ChartJS,
     Title,
@@ -40,11 +40,11 @@
 
   const stablecoinExponent = 6; // axelar USDC/ e-money EEUR
 
-  let user: User = {
+  let userToDisplay: User = {
     asset_list: [],
-    day_counter: "3",
-    deposited_on_current_period: `${1_000_000}`,
-    deposited_on_next_period: "0",
+    day_counter: "",
+    deposited_on_current_period: "",
+    deposited_on_next_period: "",
     is_controlled_rebalancing: false,
   };
 
@@ -53,18 +53,19 @@
 
     const assetList: Asset[] = get(assetListStorage).map(
       ({ address, asset: { symbol }, ratio }) => {
-        const { denom } = chainRegistry.find((item) => item.symbol === symbol);
-        l({ denom });
+        const { denomIbc } = chainRegistry.find(
+          (item) => item.symbol === symbol
+        );
 
         let asset: Asset = {
-          asset_denom: denom,
+          asset_denom: denomIbc,
           wallet_address: address,
           wallet_balance: "0",
           weight: `${ratio / 100}`,
           amount_to_send_until_next_epoch: "0", // contract doesn't read this field on deposit
         };
 
-        const userFunds = get(userFundsStorage); // returns [] if user is not registered
+        const userFunds = get(userFundsStorage); // returns [] if userToDisplay is not registered
         if (userFunds.length) {
           const [_k, { holded, staked }] = userFunds.find(
             ([k]) => k === address
@@ -77,25 +78,25 @@
       }
     );
 
-    user = {
-      ...user,
+    userToDisplay = {
+      ...userToDisplay,
       asset_list: assetList,
     };
 
     const userToSend: User = {
-      ...user,
+      ...userToDisplay,
       deposited_on_current_period: `${
-        +user.deposited_on_current_period * 10 ** stablecoinExponent
+        +userToDisplay.deposited_on_current_period * 10 ** stablecoinExponent
       }`,
-      deposited_on_next_period: `${
-        +user.deposited_on_next_period * 10 ** stablecoinExponent
-      }`,
-      day_counter: `${calcTimeDiff(user.day_counter)}`,
+      deposited_on_next_period: "0",
+      day_counter: `${calcTimeDiff(userToDisplay.day_counter)}`,
     };
 
     l({ userToSend });
 
-    await _deposit(userToSend);
+    const tx = await _deposit(userToSend);
+
+    l(displayTxLink(tx.transactionHash));
   }
 
   const data = {
@@ -197,7 +198,7 @@
         style="background-color: rgb(42 48 60);"
       >
         <div>
-          <div>
+          <!-- <div>
             <label class="mb-1" for="currentPeriod"
               >Current Period Payment in {stablecoin}</label
             >
@@ -207,30 +208,45 @@
               min="0"
               max="1000000"
               id="currentPeriod"
-              bind:value={user.deposited_on_current_period}
+              bind:value={userToDisplay.deposited_on_current_period}
             />
+          </div> -->
+
+          <div class="mt-12">
+            <label class="inline-flex relative items-center cursor-pointer">
+              <input
+                type="checkbox"
+                class="sr-only peer"
+                bind:checked={userToDisplay.is_controlled_rebalancing}
+                on:change={() => l(userToDisplay.is_controlled_rebalancing)}
+              />
+              <div
+                class="w-11 h-6 peer-focus:outline-none peer-focus:ring-0 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"
+              />
+              <span class="ml-3 tex">Controlled Rebalancing</span>
+            </label>
           </div>
-          <div>
-            <label class="mb-1" for="nextPeriod"
-              >Next Period Payment in {stablecoin}</label
+          <div class="text-center mt-4">
+            <label class="mb-1 text-center" for="payment"
+              >Payment in {stablecoin}</label
             >
             <input
-              class="w-full text-center mx-0 mb-5"
+              class="w-40 text-center mx-0 mb-5"
               type="number"
               min="0"
               max="1000000"
-              id="nextPeriod"
-              bind:value={user.deposited_on_next_period}
+              id="payment"
+              bind:value={userToDisplay.deposited_on_current_period}
             />
           </div>
         </div>
         <div>
-          <label class="mb-1" for="period">Current Investment Period End</label>
+          <label class="mb-1" for="period">Investment Period End</label>
           <input
             class="w-full text-center mx-0 mb-5"
             type="date"
             id="period"
-            bind:value={user.day_counter}
+            bind:value={userToDisplay.day_counter}
           />
         </div>
         <div class="controls">
@@ -242,13 +258,12 @@
 
       <div>
         <div class="font-medium text-lg">
-          <h2>Current Period Balance: {1000.123456} {stablecoin}</h2>
-          <h2>Next period balance: {0} {stablecoin}</h2>
-          <h2>Current Period Expires in: {30} days</h2>
+          <h2>Payment Balance: {1000.123456} {stablecoin}</h2>
+          <h2>Investment Period Expires in: {30} days</h2>
         </div>
 
         <div
-          class="flex flex-col justify-start items-center mt-20 pb-3"
+          class="flex flex-col justify-start items-center mt-28 pb-3"
           style="background-color: rgb(42 48 60);"
         >
           <div class="mt-6">

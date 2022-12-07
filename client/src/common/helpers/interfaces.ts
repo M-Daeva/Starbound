@@ -260,7 +260,8 @@ interface NetworkData {
   img: string;
   symbol: string;
   exponent: number;
-  denom: string;
+  denomNative: string;
+  denomIbc: string;
   coinGeckoId: undefined | string;
 }
 

@@ -50,4 +50,15 @@ function calcTimeDiff(targetDate: string, targetHour: number = 22) {
   return cnt;
 }
 
-export { getAssetInfoByAddress, trimPrice, generateColorList, calcTimeDiff };
+function displayTxLink(txHash: string, chainName: string = "osmosis-testnet") {
+  const baseUrl = "https://testnet.mintscan.io";
+  return `${baseUrl}/${chainName}/txs/${txHash}`;
+}
+
+export {
+  getAssetInfoByAddress,
+  trimPrice,
+  generateColorList,
+  calcTimeDiff,
+  displayTxLink,
+};
