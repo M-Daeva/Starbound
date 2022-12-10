@@ -76,6 +76,5 @@ pub fn init(
         ("method", "instantiate"),
         ("admin", info.sender.as_ref()),
         ("scheduler", info.sender.as_ref()),
-        ("pools_amount", "3"),
     ]))
 }

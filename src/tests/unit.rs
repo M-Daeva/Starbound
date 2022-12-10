@@ -1,479 +1,481 @@
-use cosmwasm_std::{attr, coin, from_binary, Addr, Uint128};
+use cosmwasm_std::{attr, coin, from_binary, Addr, Attribute, Decimal, Empty, StdError, Uint128};
+use cw_multi_test::{App, Contract, ContractWrapper, Executor};
+use std::ops::{Add, Div};
 
 use crate::{
     actions::rebalancer::str_to_dec,
-    contract::{execute, query},
+    contract::{execute, instantiate, query},
+    error::ContractError,
     messages::{
         execute::ExecuteMsg,
         query::QueryMsg,
-        response::{
-            DebugQueryBankResponse, DebugQueryPoolsAndUsersResponse, QueryAssetsResponse,
-            QueryPoolsAndUsersResponse,
-        },
+        response::{QueryPoolsAndUsersResponse, QueryUserResponse},
     },
-    state::{Asset, AssetExtracted, PoolExtracted, User, UserExtracted},
+    state::{Asset, AssetExtracted, Pool, PoolExtracted, User, UserExtracted},
     tests::helpers::{
-        get_instance, instantiate_and_deposit, ADDR_ADMIN_OSMO, ADDR_ALICE_ATOM, ADDR_ALICE_JUNO,
-        ADDR_ALICE_OSMO, ADDR_BOB_ATOM, ADDR_BOB_JUNO, ADDR_BOB_OSMO, CHANNEL_ID, DENOM_ATOM,
-        DENOM_EEUR, DENOM_JUNO, FUNDS_AMOUNT, IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD,
+        Starbound, UserName, ADDR_ADMIN_OSMO, ADDR_ALICE_ATOM, ADDR_ALICE_JUNO, ADDR_ALICE_OSMO,
+        ADDR_BOB_ATOM, ADDR_BOB_JUNO, ADDR_BOB_OSMO, CHANNEL_ID, DENOM_ATOM, DENOM_EEUR,
+        DENOM_JUNO, FUNDS_AMOUNT, IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD,
         POOLS_AMOUNT_INITIAL,
     },
 };
 
 #[test]
-fn test_init() {
-    let (_, _, _, res) = get_instance(ADDR_ADMIN_OSMO);
+fn deposit() {
+    let mut st = Starbound::new();
+    let user = Starbound::get_user(UserName::Alice);
 
-    assert_eq!(
-        res.unwrap().attributes,
-        vec![
-            attr("method", "instantiate"),
-            attr("admin", ADDR_ADMIN_OSMO),
-            attr("scheduler", ADDR_ADMIN_OSMO),
-            attr("pools_amount", POOLS_AMOUNT_INITIAL),
-        ]
+    st.deposit(
+        ADDR_ALICE_OSMO,
+        &user,
+        &[coin(
+            user.deposited_on_current_period
+                .add(user.deposited_on_next_period)
+                .u128(),
+            DENOM_EEUR,
+        )],
     )
-}
+    .unwrap();
 
-#[test]
-fn test_execute_deposit() {
-    let (_, _, _, res) =
-        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
+    let res = st.query_user(ADDR_ALICE_OSMO);
 
-    let user_deposited_on_current_period = if IS_CURRENT_PERIOD { FUNDS_AMOUNT } else { 0 };
-    let user_deposited_on_next_period = if !IS_CURRENT_PERIOD { FUNDS_AMOUNT } else { 0 };
-
-    assert_eq!(
-        res.unwrap().attributes,
-        vec![
-            attr("method", "deposit"),
-            attr("user_address", ADDR_ALICE_OSMO),
-            attr(
-                "user_deposited_on_current_period",
-                user_deposited_on_current_period.to_string()
-            ),
-            attr(
-                "user_deposited_on_next_period",
-                user_deposited_on_next_period.to_string()
-            ),
-        ]
-    )
+    assert_eq!(res.unwrap(), QueryUserResponse { user });
 }
 
 // check if user can not has multiple addresses on same asset
 #[test]
-fn test_execute_deposit_and_update_wallet_address() {
-    let (mut deps, env, mut info, _res) =
-        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
+fn deposit_and_update_wallet_address() {
+    let mut st = Starbound::new();
+    let mut user = Starbound::get_user(UserName::Alice);
 
-    let asset_list_alice = vec![
-        Asset {
-            asset_denom: DENOM_ATOM.to_string(),
-            // new address must replace old one
-            wallet_address: Addr::unchecked(ADDR_BOB_ATOM),
-            wallet_balance: Uint128::zero(),
-            weight: str_to_dec("0.5"),
-            amount_to_send_until_next_epoch: Uint128::zero(),
+    st.deposit(
+        ADDR_ALICE_OSMO,
+        &user,
+        &[coin(
+            user.deposited_on_current_period
+                .add(user.deposited_on_next_period)
+                .u128(),
+            DENOM_EEUR,
+        )],
+    )
+    .unwrap();
+
+    // ADDR_BOB_ATOM must replace ADDR_ALICE_ATOM
+    user.asset_list[0].wallet_address = Addr::unchecked(ADDR_BOB_ATOM);
+
+    st.deposit(
+        ADDR_ALICE_OSMO,
+        &User {
+            deposited_on_current_period: Uint128::zero(),
+            deposited_on_next_period: Uint128::zero(),
+            ..user.clone()
         },
-        Asset {
-            asset_denom: DENOM_JUNO.to_string(),
-            wallet_address: Addr::unchecked(ADDR_ALICE_JUNO),
-            wallet_balance: Uint128::zero(),
-            weight: str_to_dec("0.5"),
-            amount_to_send_until_next_epoch: Uint128::zero(),
-        },
-    ];
+        &[],
+    )
+    .unwrap();
 
-    let user = User {
-        asset_list: asset_list_alice,
-        day_counter: Uint128::from(3_u128),
-        deposited_on_current_period: Uint128::zero(),
-        deposited_on_next_period: Uint128::zero(),
-        is_controlled_rebalancing: IS_CONTROLLED_REBALANCING,
-    };
+    let res = st.query_user(ADDR_ALICE_OSMO);
 
-    let msg = ExecuteMsg::Deposit { user };
-
-    // deposit without funds
-    info.funds = vec![coin(0, DENOM_EEUR)];
-    let _res = execute(deps.as_mut(), env.clone(), info, msg);
-
-    let msg = QueryMsg::QueryAssets {
-        address: ADDR_ALICE_OSMO.to_string(),
-    };
-    let bin = query(deps.as_ref(), env, msg).unwrap();
-    let res = from_binary::<QueryAssetsResponse>(&bin).unwrap();
-
-    assert_eq!(res.asset_list[0].wallet_address, ADDR_BOB_ATOM);
+    assert_eq!(res.unwrap().user, user);
 }
 
 #[test]
-fn test_execute_withdraw() {
-    let (mut deps, env, info, _res) =
-        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
+fn withdraw() {
+    let mut st = Starbound::new();
+    let user = Starbound::get_user(UserName::Alice);
 
-    let msg = ExecuteMsg::Withdraw {
-        amount: Uint128::from(FUNDS_AMOUNT / 10),
-    };
+    st.deposit(
+        ADDR_ALICE_OSMO,
+        &user,
+        &[coin(
+            user.deposited_on_current_period
+                .add(user.deposited_on_next_period)
+                .u128(),
+            DENOM_EEUR,
+        )],
+    )
+    .unwrap();
 
-    let res = execute(deps.as_mut(), env, info, msg);
+    let part_of_deposited_on_current_period =
+        user.deposited_on_current_period.div(Uint128::from(2_u128));
+    let part_of_deposited_on_next_period = user.deposited_on_next_period.div(Uint128::from(2_u128));
 
-    let user_deposited_on_current_period = if IS_CURRENT_PERIOD {
-        9 * FUNDS_AMOUNT / 10
-    } else {
-        0
-    };
-    let user_deposited_on_next_period = if !IS_CURRENT_PERIOD {
-        9 * FUNDS_AMOUNT / 10
-    } else {
-        0
-    };
+    st.withdraw(
+        ADDR_ALICE_OSMO,
+        part_of_deposited_on_current_period.add(part_of_deposited_on_next_period),
+    )
+    .unwrap();
+
+    let res = st.query_user(ADDR_ALICE_OSMO);
 
     assert_eq!(
-        res.unwrap().attributes,
-        vec![
-            attr("method", "withdraw"),
-            attr("user_address", ADDR_ALICE_OSMO),
-            attr(
-                "user_deposited_on_current_period",
-                user_deposited_on_current_period.to_string()
-            ),
-            attr(
-                "user_deposited_on_next_period",
-                user_deposited_on_next_period.to_string()
-            ),
-        ]
-    )
+        res.unwrap().user,
+        User {
+            deposited_on_current_period: part_of_deposited_on_current_period,
+            deposited_on_next_period: part_of_deposited_on_next_period,
+            ..user
+        }
+    );
 }
 
 #[test]
-fn test_execute_update_scheduler() {
-    let (mut deps, env, info, _res) = get_instance(ADDR_ADMIN_OSMO);
+#[should_panic]
+fn update_scheduler_before() {
+    let mut st = Starbound::new();
 
-    let msg = ExecuteMsg::UpdateScheduler {
-        address: ADDR_ALICE_OSMO.to_string(),
-    };
+    let QueryPoolsAndUsersResponse {
+        pools: res_pools,
+        users: res_users,
+    } = st.query_pools_and_users().unwrap();
 
-    let res = execute(deps.as_mut(), env, info, msg);
+    st.update_pools_and_users(ADDR_BOB_OSMO, res_pools, res_users)
+        .unwrap();
+}
+
+#[test]
+fn update_scheduler_after() {
+    let mut st = Starbound::new();
+    let res = st.update_scheduler(ADDR_ADMIN_OSMO, ADDR_BOB_OSMO).unwrap();
+
+    assert_eq!(Starbound::get_attr(&res, "scheduler"), ADDR_BOB_OSMO);
+
+    let QueryPoolsAndUsersResponse {
+        pools: res_pools,
+        users: res_users,
+    } = st.query_pools_and_users().unwrap();
+
+    st.update_pools_and_users(ADDR_BOB_OSMO, res_pools, res_users)
+        .unwrap();
+}
+
+#[test]
+fn query_user() {
+    let mut st = Starbound::new();
+    let user_alice = Starbound::get_user(UserName::Alice);
+    let user_bob = Starbound::get_user(UserName::Bob);
+
+    st.deposit(
+        ADDR_ALICE_OSMO,
+        &user_alice,
+        &[coin(
+            user_alice
+                .deposited_on_current_period
+                .add(user_alice.deposited_on_next_period)
+                .u128(),
+            DENOM_EEUR,
+        )],
+    )
+    .unwrap();
+    st.deposit(
+        ADDR_BOB_OSMO,
+        &user_bob,
+        &[coin(
+            user_bob
+                .deposited_on_current_period
+                .add(user_bob.deposited_on_next_period)
+                .u128(),
+            DENOM_EEUR,
+        )],
+    )
+    .unwrap();
+
+    let res = st.query_user(ADDR_ALICE_OSMO).unwrap();
+
+    assert_eq!(res.user, user_alice);
+}
+
+#[test]
+fn query_pools_and_users() {
+    let mut st = Starbound::new();
+    let pools = Starbound::get_pools();
+    let user_alice = Starbound::get_user(UserName::Alice);
+    let user_bob = Starbound::get_user(UserName::Bob);
+
+    st.deposit(
+        ADDR_ALICE_OSMO,
+        &user_alice,
+        &[coin(
+            user_alice
+                .deposited_on_current_period
+                .add(user_alice.deposited_on_next_period)
+                .u128(),
+            DENOM_EEUR,
+        )],
+    )
+    .unwrap();
+    st.deposit(
+        ADDR_BOB_OSMO,
+        &user_bob,
+        &[coin(
+            user_bob
+                .deposited_on_current_period
+                .add(user_bob.deposited_on_next_period)
+                .u128(),
+            DENOM_EEUR,
+        )],
+    )
+    .unwrap();
+
+    let QueryPoolsAndUsersResponse {
+        pools: res_pools,
+        users: res_users,
+    } = st.query_pools_and_users().unwrap();
 
     assert_eq!(
-        res.unwrap().attributes,
-        vec![
-            attr("method", "update_scheduler"),
-            attr("scheduler", ADDR_ALICE_OSMO),
-        ]
-    )
+        res_pools.iter().map(|x| x.slice()).collect::<Vec<Pool>>(),
+        pools
+    );
+
+    let assets_received = res_users
+        .iter()
+        .map(|x| x.asset_list.clone())
+        .collect::<Vec<Vec<AssetExtracted>>>();
+
+    // user order matters!
+    let assets_initial = vec![user_bob, user_alice]
+        .iter()
+        .map(|x| {
+            x.asset_list
+                .iter()
+                .map(|y| y.extract())
+                .collect::<Vec<AssetExtracted>>()
+        })
+        .collect::<Vec<Vec<AssetExtracted>>>();
+
+    assert_eq!(assets_received, assets_initial)
 }
 
 #[test]
-fn test_execute_update_pools_and_users() {
-    let (mut deps, env, mut info, _res) =
-        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
+fn update_pools_and_users() {
+    // initialize
+    let mut st = Starbound::new();
+    let user_alice = Starbound::get_user(UserName::Alice);
+    let user_bob = Starbound::get_user(UserName::Bob);
 
-    // add 2nd user
-    let funds_amount = 600_000;
-    let funds_denom = DENOM_EEUR;
+    st.deposit(
+        ADDR_ALICE_OSMO,
+        &user_alice,
+        &[coin(
+            user_alice
+                .deposited_on_current_period
+                .add(user_alice.deposited_on_next_period)
+                .u128(),
+            DENOM_EEUR,
+        )],
+    )
+    .unwrap();
+    st.deposit(
+        ADDR_BOB_OSMO,
+        &user_bob,
+        &[coin(
+            user_bob
+                .deposited_on_current_period
+                .add(user_bob.deposited_on_next_period)
+                .u128(),
+            DENOM_EEUR,
+        )],
+    )
+    .unwrap();
 
-    let asset_list_bob: Vec<Asset> = vec![
-        Asset {
-            asset_denom: DENOM_ATOM.to_string(),
-            wallet_address: Addr::unchecked(ADDR_BOB_ATOM),
-            wallet_balance: Uint128::from(10_000_000_u128),
-            weight: str_to_dec("0.3"),
-            amount_to_send_until_next_epoch: Uint128::zero(),
-        },
-        Asset {
-            asset_denom: DENOM_JUNO.to_string(),
-            wallet_address: Addr::unchecked(ADDR_BOB_JUNO),
-            wallet_balance: Uint128::from(10_000_000_u128),
-            weight: str_to_dec("0.7"),
-            amount_to_send_until_next_epoch: Uint128::zero(),
-        },
-    ];
-
-    let user = User {
-        asset_list: asset_list_bob,
-        day_counter: Uint128::from(3_u128),
-        deposited_on_current_period: Uint128::from(funds_amount),
-        deposited_on_next_period: Uint128::zero(),
-        is_controlled_rebalancing: true,
-    };
-
-    let msg = ExecuteMsg::Deposit { user };
-    info.funds = vec![coin(funds_amount, funds_denom)];
-    info.sender = Addr::unchecked(ADDR_BOB_OSMO);
-
-    let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
+    // request data
+    let QueryPoolsAndUsersResponse {
+        pools: res_pools,
+        users: res_users,
+    } = st.query_pools_and_users().unwrap();
 
     // update data
-    let pools: Vec<PoolExtracted> = vec![
-        PoolExtracted {
-            id: Uint128::one(),
-            denom: DENOM_ATOM.to_string(),
-            price: str_to_dec("11.5"),
-            symbol: "uatom".to_string(),
-            channel_id: CHANNEL_ID.to_string(),
-            port_id: "transfer".to_string(),
-        },
-        PoolExtracted {
-            id: Uint128::from(497_u128),
-            denom: DENOM_JUNO.to_string(),
-            price: str_to_dec("3.5"),
-            symbol: "ujuno".to_string(),
-            channel_id: CHANNEL_ID.to_string(),
-            port_id: "transfer".to_string(),
-        },
-        PoolExtracted {
-            id: Uint128::from(481_u128),
-            denom: DENOM_EEUR.to_string(),
-            price: str_to_dec("1"),
-            symbol: "debug_ueeur".to_string(),
-            channel_id: CHANNEL_ID.to_string(),
-            port_id: "transfer".to_string(),
-        },
-    ];
+    let pools_updated = res_pools
+        .iter()
+        .map(|x| PoolExtracted {
+            price: x.price.add(Decimal::one()),
+            ..x.to_owned()
+        })
+        .collect::<Vec<PoolExtracted>>();
 
-    let users: Vec<UserExtracted> = vec![
-        UserExtracted {
-            osmo_address: ADDR_ALICE_OSMO.to_string(),
-            asset_list: vec![
-                AssetExtracted {
-                    asset_denom: DENOM_ATOM.to_string(),
-                    wallet_address: ADDR_ALICE_ATOM.to_string(),
-                    wallet_balance: Uint128::one(),
-                },
-                AssetExtracted {
-                    asset_denom: DENOM_JUNO.to_string(),
-                    wallet_address: ADDR_ALICE_JUNO.to_string(),
-                    wallet_balance: Uint128::from(2_u128),
-                },
-            ],
-        },
-        UserExtracted {
-            osmo_address: ADDR_BOB_OSMO.to_string(),
-            asset_list: vec![
-                AssetExtracted {
-                    asset_denom: DENOM_ATOM.to_string(),
-                    wallet_address: ADDR_BOB_ATOM.to_string(),
-                    wallet_balance: Uint128::from(10_000_001_u128),
-                },
-                AssetExtracted {
-                    asset_denom: DENOM_JUNO.to_string(),
-                    wallet_address: ADDR_BOB_JUNO.to_string(),
-                    wallet_balance: Uint128::from(10_000_002_u128),
-                },
-            ],
-        },
-    ];
+    let users_updated = res_users
+        .iter()
+        .map(|x| UserExtracted {
+            asset_list: x
+                .asset_list
+                .iter()
+                .map(|y| AssetExtracted {
+                    wallet_balance: y.wallet_balance.add(Uint128::from(500_u128)),
+                    ..y.to_owned()
+                })
+                .collect::<Vec<AssetExtracted>>(),
+            ..x.to_owned()
+        })
+        .collect::<Vec<UserExtracted>>();
 
-    let msg = ExecuteMsg::UpdatePoolsAndUsers { pools, users };
-    info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
-    let res = execute(deps.as_mut(), env, info, msg);
-
-    assert_eq!(
-        res.unwrap().attributes,
-        vec![attr("method", "update_pools_and_users"),]
+    st.update_pools_and_users(
+        ADDR_ADMIN_OSMO,
+        pools_updated.clone(),
+        users_updated.clone(),
     )
+    .unwrap();
+
+    // check changes
+    let QueryPoolsAndUsersResponse {
+        pools: res_pools_updated,
+        users: res_users_updated,
+    } = st.query_pools_and_users().unwrap();
+
+    assert_eq!(res_pools_updated, pools_updated);
+    assert_eq!(res_users_updated, users_updated);
 }
 
-#[test]
-fn test_execute_swap() {
-    let (mut deps, env, mut info, _res) =
-        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
+// // TODO: use https://github.com/osmosis-labs/osmosis-rust/tree/main/packages/osmosis-testing
+// #[test]
+// fn swap() {
+//     let mut st = Starbound::new();
+//     let user_alice = Starbound::get_user(UserName::Alice);
 
-    let msg = ExecuteMsg::Swap {};
-    info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
-    let res = execute(deps.as_mut(), env, info, msg);
+//     st.deposit(
+//         ADDR_ALICE_OSMO,
+//         &user_alice,
+//         &[coin(
+//             user_alice
+//                 .deposited_on_current_period
+//                 .add(user_alice.deposited_on_next_period)
+//                 .u128(),
+//             DENOM_EEUR,
+//         )],
+//     )
+//     .unwrap();
 
-    assert_eq!(res.unwrap().attributes, vec![attr("method", "swap"),])
-}
+//     let res = st.query_contract_balances().unwrap();
+//     println!("res = {:#?}", res);
 
-#[test]
-fn test_execute_swap_with_updated_users() {
-    let (mut deps, env, mut info, _res) =
-        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
+//     st.swap(ADDR_ADMIN_OSMO).unwrap();
 
-    // add 2nd user
-    let funds_amount = 600_000;
-    let funds_denom = DENOM_EEUR;
+//     let res = st.query_contract_balances().unwrap();
+//     println!("res = {:#?}", res);
+// }
 
-    let asset_list_bob: Vec<Asset> = vec![
-        Asset {
-            asset_denom: DENOM_ATOM.to_string(),
-            wallet_address: Addr::unchecked(ADDR_BOB_ATOM),
-            wallet_balance: Uint128::from(10_000_000_u128),
-            weight: str_to_dec("0.3"),
-            amount_to_send_until_next_epoch: Uint128::zero(),
-        },
-        Asset {
-            asset_denom: DENOM_JUNO.to_string(),
-            wallet_address: Addr::unchecked(ADDR_BOB_JUNO),
-            wallet_balance: Uint128::from(10_000_000_u128),
-            weight: str_to_dec("0.7"),
-            amount_to_send_until_next_epoch: Uint128::zero(),
-        },
-    ];
+// #[test]
+// fn test_execute_swap_with_updated_users() {
+//     let (mut deps, env, mut info, _res) =
+//         instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
 
-    let user = User {
-        asset_list: asset_list_bob,
-        day_counter: Uint128::from(3_u128),
-        deposited_on_current_period: Uint128::from(funds_amount),
-        deposited_on_next_period: Uint128::zero(),
-        is_controlled_rebalancing: IS_CONTROLLED_REBALANCING,
-    };
+//     // add 2nd user
+//     let funds_amount = 600_000;
+//     let funds_denom = DENOM_EEUR;
 
-    let msg = ExecuteMsg::Deposit { user };
-    info.funds = vec![coin(funds_amount, funds_denom)];
-    info.sender = Addr::unchecked(ADDR_BOB_OSMO);
+//     let asset_list_bob: Vec<Asset> = vec![
+//         Asset {
+//             asset_denom: DENOM_ATOM.to_string(),
+//             wallet_address: Addr::unchecked(ADDR_BOB_ATOM),
+//             wallet_balance: Uint128::from(10_000_000_u128),
+//             weight: str_to_dec("0.3"),
+//             amount_to_send_until_next_epoch: Uint128::zero(),
+//         },
+//         Asset {
+//             asset_denom: DENOM_JUNO.to_string(),
+//             wallet_address: Addr::unchecked(ADDR_BOB_JUNO),
+//             wallet_balance: Uint128::from(10_000_000_u128),
+//             weight: str_to_dec("0.7"),
+//             amount_to_send_until_next_epoch: Uint128::zero(),
+//         },
+//     ];
 
-    let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
+//     let user = User {
+//         asset_list: asset_list_bob,
+//         day_counter: Uint128::from(3_u128),
+//         deposited_on_current_period: Uint128::from(funds_amount),
+//         deposited_on_next_period: Uint128::zero(),
+//         is_controlled_rebalancing: IS_CONTROLLED_REBALANCING,
+//     };
 
-    // update data
-    let pools: Vec<PoolExtracted> = vec![
-        PoolExtracted {
-            id: Uint128::one(),
-            denom: DENOM_ATOM.to_string(),
-            price: str_to_dec("11.5"),
-            symbol: "uatom".to_string(),
-            channel_id: CHANNEL_ID.to_string(),
-            port_id: "transfer".to_string(),
-        },
-        PoolExtracted {
-            id: Uint128::from(497_u128),
-            denom: DENOM_JUNO.to_string(),
-            price: str_to_dec("3.5"),
-            symbol: "ujuno".to_string(),
-            channel_id: CHANNEL_ID.to_string(),
-            port_id: "transfer".to_string(),
-        },
-        PoolExtracted {
-            id: Uint128::from(481_u128),
-            denom: DENOM_EEUR.to_string(),
-            price: str_to_dec("1"),
-            symbol: "debug_ueeur".to_string(),
-            channel_id: CHANNEL_ID.to_string(),
-            port_id: "transfer".to_string(),
-        },
-    ];
+//     let msg = ExecuteMsg::Deposit { user };
+//     info.funds = vec![coin(funds_amount, funds_denom)];
+//     info.sender = Addr::unchecked(ADDR_BOB_OSMO);
 
-    let users: Vec<UserExtracted> = vec![
-        UserExtracted {
-            osmo_address: ADDR_ALICE_OSMO.to_string(),
-            asset_list: vec![
-                AssetExtracted {
-                    asset_denom: DENOM_ATOM.to_string(),
-                    wallet_address: ADDR_ALICE_ATOM.to_string(),
-                    wallet_balance: Uint128::one(),
-                },
-                AssetExtracted {
-                    asset_denom: DENOM_JUNO.to_string(),
-                    wallet_address: ADDR_ALICE_JUNO.to_string(),
-                    wallet_balance: Uint128::from(2_u128),
-                },
-            ],
-        },
-        UserExtracted {
-            osmo_address: ADDR_BOB_OSMO.to_string(),
-            asset_list: vec![
-                AssetExtracted {
-                    asset_denom: DENOM_ATOM.to_string(),
-                    wallet_address: ADDR_BOB_ATOM.to_string(),
-                    wallet_balance: Uint128::from(10_000_001_u128),
-                },
-                AssetExtracted {
-                    asset_denom: DENOM_JUNO.to_string(),
-                    wallet_address: ADDR_BOB_JUNO.to_string(),
-                    wallet_balance: Uint128::from(10_000_002_u128),
-                },
-            ],
-        },
-    ];
+//     let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
 
-    let msg = ExecuteMsg::UpdatePoolsAndUsers { pools, users };
-    info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
-    let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
+//     // update data
+//     let pools: Vec<PoolExtracted> = vec![
+//         PoolExtracted {
+//             id: Uint128::one(),
+//             denom: DENOM_ATOM.to_string(),
+//             price: str_to_dec("11.5"),
+//             symbol: "uatom".to_string(),
+//             channel_id: CHANNEL_ID.to_string(),
+//             port_id: "transfer".to_string(),
+//         },
+//         PoolExtracted {
+//             id: Uint128::from(497_u128),
+//             denom: DENOM_JUNO.to_string(),
+//             price: str_to_dec("3.5"),
+//             symbol: "ujuno".to_string(),
+//             channel_id: CHANNEL_ID.to_string(),
+//             port_id: "transfer".to_string(),
+//         },
+//         PoolExtracted {
+//             id: Uint128::from(481_u128),
+//             denom: DENOM_EEUR.to_string(),
+//             price: str_to_dec("1"),
+//             symbol: "debug_ueeur".to_string(),
+//             channel_id: CHANNEL_ID.to_string(),
+//             port_id: "transfer".to_string(),
+//         },
+//     ];
 
-    let msg = ExecuteMsg::Swap {};
-    info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
-    let res = execute(deps.as_mut(), env, info, msg);
+//     let users: Vec<UserExtracted> = vec![
+//         UserExtracted {
+//             osmo_address: ADDR_ALICE_OSMO.to_string(),
+//             asset_list: vec![
+//                 AssetExtracted {
+//                     asset_denom: DENOM_ATOM.to_string(),
+//                     wallet_address: ADDR_ALICE_ATOM.to_string(),
+//                     wallet_balance: Uint128::one(),
+//                 },
+//                 AssetExtracted {
+//                     asset_denom: DENOM_JUNO.to_string(),
+//                     wallet_address: ADDR_ALICE_JUNO.to_string(),
+//                     wallet_balance: Uint128::from(2_u128),
+//                 },
+//             ],
+//         },
+//         UserExtracted {
+//             osmo_address: ADDR_BOB_OSMO.to_string(),
+//             asset_list: vec![
+//                 AssetExtracted {
+//                     asset_denom: DENOM_ATOM.to_string(),
+//                     wallet_address: ADDR_BOB_ATOM.to_string(),
+//                     wallet_balance: Uint128::from(10_000_001_u128),
+//                 },
+//                 AssetExtracted {
+//                     asset_denom: DENOM_JUNO.to_string(),
+//                     wallet_address: ADDR_BOB_JUNO.to_string(),
+//                     wallet_balance: Uint128::from(10_000_002_u128),
+//                 },
+//             ],
+//         },
+//     ];
 
-    assert_eq!(res.unwrap().attributes, vec![attr("method", "swap"),])
-}
+//     let msg = ExecuteMsg::UpdatePoolsAndUsers { pools, users };
+//     info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
+//     let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
 
-#[test]
-fn test_execute_transfer() {
-    let (mut deps, env, mut info, _res) =
-        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
+//     let msg = ExecuteMsg::Swap {};
+//     info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
+//     let res = execute(deps.as_mut(), env, info, msg);
 
-    let msg = ExecuteMsg::Swap {};
-    info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
-    let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
+//     assert_eq!(res.unwrap().attributes, vec![attr("method", "swap"),])
+// }
 
-    let msg = ExecuteMsg::Transfer {};
-    info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
-    let res = execute(deps.as_mut(), env, info, msg);
+// #[test]
+// fn test_execute_transfer() {
+//     let (mut deps, env, mut info, _res) =
+//         instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
 
-    assert_eq!(res.unwrap().attributes, vec![attr("method", "transfer"),])
-}
+//     let msg = ExecuteMsg::Swap {};
+//     info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
+//     let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
 
-#[test]
-fn test_query_pools_and_users() {
-    let (deps, env, mut _info, _res) =
-        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
+//     let msg = ExecuteMsg::Transfer {};
+//     info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
+//     let res = execute(deps.as_mut(), env, info, msg);
 
-    let msg = QueryMsg::QueryPoolsAndUsers {};
-    let bin = query(deps.as_ref(), env, msg).unwrap();
-    let res = from_binary::<QueryPoolsAndUsersResponse>(&bin).unwrap();
-
-    assert_eq!(
-        res.pools.len(),
-        POOLS_AMOUNT_INITIAL.parse::<usize>().unwrap()
-    );
-    assert_eq!(res.users.len(), 1);
-}
-
-#[test]
-fn test_debug_query_pools_and_users() {
-    let (deps, env, mut _info, _res) =
-        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
-
-    let msg = QueryMsg::DebugQueryPoolsAndUsers {};
-    let bin = query(deps.as_ref(), env, msg).unwrap();
-    let res = from_binary::<DebugQueryPoolsAndUsersResponse>(&bin).unwrap();
-
-    assert_eq!(
-        res.pools.len(),
-        POOLS_AMOUNT_INITIAL.parse::<usize>().unwrap()
-    );
-    assert_eq!(res.users.len(), 1);
-}
-
-#[test]
-fn test_query_assets() {
-    let (deps, env, mut _info, _res) =
-        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
-
-    let msg = QueryMsg::QueryAssets {
-        address: ADDR_ALICE_OSMO.to_string(),
-    };
-    let bin = query(deps.as_ref(), env, msg).unwrap();
-    let res = from_binary::<QueryAssetsResponse>(&bin).unwrap();
-
-    assert_eq!(res.asset_list.len(), 2);
-}
-
-#[test]
-fn test_debug_query_bank() {
-    let (mut deps, env, mut info, _res) =
-        instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
-
-    let msg = ExecuteMsg::Swap {};
-    info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
-    let _res = execute(deps.as_mut(), env.clone(), info, msg);
-
-    let msg = QueryMsg::DebugQueryBank {};
-    let bin = query(deps.as_ref(), env, msg).unwrap();
-    let res = from_binary::<DebugQueryBankResponse>(&bin).unwrap();
-
-    assert_eq!(res.global_denom_list.len(), 3);
-}
+//     assert_eq!(res.unwrap().attributes, vec![attr("method", "transfer"),])
+// }

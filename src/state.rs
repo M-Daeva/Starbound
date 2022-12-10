@@ -51,13 +51,19 @@ pub struct User {
 }
 
 impl User {
-    pub fn default() -> Self {
+    pub fn new(
+        asset_list: &Vec<Asset>,
+        day_counter: Uint128,
+        deposited_on_current_period: Uint128,
+        deposited_on_next_period: Uint128,
+        is_controlled_rebalancing: bool,
+    ) -> Self {
         User {
-            is_controlled_rebalancing: true,
-            asset_list: vec![],
-            day_counter: Uint128::from(30_u128),
-            deposited_on_current_period: Uint128::zero(),
-            deposited_on_next_period: Uint128::zero(),
+            is_controlled_rebalancing,
+            asset_list: asset_list.to_owned(),
+            day_counter,
+            deposited_on_current_period,
+            deposited_on_next_period,
         }
     }
 }
@@ -105,6 +111,18 @@ pub struct PoolExtracted {
     pub symbol: String,
     pub channel_id: String,
     pub port_id: String,
+}
+
+impl PoolExtracted {
+    pub fn slice(&self) -> Pool {
+        Pool::new(
+            self.id,
+            self.price,
+            &self.channel_id,
+            &self.port_id,
+            &self.symbol,
+        )
+    }
 }
 
 #[cw_serde]

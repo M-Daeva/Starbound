@@ -226,7 +226,7 @@ pub fn verify_deposit_data(
 
 #[cfg(test)]
 mod test {
-    use cosmwasm_std::{coin, Addr, StdError::GenericErr, Uint128};
+    use cosmwasm_std::{coin, Addr, StdError, StdError::GenericErr, Uint128};
 
     use crate::{
         actions::rebalancer::str_to_dec,
@@ -264,13 +264,12 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
     fn address_bad() {
         let addr = "bad address";
 
         assert_eq!(
-            LocalApi::default().addr_validate(addr).unwrap(),
-            Addr::unchecked(addr)
+            LocalApi::default().addr_validate(addr).unwrap_err(),
+            StdError::generic_err("Invalid input: wrong address format")
         );
     }
 

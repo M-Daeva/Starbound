@@ -2,20 +2,15 @@
 use cosmwasm_std::{to_binary, Binary, Deps, Env, Order, StdResult};
 
 use crate::{
-    messages::response::{
-        DebugQueryBankResponse, DebugQueryPoolsAndUsersResponse, QueryAssetsResponse,
-        QueryPoolsAndUsersResponse,
-    },
-    state::{PoolExtracted, User, UserExtracted, POOLS, STATE, USERS},
+    messages::response::{QueryPoolsAndUsersResponse, QueryUserResponse},
+    state::{PoolExtracted, UserExtracted, POOLS, USERS},
 };
 
-pub fn query_assets(deps: Deps, _env: Env, address: String) -> StdResult<Binary> {
+pub fn query_user(deps: Deps, _env: Env, address: String) -> StdResult<Binary> {
     let address_validated = deps.api.addr_validate(&address)?;
     let user = USERS.load(deps.storage, &address_validated)?;
 
-    to_binary(&QueryAssetsResponse {
-        asset_list: user.asset_list,
-    })
+    to_binary(&QueryUserResponse { user })
 }
 
 pub fn query_pools_and_users(deps: Deps, _env: Env) -> StdResult<Binary> {
@@ -49,51 +44,4 @@ pub fn query_pools_and_users(deps: Deps, _env: Env) -> StdResult<Binary> {
         .collect();
 
     to_binary(&QueryPoolsAndUsersResponse { users, pools })
-}
-
-pub fn debug_query_pools_and_users(deps: Deps, _env: Env) -> StdResult<Binary> {
-    let users = USERS
-        .range(deps.storage, None, None, Order::Ascending)
-        .map(|x| {
-            let (_osmo_address, user) = x.unwrap();
-
-            User {
-                asset_list: user.asset_list,
-                day_counter: user.day_counter,
-                deposited_on_current_period: user.deposited_on_current_period,
-                deposited_on_next_period: user.deposited_on_next_period,
-                is_controlled_rebalancing: user.is_controlled_rebalancing,
-            }
-        })
-        .collect();
-
-    let pools = POOLS
-        .range(deps.storage, None, None, Order::Ascending)
-        .map(|x| {
-            let (denom, pool) = x.unwrap();
-
-            PoolExtracted {
-                channel_id: pool.channel_id,
-                denom,
-                id: pool.id,
-                port_id: pool.port_id,
-                price: pool.price,
-                symbol: pool.symbol,
-            }
-        })
-        .collect();
-
-    to_binary(&DebugQueryPoolsAndUsersResponse { users, pools })
-}
-
-pub fn debug_query_bank(deps: Deps, env: Env) -> StdResult<Binary> {
-    let state = STATE.load(deps.storage)?;
-
-    to_binary(&DebugQueryBankResponse {
-        dapp_wallet: deps.querier.query_all_balances(env.contract.address)?,
-        global_delta_balance_list: state.global_delta_balance_list,
-        global_delta_cost_list: state.global_delta_cost_list,
-        global_denom_list: state.global_denom_list,
-        global_price_list: state.global_price_list,
-    })
 }

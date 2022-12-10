@@ -62,7 +62,13 @@ pub fn deposit(
     // check if user exists or create new
     let mut user_updated = match USERS.load(deps.storage, &info.sender) {
         Ok(x) => x,
-        _ => User::default(),
+        _ => User::new(
+            &vec![],
+            Uint128::from(30_u128),
+            Uint128::zero(),
+            Uint128::zero(),
+            true,
+        ),
     };
 
     user_updated.asset_list = asset_list_updated;
@@ -175,7 +181,7 @@ pub fn update_pools_and_users(
     // check if sender is scheduler
     let state = STATE.load(deps.storage)?;
 
-    if info.sender != state.admin || info.sender != state.scheduler {
+    if info.sender != state.admin && info.sender != state.scheduler {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -243,7 +249,7 @@ pub fn update_pools_and_users(
 pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     let state = STATE.load(deps.storage)?;
 
-    if info.sender != state.admin || info.sender != state.scheduler {
+    if info.sender != state.admin && info.sender != state.scheduler {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -436,7 +442,7 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
 pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     let state = STATE.load(deps.storage)?;
 
-    if info.sender != state.admin || info.sender != state.scheduler {
+    if info.sender != state.admin && info.sender != state.scheduler {
         return Err(ContractError::Unauthorized {});
     }
 

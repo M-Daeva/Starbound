@@ -9,9 +9,7 @@ use crate::{
         },
         instantiate::init,
         migrate::migrate_contract,
-        query::{
-            debug_query_bank, debug_query_pools_and_users, query_assets, query_pools_and_users,
-        },
+        query::{query_pools_and_users, query_user},
     },
     error::ContractError,
     messages::{
@@ -55,11 +53,8 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::QueryAssets { address } => query_assets(deps, env, address),
+        QueryMsg::QueryUser { address } => query_user(deps, env, address),
         QueryMsg::QueryPoolsAndUsers {} => query_pools_and_users(deps, env),
-        QueryMsg::DebugQueryPoolsAndUsers {} => debug_query_pools_and_users(deps, env),
-
-        QueryMsg::DebugQueryBank {} => debug_query_bank(deps, env),
     }
 }
 
