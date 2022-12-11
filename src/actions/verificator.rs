@@ -3,7 +3,7 @@ use cosmwasm_std::{Addr, CanonicalAddr, Decimal, DepsMut, MessageInfo, StdError,
 
 use crate::{
     error::ContractError,
-    state::{User, POOLS},
+    state::{User, POOLS, STATE},
 };
 
 // This simple Api provided for address verification
@@ -217,6 +217,18 @@ pub fn verify_deposit_data(
 
         // validate wallet address
         LocalApi::default().addr_validate(asset.wallet_address.as_str())?;
+    }
+
+    Ok(())
+}
+
+// data verification for update_pools_and_users, swap, transfer methods
+pub fn verify_scheduler(deps: &DepsMut, info: &MessageInfo) -> Result<(), ContractError> {
+    // check if sender is scheduler
+    let state = STATE.load(deps.storage)?;
+
+    if info.sender != state.admin && info.sender != state.scheduler {
+        return Err(ContractError::Unauthorized {});
     }
 
     Ok(())

@@ -14,7 +14,7 @@ use crate::{
     actions::{
         rebalancer::{dec_to_u128, rebalance_controlled, rebalance_proportional, u128_to_dec},
         vectors::{vec_div, vec_mul},
-        verificator::verify_deposit_data,
+        verificator::{verify_deposit_data, verify_scheduler},
     },
     error::ContractError,
     state::{
@@ -143,12 +143,7 @@ pub fn update_pools_and_users(
     pools: Vec<PoolExtracted>,
     users: Vec<UserExtracted>,
 ) -> Result<Response, ContractError> {
-    // check if sender is scheduler
-    let state = STATE.load(deps.storage)?;
-
-    if info.sender != state.admin && info.sender != state.scheduler {
-        return Err(ContractError::Unauthorized {});
-    }
+    verify_scheduler(&deps, &info)?;
 
     // update pools info
     for pool_received in pools {
@@ -175,48 +170,50 @@ pub fn update_pools_and_users(
         // validate address
         let osmo_address_received = deps.api.addr_validate(&user_received.osmo_address)?;
 
-        // get user from storage by address
-        let mut user = match USERS.load(deps.storage, &osmo_address_received) {
-            Ok(x) => x,
-            _ => {
-                return Err(ContractError::UserIsNotFound {});
-            }
-        };
+        USERS.update(
+            deps.storage,
+            &osmo_address_received,
+            |some_user| -> Result<User, ContractError> {
+                // get user from storage by address
+                let user_loaded = match some_user {
+                    Some(x) => x,
+                    _ => {
+                        return Err(ContractError::UserIsNotFound {});
+                    }
+                };
 
-        // update user assets (wallet balances)
-        user.asset_list = user
-            .asset_list
-            .iter()
-            .map(|asset| {
-                // search same denom
-                let asset_received = user_received
+                // update user assets (wallet balances)
+                let asset_list = user_loaded
                     .asset_list
                     .iter()
-                    .find(|&x| (x.asset_denom == asset.asset_denom))
-                    .unwrap();
+                    .map(|asset_loaded| {
+                        // search same denom
+                        let asset_received = user_received
+                            .asset_list
+                            .iter()
+                            .find(|&x| (x.asset_denom == asset_loaded.asset_denom))
+                            .unwrap();
 
-                Asset::new(
-                    &asset.asset_denom,
-                    &asset.wallet_address,
-                    asset_received.wallet_balance,
-                    asset.weight,
-                    asset.amount_to_send_until_next_epoch,
-                )
-            })
-            .collect();
+                        Asset {
+                            wallet_balance: asset_received.wallet_balance,
+                            ..asset_loaded.to_owned()
+                        }
+                    })
+                    .collect();
 
-        USERS.save(deps.storage, &osmo_address_received, &user)?;
+                Ok(User {
+                    asset_list,
+                    ..user_loaded
+                })
+            },
+        )?;
     }
 
     Ok(Response::new().add_attributes(vec![("method", "update_pools_and_users")]))
 }
 
 pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-    let state = STATE.load(deps.storage)?;
-
-    if info.sender != state.admin && info.sender != state.scheduler {
-        return Err(ContractError::Unauthorized {});
-    }
+    verify_scheduler(&deps, &info)?;
 
     // 3) calculate payments
     let global_vec_len = POOLS
@@ -404,11 +401,7 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
 }
 
 pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-    let state = STATE.load(deps.storage)?;
-
-    if info.sender != state.admin && info.sender != state.scheduler {
-        return Err(ContractError::Unauthorized {});
-    }
+    verify_scheduler(&deps, &info)?;
 
     // get contract balances
     let mut contract_balances = deps.querier.query_all_balances(env.contract.address)?;
