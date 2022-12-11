@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::{
     coin, Addr, BankMsg, CosmosMsg, Decimal, DepsMut, Env, IbcMsg, IbcTimeout, IbcTimeoutBlock,
-    MessageInfo, Order, Response, Uint128,
+    MessageInfo, Order, Response, StdResult, Uint128,
 };
 
 use osmosis_std::types::{
@@ -28,54 +28,47 @@ pub fn deposit(
 ) -> Result<Response, ContractError> {
     verify_deposit_data(&deps, &info, &user)?;
 
-    // update asset list
-    let asset_list_updated: Vec<Asset> = user
-        .asset_list
-        .iter()
-        .map(|asset| {
-            // search same denom asset
-            match user
-                .asset_list
-                .iter()
-                .find(|&x| (x.asset_denom == asset.asset_denom))
-            {
-                // update weight if it is found
-                Some(y) => Asset::new(
-                    &y.asset_denom,
-                    &asset.wallet_address,
-                    y.wallet_balance,
-                    asset.weight,
-                    y.amount_to_send_until_next_epoch,
-                ),
-                // add new if it is not found
-                None => Asset::new(
-                    asset.asset_denom.as_str(),
-                    &asset.wallet_address,
-                    asset.wallet_balance,
-                    asset.weight,
-                    Uint128::zero(),
-                ),
-            }
+    USERS.update(deps.storage, &info.sender, |some_user| -> StdResult<_> {
+        // check if user exists or create new
+        let user_loaded = match some_user {
+            Some(x) => x,
+            _ => User::new(&vec![], Uint128::zero(), Uint128::zero(), false),
+        };
+
+        // update asset list
+        let asset_list = user
+            .asset_list
+            .iter()
+            .map(|asset| {
+                // search same denom asset
+                match user_loaded
+                    .asset_list
+                    .iter()
+                    .find(|&x| (x.asset_denom == asset.asset_denom))
+                {
+                    // preserve amount_to_send_until_next_epoch if asset is found
+                    Some(y) => Asset {
+                        amount_to_send_until_next_epoch: y.amount_to_send_until_next_epoch,
+                        ..asset.to_owned()
+                    },
+                    // add new if asset is not found
+                    None => Asset {
+                        amount_to_send_until_next_epoch: Uint128::zero(),
+                        ..asset.to_owned()
+                    },
+                }
+            })
+            .collect::<Vec<Asset>>();
+
+        Ok(User {
+            asset_list,
+            deposited: user_loaded.deposited + user.deposited,
+            ..user
         })
-        .collect();
-
-    // check if user exists or create new
-    let mut user_updated = match USERS.load(deps.storage, &info.sender) {
-        Ok(x) => x,
-        _ => User::new(&vec![], Uint128::from(30_u128), Uint128::zero(), true),
-    };
-
-    user_updated.asset_list = asset_list_updated;
-    user_updated.is_controlled_rebalancing = user.is_controlled_rebalancing;
-    user_updated.deposited += user.deposited;
-    user_updated.day_counter = user.day_counter;
-
-    // update user storage
-    USERS.save(deps.storage, &info.sender, &user_updated)?;
+    })?;
 
     Ok(Response::new().add_attributes(vec![
         ("method", "deposit"),
-        ("user_address", info.sender.as_str()),
         ("user_deposited", &user.deposited.to_string()),
     ]))
 }

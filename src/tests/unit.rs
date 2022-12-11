@@ -4,7 +4,7 @@ use cosmwasm_std::{attr, coin, from_binary, Addr, Attribute, Decimal, Empty, Std
 use std::ops::{Add, Div};
 
 use crate::{
-    // actions::rebalancer::str_to_dec,
+    actions::rebalancer::str_to_dec,
     // contract::{execute, instantiate, query},
     // error::ContractError,
     messages::response::{QueryPoolsAndUsersResponse, QueryUserResponse},
@@ -13,16 +13,20 @@ use crate::{
         Starbound,
         UserName,
         ADDR_ADMIN_OSMO,
-        // ADDR_ALICE_ATOM,
-        // ADDR_ALICE_JUNO,
+        ADDR_ALICE_ATOM,
+        ADDR_ALICE_JUNO,
         ADDR_ALICE_OSMO,
         ADDR_BOB_ATOM,
         // ADDR_BOB_JUNO,
         ADDR_BOB_OSMO,
         // CHANNEL_ID,
-        // DENOM_ATOM,
+        DENOM_ATOM,
         DENOM_EEUR,
-        // DENOM_JUNO, DENOM_OSMO, FUNDS_AMOUNT, IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD,
+        DENOM_JUNO,
+        DENOM_OSMO,
+        FUNDS_AMOUNT,
+        IS_CONTROLLED_REBALANCING,
+        IS_CURRENT_PERIOD,
         // POOLS_AMOUNT_INITIAL,
     },
 };
@@ -73,6 +77,62 @@ fn deposit_and_update_wallet_address() {
     let res = st.query_user(ADDR_ALICE_OSMO);
 
     assert_eq!(res.unwrap().user, user);
+}
+
+// check if asset lists can be merged properly
+#[test]
+fn deposit_and_update_asset_list() {
+    let mut st = Starbound::new();
+    let user = Starbound::get_user(UserName::Alice);
+
+    // add atom to asset list
+    let asset_list = vec![Asset::new(
+        DENOM_ATOM,
+        &Addr::unchecked(ADDR_ALICE_ATOM),
+        Uint128::zero(),
+        str_to_dec("1"),
+        Uint128::from(100_u128), // must be ignored
+    )];
+
+    st.deposit(
+        ADDR_ALICE_OSMO,
+        &User {
+            asset_list: asset_list.to_owned(),
+            ..user.to_owned()
+        },
+        &[coin(user.deposited.u128(), DENOM_EEUR)],
+    )
+    .unwrap();
+
+    let res = st.query_user(ADDR_ALICE_OSMO).unwrap();
+    assert_eq!(
+        res.user,
+        User {
+            asset_list: vec![Asset::new(
+                DENOM_ATOM,
+                &Addr::unchecked(ADDR_ALICE_ATOM),
+                Uint128::zero(),
+                str_to_dec("1"),
+                Uint128::zero()
+            )],
+            ..user.to_owned()
+        }
+    );
+
+    // add atom and juno to asset list and update it
+    st.deposit(
+        ADDR_ALICE_OSMO,
+        &User {
+            deposited: Uint128::zero(),
+            ..user.to_owned()
+        },
+        &[],
+    )
+    .unwrap();
+
+    let res = st.query_user(ADDR_ALICE_OSMO).unwrap();
+
+    assert_eq!(res.user, user);
 }
 
 #[test]
