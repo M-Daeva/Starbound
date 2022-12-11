@@ -17,24 +17,14 @@ async function withdraw(amount: number) {
   return await cwWithdraw(amount);
 }
 
-async function debugQueryBank() {
-  const { cwDebugQueryBank } = await init();
-  return await cwDebugQueryBank();
-}
-
 async function queryPoolsAndUsers() {
   const { cwQueryPoolsAndUsers } = await init();
   return await cwQueryPoolsAndUsers();
 }
 
-async function debugQueryPoolsAndUsers() {
-  const { cwDebugQueryPoolsAndUsers } = await init();
-  return await cwDebugQueryPoolsAndUsers();
-}
-
-async function queryAssets(address: string) {
-  const { cwQueryAssets } = await init();
-  return await cwQueryAssets(address);
+async function queryUcwQueryUser(address: string) {
+  const { cwQueryUser } = await init();
+  return await cwQueryUser(address);
 }
 
 // init wallet, add osmo chain, save address to localSorage
@@ -56,9 +46,7 @@ export {
   localSorageKey,
   deposit,
   withdraw,
-  debugQueryBank,
   queryPoolsAndUsers,
-  debugQueryPoolsAndUsers,
-  queryAssets,
+  queryUcwQueryUser,
   initCwHandler,
 };

@@ -56,10 +56,8 @@ async function init() {
     owner: dappAddr,
     cwSwap: _cwSwap,
     cwQueryPoolsAndUsers: _cwQueryPoolsAndUsers,
-    cwDebugQueryPoolsAndUsers: _cwDebugQueryPoolsAndUsers,
     cwUpdatePoolsAndUsers: _cwUpdatePoolsAndUsers,
-    cwQueryAssets: _cwQueryAssets,
-    cwDebugQueryBank: _cwDebugQueryBank,
+    cwQueryUser: _cwQueryUser,
     cwTransfer: _cwTransfer,
     cwMultiTransfer: _cwMultiTransfer,
   } = await getCwHelpers(dappClientStruct, CONTRACT_ADDRESS);
@@ -134,14 +132,6 @@ async function init() {
     }
   }
 
-  async function cwDebugQueryPoolsAndUsers() {
-    try {
-      await _cwDebugQueryPoolsAndUsers();
-    } catch (error) {
-      l(error, "\n");
-    }
-  }
-
   async function cwQueryPoolsAndUsers() {
     try {
       return await _cwQueryPoolsAndUsers();
@@ -178,14 +168,14 @@ async function init() {
     }
   }
 
-  async function cwQueryAssets() {
+  async function cwQueryUser() {
     let aliceAddr = "osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx";
     let bobAddr = "osmo1chgwz55h9kepjq0fkj5supl2ta3nwu63e3ds8x";
     let addresses = [aliceAddr, bobAddr];
 
     for (let addr of addresses) {
       try {
-        await _cwQueryAssets(addr);
+        await _cwQueryUser(addr);
       } catch (error) {
         l(error, "\n");
       }
@@ -196,14 +186,6 @@ async function init() {
     l("cwSwap");
     try {
       await _cwSwap();
-    } catch (error) {
-      l(error, "\n");
-    }
-  }
-
-  async function cwDebugQueryBank() {
-    try {
-      await _cwDebugQueryBank();
     } catch (error) {
       l(error, "\n");
     }
@@ -277,11 +259,9 @@ async function init() {
     cwSwap,
     sgDelegateFrom,
     sgUpdatePoolList,
-    cwDebugQueryPoolsAndUsers,
     cwQueryPoolsAndUsers,
     cwMockUpdatePoolsAndUsers,
-    cwQueryAssets,
-    cwDebugQueryBank,
+    cwQueryUser,
     cwTransfer,
     cwMultiTransfer,
     sgTransfer,

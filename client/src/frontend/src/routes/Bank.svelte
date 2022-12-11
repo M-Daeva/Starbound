@@ -43,8 +43,7 @@
   let userToDisplay: User = {
     asset_list: [],
     day_counter: "",
-    deposited_on_current_period: "",
-    deposited_on_next_period: "",
+    deposited: "",
     is_controlled_rebalancing: false,
   };
 
@@ -85,10 +84,7 @@
 
     const userToSend: User = {
       ...userToDisplay,
-      deposited_on_current_period: `${
-        +userToDisplay.deposited_on_current_period * 10 ** stablecoinExponent
-      }`,
-      deposited_on_next_period: "0",
+      deposited: `${+userToDisplay.deposited * 10 ** stablecoinExponent}`,
       day_counter: `${calcTimeDiff(userToDisplay.day_counter)}`,
     };
 
@@ -198,20 +194,6 @@
         style="background-color: rgb(42 48 60);"
       >
         <div>
-          <!-- <div>
-            <label class="mb-1" for="currentPeriod"
-              >Current Period Payment in {stablecoin}</label
-            >
-            <input
-              class="w-full text-center mx-0 mb-5"
-              type="number"
-              min="0"
-              max="1000000"
-              id="currentPeriod"
-              bind:value={userToDisplay.deposited_on_current_period}
-            />
-          </div> -->
-
           <div class="mt-12">
             <label class="inline-flex relative items-center cursor-pointer">
               <input
@@ -236,7 +218,7 @@
               min="0"
               max="1000000"
               id="payment"
-              bind:value={userToDisplay.deposited_on_current_period}
+              bind:value={userToDisplay.deposited}
             />
           </div>
         </div>

@@ -1,22 +1,29 @@
 use cosmwasm_std::{attr, coin, from_binary, Addr, Attribute, Decimal, Empty, StdError, Uint128};
-use cw_multi_test::{App, Contract, ContractWrapper, Executor};
+// use cw_multi_test::{App, Contract, ContractWrapper, Executor};
+// use osmosis_testing::{fn_query, Account, Bank, Gamm, Module, OsmosisTestApp, Wasm};
 use std::ops::{Add, Div};
 
 use crate::{
-    actions::rebalancer::str_to_dec,
-    contract::{execute, instantiate, query},
-    error::ContractError,
-    messages::{
-        execute::ExecuteMsg,
-        query::QueryMsg,
-        response::{QueryPoolsAndUsersResponse, QueryUserResponse},
-    },
+    // actions::rebalancer::str_to_dec,
+    // contract::{execute, instantiate, query},
+    // error::ContractError,
+    messages::response::{QueryPoolsAndUsersResponse, QueryUserResponse},
     state::{Asset, AssetExtracted, Pool, PoolExtracted, User, UserExtracted},
     tests::helpers::{
-        Starbound, UserName, ADDR_ADMIN_OSMO, ADDR_ALICE_ATOM, ADDR_ALICE_JUNO, ADDR_ALICE_OSMO,
-        ADDR_BOB_ATOM, ADDR_BOB_JUNO, ADDR_BOB_OSMO, CHANNEL_ID, DENOM_ATOM, DENOM_EEUR,
-        DENOM_JUNO, FUNDS_AMOUNT, IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD,
-        POOLS_AMOUNT_INITIAL,
+        Starbound,
+        UserName,
+        ADDR_ADMIN_OSMO,
+        // ADDR_ALICE_ATOM,
+        // ADDR_ALICE_JUNO,
+        ADDR_ALICE_OSMO,
+        ADDR_BOB_ATOM,
+        // ADDR_BOB_JUNO,
+        ADDR_BOB_OSMO,
+        // CHANNEL_ID,
+        // DENOM_ATOM,
+        DENOM_EEUR,
+        // DENOM_JUNO, DENOM_OSMO, FUNDS_AMOUNT, IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD,
+        // POOLS_AMOUNT_INITIAL,
     },
 };
 
@@ -28,12 +35,7 @@ fn deposit() {
     st.deposit(
         ADDR_ALICE_OSMO,
         &user,
-        &[coin(
-            user.deposited_on_current_period
-                .add(user.deposited_on_next_period)
-                .u128(),
-            DENOM_EEUR,
-        )],
+        &[coin(user.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
 
@@ -51,12 +53,7 @@ fn deposit_and_update_wallet_address() {
     st.deposit(
         ADDR_ALICE_OSMO,
         &user,
-        &[coin(
-            user.deposited_on_current_period
-                .add(user.deposited_on_next_period)
-                .u128(),
-            DENOM_EEUR,
-        )],
+        &[coin(user.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
 
@@ -66,8 +63,7 @@ fn deposit_and_update_wallet_address() {
     st.deposit(
         ADDR_ALICE_OSMO,
         &User {
-            deposited_on_current_period: Uint128::zero(),
-            deposited_on_next_period: Uint128::zero(),
+            deposited: Uint128::zero(),
             ..user.clone()
         },
         &[],
@@ -87,32 +83,20 @@ fn withdraw() {
     st.deposit(
         ADDR_ALICE_OSMO,
         &user,
-        &[coin(
-            user.deposited_on_current_period
-                .add(user.deposited_on_next_period)
-                .u128(),
-            DENOM_EEUR,
-        )],
+        &[coin(user.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
 
-    let part_of_deposited_on_current_period =
-        user.deposited_on_current_period.div(Uint128::from(2_u128));
-    let part_of_deposited_on_next_period = user.deposited_on_next_period.div(Uint128::from(2_u128));
+    let part_of_deposited = user.deposited.div(Uint128::from(2_u128));
 
-    st.withdraw(
-        ADDR_ALICE_OSMO,
-        part_of_deposited_on_current_period.add(part_of_deposited_on_next_period),
-    )
-    .unwrap();
+    st.withdraw(ADDR_ALICE_OSMO, part_of_deposited).unwrap();
 
     let res = st.query_user(ADDR_ALICE_OSMO);
 
     assert_eq!(
         res.unwrap().user,
         User {
-            deposited_on_current_period: part_of_deposited_on_current_period,
-            deposited_on_next_period: part_of_deposited_on_next_period,
+            deposited: part_of_deposited,
             ..user
         }
     );
@@ -157,25 +141,13 @@ fn query_user() {
     st.deposit(
         ADDR_ALICE_OSMO,
         &user_alice,
-        &[coin(
-            user_alice
-                .deposited_on_current_period
-                .add(user_alice.deposited_on_next_period)
-                .u128(),
-            DENOM_EEUR,
-        )],
+        &[coin(user_alice.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
     st.deposit(
         ADDR_BOB_OSMO,
         &user_bob,
-        &[coin(
-            user_bob
-                .deposited_on_current_period
-                .add(user_bob.deposited_on_next_period)
-                .u128(),
-            DENOM_EEUR,
-        )],
+        &[coin(user_bob.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
 
@@ -194,25 +166,13 @@ fn query_pools_and_users() {
     st.deposit(
         ADDR_ALICE_OSMO,
         &user_alice,
-        &[coin(
-            user_alice
-                .deposited_on_current_period
-                .add(user_alice.deposited_on_next_period)
-                .u128(),
-            DENOM_EEUR,
-        )],
+        &[coin(user_alice.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
     st.deposit(
         ADDR_BOB_OSMO,
         &user_bob,
-        &[coin(
-            user_bob
-                .deposited_on_current_period
-                .add(user_bob.deposited_on_next_period)
-                .u128(),
-            DENOM_EEUR,
-        )],
+        &[coin(user_bob.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
 
@@ -255,25 +215,13 @@ fn update_pools_and_users() {
     st.deposit(
         ADDR_ALICE_OSMO,
         &user_alice,
-        &[coin(
-            user_alice
-                .deposited_on_current_period
-                .add(user_alice.deposited_on_next_period)
-                .u128(),
-            DENOM_EEUR,
-        )],
+        &[coin(user_alice.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
     st.deposit(
         ADDR_BOB_OSMO,
         &user_bob,
-        &[coin(
-            user_bob
-                .deposited_on_current_period
-                .add(user_bob.deposited_on_next_period)
-                .u128(),
-            DENOM_EEUR,
-        )],
+        &[coin(user_bob.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
 
@@ -324,15 +272,67 @@ fn update_pools_and_users() {
     assert_eq!(res_users_updated, users_updated);
 }
 
-// // TODO: use https://github.com/osmosis-labs/osmosis-rust/tree/main/packages/osmosis-testing
+// TODO: use https://github.com/osmosis-labs/osmosis-rust/tree/main/packages/osmosis-testing
 // #[test]
 // fn swap() {
-//     let mut st = Starbound::new();
+//     // create new osmosis appchain instance.
+//     let app = OsmosisTestApp::new();
+
+//     // create new account with initial funds
+//     let accs = app
+//         .init_accounts(
+//             &[coin(1_000_000, DENOM_EEUR), coin(1_000_000, DENOM_OSMO)],
+//             2,
+//         )
+//         .unwrap();
+
+//     let admin = &accs[0];
+//     let user = &accs[1];
+
+//     // `Wasm` is the module we use to interact with cosmwasm releated logic on the appchain
+//     // it implements `Module` trait which you will see more later.
+//     let wasm = Wasm::new(&app);
+
+//     // Load compiled wasm bytecode
+//     let wasm_byte_code = std::fs::read("./artifacts/starbound.wasm").unwrap();
+//     let code_id = wasm
+//         .store_code(&wasm_byte_code, None, admin)
+//         .unwrap()
+//         .data
+//         .code_id;
+
+//     // instantiate contract with initial admin and make admin list mutable
+//     let init_admins = vec![admin.address()];
+//     let contract_addr = wasm
+//         .instantiate(
+//             code_id,
+//             &InstantiateMsg {},
+//             Some(&admin.address()), // contract admin used for migration
+//             None,                   // contract label
+//             &[],                    // funds
+//             admin,                  // signer
+//         )
+//         .unwrap()
+//         .data
+//         .address;
+
+//     // query contract state to check if contract instantiation works properly
+//     let pools_and_users = wasm
+//         .query::<QueryMsg, QueryPoolsAndUsersResponse>(
+//             &contract_addr,
+//             &QueryMsg::QueryPoolsAndUsers {},
+//         )
+//         .unwrap();
+
+//     // println!("{:#?}", pools_and_users);
+
 //     let user_alice = Starbound::get_user(UserName::Alice);
 
-//     st.deposit(
-//         ADDR_ALICE_OSMO,
-//         &user_alice,
+//     wasm.execute::<ExecuteMsg>(
+//         &contract_addr,
+//         &ExecuteMsg::Deposit {
+//             user: user_alice.clone(),
+//         },
 //         &[coin(
 //             user_alice
 //                 .deposited_on_current_period
@@ -340,16 +340,58 @@ fn update_pools_and_users() {
 //                 .u128(),
 //             DENOM_EEUR,
 //         )],
+//         user,
 //     )
 //     .unwrap();
 
-//     let res = st.query_contract_balances().unwrap();
-//     println!("res = {:#?}", res);
+//     let user_requested = wasm
+//         .query::<QueryMsg, QueryUserResponse>(
+//             &contract_addr,
+//             &QueryMsg::QueryUser {
+//                 address: user.address(),
+//             },
+//         )
+//         .unwrap();
 
-//     st.swap(ADDR_ADMIN_OSMO).unwrap();
+//     wasm.execute::<ExecuteMsg>(&contract_addr, &ExecuteMsg::Swap {}, &[], admin)
+//         .unwrap();
 
-//     let res = st.query_contract_balances().unwrap();
-//     println!("res = {:#?}", res);
+//     println!("{:#?}", user_requested);
+// }
+
+// #[test]
+// fn swap() {
+//     let app = OsmosisTestApp::default();
+
+//     // create new account with initial funds
+//     let accs = app
+//         .init_accounts(
+//             &[
+//                 coin(1_000_000_000_000, DENOM_EEUR),
+//                 coin(1_000_000_000_000, DENOM_OSMO),
+//             ],
+//             2,
+//         )
+//         .unwrap();
+
+//     let admin = &accs[0];
+//     let user = &accs[1];
+
+//     // create Gamm Module Wrapper
+//     let gamm = Gamm::new(&app);
+
+//     // create balancer pool with basic configuration
+//     let pool_liquidity = vec![coin(1_000, DENOM_EEUR), coin(1_000, DENOM_OSMO)];
+//     let pool_id = gamm
+//         .create_basic_pool(&pool_liquidity, &user)
+//         .unwrap()
+//         .data
+//         .pool_id;
+
+//     // query pool and assert if the pool is created successfully
+//     let pool = gamm.query_pool(pool_id).unwrap();
+
+//     println!("{:#?}", pool);
 // }
 
 // #[test]

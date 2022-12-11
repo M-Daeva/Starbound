@@ -116,8 +116,7 @@
 <div class="flex justify-between px-4" style="height: 85vh">
   <div class="w-4/12">
     <div class="ml-12">
-      <h2>Current Period Balance: {1000} {stablecoin}</h2>
-      <h2>Next period balance: {1000} {stablecoin}</h2>
+      <h2>Payment Balance: {1000} {stablecoin}</h2>
       <h2>Portfolio Net Worth: {1000} {stablecoin}</h2>
     </div>
     {#if typeof data !== "undefined"}

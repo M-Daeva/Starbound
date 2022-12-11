@@ -4,10 +4,11 @@
 * and run the @cosmwasm/ts-codegen generate command to regenerate this file.
 */
 
+import { Coin } from "@cosmjs/amino";
 import { MsgExecuteContractEncodeObject } from "cosmwasm";
 import { MsgExecuteContract } from "cosmjs-types/cosmwasm/wasm/v1/tx";
 import { toUtf8 } from "@cosmjs/encoding";
-import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, User, Asset, PoolExtracted, UserExtracted, AssetExtracted, TransferParams, QueryMsg, MigrateMsg, DebugQueryBankResponse, Coin, DebugQueryPoolsAndUsersResponse, QueryAssetsResponse, QueryPoolsAndUsersResponse } from "./Starbound.types";
+import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, User, Asset, PoolExtracted, UserExtracted, AssetExtracted, TransferParams, QueryMsg, MigrateMsg, QueryPoolsAndUsersResponse, QueryUserResponse } from "./Starbound.types";
 export interface StarboundMessage {
   contractAddress: string;
   sender: string;

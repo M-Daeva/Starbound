@@ -2,60 +2,41 @@ import { init } from "../src/common/workers/testnet-combined-workers";
 
 async function main() {
   const {
-    cwDebugQueryPoolsAndUsers,
     cwQueryPoolsAndUsers,
     cwDepositAlice,
     cwDepositBob,
     cwWithdrawAlice,
     cwMockUpdatePoolsAndUsers,
-    cwQueryAssets,
+    cwQueryUser,
     cwSwap,
-    cwDebugQueryBank,
     cwTransfer,
   } = await init();
 
-  await cwDebugQueryPoolsAndUsers();
-  await cwDebugQueryBank();
-
   await cwDepositAlice();
   await cwDepositBob();
-  await cwDebugQueryPoolsAndUsers();
-  await cwQueryAssets();
-  await cwDebugQueryBank();
+  await cwQueryUser();
 
   await cwWithdrawAlice();
-  await cwDebugQueryPoolsAndUsers();
-  await cwQueryAssets();
-  await cwDebugQueryBank();
+  await cwQueryUser();
 
   let poolsAndUsers = await cwQueryPoolsAndUsers();
   await cwMockUpdatePoolsAndUsers();
-  await cwDebugQueryPoolsAndUsers();
-  await cwQueryAssets();
-  await cwDebugQueryBank();
+  await cwQueryUser();
 
   await cwSwap();
-  await cwDebugQueryPoolsAndUsers();
-  await cwQueryAssets();
-  await cwDebugQueryBank();
+  await cwQueryUser();
 
   await cwTransfer();
-  await cwDebugQueryPoolsAndUsers();
-  await cwQueryAssets();
-  await cwDebugQueryBank();
+  await cwQueryUser();
 
   let cnt = 3;
 
-  while (cnt-- !== 0) {
+  while (cnt--) {
     await cwSwap();
-    await cwDebugQueryPoolsAndUsers();
-    await cwQueryAssets();
-    await cwDebugQueryBank();
+    await cwQueryUser();
 
     await cwTransfer();
-    await cwDebugQueryPoolsAndUsers();
-    await cwQueryAssets();
-    await cwDebugQueryBank();
+    await cwQueryUser();
   }
 }
 

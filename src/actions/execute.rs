@@ -62,19 +62,12 @@ pub fn deposit(
     // check if user exists or create new
     let mut user_updated = match USERS.load(deps.storage, &info.sender) {
         Ok(x) => x,
-        _ => User::new(
-            &vec![],
-            Uint128::from(30_u128),
-            Uint128::zero(),
-            Uint128::zero(),
-            true,
-        ),
+        _ => User::new(&vec![], Uint128::from(30_u128), Uint128::zero(), true),
     };
 
     user_updated.asset_list = asset_list_updated;
     user_updated.is_controlled_rebalancing = user.is_controlled_rebalancing;
-    user_updated.deposited_on_current_period += user.deposited_on_current_period;
-    user_updated.deposited_on_next_period += user.deposited_on_next_period;
+    user_updated.deposited += user.deposited;
     user_updated.day_counter = user.day_counter;
 
     // update user storage
@@ -83,14 +76,7 @@ pub fn deposit(
     Ok(Response::new().add_attributes(vec![
         ("method", "deposit"),
         ("user_address", info.sender.as_str()),
-        (
-            "user_deposited_on_current_period",
-            &user.deposited_on_current_period.to_string(),
-        ),
-        (
-            "user_deposited_on_next_period",
-            &user.deposited_on_next_period.to_string(),
-        ),
+        ("user_deposited", &user.deposited.to_string()),
     ]))
 }
 
@@ -111,22 +97,13 @@ pub fn withdraw(
     };
 
     // check withdraw amount
-    if amount.u128()
-        > user.deposited_on_next_period.u128() + user.deposited_on_current_period.u128()
-    {
+    if amount.u128() > user.deposited.u128() {
         return Err(ContractError::WithdrawAmountIsExceeded {});
     }
 
     // TODO: use Uint128 methods
 
-    // subtract from deposited_on_next_period first
-    if amount.u128() > user.deposited_on_next_period.u128() {
-        user.deposited_on_current_period -=
-            Uint128::from(amount.u128() - user.deposited_on_next_period.u128());
-        user.deposited_on_next_period = Uint128::zero();
-    } else {
-        user.deposited_on_next_period -= amount;
-    }
+    user.deposited -= Uint128::from(amount.u128());
 
     let msg = CosmosMsg::Bank(BankMsg::Send {
         to_address: info.sender.to_string(),
@@ -138,14 +115,7 @@ pub fn withdraw(
     Ok(Response::new().add_message(msg).add_attributes(vec![
         ("method", "withdraw"),
         ("user_address", info.sender.as_str()),
-        (
-            "user_deposited_on_current_period",
-            &user.deposited_on_current_period.to_string(),
-        ),
-        (
-            "user_deposited_on_next_period",
-            &user.deposited_on_next_period.to_string(),
-        ),
+        ("user_deposited", &user.deposited.to_string()),
     ]))
 }
 
@@ -288,7 +258,7 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
             let mut user_payment = if user.day_counter.u128() == 0 {
                 0_u128
             } else {
-                user.deposited_on_current_period.u128() / user.day_counter.u128()
+                user.deposited.u128() / user.day_counter.u128()
             };
 
             // query user from storage and update parameters
@@ -296,14 +266,13 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
 
             if user.day_counter.u128() != 0 {
                 user_updated.day_counter -= Uint128::one();
-                if user_updated.deposited_on_current_period.u128() < user_payment {
-                    user_payment = user_updated.deposited_on_current_period.u128();
+                if user_updated.deposited.u128() < user_payment {
+                    user_payment = user_updated.deposited.u128();
                 }
-                user_updated.deposited_on_current_period -= Uint128::from(user_payment);
+                user_updated.deposited -= Uint128::from(user_payment);
             } else {
+                // TODO: stop swaps if cnt == 0
                 user_updated.day_counter = Uint128::from(30_u128);
-                user_updated.deposited_on_current_period = user.deposited_on_next_period;
-                user_updated.deposited_on_next_period = Uint128::zero();
             }
 
             // user_weights - vector of target asset ratios

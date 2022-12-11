@@ -21,9 +21,7 @@ async function init() {
     cwDeposit: _cwDeposit,
     cwWithdraw: _cwWithdraw,
     cwQueryPoolsAndUsers: _cwQueryPoolsAndUsers,
-    cwDebugQueryBank: _cwDebugQueryBank,
-    cwDebugQueryPoolsAndUsers: _cwDebugQueryPoolsAndUsers,
-    cwQueryAssets: _cwQueryAssets,
+    cwQueryUser: _cwQueryUser,
     owner,
   } = await getCwHelpers(userClientStruct, CONTRACT_ADDRESS);
 
@@ -45,15 +43,6 @@ async function init() {
     }
   }
 
-  async function cwDebugQueryBank() {
-    try {
-      const tx = await _cwDebugQueryBank();
-      return tx;
-    } catch (error) {
-      l(error, "\n");
-    }
-  }
-
   async function cwQueryPoolsAndUsers() {
     try {
       return await _cwQueryPoolsAndUsers();
@@ -62,17 +51,9 @@ async function init() {
     }
   }
 
-  async function cwDebugQueryPoolsAndUsers() {
+  async function cwQueryUser(address: string) {
     try {
-      return await _cwDebugQueryPoolsAndUsers();
-    } catch (error) {
-      l(error, "\n");
-    }
-  }
-
-  async function cwQueryAssets(address: string) {
-    try {
-      return await _cwQueryAssets(address);
+      return await _cwQueryUser(address);
     } catch (error) {
       l(error, "\n");
     }
@@ -81,10 +62,8 @@ async function init() {
   return {
     cwDeposit,
     cwWithdraw,
-    cwDebugQueryBank,
     cwQueryPoolsAndUsers,
-    cwDebugQueryPoolsAndUsers,
-    cwQueryAssets,
+    cwQueryUser,
     owner,
   };
 }

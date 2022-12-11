@@ -5,18 +5,16 @@
 */
 
 import { CosmWasmClient, SigningCosmWasmClient, ExecuteResult } from "@cosmjs/cosmwasm-stargate";
-import { StdFee } from "@cosmjs/amino";
-import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, User, Asset, PoolExtracted, UserExtracted, AssetExtracted, TransferParams, QueryMsg, MigrateMsg, DebugQueryBankResponse, Coin, DebugQueryPoolsAndUsersResponse, QueryAssetsResponse, QueryPoolsAndUsersResponse } from "./Starbound.types";
+import { Coin, StdFee } from "@cosmjs/amino";
+import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, User, Asset, PoolExtracted, UserExtracted, AssetExtracted, TransferParams, QueryMsg, MigrateMsg, QueryPoolsAndUsersResponse, QueryUserResponse } from "./Starbound.types";
 export interface StarboundReadOnlyInterface {
   contractAddress: string;
-  queryAssets: ({
+  queryUser: ({
     address
   }: {
     address: string;
-  }) => Promise<QueryAssetsResponse>;
+  }) => Promise<QueryUserResponse>;
   queryPoolsAndUsers: () => Promise<QueryPoolsAndUsersResponse>;
-  debugQueryPoolsAndUsers: () => Promise<DebugQueryPoolsAndUsersResponse>;
-  debugQueryBank: () => Promise<DebugQueryBankResponse>;
 }
 export class StarboundQueryClient implements StarboundReadOnlyInterface {
   client: CosmWasmClient;
@@ -25,19 +23,17 @@ export class StarboundQueryClient implements StarboundReadOnlyInterface {
   constructor(client: CosmWasmClient, contractAddress: string) {
     this.client = client;
     this.contractAddress = contractAddress;
-    this.queryAssets = this.queryAssets.bind(this);
+    this.queryUser = this.queryUser.bind(this);
     this.queryPoolsAndUsers = this.queryPoolsAndUsers.bind(this);
-    this.debugQueryPoolsAndUsers = this.debugQueryPoolsAndUsers.bind(this);
-    this.debugQueryBank = this.debugQueryBank.bind(this);
   }
 
-  queryAssets = async ({
+  queryUser = async ({
     address
   }: {
     address: string;
-  }): Promise<QueryAssetsResponse> => {
+  }): Promise<QueryUserResponse> => {
     return this.client.queryContractSmart(this.contractAddress, {
-      query_assets: {
+      query_user: {
         address
       }
     });
@@ -45,16 +41,6 @@ export class StarboundQueryClient implements StarboundReadOnlyInterface {
   queryPoolsAndUsers = async (): Promise<QueryPoolsAndUsersResponse> => {
     return this.client.queryContractSmart(this.contractAddress, {
       query_pools_and_users: {}
-    });
-  };
-  debugQueryPoolsAndUsers = async (): Promise<DebugQueryPoolsAndUsersResponse> => {
-    return this.client.queryContractSmart(this.contractAddress, {
-      debug_query_pools_and_users: {}
-    });
-  };
-  debugQueryBank = async (): Promise<DebugQueryBankResponse> => {
-    return this.client.queryContractSmart(this.contractAddress, {
-      debug_query_bank: {}
     });
   };
 }

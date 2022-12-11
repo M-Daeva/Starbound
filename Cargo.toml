@@ -46,3 +46,4 @@ thiserror = { version = "1.0.31" }
 
 [dev-dependencies]
 cw-multi-test = "0.13.2"
+osmosis-testing = "0.13.2"

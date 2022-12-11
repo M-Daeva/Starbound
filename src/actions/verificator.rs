@@ -171,9 +171,7 @@ pub fn verify_deposit_data(
         None => 0,
     };
 
-    if funds_amount
-        != (user.deposited_on_current_period.u128() + user.deposited_on_next_period.u128())
-    {
+    if funds_amount != (user.deposited.u128()) {
         return Err(ContractError::FundsAreNotEqual {});
     }
 
@@ -281,11 +279,6 @@ mod test {
         let is_current_period = IS_CURRENT_PERIOD;
         let is_controlled_rebalancing = IS_CONTROLLED_REBALANCING;
 
-        let user_deposited_on_current_period =
-            Uint128::from(if is_current_period { funds_amount } else { 0 });
-        let user_deposited_on_next_period =
-            Uint128::from(if !is_current_period { funds_amount } else { 0 });
-
         let (mut deps, env, mut info, _) = get_instance(ADDR_ADMIN_OSMO);
 
         let asset_list_alice = vec![
@@ -308,8 +301,7 @@ mod test {
         let user = User {
             asset_list: asset_list_alice,
             day_counter: Uint128::from(3_u128),
-            deposited_on_current_period: user_deposited_on_current_period,
-            deposited_on_next_period: user_deposited_on_next_period,
+            deposited: Uint128::from(funds_amount),
             is_controlled_rebalancing,
         };
 
@@ -343,8 +335,7 @@ mod test {
         let user = User {
             asset_list: asset_list_alice,
             day_counter: Uint128::from(3_u128),
-            deposited_on_current_period: user_deposited_on_current_period,
-            deposited_on_next_period: user_deposited_on_next_period,
+            deposited: Uint128::from(funds_amount),
             is_controlled_rebalancing,
         };
 
@@ -376,8 +367,7 @@ mod test {
         let user = User {
             asset_list: asset_list_alice,
             day_counter: Uint128::from(3_u128),
-            deposited_on_current_period: user_deposited_on_current_period,
-            deposited_on_next_period: user_deposited_on_next_period,
+            deposited: Uint128::from(funds_amount),
             is_controlled_rebalancing,
         };
 
@@ -414,8 +404,7 @@ mod test {
         let user = User {
             asset_list: asset_list_alice,
             day_counter: Uint128::from(3_u128),
-            deposited_on_current_period: user_deposited_on_current_period,
-            deposited_on_next_period: user_deposited_on_next_period,
+            deposited: Uint128::from(funds_amount),
             is_controlled_rebalancing,
         };
 
@@ -445,8 +434,7 @@ mod test {
         let user = User {
             asset_list: asset_list_alice,
             day_counter: Uint128::from(3_u128),
-            deposited_on_current_period: user_deposited_on_current_period,
-            deposited_on_next_period: user_deposited_on_next_period,
+            deposited: Uint128::from(funds_amount),
             is_controlled_rebalancing,
         };
 
@@ -476,8 +464,7 @@ mod test {
         let user = User {
             asset_list: asset_list_alice,
             day_counter: Uint128::from(3_u128),
-            deposited_on_current_period: user_deposited_on_current_period,
-            deposited_on_next_period: user_deposited_on_next_period,
+            deposited: Uint128::from(funds_amount),
             is_controlled_rebalancing,
         };
 

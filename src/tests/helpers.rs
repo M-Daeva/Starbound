@@ -30,14 +30,15 @@ pub const ADDR_BOB_ATOM: &str = "cosmos1chgwz55h9kepjq0fkj5supl2ta3nwu63327q35";
 
 pub const ADDR_INVALID: &str = "ADDR_INVALID";
 
+pub const DENOM_OSMO: &str = "uosmo";
 pub const DENOM_ATOM: &str = "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2";
 pub const DENOM_JUNO: &str = "ibc/46B44899322F3CD854D2D46DEEF881958467CDD4B3B10086DA49296BBED94BED";
 pub const DENOM_EEUR: &str = "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F";
 pub const DENOM_NONEXISTENT: &str = "DENOM_NONEXISTENT";
 
-pub const POOLS_AMOUNT_INITIAL: &str = "3";
+// pub const POOLS_AMOUNT_INITIAL: &str = "3";
 
-pub const CHANNEL_ID: &str = "channel-1100";
+// pub const CHANNEL_ID: &str = "channel-1100";
 
 pub const IS_CONTROLLED_REBALANCING: bool = true;
 pub const IS_CURRENT_PERIOD: bool = true;
@@ -72,9 +73,6 @@ pub fn instantiate_and_deposit(
 ) -> Instance {
     let funds_denom = DENOM_EEUR;
 
-    let user_deposited_on_current_period = if is_current_period { funds_amount } else { 0 };
-    let user_deposited_on_next_period = if !is_current_period { funds_amount } else { 0 };
-
     let (mut deps, env, mut info, _) = get_instance(ADDR_ADMIN_OSMO);
 
     let asset_list_alice = vec![
@@ -97,8 +95,7 @@ pub fn instantiate_and_deposit(
     let user = User {
         asset_list: asset_list_alice,
         day_counter: Uint128::from(3_u128),
-        deposited_on_current_period: Uint128::from(user_deposited_on_current_period),
-        deposited_on_next_period: Uint128::from(user_deposited_on_next_period),
+        deposited: Uint128::from(funds_amount),
         is_controlled_rebalancing,
     };
 
@@ -313,9 +310,6 @@ impl Starbound {
     }
 
     pub fn get_user(user_name: UserName) -> User {
-        let deposited_on_current_period = if IS_CURRENT_PERIOD { FUNDS_AMOUNT } else { 0 };
-        let deposited_on_next_period = if !IS_CURRENT_PERIOD { FUNDS_AMOUNT } else { 0 };
-
         let asset_list_alice = vec![
             Asset::new(
                 DENOM_ATOM,
@@ -336,8 +330,7 @@ impl Starbound {
         let user_alice = User::new(
             &asset_list_alice,
             Uint128::from(3_u128),
-            Uint128::from(deposited_on_current_period),
-            Uint128::from(deposited_on_next_period),
+            Uint128::from(FUNDS_AMOUNT),
             IS_CONTROLLED_REBALANCING,
         );
 
@@ -361,8 +354,7 @@ impl Starbound {
         let user_bob = User::new(
             &asset_list_bob,
             Uint128::from(3_u128),
-            Uint128::from(deposited_on_current_period),
-            Uint128::from(deposited_on_next_period),
+            Uint128::from(FUNDS_AMOUNT),
             IS_CONTROLLED_REBALANCING,
         );
 

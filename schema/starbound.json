@@ -287,8 +287,7 @@
         "required": [
           "asset_list",
           "day_counter",
-          "deposited_on_current_period",
-          "deposited_on_next_period",
+          "deposited",
           "is_controlled_rebalancing"
         ],
         "properties": {
@@ -301,10 +300,7 @@
           "day_counter": {
             "$ref": "#/definitions/Uint128"
           },
-          "deposited_on_current_period": {
-            "$ref": "#/definitions/Uint128"
-          },
-          "deposited_on_next_period": {
+          "deposited": {
             "$ref": "#/definitions/Uint128"
           },
           "is_controlled_rebalancing": {
@@ -341,10 +337,10 @@
       {
         "type": "object",
         "required": [
-          "query_assets"
+          "query_user"
         ],
         "properties": {
-          "query_assets": {
+          "query_user": {
             "type": "object",
             "required": [
               "address"
@@ -371,32 +367,6 @@
           }
         },
         "additionalProperties": false
-      },
-      {
-        "type": "object",
-        "required": [
-          "debug_query_pools_and_users"
-        ],
-        "properties": {
-          "debug_query_pools_and_users": {
-            "type": "object",
-            "additionalProperties": false
-          }
-        },
-        "additionalProperties": false
-      },
-      {
-        "type": "object",
-        "required": [
-          "debug_query_bank"
-        ],
-        "properties": {
-          "debug_query_bank": {
-            "type": "object",
-            "additionalProperties": false
-          }
-        },
-        "additionalProperties": false
       }
     ]
   },
@@ -408,264 +378,6 @@
   },
   "sudo": null,
   "responses": {
-    "debug_query_bank": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "DebugQueryBankResponse",
-      "type": "object",
-      "required": [
-        "dapp_wallet",
-        "global_delta_balance_list",
-        "global_delta_cost_list",
-        "global_denom_list",
-        "global_price_list"
-      ],
-      "properties": {
-        "dapp_wallet": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Coin"
-          }
-        },
-        "global_delta_balance_list": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Uint128"
-          }
-        },
-        "global_delta_cost_list": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Uint128"
-          }
-        },
-        "global_denom_list": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "global_price_list": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Decimal"
-          }
-        }
-      },
-      "additionalProperties": false,
-      "definitions": {
-        "Coin": {
-          "type": "object",
-          "required": [
-            "amount",
-            "denom"
-          ],
-          "properties": {
-            "amount": {
-              "$ref": "#/definitions/Uint128"
-            },
-            "denom": {
-              "type": "string"
-            }
-          }
-        },
-        "Decimal": {
-          "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 (which is (2^128 - 1) / 10^18)",
-          "type": "string"
-        },
-        "Uint128": {
-          "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
-          "type": "string"
-        }
-      }
-    },
-    "debug_query_pools_and_users": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "DebugQueryPoolsAndUsersResponse",
-      "type": "object",
-      "required": [
-        "pools",
-        "users"
-      ],
-      "properties": {
-        "pools": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/PoolExtracted"
-          }
-        },
-        "users": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/User"
-          }
-        }
-      },
-      "additionalProperties": false,
-      "definitions": {
-        "Addr": {
-          "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
-          "type": "string"
-        },
-        "Asset": {
-          "type": "object",
-          "required": [
-            "amount_to_send_until_next_epoch",
-            "asset_denom",
-            "wallet_address",
-            "wallet_balance",
-            "weight"
-          ],
-          "properties": {
-            "amount_to_send_until_next_epoch": {
-              "$ref": "#/definitions/Uint128"
-            },
-            "asset_denom": {
-              "type": "string"
-            },
-            "wallet_address": {
-              "$ref": "#/definitions/Addr"
-            },
-            "wallet_balance": {
-              "$ref": "#/definitions/Uint128"
-            },
-            "weight": {
-              "$ref": "#/definitions/Decimal"
-            }
-          },
-          "additionalProperties": false
-        },
-        "Decimal": {
-          "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 (which is (2^128 - 1) / 10^18)",
-          "type": "string"
-        },
-        "PoolExtracted": {
-          "type": "object",
-          "required": [
-            "channel_id",
-            "denom",
-            "id",
-            "port_id",
-            "price",
-            "symbol"
-          ],
-          "properties": {
-            "channel_id": {
-              "type": "string"
-            },
-            "denom": {
-              "type": "string"
-            },
-            "id": {
-              "$ref": "#/definitions/Uint128"
-            },
-            "port_id": {
-              "type": "string"
-            },
-            "price": {
-              "$ref": "#/definitions/Decimal"
-            },
-            "symbol": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        },
-        "Uint128": {
-          "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
-          "type": "string"
-        },
-        "User": {
-          "type": "object",
-          "required": [
-            "asset_list",
-            "day_counter",
-            "deposited_on_current_period",
-            "deposited_on_next_period",
-            "is_controlled_rebalancing"
-          ],
-          "properties": {
-            "asset_list": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Asset"
-              }
-            },
-            "day_counter": {
-              "$ref": "#/definitions/Uint128"
-            },
-            "deposited_on_current_period": {
-              "$ref": "#/definitions/Uint128"
-            },
-            "deposited_on_next_period": {
-              "$ref": "#/definitions/Uint128"
-            },
-            "is_controlled_rebalancing": {
-              "type": "boolean"
-            }
-          },
-          "additionalProperties": false
-        }
-      }
-    },
-    "query_assets": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "QueryAssetsResponse",
-      "type": "object",
-      "required": [
-        "asset_list"
-      ],
-      "properties": {
-        "asset_list": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Asset"
-          }
-        }
-      },
-      "additionalProperties": false,
-      "definitions": {
-        "Addr": {
-          "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
-          "type": "string"
-        },
-        "Asset": {
-          "type": "object",
-          "required": [
-            "amount_to_send_until_next_epoch",
-            "asset_denom",
-            "wallet_address",
-            "wallet_balance",
-            "weight"
-          ],
-          "properties": {
-            "amount_to_send_until_next_epoch": {
-              "$ref": "#/definitions/Uint128"
-            },
-            "asset_denom": {
-              "type": "string"
-            },
-            "wallet_address": {
-              "$ref": "#/definitions/Addr"
-            },
-            "wallet_balance": {
-              "$ref": "#/definitions/Uint128"
-            },
-            "weight": {
-              "$ref": "#/definitions/Decimal"
-            }
-          },
-          "additionalProperties": false
-        },
-        "Decimal": {
-          "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 (which is (2^128 - 1) / 10^18)",
-          "type": "string"
-        },
-        "Uint128": {
-          "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
-          "type": "string"
-        }
-      }
-    },
     "query_pools_and_users": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "QueryPoolsAndUsersResponse",
@@ -765,6 +477,89 @@
             },
             "osmo_address": {
               "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "query_user": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "QueryUserResponse",
+      "type": "object",
+      "required": [
+        "user"
+      ],
+      "properties": {
+        "user": {
+          "$ref": "#/definitions/User"
+        }
+      },
+      "additionalProperties": false,
+      "definitions": {
+        "Addr": {
+          "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+          "type": "string"
+        },
+        "Asset": {
+          "type": "object",
+          "required": [
+            "amount_to_send_until_next_epoch",
+            "asset_denom",
+            "wallet_address",
+            "wallet_balance",
+            "weight"
+          ],
+          "properties": {
+            "amount_to_send_until_next_epoch": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "asset_denom": {
+              "type": "string"
+            },
+            "wallet_address": {
+              "$ref": "#/definitions/Addr"
+            },
+            "wallet_balance": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "weight": {
+              "$ref": "#/definitions/Decimal"
+            }
+          },
+          "additionalProperties": false
+        },
+        "Decimal": {
+          "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 (which is (2^128 - 1) / 10^18)",
+          "type": "string"
+        },
+        "Uint128": {
+          "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
+          "type": "string"
+        },
+        "User": {
+          "type": "object",
+          "required": [
+            "asset_list",
+            "day_counter",
+            "deposited",
+            "is_controlled_rebalancing"
+          ],
+          "properties": {
+            "asset_list": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Asset"
+              }
+            },
+            "day_counter": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "deposited": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "is_controlled_rebalancing": {
+              "type": "boolean"
             }
           },
           "additionalProperties": false

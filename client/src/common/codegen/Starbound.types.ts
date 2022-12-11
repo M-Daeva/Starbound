@@ -37,8 +37,7 @@ export type Decimal = string;
 export interface User {
   asset_list: Asset[];
   day_counter: Uint128;
-  deposited_on_current_period: Uint128;
-  deposited_on_next_period: Uint128;
+  deposited: Uint128;
   is_controlled_rebalancing: boolean;
 }
 export interface Asset {
@@ -74,37 +73,17 @@ export interface TransferParams {
   to: string;
 }
 export type QueryMsg = {
-  query_assets: {
+  query_user: {
     address: string;
   };
 } | {
   query_pools_and_users: {};
-} | {
-  debug_query_pools_and_users: {};
-} | {
-  debug_query_bank: {};
 };
 export type MigrateMsg = string;
-export interface DebugQueryBankResponse {
-  dapp_wallet: Coin[];
-  global_delta_balance_list: Uint128[];
-  global_delta_cost_list: Uint128[];
-  global_denom_list: string[];
-  global_price_list: Decimal[];
-}
-export interface Coin {
-  amount: Uint128;
-  denom: string;
-  [k: string]: unknown;
-}
-export interface DebugQueryPoolsAndUsersResponse {
-  pools: PoolExtracted[];
-  users: User[];
-}
-export interface QueryAssetsResponse {
-  asset_list: Asset[];
-}
 export interface QueryPoolsAndUsersResponse {
   pools: PoolExtracted[];
   users: UserExtracted[];
+}
+export interface QueryUserResponse {
+  user: User;
 }

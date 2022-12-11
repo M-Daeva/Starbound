@@ -46,24 +46,22 @@ pub struct User {
     pub asset_list: Vec<Asset>,
     pub is_controlled_rebalancing: bool,
     pub day_counter: Uint128,
-    pub deposited_on_current_period: Uint128,
-    pub deposited_on_next_period: Uint128,
+    pub deposited: Uint128,
 }
 
 impl User {
     pub fn new(
         asset_list: &Vec<Asset>,
         day_counter: Uint128,
-        deposited_on_current_period: Uint128,
-        deposited_on_next_period: Uint128,
+        deposited: Uint128,
+
         is_controlled_rebalancing: bool,
     ) -> Self {
         User {
             is_controlled_rebalancing,
             asset_list: asset_list.to_owned(),
             day_counter,
-            deposited_on_current_period,
-            deposited_on_next_period,
+            deposited,
         }
     }
 }

@@ -2,12 +2,11 @@ import { l } from "../utils";
 import { getCwClient, fee } from "../signers";
 import { ClientStruct } from "./interfaces";
 import { DENOMS } from "./assets";
-import { MsgExecuteContractEncodeObject } from "cosmwasm";
+import { MsgExecuteContractEncodeObject, Coin } from "cosmwasm";
 import { StarboundClient } from "../codegen/Starbound.client";
 import { StarboundMessageComposer } from "../codegen/Starbound.message-composer";
 import {
   User,
-  Coin,
   PoolExtracted,
   UserExtracted,
   TransferParams,
@@ -28,9 +27,8 @@ async function getCwHelpers(
   }
 
   async function cwDeposit(user: User) {
-    const { deposited_on_current_period, deposited_on_next_period } = user;
-    const tokenAmount =
-      +deposited_on_current_period + +deposited_on_next_period;
+    const { deposited } = user;
+    const tokenAmount = +deposited;
     const funds: Coin = { amount: `${tokenAmount}`, denom: DENOMS.EEUR };
     return await _msgWrapper(composer.deposit({ user }, [funds]));
   }
@@ -62,8 +60,8 @@ async function getCwHelpers(
     return await _msgWrapper(composer.multiTransfer({ params }));
   }
 
-  async function cwQueryAssets(address: string) {
-    const res = await client.queryAssets({ address });
+  async function cwQueryUser(address: string) {
+    const res = await client.queryUser({ address });
     l("\n", res, "\n");
     return res;
   }
@@ -71,18 +69,6 @@ async function getCwHelpers(
   async function cwQueryPoolsAndUsers() {
     const res = await client.queryPoolsAndUsers();
     // l("\n", res, "\n");
-    return res;
-  }
-
-  async function cwDebugQueryPoolsAndUsers() {
-    const res = await client.debugQueryPoolsAndUsers();
-    l("\n", res, "\n");
-    return res;
-  }
-
-  async function cwDebugQueryBank() {
-    const res = await client.debugQueryBank();
-    l("\n", res, "\n");
     return res;
   }
 
@@ -98,10 +84,8 @@ async function getCwHelpers(
     cwTransfer,
     cwMultiTransfer,
 
-    cwQueryAssets,
+    cwQueryUser,
     cwQueryPoolsAndUsers,
-    cwDebugQueryPoolsAndUsers,
-    cwDebugQueryBank,
   };
 }
 

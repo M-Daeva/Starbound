@@ -62,10 +62,8 @@ async function init() {
     owner: dappAddr,
     cwSwap: _cwSwap,
     cwQueryPoolsAndUsers: _cwQueryPoolsAndUsers,
-    cwDebugQueryPoolsAndUsers: _cwDebugQueryPoolsAndUsers,
     cwUpdatePoolsAndUsers: _cwUpdatePoolsAndUsers,
-    cwQueryAssets: _cwQueryAssets,
-    cwDebugQueryBank: _cwDebugQueryBank,
+    cwQueryUser: _cwQueryUser,
     cwTransfer: _cwTransfer,
   } = await getCwHelpers(dappClientStruct, CONTRACT_ADDRESS);
 
@@ -140,15 +138,6 @@ async function init() {
     }
   }
 
-  async function cwDebugQueryPoolsAndUsers() {
-    l(SEP, "debug querying pools and users...");
-    try {
-      await _cwDebugQueryPoolsAndUsers();
-    } catch (error) {
-      l(error, "\n");
-    }
-  }
-
   async function cwQueryPoolsAndUsers() {
     l(SEP, "querying pools and users...");
     try {
@@ -182,8 +171,7 @@ async function init() {
   let userAlice: User = {
     asset_list: assetListAlice,
     day_counter: "3",
-    deposited_on_current_period: `${100}`,
-    deposited_on_next_period: "0",
+    deposited: `${100}`,
     is_controlled_rebalancing: false,
   };
 
@@ -219,8 +207,7 @@ async function init() {
   let userBob: User = {
     asset_list: assetListBob,
     day_counter: "3",
-    deposited_on_current_period: `${600_000}`,
-    deposited_on_next_period: "0",
+    deposited: `${600_000}`,
     is_controlled_rebalancing: false, // TODO: try true
   };
 
@@ -318,7 +305,7 @@ async function init() {
     }
   }
 
-  async function cwQueryAssets() {
+  async function cwQueryUser() {
     let aliceAddr = "osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx";
     let bobAddr = "osmo1chgwz55h9kepjq0fkj5supl2ta3nwu63e3ds8x";
     let addresses = [aliceAddr, bobAddr];
@@ -326,7 +313,7 @@ async function init() {
     for (let addr of addresses) {
       l(SEP, "query assets...");
       try {
-        await _cwQueryAssets(addr);
+        await _cwQueryUser(addr);
       } catch (error) {
         l(error, "\n");
       }
@@ -338,15 +325,6 @@ async function init() {
     try {
       await _cwSwap();
       // await _queryBalance();
-    } catch (error) {
-      l(error, "\n");
-    }
-  }
-
-  async function cwDebugQueryBank() {
-    l(SEP, "debug querying bank...");
-    try {
-      await _cwDebugQueryBank();
     } catch (error) {
       l(error, "\n");
     }
@@ -384,14 +362,12 @@ async function init() {
     cwSwap,
     sgDelegateFrom,
     sgUpdatePoolList,
-    cwDebugQueryPoolsAndUsers,
     cwQueryPoolsAndUsers,
     cwDepositAlice,
     cwDepositBob,
     cwWithdrawAlice,
     cwMockUpdatePoolsAndUsers,
-    cwQueryAssets,
-    cwDebugQueryBank,
+    cwQueryUser,
     cwTransfer,
     sgTransfer,
   };
