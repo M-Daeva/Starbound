@@ -1,6 +1,8 @@
-use std::ops::Mul;
+use std::ops::{Div, Mul, Sub};
 
-use cosmwasm_std::{Decimal, Uint128};
+use cosmwasm_std::{Addr, Decimal, Uint128};
+
+use crate::state::{Ledger, Pool, User};
 
 pub fn str_to_dec(s: &str) -> Decimal {
     s.to_string().parse::<Decimal>().unwrap()
@@ -16,6 +18,16 @@ pub fn u128_to_dec(num: u128) -> Decimal {
 
 pub fn dec_to_u128(dec: Decimal) -> u128 {
     dec.ceil().atomics().u128() / 1_000_000_000_000_000_000
+}
+
+pub fn uint128_to_dec(num: Uint128) -> Decimal {
+    Decimal::from_ratio(num, Uint128::one())
+}
+
+pub fn dec_to_uint128(dec: Decimal) -> Uint128 {
+    dec.ceil()
+        .atomics()
+        .div(Uint128::from(1_000_000_000_000_000_000_u128))
 }
 
 pub fn perm_vec_to_dec_vec(perm_vec: Vec<u128>) -> Vec<Decimal> {
@@ -105,6 +117,86 @@ pub fn rebalance_proportional(k2: &[Decimal], d: u128) -> Vec<u128> {
 
     // rounding error correction
     correct_sum(r, d)
+}
+
+/// pools_with_denoms - POOLS.range().map().collect() \
+/// users_with_addresses - USERS.range().map().collect()
+pub fn get_ledger(
+    pools_with_denoms: Vec<(String, Pool)>,
+    users_with_addresses: Vec<(Addr, User)>,
+) -> Ledger {
+    let global_vec_len = pools_with_denoms.len();
+
+    // for sorting purposes
+    let mut global_denom_list: Vec<String> = vec![];
+
+    // global_price_list - vector of global asset prices sorted by denom (ascending order)
+    let mut global_price_list: Vec<Decimal> = vec![];
+
+    // global_delta_balance_list - vector of global assets to buy
+    let mut global_delta_balance_list: Vec<Uint128> = vec![Uint128::zero(); global_vec_len];
+
+    // global_delta_cost_list - vector of global payments in $ to buy assets
+    let mut global_delta_cost_list: Vec<Uint128> = vec![Uint128::zero(); global_vec_len];
+
+    for (denom, pool) in pools_with_denoms {
+        global_denom_list.push(denom);
+        global_price_list.push(pool.price);
+    }
+
+    for (osmo_address, mut user) in users_with_addresses {
+        // calculate daily payment
+
+        // skip if user is out of money or investment period is ended
+        let daily_payment = match user.deposited.checked_div(user.day_counter) {
+            Ok(x) => x.clamp(Uint128::zero(), user.deposited),
+            _ => Uint128::zero(),
+        };
+
+        // we can get (deposited/day_counter == 0) && (deposited != 0) &&
+        // (day_counter != 0) so day_counter must be decremented anyway
+        if user.day_counter > Uint128::zero() {
+            user.day_counter -= Uint128::one();
+        }
+
+        if daily_payment.is_zero() {
+            continue;
+        }
+
+        user.deposited -= daily_payment;
+
+        // get asset vectors
+
+        // TODO: use Uint128 modification of rebalance functions
+        // user_weights - vector of target asset ratios
+        let mut user_weights: Vec<Decimal> = vec![Decimal::zero(); global_vec_len];
+
+        // user_balances - vector of user asset balances
+        let mut user_balances: Vec<u128> = vec![0_u128; global_vec_len];
+
+        // // user_prices - vector of user asset prices
+        // let mut user_prices: Vec<Decimal> = vec![Decimal::zero(); global_vec_len];
+
+        for (i, denom) in global_denom_list.iter().enumerate() {
+            match user.asset_list.iter().find(|x| &x.asset_denom == denom) {
+                Some(asset_by_denom) => {
+                    user_weights[i] = asset_by_denom.weight;
+                    user_balances[i] = asset_by_denom.wallet_balance.u128();
+                }
+                _ => {
+                    user_weights[i] = Decimal::zero();
+                    user_balances[i] = 0;
+                }
+            };
+        }
+    }
+
+    Ledger {
+        global_denom_list,
+        global_price_list,
+        global_delta_balance_list,
+        global_delta_cost_list,
+    }
 }
 
 #[cfg(test)]

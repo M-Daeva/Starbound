@@ -234,6 +234,7 @@ pub fn verify_scheduler(deps: &DepsMut, info: &MessageInfo) -> Result<(), Contra
     Ok(())
 }
 
+// TODO: refactor tests
 #[cfg(test)]
 mod test {
     use cosmwasm_std::{coin, Addr, StdError, StdError::GenericErr, Uint128};

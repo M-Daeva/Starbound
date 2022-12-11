@@ -14,11 +14,12 @@ use crate::{
     actions::{
         rebalancer::{dec_to_u128, rebalance_controlled, rebalance_proportional, u128_to_dec},
         vectors::{vec_div, vec_mul},
-        verificator::{verify_deposit_data, verify_scheduler},
+        verifier::{verify_deposit_data, verify_scheduler},
     },
     error::ContractError,
     state::{
-        Asset, Pool, PoolExtracted, State, TransferParams, User, UserExtracted, POOLS, STATE, USERS,
+        Asset, Ledger, Pool, PoolExtracted, State, TransferParams, User, UserExtracted, LEDGER,
+        POOLS, STATE, USERS,
     },
 };
 
@@ -30,19 +31,24 @@ pub fn deposit(
 ) -> Result<Response, ContractError> {
     verify_deposit_data(&deps, &info, &user)?;
 
-    USERS.update(deps.storage, &info.sender, |some_user| -> StdResult<_> {
-        // check if user exists or create new
-        let user_loaded = match some_user {
-            Some(x) => x,
-            _ => User::new(&vec![], Uint128::zero(), Uint128::zero(), false),
-        };
+    // check if user exists or create new
+    let user_loaded = match USERS.load(deps.storage, &info.sender) {
+        Ok(x) => x,
+        _ => User::new(&vec![], Uint128::zero(), Uint128::zero(), false),
+    };
 
-        // update asset list
-        let asset_list = user
-            .asset_list
-            .iter()
-            .map(|asset| {
-                // search same denom asset
+    // update asset list
+    let asset_list = user
+        .asset_list
+        .iter()
+        .map(|asset| -> Result<Asset, ContractError> {
+            // check if asset is in pool
+            if let Err(_) = POOLS.load(deps.storage, &asset.asset_denom) {
+                return Err(ContractError::AssetIsNotFound {});
+            };
+
+            // search same denom asset
+            Ok(
                 match user_loaded
                     .asset_list
                     .iter()
@@ -58,16 +64,20 @@ pub fn deposit(
                         amount_to_send_until_next_epoch: Uint128::zero(),
                         ..asset.to_owned()
                     },
-                }
-            })
-            .collect::<Vec<Asset>>();
+                },
+            )
+        })
+        .collect::<Result<Vec<Asset>, ContractError>>()?;
 
-        Ok(User {
+    USERS.save(
+        deps.storage,
+        &info.sender,
+        &User {
             asset_list,
             deposited: user_loaded.deposited + user.deposited,
             ..user
-        })
-    })?;
+        },
+    )?;
 
     Ok(Response::new().add_attributes(vec![
         ("method", "deposit"),
@@ -170,41 +180,44 @@ pub fn update_pools_and_users(
         // validate address
         let osmo_address_received = deps.api.addr_validate(&user_received.osmo_address)?;
 
-        USERS.update(
-            deps.storage,
-            &osmo_address_received,
-            |some_user| -> Result<User, ContractError> {
-                // get user from storage by address
-                let user_loaded = match some_user {
-                    Some(x) => x,
-                    _ => {
-                        return Err(ContractError::UserIsNotFound {});
-                    }
+        // get user from storage by address
+        let user_loaded = match USERS.load(deps.storage, &osmo_address_received) {
+            Ok(x) => x,
+            _ => {
+                return Err(ContractError::UserIsNotFound {});
+            }
+        };
+
+        // update user assets (wallet balances)
+        let asset_list = user_loaded
+            .asset_list
+            .iter()
+            .map(|asset_loaded| -> Result<Asset, ContractError> {
+                // check if asset is in pool
+                if let Err(_) = POOLS.load(deps.storage, &asset_loaded.asset_denom) {
+                    return Err(ContractError::AssetIsNotFound {});
                 };
 
-                // update user assets (wallet balances)
-                let asset_list = user_loaded
+                // search same denom
+                let asset_received = user_received
                     .asset_list
                     .iter()
-                    .map(|asset_loaded| {
-                        // search same denom
-                        let asset_received = user_received
-                            .asset_list
-                            .iter()
-                            .find(|&x| (x.asset_denom == asset_loaded.asset_denom))
-                            .unwrap();
+                    .find(|&x| (x.asset_denom == asset_loaded.asset_denom))
+                    .unwrap();
 
-                        Asset {
-                            wallet_balance: asset_received.wallet_balance,
-                            ..asset_loaded.to_owned()
-                        }
-                    })
-                    .collect();
-
-                Ok(User {
-                    asset_list,
-                    ..user_loaded
+                Ok(Asset {
+                    wallet_balance: asset_received.wallet_balance,
+                    ..asset_loaded.to_owned()
                 })
+            })
+            .collect::<Result<Vec<Asset>, ContractError>>()?;
+
+        USERS.save(
+            deps.storage,
+            &osmo_address_received,
+            &User {
+                asset_list,
+                ..user_loaded
             },
         )?;
     }
@@ -212,18 +225,20 @@ pub fn update_pools_and_users(
     Ok(Response::new().add_attributes(vec![("method", "update_pools_and_users")]))
 }
 
+// TODO: fee collector
+// TODO: osmo handler
 pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     verify_scheduler(&deps, &info)?;
 
-    // 3) calculate payments
+    // calculate payments
     let global_vec_len = POOLS
         .range(deps.storage, None, None, Order::Ascending)
         .count();
 
-    // global_delta_balance_list - vector of global asset to buy
+    // global_delta_balance_list - vector of global assets to buy
     let mut global_delta_balance_list: Vec<u128> = vec![0; global_vec_len];
 
-    // global_delta_cost_list- vector of global payments in $ to buy assets
+    // global_delta_cost_list - vector of global payments in $ to buy assets
     let mut global_delta_cost_list: Vec<u128> = vec![0; global_vec_len];
 
     // for sorting purposes
@@ -380,8 +395,8 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         USERS.save(deps.storage, &address, &user_updated)?;
     }
 
-    // update bank
-    STATE.update(deps.storage, |mut x| -> Result<_, ContractError> {
+    // update ledger
+    LEDGER.update(deps.storage, |mut x| -> Result<_, ContractError> {
         x.global_delta_balance_list = global_delta_balance_list
             .iter()
             .map(|&x| Uint128::from(x))
@@ -405,8 +420,8 @@ pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
 
     // get contract balances
     let mut contract_balances = deps.querier.query_all_balances(env.contract.address)?;
-    let state = STATE.load(deps.storage)?;
-    let global_vec_len = state.global_denom_list.len();
+    let ledger = LEDGER.load(deps.storage)?;
+    let global_vec_len = ledger.global_denom_list.len();
 
     // vector of coins amount on contract address for all denoms
     let mut contract_assets: Vec<u128> = vec![0; global_vec_len];
@@ -423,7 +438,7 @@ pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
         .collect();
 
     // update contract_assets
-    for (i, global_denom) in state.global_denom_list.iter().enumerate() {
+    for (i, global_denom) in ledger.global_denom_list.iter().enumerate() {
         let balance_by_denom = match &contract_balances.iter().find(|x| &x.denom == global_denom) {
             Some(y) => y.amount.u128(),
             None => 0,
@@ -462,7 +477,7 @@ pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
             let mut asset_list_updated = Vec::<Asset>::new();
 
             for user_asset in &user.asset_list {
-                let index = state
+                let index = ledger
                     .global_denom_list
                     .iter()
                     .position(|x| x == &user_asset.asset_denom)
@@ -529,8 +544,8 @@ pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
         USERS.save(deps.storage, &address, &user_updated)?;
     }
 
-    // update bank
-    STATE.update(deps.storage, |mut x| -> Result<_, ContractError> {
+    // update ledger
+    LEDGER.update(deps.storage, |mut x| -> Result<_, ContractError> {
         x.global_delta_balance_list = vec![];
         x.global_delta_cost_list = vec![];
         Ok(x)

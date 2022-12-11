@@ -4,4 +4,4 @@ pub mod migrate;
 pub mod query;
 pub mod rebalancer;
 pub mod vectors;
-pub mod verificator;
+pub mod verifier;

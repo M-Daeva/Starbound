@@ -31,6 +31,7 @@ use crate::{
     },
 };
 
+// TODO: check if asset outside pool list can not be deposited
 #[test]
 fn deposit() {
     let mut st = Starbound::new();
@@ -265,6 +266,7 @@ fn query_pools_and_users() {
     assert_eq!(assets_received, assets_initial)
 }
 
+// TODO: check if asset outside pool list can not be added
 #[test]
 fn update_pools_and_users() {
     // initialize
@@ -440,6 +442,7 @@ fn update_pools_and_users() {
 //     // create Gamm Module Wrapper
 //     let gamm = Gamm::new(&app);
 
+//     // TODO: try to create pools with proper id using loop
 //     // create balancer pool with basic configuration
 //     let pool_liquidity = vec![coin(1_000, DENOM_EEUR), coin(1_000, DENOM_OSMO)];
 //     let pool_id = gamm

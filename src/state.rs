@@ -8,6 +8,12 @@ pub const STATE: Item<State> = Item::new("state");
 pub struct State {
     pub admin: Addr,
     pub scheduler: Addr,
+}
+
+pub const LEDGER: Item<Ledger> = Item::new("ledger");
+
+#[cw_serde]
+pub struct Ledger {
     pub global_delta_balance_list: Vec<Uint128>,
     pub global_delta_cost_list: Vec<Uint128>,
     pub global_denom_list: Vec<String>,
