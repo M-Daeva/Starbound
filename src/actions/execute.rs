@@ -17,7 +17,9 @@ use crate::{
         verificator::verify_deposit_data,
     },
     error::ContractError,
-    state::{Asset, Pool, PoolExtracted, TransferParams, User, UserExtracted, POOLS, STATE, USERS},
+    state::{
+        Asset, Pool, PoolExtracted, State, TransferParams, User, UserExtracted, POOLS, STATE, USERS,
+    },
 };
 
 pub fn deposit(
@@ -52,7 +54,7 @@ pub fn deposit(
                         ..asset.to_owned()
                     },
                     // add new if asset is not found
-                    None => Asset {
+                    _ => Asset {
                         amount_to_send_until_next_epoch: Uint128::zero(),
                         ..asset.to_owned()
                     },
@@ -82,32 +84,31 @@ pub fn withdraw(
     // temporary replacement for tests - there is no USDC so we used EEUR
     let denom_token_out = "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F";
 
-    let mut user = match USERS.load(deps.storage, &info.sender) {
-        Ok(user) => user,
-        _ => {
-            return Err(ContractError::UserIsNotFound {});
-        }
-    };
+    let user = USERS.update(
+        deps.storage,
+        &info.sender,
+        |some_user| -> Result<User, ContractError> {
+            let user = some_user.ok_or(ContractError::UserIsNotFound {})?;
 
-    // check withdraw amount
-    if amount.u128() > user.deposited.u128() {
-        return Err(ContractError::WithdrawAmountIsExceeded {});
-    }
+            // check withdraw amount
+            if amount.gt(&user.deposited) {
+                return Err(ContractError::WithdrawAmountIsExceeded {});
+            }
 
-    // TODO: use Uint128 methods
-
-    user.deposited -= Uint128::from(amount.u128());
+            Ok(User {
+                deposited: user.deposited - amount,
+                ..user
+            })
+        },
+    )?;
 
     let msg = CosmosMsg::Bank(BankMsg::Send {
         to_address: info.sender.to_string(),
         amount: vec![coin(amount.u128(), denom_token_out)],
     });
 
-    USERS.save(deps.storage, &info.sender, &user)?;
-
     Ok(Response::new().add_message(msg).add_attributes(vec![
         ("method", "withdraw"),
-        ("user_address", info.sender.as_str()),
         ("user_deposited", &user.deposited.to_string()),
     ]))
 }
@@ -118,15 +119,16 @@ pub fn update_scheduler(
     info: MessageInfo,
     address: String,
 ) -> Result<Response, ContractError> {
-    let mut state = STATE.load(deps.storage)?;
+    STATE.update(deps.storage, |state| -> Result<State, ContractError> {
+        if info.sender != state.admin {
+            return Err(ContractError::Unauthorized {});
+        }
 
-    if info.sender != state.admin {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    state.scheduler = deps.api.addr_validate(&address)?;
-
-    STATE.save(deps.storage, &state)?;
+        Ok(State {
+            scheduler: deps.api.addr_validate(&address)?,
+            ..state
+        })
+    })?;
 
     Ok(Response::new().add_attributes(vec![
         ("method", "update_scheduler"),
@@ -546,48 +548,26 @@ pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
         .add_attributes(vec![("method", "transfer")]))
 }
 
-// function for debugging ibc transfers
-// single and multiple message options provided
+// function for testing ibc transfers
 pub fn multi_transfer(
     _deps: DepsMut,
     env: Env,
     _info: MessageInfo,
     params: Vec<TransferParams>,
 ) -> Result<Response, ContractError> {
-    let length = &params.len();
-
-    match length {
-        1 => {
-            let param = &params[0];
-
-            let msg = CosmosMsg::Ibc(IbcMsg::Transfer {
-                channel_id: param.channel_id.clone(),
-                to_address: param.to.clone(),
-                amount: coin(param.amount.u128(), param.denom.clone()),
+    let msg_list = params
+        .iter()
+        .map(|x| {
+            CosmosMsg::Ibc(IbcMsg::Transfer {
+                channel_id: x.channel_id.to_owned(),
+                to_address: x.to.to_owned(),
+                amount: coin(x.amount.u128(), x.denom.to_owned()),
                 timeout: env.block.time.plus_seconds(300).into(),
-            });
+            })
+        })
+        .collect::<Vec<CosmosMsg>>();
 
-            Ok(Response::new()
-                .add_message(msg)
-                .add_attributes(vec![("method", "multi_transfer")]))
-        }
-        _ => {
-            let mut msg_list = Vec::<CosmosMsg>::new();
-
-            for param in params {
-                let msg = IbcMsg::Transfer {
-                    channel_id: param.channel_id,
-                    to_address: param.to,
-                    amount: coin(param.amount.u128(), param.denom),
-                    timeout: env.block.time.plus_seconds(300).into(),
-                };
-
-                msg_list.push(msg.into());
-            }
-
-            Ok(Response::new()
-                .add_messages(msg_list)
-                .add_attributes(vec![("method", "multi_transfer")]))
-        }
-    }
+    Ok(Response::new()
+        .add_messages(msg_list)
+        .add_attributes(vec![("method", "multi_transfer")]))
 }
