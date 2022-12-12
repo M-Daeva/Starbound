@@ -23,10 +23,14 @@ pub const ADDR_ADMIN_OSMO: &str = "osmo1k6ja23e7t9w2n87m2dn0cc727ag9pjkm2xlmck";
 pub const ADDR_ALICE_OSMO: &str = "osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx";
 pub const ADDR_ALICE_JUNO: &str = "juno1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyqd4qeg";
 pub const ADDR_ALICE_ATOM: &str = "cosmos1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyklkm75";
+pub const ADDR_ALICE_STARS: &str = "stargaze1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyjhqmnc";
+pub const ADDR_ALICE_SCRT: &str = "secret19m0fuxgmavuujxctyg7hmsk06yfuz9khrnmd52";
 
 pub const ADDR_BOB_OSMO: &str = "osmo1chgwz55h9kepjq0fkj5supl2ta3nwu63e3ds8x";
 pub const ADDR_BOB_JUNO: &str = "juno1chgwz55h9kepjq0fkj5supl2ta3nwu638camkg";
 pub const ADDR_BOB_ATOM: &str = "cosmos1chgwz55h9kepjq0fkj5supl2ta3nwu63327q35";
+pub const ADDR_BOB_STARS: &str = "stars1chgwz55h9kepjq0fkj5supl2ta3nwu639kfa69";
+pub const ADDR_BOB_SCRT: &str = "secret1cpl0n9hx9e3az7vl9tnvl5w0r7x9a4wgq2jk5m";
 
 pub const ADDR_INVALID: &str = "ADDR_INVALID";
 
@@ -34,6 +38,9 @@ pub const DENOM_OSMO: &str = "uosmo";
 pub const DENOM_ATOM: &str = "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2";
 pub const DENOM_JUNO: &str = "ibc/46B44899322F3CD854D2D46DEEF881958467CDD4B3B10086DA49296BBED94BED";
 pub const DENOM_EEUR: &str = "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F";
+pub const DENOM_STARS: &str =
+    "ibc/987C17B11ABC2B20019178ACE62929FE9840202CE79498E29FE8E5CB02B7C0A4";
+pub const DENOM_SCRT: &str = "ibc/0954E1C28EB7AF5B72D24F3BC2B47BBB2FDF91BDDFD57B74B99E133AED40972A";
 pub const DENOM_NONEXISTENT: &str = "DENOM_NONEXISTENT";
 
 // pub const POOLS_AMOUNT_INITIAL: &str = "3";
@@ -287,7 +294,7 @@ impl Starbound {
 
     #[track_caller]
     pub fn query_contract_balances(&self) -> Result<Vec<Coin>, StdError> {
-        self.app.wrap().query_all_balances(&self.address).into()
+        self.app.wrap().query_all_balances(&self.address)
     }
 
     pub fn get_attrs(res: &AppResponse) -> Vec<Attribute> {
@@ -304,7 +311,7 @@ impl Starbound {
 
     pub fn get_attr(res: &AppResponse, key: &str) -> String {
         let attrs = Self::get_attrs(res);
-        let attr = attrs.iter().find(|x| x.key == key.to_string()).unwrap();
+        let attr = attrs.iter().find(|x| x.key == *key).unwrap();
 
         attr.to_owned().value
     }

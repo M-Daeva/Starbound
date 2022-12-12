@@ -97,10 +97,7 @@ fn deposit_and_update_asset_list() {
 
     st.deposit(
         ADDR_ALICE_OSMO,
-        &User {
-            asset_list: asset_list.to_owned(),
-            ..user.to_owned()
-        },
+        &User { asset_list, ..user },
         &[coin(user.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
@@ -116,7 +113,7 @@ fn deposit_and_update_asset_list() {
                 str_to_dec("1"),
                 Uint128::zero()
             )],
-            ..user.to_owned()
+            ..user
         }
     );
 

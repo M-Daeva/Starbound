@@ -2,7 +2,7 @@ use std::ops::{Div, Mul, Sub};
 
 use cosmwasm_std::{Addr, Decimal, Uint128};
 
-use crate::state::{Ledger, Pool, User};
+use crate::state::{Asset, Ledger, Pool, User};
 
 pub fn str_to_dec(s: &str) -> Decimal {
     s.to_string().parse::<Decimal>().unwrap()
@@ -30,6 +30,13 @@ pub fn dec_to_uint128(dec: Decimal) -> Uint128 {
         .div(Uint128::from(1_000_000_000_000_000_000_u128))
 }
 
+pub fn u128_vec_to_uint128_vec(u128_vec: Vec<u128>) -> Vec<Uint128> {
+    u128_vec
+        .iter()
+        .map(|&x| Uint128::from(x as u128))
+        .collect::<Vec<Uint128>>()
+}
+
 pub fn perm_vec_to_dec_vec(perm_vec: Vec<u128>) -> Vec<Decimal> {
     perm_vec
         .iter()
@@ -37,11 +44,33 @@ pub fn perm_vec_to_dec_vec(perm_vec: Vec<u128>) -> Vec<Decimal> {
         .collect()
 }
 
+pub fn vec_mul(uint128_vec: &[Uint128], dec_vec: &[Decimal]) -> Vec<Uint128> {
+    let mut temp = Vec::<Uint128>::new();
+
+    for (i, item) in uint128_vec.iter().enumerate() {
+        let res = dec_vec[i].mul(uint128_to_dec(*item));
+        temp.push(dec_to_uint128(res));
+    }
+
+    temp
+}
+
+pub fn vec_div(uint128_vec: &[Uint128], dec_vec: &[Decimal]) -> Vec<Uint128> {
+    let mut temp = Vec::<Uint128>::new();
+
+    for (i, item) in uint128_vec.iter().enumerate() {
+        let res = uint128_to_dec(*item).div(dec_vec[i]);
+        temp.push(dec_to_uint128(res));
+    }
+
+    temp
+}
+
 // calculation error correction
 // replace max(r) with sum(r) - sum(r w/o max(r))
-fn correct_sum(r: Vec<u128>, d: u128) -> Vec<u128> {
+fn correct_sum(r: Vec<Uint128>, d: Uint128) -> Vec<Uint128> {
     let r_max = *r.iter().max().unwrap();
-    let r_sum_wo_max_item = r.iter().filter(|&&r_item| r_item != r_max).sum::<u128>();
+    let r_sum_wo_max_item = r.iter().filter(|&&r_item| r_item != r_max).sum::<Uint128>();
     let r_corrected = r
         .iter()
         .map(|&r_item| {
@@ -59,10 +88,10 @@ fn correct_sum(r: Vec<u128>, d: u128) -> Vec<u128> {
 /// k2 - vector of target asset ratios \
 /// d - funds to buy coins \
 /// r - vector of coins to buy costs
-pub fn rebalance_controlled(x1: &[u128], k2: &[Decimal], d: u128) -> Vec<u128> {
-    let mut r = Vec::<u128>::new();
-    let d = u128_to_dec(d);
-    let s1 = u128_to_dec(x1.iter().sum::<u128>());
+pub fn rebalance_controlled(x1: &[Uint128], k2: &[Decimal], d: Uint128) -> Vec<Uint128> {
+    let mut r: Vec<Uint128> = vec![];
+    let d = uint128_to_dec(d);
+    let s1 = uint128_to_dec(x1.iter().sum::<Uint128>());
 
     // we need to find minimal s2 where s2 = x1/k2 and s2 >= s1
     let mut s2 = Decimal::zero();
@@ -70,9 +99,9 @@ pub fn rebalance_controlled(x1: &[u128], k2: &[Decimal], d: u128) -> Vec<u128> {
     for (i, &k2_item) in k2.iter().enumerate() {
         // skip division by zero
         if !k2_item.is_zero() {
-            let s2_item = u128_to_dec(x1[i]) / k2_item;
+            let s2_item = uint128_to_dec(x1[i]) / k2_item;
             // always update initial value of s2 if s2_item >= s1
-            if s2_item.ge(&s1) && (s2.is_zero() || (!s2.is_zero() && s2_item < s2)) {
+            if s2_item >= s1 && (s2.is_zero() || (!s2.is_zero() && s2_item < s2)) {
                 s2 = s2_item;
             }
         }
@@ -83,36 +112,39 @@ pub fn rebalance_controlled(x1: &[u128], k2: &[Decimal], d: u128) -> Vec<u128> {
     if d > ds && !ds.is_zero() {
         // case 1: if d > s2 - s1 && s2 > s1 then r = (s1 + d) * k2 - x1
         for (i, &k2_item) in k2.iter().enumerate() {
-            let x1_item = u128_to_dec(x1[i]);
+            let x1_item = uint128_to_dec(x1[i]);
 
-            r.push(dec_to_u128((s1 + d) * k2_item - x1_item));
+            r.push(dec_to_uint128((s1 + d) * k2_item - x1_item));
         }
     } else if ds.is_zero() {
         // case 2: else if s2 == s1 then r = d * k2
-        r = k2.iter().map(|&k2_item| dec_to_u128(d * k2_item)).collect();
+        r = k2
+            .iter()
+            .map(|&k2_item| dec_to_uint128(d * k2_item))
+            .collect();
     } else {
         // case 3: else r = (s2 * k2 - x1) * d / (s2 - s1)
         for (i, &k2_item) in k2.iter().enumerate() {
-            let x1_item = u128_to_dec(x1[i]);
+            let x1_item = uint128_to_dec(x1[i]);
 
             // preventing calculation error with ceil
-            r.push(dec_to_u128(
+            r.push(dec_to_uint128(
                 ((s2 * k2_item).ceil() - x1_item) * d / (s2 - s1),
             ));
         }
     }
 
     // rounding error correction
-    correct_sum(r, dec_to_u128(d))
+    correct_sum(r, dec_to_uint128(d))
 }
 
 /// k2 - vector of target asset ratios \
 /// d - funds to buy coins \
 /// r - vector of coins to buy costs
-pub fn rebalance_proportional(k2: &[Decimal], d: u128) -> Vec<u128> {
+pub fn rebalance_proportional(k2: &[Decimal], d: Uint128) -> Vec<Uint128> {
     let r = k2
         .iter()
-        .map(|k2_item| dec_to_u128(k2_item.mul(u128_to_dec(d))))
+        .map(|k2_item| dec_to_uint128(k2_item.mul(uint128_to_dec(d))))
         .collect();
 
     // rounding error correction
@@ -124,10 +156,10 @@ pub fn rebalance_proportional(k2: &[Decimal], d: u128) -> Vec<u128> {
 pub fn get_ledger(
     pools_with_denoms: Vec<(String, Pool)>,
     users_with_addresses: Vec<(Addr, User)>,
-) -> Ledger {
+) -> (Ledger, Vec<(Addr, User)>) {
     let global_vec_len = pools_with_denoms.len();
 
-    // for sorting purposes
+    // for sorting
     let mut global_denom_list: Vec<String> = vec![];
 
     // global_price_list - vector of global asset prices sorted by denom (ascending order)
@@ -139,13 +171,18 @@ pub fn get_ledger(
     // global_delta_cost_list - vector of global payments in $ to buy assets
     let mut global_delta_cost_list: Vec<Uint128> = vec![Uint128::zero(); global_vec_len];
 
+    // 1) iterate over pools and fill global_denom_list and global_price_list
     for (denom, pool) in pools_with_denoms {
         global_denom_list.push(denom);
         global_price_list.push(pool.price);
     }
 
-    for (osmo_address, mut user) in users_with_addresses {
-        // calculate daily payment
+    let mut users_with_addresses_updated: Vec<(Addr, User)> = vec![];
+
+    let mut daily_payment_sum = Uint128::zero();
+
+    for (osmo_address, user) in users_with_addresses {
+        // 2) calculate daily payment, update day_counter and deposited
 
         // skip if user is out of money or investment period is ended
         let daily_payment = match user.deposited.checked_div(user.day_counter) {
@@ -155,60 +192,126 @@ pub fn get_ledger(
 
         // we can get (deposited/day_counter == 0) && (deposited != 0) &&
         // (day_counter != 0) so day_counter must be decremented anyway
-        if user.day_counter > Uint128::zero() {
-            user.day_counter -= Uint128::one();
-        }
+        let day_counter = user.day_counter
+            - if user.day_counter > Uint128::zero() {
+                Uint128::one()
+            } else {
+                Uint128::zero()
+            };
 
         if daily_payment.is_zero() {
+            users_with_addresses_updated.push((
+                osmo_address,
+                User {
+                    day_counter,
+                    ..user
+                },
+            ));
+
             continue;
         }
 
-        user.deposited -= daily_payment;
+        daily_payment_sum += daily_payment;
 
-        // get asset vectors
+        let deposited = user.deposited - daily_payment;
 
-        // TODO: use Uint128 modification of rebalance functions
         // user_weights - vector of target asset ratios
         let mut user_weights: Vec<Decimal> = vec![Decimal::zero(); global_vec_len];
 
         // user_balances - vector of user asset balances
-        let mut user_balances: Vec<u128> = vec![0_u128; global_vec_len];
+        let mut user_balances: Vec<Uint128> = vec![Uint128::zero(); global_vec_len];
 
-        // // user_prices - vector of user asset prices
-        // let mut user_prices: Vec<Decimal> = vec![Decimal::zero(); global_vec_len];
-
+        // 3) iterate over user assets and fill user_weights and user_balances
         for (i, denom) in global_denom_list.iter().enumerate() {
-            match user.asset_list.iter().find(|x| &x.asset_denom == denom) {
-                Some(asset_by_denom) => {
-                    user_weights[i] = asset_by_denom.weight;
-                    user_balances[i] = asset_by_denom.wallet_balance.u128();
-                }
-                _ => {
-                    user_weights[i] = Decimal::zero();
-                    user_balances[i] = 0;
-                }
+            if let Some(asset_by_denom) = user.asset_list.iter().find(|x| &x.asset_denom == denom) {
+                user_weights[i] = asset_by_denom.weight;
+                user_balances[i] = asset_by_denom.wallet_balance;
             };
         }
+
+        // 4) calculate user_costs based on balances and prices
+        // user_costs - vector of user asset costs in $
+        let user_costs = vec_mul(&user_balances, &global_price_list);
+
+        // 5) calculate user_delta_costs using one of two rebalance functions
+        // user_delta_costs - vector of user payments in $ to buy assets
+        let user_delta_costs = if user.is_controlled_rebalancing {
+            rebalance_controlled(&user_costs, &user_weights, daily_payment)
+        } else {
+            rebalance_proportional(&user_weights, daily_payment)
+        };
+
+        // 6) calcuclate user_delta_balances using prices and fill amount_to_send_until_next_epoch
+        // user_delta_costs - vector of user assets to buy
+        let user_delta_balances = vec_div(&user_delta_costs, &global_price_list);
+
+        // update user assets amount to buy data (amount_to_send_until_next_epoch)
+        let mut asset_list_updated: Vec<Asset> = vec![];
+        for asset in user.asset_list {
+            let some_index = global_denom_list
+                .iter()
+                .position(|x| x == &asset.asset_denom);
+
+            if let Some(index) = some_index {
+                let amount_to_send_until_next_epoch = user_delta_balances[index];
+
+                let asset_updated = Asset {
+                    amount_to_send_until_next_epoch,
+                    ..asset
+                };
+                asset_list_updated.push(asset_updated);
+
+                // 7) fill global_delta_balance_list and global_delta_cost_list
+                global_delta_balance_list[index] += amount_to_send_until_next_epoch;
+                global_delta_cost_list[index] +=
+                    amount_to_send_until_next_epoch * global_price_list[index];
+            }
+        }
+
+        users_with_addresses_updated.push((
+            osmo_address,
+            User {
+                day_counter,
+                deposited,
+                asset_list: asset_list_updated,
+                ..user
+            },
+        ));
     }
 
-    Ledger {
+    // 8) clamping sum of assets costs by daily_payment_sum
+    global_delta_cost_list = correct_sum(global_delta_cost_list, daily_payment_sum);
+
+    let ledger = Ledger {
         global_denom_list,
         global_price_list,
         global_delta_balance_list,
         global_delta_cost_list,
-    }
+    };
+
+    (ledger, users_with_addresses_updated)
 }
 
 #[cfg(test)]
 pub mod test {
-    use super::{correct_sum, rebalance_controlled, rebalance_proportional, str_vec_to_dec_vec};
+    use crate::tests::helpers::{
+        ADDR_ALICE_ATOM, ADDR_ALICE_JUNO, ADDR_ALICE_OSMO, ADDR_BOB_ATOM, ADDR_BOB_OSMO,
+        ADDR_BOB_STARS, DENOM_ATOM, DENOM_JUNO, DENOM_OSMO, DENOM_SCRT, DENOM_STARS, FUNDS_AMOUNT,
+        IS_CONTROLLED_REBALANCING,
+    };
+
+    use super::{
+        correct_sum, get_ledger, rebalance_controlled, rebalance_proportional, str_to_dec,
+        str_vec_to_dec_vec, u128_to_dec, u128_vec_to_uint128_vec, Addr, Asset, Ledger, Pool,
+        Uint128, User,
+    };
 
     #[test]
     fn sum_correction() {
-        let r = vec![100_000007, 299_999998, 200_000000, 0];
-        let d = 600_000000;
+        let r = u128_vec_to_uint128_vec(vec![100_000_007, 299_999_998, 200_000_000, 0]);
+        let d: Uint128 = Uint128::from(600_000_000_u128);
 
-        let xd = vec![100_000007, 299_999993, 200_000000, 0];
+        let xd = u128_vec_to_uint128_vec(vec![100_000_007, 299_999_993, 200_000_000, 0]);
 
         assert_eq!(correct_sum(r, d), xd);
     }
@@ -216,11 +319,11 @@ pub mod test {
     #[test]
     // controlled mode case 1.1
     fn big_payment_and_s2_greater_s1() {
-        let x1 = vec![100_000000, 300_000000, 200_000000, 0];
+        let x1 = u128_vec_to_uint128_vec(vec![100_000_000, 300_000_000, 200_000_000, 0]);
         let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5", "0"]);
-        let sd = 10000_000000;
+        let sd = Uint128::from(10_000_000_000_u128);
 
-        let xd = vec![3080_000000, 1820_000000, 5100_000000, 0];
+        let xd = u128_vec_to_uint128_vec(vec![3_080_000_000, 1_820_000_000, 5_100_000_000, 0]);
 
         assert_eq!(rebalance_controlled(&x1, &k2, sd), xd);
     }
@@ -228,11 +331,11 @@ pub mod test {
     #[test]
     // controlled mode case 1.2
     fn big_payment_and_s2_greater_s1_noisy() {
-        let x1 = vec![100_000049, 300_000007, 200_000011, 0];
+        let x1 = u128_vec_to_uint128_vec(vec![100_000_049, 300_000_007, 200_000_011, 0]);
         let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5", "0"]);
-        let sd = 10000_000000;
+        let sd = Uint128::from(10_000_000_000_u128);
 
-        let xd = vec![3079_999972, 1820_000007, 5100_000021, 0];
+        let xd = u128_vec_to_uint128_vec(vec![3_079_999_972, 1_820_000_007, 5_100_000_021, 0]);
 
         assert_eq!(rebalance_controlled(&x1, &k2, sd), xd);
     }
@@ -240,11 +343,11 @@ pub mod test {
     #[test]
     // controlled mode case 2.1
     fn s2_equal_s1() {
-        let x1 = vec![300_000000, 200_000000, 500_000000, 0];
+        let x1 = u128_vec_to_uint128_vec(vec![300_000_000, 200_000_000, 500_000_000, 0]);
         let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5", "0"]);
-        let sd = 100_000000;
+        let sd = Uint128::from(100_000_000_u128);
 
-        let xd = vec![30_000000, 20_000000, 50_000000, 0];
+        let xd = u128_vec_to_uint128_vec(vec![30_000_000, 20_000_000, 50_000_000, 0]);
 
         assert_eq!(rebalance_controlled(&x1, &k2, sd), xd);
     }
@@ -252,11 +355,11 @@ pub mod test {
     #[test]
     // controlled mode case 2.2
     fn s2_equal_s1_noisy() {
-        let x1 = vec![300_000049, 200_000007, 500_000011, 0];
+        let x1 = u128_vec_to_uint128_vec(vec![300_000_049, 200_000_007, 500_000_011, 0]);
         let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5", "0"]);
-        let sd = 100_000000;
+        let sd = Uint128::from(100_000_000_u128);
 
-        let xd = vec![29_999972, 20_000007, 50_000021, 0];
+        let xd = u128_vec_to_uint128_vec(vec![29_999_972, 20_000_007, 50_000_021, 0]);
 
         assert_eq!(rebalance_controlled(&x1, &k2, sd), xd);
     }
@@ -264,11 +367,11 @@ pub mod test {
     #[test]
     // controlled mode case 3.1
     fn small_payment_and_s2_greater_s1() {
-        let x1 = vec![100_000000, 300_000000, 200_000000, 0];
+        let x1 = u128_vec_to_uint128_vec(vec![100_000_000, 300_000_000, 200_000_000, 0]);
         let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5", "0"]);
-        let sd = 100_000000;
+        let sd = Uint128::from(100_000_000_u128);
 
-        let xd = vec![38_888889, 0, 61_111111, 0];
+        let xd = u128_vec_to_uint128_vec(vec![38_888_889, 0, 61_111_111, 0]);
 
         assert_eq!(rebalance_controlled(&x1, &k2, sd), xd);
     }
@@ -276,11 +379,11 @@ pub mod test {
     #[test]
     // controlled mode case 3.2
     fn small_payment_and_s2_greater_s1_noisy() {
-        let x1 = vec![115_000012, 35_000007, 0];
+        let x1 = u128_vec_to_uint128_vec(vec![115_000_012, 35_000_007, 0]);
         let k2 = str_vec_to_dec_vec(vec!["0.3", "0.7", "0"]);
-        let sd = 200000;
+        let sd = Uint128::from(200_000_u128);
 
-        let xd = vec![0, 200000, 0];
+        let xd = u128_vec_to_uint128_vec(vec![0, 200_000, 0]);
 
         assert_eq!(rebalance_controlled(&x1, &k2, sd), xd);
     }
@@ -289,9 +392,9 @@ pub mod test {
     // proportional mode case 1.1
     fn proportional() {
         let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5", "0"]);
-        let sd = 100_000000;
+        let sd = Uint128::from(100_000_000_u128);
 
-        let xd = vec![30_000000, 20_000000, 50_000000, 0];
+        let xd = u128_vec_to_uint128_vec(vec![30_000_000, 20_000_000, 50_000_000, 0]);
 
         assert_eq!(rebalance_proportional(&k2, sd), xd);
     }
@@ -300,10 +403,123 @@ pub mod test {
     // proportional mode case 1.2
     fn proportional_noisy() {
         let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5", "0"]);
-        let sd = 100_000011;
+        let sd = Uint128::from(100_000_011_u128);
 
-        let xd = vec![30_000004, 20_000003, 50_000004, 0];
+        let xd = u128_vec_to_uint128_vec(vec![30_000_004, 20_000_003, 50_000_004, 0]);
 
         assert_eq!(rebalance_proportional(&k2, sd), xd);
+    }
+
+    #[test]
+    fn calc_ledger() {
+        let deposited_alice = Uint128::from(1_000_u128);
+        let day_counter_alice = Uint128::from(5_u128);
+
+        let asset_list_alice = vec![
+            Asset::new(
+                DENOM_ATOM,
+                &Addr::unchecked(ADDR_ALICE_ATOM),
+                Uint128::zero(),
+                str_to_dec("0.7"),
+                Uint128::zero(),
+            ),
+            Asset::new(
+                DENOM_JUNO,
+                &Addr::unchecked(ADDR_ALICE_JUNO),
+                Uint128::zero(),
+                str_to_dec("0.3"),
+                Uint128::zero(),
+            ),
+        ];
+
+        let user_alice = User::new(
+            &asset_list_alice,
+            day_counter_alice,
+            Uint128::from(deposited_alice),
+            !IS_CONTROLLED_REBALANCING,
+        );
+
+        let deposited_bob = Uint128::from(4_000_u128);
+        let day_counter_bob = Uint128::from(10_u128);
+
+        let asset_list_bob = vec![
+            Asset::new(
+                DENOM_ATOM,
+                &Addr::unchecked(ADDR_BOB_ATOM),
+                Uint128::zero(),
+                str_to_dec("0.4"),
+                Uint128::zero(),
+            ),
+            Asset::new(
+                DENOM_STARS,
+                &Addr::unchecked(ADDR_BOB_STARS),
+                Uint128::zero(),
+                str_to_dec("0.6"),
+                Uint128::zero(),
+            ),
+        ];
+
+        let user_bob = User::new(
+            &asset_list_bob,
+            day_counter_bob,
+            Uint128::from(deposited_bob),
+            !IS_CONTROLLED_REBALANCING,
+        );
+
+        let users_with_addresses: Vec<(Addr, User)> = vec![
+            (Addr::unchecked(ADDR_ALICE_OSMO), user_alice),
+            (Addr::unchecked(ADDR_BOB_OSMO), user_bob),
+        ];
+
+        let pools_with_denoms: Vec<(String, Pool)> = vec![
+            // ATOM / OSMO
+            (
+                DENOM_ATOM.to_string(),
+                Pool::new(
+                    Uint128::one(),
+                    str_to_dec("9.5"),
+                    "channel-1110",
+                    "transfer",
+                    "uatom",
+                ),
+            ),
+            // JUNO / OSMO
+            (
+                DENOM_JUNO.to_string(),
+                Pool::new(
+                    Uint128::from(497_u128),
+                    str_to_dec("1.5"),
+                    "channel-1110",
+                    "transfer",
+                    "ujuno",
+                ),
+            ),
+            // STARS / OSMO
+            (
+                DENOM_STARS.to_string(),
+                Pool::new(
+                    Uint128::from(604_u128),
+                    str_to_dec("0.03"),
+                    "channel-",
+                    "transfer",
+                    "ustars",
+                ),
+            ),
+            // SCRT / OSMO
+            (
+                DENOM_SCRT.to_string(),
+                Pool::new(
+                    Uint128::from(584_u128),
+                    str_to_dec("0.7"),
+                    "channel-",
+                    "transfer",
+                    "uscrt",
+                ),
+            ),
+        ];
+
+        let res = get_ledger(pools_with_denoms, users_with_addresses);
+
+        println!("{:#?}", res);
     }
 }

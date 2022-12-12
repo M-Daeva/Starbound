@@ -12,8 +12,10 @@ use std::ops::Mul;
 
 use crate::{
     actions::{
-        rebalancer::{dec_to_u128, rebalance_controlled, rebalance_proportional, u128_to_dec},
-        vectors::{vec_div, vec_mul},
+        rebalancer::{
+            dec_to_u128, rebalance_controlled, rebalance_proportional, u128_to_dec, vec_div,
+            vec_mul,
+        },
         verifier::{verify_deposit_data, verify_scheduler},
     },
     error::ContractError,
@@ -43,7 +45,7 @@ pub fn deposit(
         .iter()
         .map(|asset| -> Result<Asset, ContractError> {
             // check if asset is in pool
-            if let Err(_) = POOLS.load(deps.storage, &asset.asset_denom) {
+            if POOLS.load(deps.storage, &asset.asset_denom).is_err() {
                 return Err(ContractError::AssetIsNotFound {});
             };
 
@@ -101,7 +103,7 @@ pub fn withdraw(
             let user = some_user.ok_or(ContractError::UserIsNotFound {})?;
 
             // check withdraw amount
-            if amount.gt(&user.deposited) {
+            if amount > user.deposited {
                 return Err(ContractError::WithdrawAmountIsExceeded {});
             }
 
@@ -194,7 +196,7 @@ pub fn update_pools_and_users(
             .iter()
             .map(|asset_loaded| -> Result<Asset, ContractError> {
                 // check if asset is in pool
-                if let Err(_) = POOLS.load(deps.storage, &asset_loaded.asset_denom) {
+                if POOLS.load(deps.storage, &asset_loaded.asset_denom).is_err() {
                     return Err(ContractError::AssetIsNotFound {});
                 };
 
@@ -225,7 +227,6 @@ pub fn update_pools_and_users(
     Ok(Response::new().add_attributes(vec![("method", "update_pools_and_users")]))
 }
 
-// TODO: fee collector
 // TODO: osmo handler
 pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     verify_scheduler(&deps, &info)?;
@@ -300,13 +301,19 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
             }
 
             // user_costs - vector of user asset costs in $
-            let user_costs = vec_mul(&user_balances, &user_prices);
+            let user_costs = vec_mul(
+                &user_balances
+                    .iter()
+                    .map(|&x| Uint128::from(x))
+                    .collect::<Vec<Uint128>>(),
+                &user_prices,
+            );
 
             // user_delta_costs - vector of user payments in $ to buy assets
             let user_delta_costs = if user.is_controlled_rebalancing {
-                rebalance_controlled(&user_costs, &user_weights, user_payment)
+                rebalance_controlled(&user_costs, &user_weights, Uint128::from(user_payment))
             } else {
-                rebalance_proportional(&user_weights, user_payment)
+                rebalance_proportional(&user_weights, Uint128::from(user_payment))
             };
 
             // user_delta_costs - vector of user assets to buy
@@ -314,7 +321,7 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
 
             // update user data about assets that will be bought
             for (i, &item) in user_delta_balances.iter().enumerate() {
-                user_updated.asset_list[i].amount_to_send_until_next_epoch = Uint128::from(item);
+                user_updated.asset_list[i].amount_to_send_until_next_epoch = item;
             }
 
             // save updated user in separate vector
@@ -336,7 +343,7 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
                 // fill global_delta_cost_list
                 for (j, user_asset) in user.asset_list.iter().enumerate() {
                     if &user_asset.asset_denom == global_denom {
-                        global_delta_cost_list[i] += user_delta_costs[j];
+                        global_delta_cost_list[i] += user_delta_costs[j].u128();
                     }
                 }
             }
@@ -415,6 +422,7 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         .add_attributes(vec![("method", "swap")]))
 }
 
+// TODO: fee collector
 pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     verify_scheduler(&deps, &info)?;
 
