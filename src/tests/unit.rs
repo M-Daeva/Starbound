@@ -1,33 +1,24 @@
 use cosmwasm_std::{attr, coin, from_binary, Addr, Attribute, Decimal, Empty, StdError, Uint128};
-// use cw_multi_test::{App, Contract, ContractWrapper, Executor};
-// use osmosis_testing::{fn_query, Account, Bank, Gamm, Module, OsmosisTestApp, Wasm};
+
+use cw_multi_test::{App, Contract, ContractWrapper, Executor};
+use osmosis_testing::{fn_query, Account, Bank, Gamm, Module, OsmosisTestApp, Wasm};
 use std::ops::{Add, Div};
 
 use crate::{
     actions::rebalancer::str_to_dec,
-    // contract::{execute, instantiate, query},
-    // error::ContractError,
-    messages::response::{QueryPoolsAndUsersResponse, QueryUserResponse},
+    contract::{execute, instantiate, query},
+    error::ContractError,
+    messages::{
+        execute::ExecuteMsg,
+        instantiate::InstantiateMsg,
+        query::QueryMsg,
+        response::{QueryPoolsAndUsersResponse, QueryUserResponse},
+    },
     state::{Asset, AssetExtracted, Pool, PoolExtracted, User, UserExtracted},
     tests::helpers::{
-        Starbound,
-        UserName,
-        ADDR_ADMIN_OSMO,
-        ADDR_ALICE_ATOM,
-        ADDR_ALICE_JUNO,
-        ADDR_ALICE_OSMO,
-        ADDR_BOB_ATOM,
-        // ADDR_BOB_JUNO,
-        ADDR_BOB_OSMO,
-        // CHANNEL_ID,
-        DENOM_ATOM,
-        DENOM_EEUR,
-        DENOM_JUNO,
-        DENOM_OSMO,
-        FUNDS_AMOUNT,
-        IS_CONTROLLED_REBALANCING,
-        IS_CURRENT_PERIOD,
-        // POOLS_AMOUNT_INITIAL,
+        Starbound, UserName, ADDR_ADMIN_OSMO, ADDR_ALICE_ATOM, ADDR_ALICE_JUNO, ADDR_ALICE_OSMO,
+        ADDR_BOB_ATOM, ADDR_BOB_JUNO, ADDR_BOB_OSMO, DENOM_ATOM, DENOM_EEUR, DENOM_JUNO,
+        DENOM_OSMO, FUNDS_AMOUNT, IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD,
     },
 };
 
@@ -331,128 +322,129 @@ fn update_pools_and_users() {
     assert_eq!(res_users_updated, users_updated);
 }
 
-// TODO: use https://github.com/osmosis-labs/osmosis-rust/tree/main/packages/osmosis-testing
-// #[test]
-// fn swap() {
-//     // create new osmosis appchain instance.
-//     let app = OsmosisTestApp::new();
+#[test]
+fn swap() {
+    // create new osmosis appchain instance.
+    let app = OsmosisTestApp::new();
 
-//     // create new account with initial funds
-//     let accs = app
-//         .init_accounts(
-//             &[coin(1_000_000, DENOM_EEUR), coin(1_000_000, DENOM_OSMO)],
-//             2,
-//         )
-//         .unwrap();
+    // create new account with initial funds
+    let accs = app
+        .init_accounts(
+            &[
+                coin(1_000_000_000_000, DENOM_ATOM),
+                coin(1_000_000_000_000, DENOM_JUNO),
+                coin(1_000_000_000_000, DENOM_EEUR),
+                coin(1_000_000_000_000, DENOM_OSMO),
+            ],
+            2,
+        )
+        .unwrap();
 
-//     let admin = &accs[0];
-//     let user = &accs[1];
+    let admin = &accs[0];
+    let user = &accs[1];
 
-//     // `Wasm` is the module we use to interact with cosmwasm releated logic on the appchain
-//     // it implements `Module` trait which you will see more later.
-//     let wasm = Wasm::new(&app);
+    // create Gamm Module Wrapper
+    let gamm = Gamm::new(&app);
 
-//     // Load compiled wasm bytecode
-//     let wasm_byte_code = std::fs::read("./artifacts/starbound.wasm").unwrap();
-//     let code_id = wasm
-//         .store_code(&wasm_byte_code, None, admin)
-//         .unwrap()
-//         .data
-//         .code_id;
+    // create balancer pool with basic configuration
+    // ATOM - 1
+    let pool_liquidity = vec![coin(1_000, DENOM_ATOM), coin(1_000, DENOM_OSMO)];
+    let pool_id = gamm
+        .create_basic_pool(&pool_liquidity, user)
+        .unwrap()
+        .data
+        .pool_id;
 
-//     // instantiate contract with initial admin and make admin list mutable
-//     let init_admins = vec![admin.address()];
-//     let contract_addr = wasm
-//         .instantiate(
-//             code_id,
-//             &InstantiateMsg {},
-//             Some(&admin.address()), // contract admin used for migration
-//             None,                   // contract label
-//             &[],                    // funds
-//             admin,                  // signer
-//         )
-//         .unwrap()
-//         .data
-//         .address;
+    // JUNO - 2
+    let pool_liquidity = vec![coin(1_000, DENOM_JUNO), coin(1_000, DENOM_OSMO)];
+    let pool_id = gamm
+        .create_basic_pool(&pool_liquidity, user)
+        .unwrap()
+        .data
+        .pool_id;
 
-//     // query contract state to check if contract instantiation works properly
-//     let pools_and_users = wasm
-//         .query::<QueryMsg, QueryPoolsAndUsersResponse>(
-//             &contract_addr,
-//             &QueryMsg::QueryPoolsAndUsers {},
-//         )
-//         .unwrap();
+    // EEUR - 3
+    let pool_liquidity = vec![coin(1_000, DENOM_EEUR), coin(1_000, DENOM_OSMO)];
+    let pool_id = gamm
+        .create_basic_pool(&pool_liquidity, user)
+        .unwrap()
+        .data
+        .pool_id;
 
-//     // println!("{:#?}", pools_and_users);
+    // `Wasm` is the module we use to interact with cosmwasm releated logic on the appchain
+    // it implements `Module` trait which you will see more later.
+    let wasm = Wasm::new(&app);
 
-//     let user_alice = Starbound::get_user(UserName::Alice);
+    // Load compiled wasm bytecode
+    let wasm_byte_code = std::fs::read("./artifacts/starbound.wasm").unwrap();
+    let code_id = wasm
+        .store_code(&wasm_byte_code, None, admin)
+        .unwrap()
+        .data
+        .code_id;
 
-//     wasm.execute::<ExecuteMsg>(
-//         &contract_addr,
-//         &ExecuteMsg::Deposit {
-//             user: user_alice.clone(),
-//         },
-//         &[coin(
-//             user_alice
-//                 .deposited_on_current_period
-//                 .add(user_alice.deposited_on_next_period)
-//                 .u128(),
-//             DENOM_EEUR,
-//         )],
-//         user,
-//     )
-//     .unwrap();
+    // instantiate contract
+    let contract_addr = wasm
+        .instantiate(
+            code_id,
+            &InstantiateMsg {},
+            Some(&admin.address()), // contract admin used for migration
+            None,                   // contract label
+            &[],                    // funds
+            admin,                  // signer
+        )
+        .unwrap()
+        .data
+        .address;
 
-//     let user_requested = wasm
-//         .query::<QueryMsg, QueryUserResponse>(
-//             &contract_addr,
-//             &QueryMsg::QueryUser {
-//                 address: user.address(),
-//             },
-//         )
-//         .unwrap();
+    // query contract state to check if contract instantiation works properly
+    let QueryPoolsAndUsersResponse { pools, .. } = wasm
+        .query::<QueryMsg, QueryPoolsAndUsersResponse>(
+            &contract_addr,
+            &QueryMsg::QueryPoolsAndUsers {},
+        )
+        .unwrap();
 
-//     wasm.execute::<ExecuteMsg>(&contract_addr, &ExecuteMsg::Swap {}, &[], admin)
-//         .unwrap();
+    // prepare pool ids for gamm wrapper
+    wasm.execute::<ExecuteMsg>(
+        &contract_addr,
+        &ExecuteMsg::UpdatePoolsAndUsers {
+            pools: pools
+                .iter()
+                .enumerate()
+                .map(|(i, x)| PoolExtracted {
+                    id: Uint128::from(i as u128) + Uint128::one(),
+                    ..x.to_owned()
+                })
+                .collect::<Vec<PoolExtracted>>(),
+            users: vec![],
+        },
+        &[],
+        admin,
+    )
+    .unwrap();
 
-//     println!("{:#?}", user_requested);
-// }
+    let user_alice = Starbound::get_user(UserName::Alice);
 
-// #[test]
-// fn swap() {
-//     let app = OsmosisTestApp::default();
+    wasm.execute::<ExecuteMsg>(
+        &contract_addr,
+        &ExecuteMsg::Deposit {
+            user: user_alice.clone(),
+        },
+        &[coin(user_alice.deposited.u128(), DENOM_EEUR)],
+        user,
+    )
+    .unwrap();
 
-//     // create new account with initial funds
-//     let accs = app
-//         .init_accounts(
-//             &[
-//                 coin(1_000_000_000_000, DENOM_EEUR),
-//                 coin(1_000_000_000_000, DENOM_OSMO),
-//             ],
-//             2,
-//         )
-//         .unwrap();
+    let res = gamm.query_pool(3).unwrap();
+    println!("{:#?}", res);
 
-//     let admin = &accs[0];
-//     let user = &accs[1];
+    wasm.execute::<ExecuteMsg>(&contract_addr, &ExecuteMsg::Swap {}, &[], admin)
+        .unwrap();
 
-//     // create Gamm Module Wrapper
-//     let gamm = Gamm::new(&app);
-
-//     // TODO: try to create pools with proper id using loop
-//     // create balancer pool with basic configuration
-//     let pool_liquidity = vec![coin(1_000, DENOM_EEUR), coin(1_000, DENOM_OSMO)];
-//     let pool_id = gamm
-//         .create_basic_pool(&pool_liquidity, &user)
-//         .unwrap()
-//         .data
-//         .pool_id;
-
-//     // query pool and assert if the pool is created successfully
-//     let pool = gamm.query_pool(pool_id).unwrap();
-
-//     println!("{:#?}", pool);
-// }
+    let res = gamm.query_pool(3).unwrap();
+    println!("{:#?}", res);
+}
 
 // #[test]
 // fn test_execute_swap_with_updated_users() {

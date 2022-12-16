@@ -13,8 +13,8 @@ use std::ops::Mul;
 use crate::{
     actions::{
         rebalancer::{
-            dec_to_u128, rebalance_controlled, rebalance_proportional, u128_to_dec, vec_div,
-            vec_mul,
+            dec_to_u128, get_ledger, rebalance_controlled, rebalance_proportional, u128_to_dec,
+            vec_div, vec_mul,
         },
         verifier::{verify_deposit_data, verify_scheduler},
     },
@@ -227,159 +227,54 @@ pub fn update_pools_and_users(
     Ok(Response::new().add_attributes(vec![("method", "update_pools_and_users")]))
 }
 
-// TODO: osmo handler
 pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     verify_scheduler(&deps, &info)?;
 
-    // calculate payments
-    let global_vec_len = POOLS
+    let pools = POOLS
         .range(deps.storage, None, None, Order::Ascending)
-        .count();
-
-    // global_delta_balance_list - vector of global assets to buy
-    let mut global_delta_balance_list: Vec<u128> = vec![0; global_vec_len];
-
-    // global_delta_cost_list - vector of global payments in $ to buy assets
-    let mut global_delta_cost_list: Vec<u128> = vec![0; global_vec_len];
-
-    // for sorting purposes
-    let mut global_denom_list = Vec::<String>::new();
-
-    // global_price_list - vector of global asset prices sorted by denom (ascending order)
-    let global_price_list: Vec<Decimal> = POOLS
-        .range(deps.storage, None, None, Order::Ascending)
-        .map(|x| {
-            let (denom, pool) = x.unwrap();
-            global_denom_list.push(denom);
-            pool.price
-        })
+        .map(|x| x.unwrap())
         .collect();
 
-    let mut user_list_updated = Vec::<(Addr, User)>::new();
-
-    USERS
+    let users = USERS
         .range(deps.storage, None, None, Order::Ascending)
-        .for_each(|x| {
-            let (osmo_address, user) = x.unwrap();
+        .map(|x| x.unwrap())
+        .collect();
 
-            // user_payment - funds to buy coins
-            let mut user_payment = if user.day_counter.u128() == 0 {
-                0_u128
-            } else {
-                user.deposited.u128() / user.day_counter.u128()
-            };
-
-            // query user from storage and update parameters
-            let mut user_updated = USERS.load(deps.storage, &osmo_address).unwrap();
-
-            if user.day_counter.u128() != 0 {
-                user_updated.day_counter -= Uint128::one();
-                if user_updated.deposited.u128() < user_payment {
-                    user_payment = user_updated.deposited.u128();
-                }
-                user_updated.deposited -= Uint128::from(user_payment);
-            } else {
-                // TODO: stop swaps if cnt == 0
-                user_updated.day_counter = Uint128::from(30_u128);
-            }
-
-            // user_weights - vector of target asset ratios
-            let mut user_weights = Vec::<Decimal>::new();
-
-            // user_balances - vector of user asset balances
-            let mut user_balances = Vec::<u128>::new();
-
-            // user_prices - vector of user asset prices
-            let mut user_prices = Vec::<Decimal>::new();
-
-            for user_asset in &user.asset_list {
-                let pool = POOLS.load(deps.storage, &user_asset.asset_denom).unwrap();
-
-                user_weights.push(user_asset.weight);
-                user_balances.push(user_asset.wallet_balance.u128());
-                user_prices.push(pool.price);
-            }
-
-            // user_costs - vector of user asset costs in $
-            let user_costs = vec_mul(
-                &user_balances
-                    .iter()
-                    .map(|&x| Uint128::from(x))
-                    .collect::<Vec<Uint128>>(),
-                &user_prices,
-            );
-
-            // user_delta_costs - vector of user payments in $ to buy assets
-            let user_delta_costs = if user.is_controlled_rebalancing {
-                rebalance_controlled(&user_costs, &user_weights, Uint128::from(user_payment))
-            } else {
-                rebalance_proportional(&user_weights, Uint128::from(user_payment))
-            };
-
-            // user_delta_costs - vector of user assets to buy
-            let user_delta_balances = vec_div(&user_delta_costs, &user_prices);
-
-            // update user data about assets that will be bought
-            for (i, &item) in user_delta_balances.iter().enumerate() {
-                user_updated.asset_list[i].amount_to_send_until_next_epoch = item;
-            }
-
-            // save updated user in separate vector
-            // to prevent iterated vector mutation or storage moving
-            user_list_updated.push((osmo_address, user_updated.clone()));
-
-            // fill global_delta_balance_list
-            for (i, global_denom) in global_denom_list.clone().iter().enumerate() {
-                let balance_by_denom = match &user_updated
-                    .asset_list
-                    .iter()
-                    .find(|x| &x.asset_denom == global_denom)
-                {
-                    Some(y) => y.amount_to_send_until_next_epoch,
-                    None => Uint128::zero(),
-                };
-                global_delta_balance_list[i] += balance_by_denom.u128();
-
-                // fill global_delta_cost_list
-                for (j, user_asset) in user.asset_list.iter().enumerate() {
-                    if &user_asset.asset_denom == global_denom {
-                        global_delta_cost_list[i] += user_delta_costs[j].u128();
-                    }
-                }
-            }
-        });
+    let (ledger, users_with_addresses) = get_ledger(&pools, &users);
 
     let mut msg_list = Vec::<CosmosMsg>::new();
 
     // TODO: replace eeur with usdc on mainnet
     let denom_token_in = "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F";
 
-    for (i, global_denom) in global_denom_list.iter().enumerate() {
+    for (i, global_denom) in ledger.global_denom_list.iter().enumerate() {
         // skip eeur
         if global_denom == denom_token_in {
             continue;
         }
 
         let token_out_min_amount = String::from("1");
-        let amount = global_delta_cost_list[i];
+        let amount = ledger.global_delta_cost_list[i];
 
         // skip if no funds
-        if amount == 0 {
+        if amount.is_zero() {
             continue;
         }
 
         let pool = POOLS.load(deps.storage, global_denom)?;
 
+        // TODO: replace id for USDC
         // swap eeur to osmo anyway
         let mut routes: Vec<SwapAmountInRoute> = vec![SwapAmountInRoute {
-            pool_id: 481,
+            //pool_id: 481,
+            pool_id: 3,
             token_out_denom: "uosmo".to_string(),
         }];
 
         // if other asset is needed add extra route
         if global_denom != "uosmo" {
             routes.push(SwapAmountInRoute {
-                pool_id: pool.id.u128().try_into().unwrap(),
+                pool_id: pool.id.u128() as u64,
                 token_out_denom: global_denom.to_string(),
             });
         }
@@ -398,24 +293,12 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
     }
 
     // update user list storage
-    for (address, user_updated) in user_list_updated {
+    for (address, user_updated) in users_with_addresses {
         USERS.save(deps.storage, &address, &user_updated)?;
     }
 
     // update ledger
-    LEDGER.update(deps.storage, |mut x| -> Result<_, ContractError> {
-        x.global_delta_balance_list = global_delta_balance_list
-            .iter()
-            .map(|&x| Uint128::from(x))
-            .collect();
-        x.global_delta_cost_list = global_delta_cost_list
-            .iter()
-            .map(|&x| Uint128::from(x))
-            .collect();
-        x.global_denom_list = global_denom_list;
-        x.global_price_list = global_price_list;
-        Ok(x)
-    })?;
+    LEDGER.save(deps.storage, &ledger)?;
 
     Ok(Response::new()
         .add_messages(msg_list)
@@ -423,6 +306,7 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
 }
 
 // TODO: fee collector
+// TODO: osmo handler
 pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     verify_scheduler(&deps, &info)?;
 

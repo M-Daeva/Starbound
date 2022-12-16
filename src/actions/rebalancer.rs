@@ -44,23 +44,49 @@ pub fn perm_vec_to_dec_vec(perm_vec: Vec<u128>) -> Vec<Decimal> {
         .collect()
 }
 
-pub fn vec_mul(uint128_vec: &[Uint128], dec_vec: &[Decimal]) -> Vec<Uint128> {
+// mul vector by vector and rounds values down or up depending on is_floored
+pub fn vec_mul(uint128_vec: &[Uint128], dec_vec: &[Decimal], is_floored: bool) -> Vec<Uint128> {
     let mut temp = Vec::<Uint128>::new();
 
     for (i, item) in uint128_vec.iter().enumerate() {
-        let res = dec_vec[i].mul(uint128_to_dec(*item));
+        let mut res = dec_vec[i].mul(uint128_to_dec(*item));
+        res = if is_floored { res.floor() } else { res.ceil() };
         temp.push(dec_to_uint128(res));
     }
 
     temp
 }
 
-pub fn vec_div(uint128_vec: &[Uint128], dec_vec: &[Decimal]) -> Vec<Uint128> {
+// div vector by vector and rounds values down or up depending on is_floored
+pub fn vec_div(uint128_vec: &[Uint128], dec_vec: &[Decimal], is_floored: bool) -> Vec<Uint128> {
     let mut temp = Vec::<Uint128>::new();
 
     for (i, item) in uint128_vec.iter().enumerate() {
-        let res = uint128_to_dec(*item).div(dec_vec[i]);
+        let mut res = uint128_to_dec(*item).div(dec_vec[i]);
+        res = if is_floored { res.floor() } else { res.ceil() };
         temp.push(dec_to_uint128(res));
+    }
+
+    temp
+}
+
+pub fn vec_add(a: &[Uint128], b: &[Uint128]) -> Vec<Uint128> {
+    let mut temp = Vec::<Uint128>::new();
+
+    for (i, item) in a.iter().enumerate() {
+        let res = *item + b[i];
+        temp.push(res);
+    }
+
+    temp
+}
+
+pub fn vec_sub(a: &[Uint128], b: &[Uint128]) -> Vec<Uint128> {
+    let mut temp = Vec::<Uint128>::new();
+
+    for (i, item) in a.iter().enumerate() {
+        let res = *item - b[i];
+        temp.push(res);
     }
 
     temp
@@ -154,8 +180,8 @@ pub fn rebalance_proportional(k2: &[Decimal], d: Uint128) -> Vec<Uint128> {
 /// pools_with_denoms - POOLS.range().map().collect() \
 /// users_with_addresses - USERS.range().map().collect()
 pub fn get_ledger(
-    pools_with_denoms: Vec<(String, Pool)>,
-    users_with_addresses: Vec<(Addr, User)>,
+    pools_with_denoms: &Vec<(String, Pool)>,
+    users_with_addresses: &Vec<(Addr, User)>,
 ) -> (Ledger, Vec<(Addr, User)>) {
     let global_vec_len = pools_with_denoms.len();
 
@@ -173,7 +199,7 @@ pub fn get_ledger(
 
     // 1) iterate over pools and fill global_denom_list and global_price_list
     for (denom, pool) in pools_with_denoms {
-        global_denom_list.push(denom);
+        global_denom_list.push(denom.to_owned());
         global_price_list.push(pool.price);
     }
 
@@ -185,7 +211,7 @@ pub fn get_ledger(
         // 2) calculate daily payment, update day_counter and deposited
 
         // skip if user is out of money or investment period is ended
-        let daily_payment = match user.deposited.checked_div(user.day_counter) {
+        let mut daily_payment = match user.deposited.checked_div(user.day_counter) {
             Ok(x) => x.clamp(Uint128::zero(), user.deposited),
             _ => Uint128::zero(),
         };
@@ -201,19 +227,15 @@ pub fn get_ledger(
 
         if daily_payment.is_zero() {
             users_with_addresses_updated.push((
-                osmo_address,
+                osmo_address.to_owned(),
                 User {
                     day_counter,
-                    ..user
+                    ..user.to_owned()
                 },
             ));
 
             continue;
         }
-
-        daily_payment_sum += daily_payment;
-
-        let deposited = user.deposited - daily_payment;
 
         // user_weights - vector of target asset ratios
         let mut user_weights: Vec<Decimal> = vec![Decimal::zero(); global_vec_len];
@@ -231,7 +253,7 @@ pub fn get_ledger(
 
         // 4) calculate user_costs based on balances and prices
         // user_costs - vector of user asset costs in $
-        let user_costs = vec_mul(&user_balances, &global_price_list);
+        let user_costs = vec_mul(&user_balances, &global_price_list, true);
 
         // 5) calculate user_delta_costs using one of two rebalance functions
         // user_delta_costs - vector of user payments in $ to buy assets
@@ -243,38 +265,50 @@ pub fn get_ledger(
 
         // 6) calcuclate user_delta_balances using prices and fill amount_to_send_until_next_epoch
         // user_delta_costs - vector of user assets to buy
-        let user_delta_balances = vec_div(&user_delta_costs, &global_price_list);
+        let user_delta_balances = vec_div(&user_delta_costs, &global_price_list, true);
+
+        // update daily_payment considering unused funds
+        daily_payment = vec_mul(&user_delta_balances, &global_price_list, false)
+            .iter()
+            .sum::<Uint128>();
+
+        daily_payment_sum += daily_payment;
+
+        let deposited = user.deposited - daily_payment;
 
         // update user assets amount to buy data (amount_to_send_until_next_epoch)
         let mut asset_list_updated: Vec<Asset> = vec![];
-        for asset in user.asset_list {
+        for asset in &user.asset_list {
             let some_index = global_denom_list
                 .iter()
                 .position(|x| x == &asset.asset_denom);
 
             if let Some(index) = some_index {
-                let amount_to_send_until_next_epoch = user_delta_balances[index];
+                let amount_to_send_until_next_epoch =
+                    asset.amount_to_send_until_next_epoch + user_delta_balances[index];
 
                 let asset_updated = Asset {
                     amount_to_send_until_next_epoch,
-                    ..asset
+                    ..asset.to_owned()
                 };
                 asset_list_updated.push(asset_updated);
 
                 // 7) fill global_delta_balance_list and global_delta_cost_list
                 global_delta_balance_list[index] += amount_to_send_until_next_epoch;
-                global_delta_cost_list[index] +=
-                    amount_to_send_until_next_epoch * global_price_list[index];
+                global_delta_cost_list[index] += dec_to_uint128(
+                    (uint128_to_dec(amount_to_send_until_next_epoch) * global_price_list[index])
+                        .ceil(),
+                );
             }
         }
 
         users_with_addresses_updated.push((
-            osmo_address,
+            osmo_address.to_owned(),
             User {
                 day_counter,
                 deposited,
                 asset_list: asset_list_updated,
-                ..user
+                ..*user
             },
         ));
     }
@@ -301,10 +335,50 @@ pub mod test {
     };
 
     use super::{
-        correct_sum, get_ledger, rebalance_controlled, rebalance_proportional, str_to_dec,
-        str_vec_to_dec_vec, u128_to_dec, u128_vec_to_uint128_vec, Addr, Asset, Ledger, Pool,
-        Uint128, User,
+        correct_sum, dec_to_uint128, get_ledger, rebalance_controlled, rebalance_proportional,
+        str_to_dec, str_vec_to_dec_vec, u128_to_dec, u128_vec_to_uint128_vec, uint128_to_dec,
+        vec_add, vec_div, vec_mul, vec_sub, Addr, Asset, Decimal, Ledger, Pool, Uint128, User,
     };
+
+    #[test]
+    fn vector_addition() {
+        let a = u128_vec_to_uint128_vec(vec![1, 2, 3]);
+        let b = u128_vec_to_uint128_vec(vec![3, 2, 1]);
+        let c = u128_vec_to_uint128_vec(vec![4, 4, 4]);
+
+        assert_eq!(vec_add(&a, &b), c);
+    }
+
+    #[test]
+    fn vector_subtraction() {
+        let a = u128_vec_to_uint128_vec(vec![10, 12, 13]);
+        let b = u128_vec_to_uint128_vec(vec![3, 2, 1]);
+        let c = u128_vec_to_uint128_vec(vec![7, 10, 12]);
+
+        assert_eq!(vec_sub(&a, &b), c);
+    }
+
+    #[test]
+    fn vector_division() {
+        let a = u128_vec_to_uint128_vec(vec![300]);
+        let b = str_vec_to_dec_vec(vec!["9.5"]);
+        let c = u128_vec_to_uint128_vec(vec![31]);
+        let d = u128_vec_to_uint128_vec(vec![32]);
+
+        assert_eq!(vec_div(&a, &b, true), c);
+        assert_eq!(vec_div(&a, &b, false), d);
+    }
+
+    #[test]
+    fn vector_multiplication() {
+        let a = u128_vec_to_uint128_vec(vec![3]);
+        let b = str_vec_to_dec_vec(vec!["9.5"]);
+        let c = u128_vec_to_uint128_vec(vec![28]);
+        let d = u128_vec_to_uint128_vec(vec![29]);
+
+        assert_eq!(vec_mul(&a, &b, true), c);
+        assert_eq!(vec_mul(&a, &b, false), d);
+    }
 
     #[test]
     fn sum_correction() {
@@ -412,7 +486,7 @@ pub mod test {
 
     #[test]
     fn calc_ledger() {
-        let deposited_alice = Uint128::from(1_000_u128);
+        let deposited_alice = Uint128::from(1_035_u128);
         let day_counter_alice = Uint128::from(5_u128);
 
         let asset_list_alice = vec![
@@ -435,11 +509,11 @@ pub mod test {
         let user_alice = User::new(
             &asset_list_alice,
             day_counter_alice,
-            Uint128::from(deposited_alice),
+            deposited_alice,
             !IS_CONTROLLED_REBALANCING,
         );
 
-        let deposited_bob = Uint128::from(4_000_u128);
+        let deposited_bob = Uint128::from(4_130_u128);
         let day_counter_bob = Uint128::from(10_u128);
 
         let asset_list_bob = vec![
@@ -462,7 +536,7 @@ pub mod test {
         let user_bob = User::new(
             &asset_list_bob,
             day_counter_bob,
-            Uint128::from(deposited_bob),
+            deposited_bob,
             !IS_CONTROLLED_REBALANCING,
         );
 
@@ -518,8 +592,73 @@ pub mod test {
             ),
         ];
 
-        let res = get_ledger(pools_with_denoms, users_with_addresses);
+        let mut deposited_pre: Vec<Uint128> = vec![deposited_alice, deposited_bob];
+        let mut deposited_diff: Vec<Uint128> = vec![];
+        let mut user_daily_payment_right: Vec<Uint128> = vec![];
+        let mut user_with_addr_list: Vec<(Addr, User)> = users_with_addresses;
 
-        println!("{:#?}", res);
+        for _i in 0..=(day_counter_bob).u128() {
+            let (ledger, user_with_addr) = get_ledger(&pools_with_denoms, &user_with_addr_list);
+            user_with_addr_list = vec![];
+
+            let mut global_delta_balance_list_left: Vec<Uint128> =
+                vec![Uint128::zero(); ledger.global_denom_list.len()];
+            let mut global_delta_cost_list_left: Vec<Uint128> =
+                vec![Uint128::zero(); ledger.global_denom_list.len()];
+
+            for (addr, user) in user_with_addr {
+                let mut user_daily_payment_right_item: Uint128 = Uint128::zero();
+                let mut asset_list_updated: Vec<Asset> = vec![];
+
+                for asset in user.asset_list {
+                    let index = ledger
+                        .global_denom_list
+                        .iter()
+                        .position(|x| x == &asset.asset_denom)
+                        .unwrap();
+
+                    let price = ledger.global_price_list[index];
+                    let amount = asset.amount_to_send_until_next_epoch;
+                    let daily_payment = dec_to_uint128((uint128_to_dec(amount) * price).ceil());
+                    user_daily_payment_right_item += daily_payment;
+
+                    global_delta_balance_list_left[index] += amount;
+
+                    global_delta_cost_list_left[index] += daily_payment;
+
+                    asset_list_updated.push(Asset {
+                        amount_to_send_until_next_epoch: Uint128::zero(), // it is sent via ibc
+                        ..asset
+                    });
+                }
+
+                user_daily_payment_right.push(user_daily_payment_right_item);
+                deposited_diff.push(user.deposited);
+                user_with_addr_list.push((
+                    addr,
+                    User {
+                        asset_list: asset_list_updated,
+                        ..user
+                    },
+                ));
+            }
+
+            let user_daily_payment_left = vec_sub(&deposited_pre, &deposited_diff);
+            deposited_pre = deposited_diff;
+            deposited_diff = vec![];
+
+            // 1) user_daily_payment == sum(user_asset_amount * price)
+            assert_eq!(user_daily_payment_left, user_daily_payment_right);
+            user_daily_payment_right = vec![];
+
+            // 2) sum(user_asset) == global_delta_balance_list
+            assert_eq!(
+                global_delta_balance_list_left,
+                ledger.global_delta_balance_list
+            );
+
+            // 3) sum(user_asset * price) ==  global_delta_cost_list
+            assert_eq!(global_delta_cost_list_left, ledger.global_delta_cost_list);
+        }
     }
 }

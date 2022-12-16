@@ -2,3 +2,4 @@
 schema = "run --example schema"
 lint = "clippy --all-targets -- --D warnings"
 show = "test -- --show-output"
+trace = "RUST_BACKTRACE=1 cargo test -- --show-output"
