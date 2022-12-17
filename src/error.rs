@@ -51,4 +51,7 @@ pub enum ContractError {
 
     #[error("Weight is out of range!")]
     WeightIsOutOfRange {},
+
+    #[error("Stablecoin pool id is not updated!")]
+    StablePoolIdIsNotUpdated {},
 }

@@ -4,12 +4,12 @@ use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Respons
 use crate::{
     actions::{
         execute::{
-            deposit, multi_transfer, swap, transfer, update_pools_and_users, update_scheduler,
+            deposit, multi_transfer, swap, transfer, update_config, update_pools_and_users,
             withdraw,
         },
         instantiate::init,
         migrate::migrate_contract,
-        query::{query_pools_and_users, query_user},
+        query::{query_ledger, query_pools_and_users, query_user},
     },
     error::ContractError,
     messages::{
@@ -39,7 +39,22 @@ pub fn execute(
     match msg {
         ExecuteMsg::Deposit { user } => deposit(deps, env, info, user),
         ExecuteMsg::Withdraw { amount } => withdraw(deps, env, info, amount),
-        ExecuteMsg::UpdateScheduler { address } => update_scheduler(deps, env, info, address),
+        ExecuteMsg::UpdateConfig {
+            scheduler,
+            stablecoin_denom,
+            stablecoin_pool_id,
+            fee_default,
+            fee_osmo,
+        } => update_config(
+            deps,
+            env,
+            info,
+            scheduler,
+            stablecoin_denom,
+            stablecoin_pool_id,
+            fee_default,
+            fee_osmo,
+        ),
         ExecuteMsg::UpdatePoolsAndUsers { pools, users } => {
             update_pools_and_users(deps, env, info, pools, users)
         }
@@ -55,6 +70,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::QueryUser { address } => query_user(deps, env, address),
         QueryMsg::QueryPoolsAndUsers {} => query_pools_and_users(deps, env),
+        QueryMsg::QueryLedger {} => query_ledger(deps, env),
     }
 }
 

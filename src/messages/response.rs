@@ -1,6 +1,6 @@
 use cosmwasm_schema::cw_serde;
 
-use crate::state::{PoolExtracted, User, UserExtracted};
+use crate::state::{Ledger, PoolExtracted, User, UserExtracted};
 
 #[cw_serde]
 pub struct QueryUserResponse {
@@ -11,4 +11,9 @@ pub struct QueryUserResponse {
 pub struct QueryPoolsAndUsersResponse {
     pub users: Vec<UserExtracted>,
     pub pools: Vec<PoolExtracted>,
+}
+
+#[cw_serde]
+pub struct QueryLedgerResponse {
+    pub ledger: Ledger,
 }

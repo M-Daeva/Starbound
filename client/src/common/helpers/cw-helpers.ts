@@ -37,8 +37,22 @@ async function getCwHelpers(
     return await _msgWrapper(composer.withdraw({ amount: `${tokenAmount}` }));
   }
 
-  async function cwUpdateScheduler(address: string) {
-    return await _msgWrapper(composer.updateScheduler({ address }));
+  async function cwUpdateConfig(
+    scheduler?: string,
+    stablecoinDenom?: string,
+    stablecoinPoolId?: number,
+    feeDefault?: string,
+    feeOsmo?: string
+  ) {
+    return await _msgWrapper(
+      composer.updateConfig({
+        scheduler,
+        stablecoinDenom,
+        stablecoinPoolId,
+        feeDefault,
+        feeOsmo,
+      })
+    );
   }
 
   async function cwUpdatePoolsAndUsers(
@@ -72,12 +86,18 @@ async function getCwHelpers(
     return res;
   }
 
+  async function cwQueryLedger() {
+    const res = await client.queryLedger();
+    l("\n", res, "\n");
+    return res;
+  }
+
   return {
     owner,
 
     cwDeposit,
     cwWithdraw,
-    cwUpdateScheduler,
+    cwUpdateConfig,
 
     cwUpdatePoolsAndUsers,
     cwSwap,
@@ -86,6 +106,7 @@ async function getCwHelpers(
 
     cwQueryUser,
     cwQueryPoolsAndUsers,
+    cwQueryLedger,
   };
 }
 

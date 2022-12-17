@@ -14,8 +14,12 @@ export type ExecuteMsg = {
     amount: Uint128;
   };
 } | {
-  update_scheduler: {
-    address: string;
+  update_config: {
+    fee_default?: Decimal | null;
+    fee_osmo?: Decimal | null;
+    scheduler?: string | null;
+    stablecoin_denom?: string | null;
+    stablecoin_pool_id?: number | null;
   };
 } | {
   update_pools_and_users: {
@@ -78,8 +82,19 @@ export type QueryMsg = {
   };
 } | {
   query_pools_and_users: {};
+} | {
+  query_ledger: {};
 };
 export type MigrateMsg = string;
+export interface QueryLedgerResponse {
+  ledger: Ledger;
+}
+export interface Ledger {
+  global_delta_balance_list: Uint128[];
+  global_delta_cost_list: Uint128[];
+  global_denom_list: string[];
+  global_price_list: Decimal[];
+}
 export interface QueryPoolsAndUsersResponse {
   pools: PoolExtracted[];
   users: UserExtracted[];

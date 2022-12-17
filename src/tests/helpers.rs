@@ -1,7 +1,8 @@
 use cosmwasm_std::{
     coin,
     testing::{mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage},
-    Addr, Attribute, Coin, Empty, Env, MessageInfo, OwnedDeps, Response, StdError, Uint128,
+    Addr, Attribute, Coin, Decimal, Empty, Env, MessageInfo, OwnedDeps, Response, StdError,
+    Uint128,
 };
 use cw_multi_test::{App, AppResponse, ContractWrapper, Executor};
 
@@ -201,17 +202,25 @@ impl Starbound {
     }
 
     #[track_caller]
-    pub fn update_scheduler(
+    pub fn update_config(
         &mut self,
         sender: &str,
-        address: &str,
+        scheduler: Option<String>,
+        stablecoin_denom: Option<String>,
+        stablecoin_pool_id: Option<u64>,
+        fee_default: Option<Decimal>,
+        fee_osmo: Option<Decimal>,
     ) -> Result<AppResponse, StdError> {
         self.app
             .execute_contract(
                 Addr::unchecked(sender.to_string()),
                 self.address.clone(),
-                &ExecuteMsg::UpdateScheduler {
-                    address: address.to_string(),
+                &ExecuteMsg::UpdateConfig {
+                    scheduler,
+                    stablecoin_denom,
+                    stablecoin_pool_id,
+                    fee_default,
+                    fee_osmo,
                 },
                 &[],
             )
@@ -293,6 +302,13 @@ impl Starbound {
     }
 
     #[track_caller]
+    pub fn query_ledger(&self) -> Result<QueryUserResponse, StdError> {
+        self.app
+            .wrap()
+            .query_wasm_smart(self.address.clone(), &QueryMsg::QueryLedger {})
+    }
+
+    #[track_caller]
     pub fn query_contract_balances(&self) -> Result<Vec<Coin>, StdError> {
         self.app.wrap().query_all_balances(&self.address)
     }
@@ -336,7 +352,7 @@ impl Starbound {
 
         let user_alice = User::new(
             &asset_list_alice,
-            Uint128::from(3_u128),
+            Uint128::from(4_u128),
             Uint128::from(FUNDS_AMOUNT),
             IS_CONTROLLED_REBALANCING,
         );
@@ -376,7 +392,7 @@ impl Starbound {
             // "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
             Pool::new(
                 Uint128::one(),
-                u128_to_dec(13),
+                u128_to_dec(10),
                 "channel-1110",
                 "transfer",
                 "uatom",
@@ -384,7 +400,7 @@ impl Starbound {
             // "ibc/46B44899322F3CD854D2D46DEEF881958467CDD4B3B10086DA49296BBED94BED",
             Pool::new(
                 Uint128::from(497_u128),
-                u128_to_dec(4),
+                u128_to_dec(2),
                 "channel-1110",
                 "transfer",
                 "ujuno",
@@ -393,9 +409,9 @@ impl Starbound {
             Pool::new(
                 Uint128::from(481_u128),
                 u128_to_dec(1),
-                "debug_ch_id",
+                "ch_id",
                 "transfer",
-                "debug_ueeur",
+                "ustable",
             ),
         ]
     }

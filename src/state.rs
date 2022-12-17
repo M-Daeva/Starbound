@@ -2,12 +2,16 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal, Uint128};
 use cw_storage_plus::{Item, Map};
 
-pub const STATE: Item<State> = Item::new("state");
+pub const CONFIG: Item<Config> = Item::new("config");
 
 #[cw_serde]
-pub struct State {
+pub struct Config {
     pub admin: Addr,
     pub scheduler: Addr,
+    pub stablecoin_denom: String,
+    pub stablecoin_pool_id: u64,
+    pub fee_default: Decimal,
+    pub fee_osmo: Decimal,
 }
 
 pub const LEDGER: Item<Ledger> = Item::new("ledger");

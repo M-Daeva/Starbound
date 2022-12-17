@@ -36,7 +36,7 @@ function getChainInfo(asset: NetworkData, isMain: boolean) {
   try {
     // fix for juno testnet and mainnet denoms
     if (network.chain_id.includes("uni-")) {
-      asset.denom = "ujunox";
+      asset.denomNative = "ujunox";
     }
 
     let chainInfo: ChainInfo = {
@@ -46,7 +46,7 @@ function getChainInfo(asset: NetworkData, isMain: boolean) {
       rest: network.apis.rest[0].address,
       stakeCurrency: {
         coinDenom: asset.symbol,
-        coinMinimalDenom: asset.denom,
+        coinMinimalDenom: asset.denomNative,
         coinDecimals: asset.exponent,
         coinGeckoId: asset.coinGeckoId,
       },
@@ -62,7 +62,7 @@ function getChainInfo(asset: NetworkData, isMain: boolean) {
       currencies: [
         {
           coinDenom: asset.symbol,
-          coinMinimalDenom: asset.denom,
+          coinMinimalDenom: asset.denomNative,
           coinDecimals: asset.exponent,
           coinGeckoId: asset.coinGeckoId,
         },
@@ -70,7 +70,7 @@ function getChainInfo(asset: NetworkData, isMain: boolean) {
       feeCurrencies: [
         {
           coinDenom: asset.symbol,
-          coinMinimalDenom: asset.denom,
+          coinMinimalDenom: asset.denomNative,
           coinDecimals: asset.exponent,
           coinGeckoId: asset.coinGeckoId,
         },

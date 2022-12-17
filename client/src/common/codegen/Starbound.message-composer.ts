@@ -8,7 +8,7 @@ import { Coin } from "@cosmjs/amino";
 import { MsgExecuteContractEncodeObject } from "cosmwasm";
 import { MsgExecuteContract } from "cosmjs-types/cosmwasm/wasm/v1/tx";
 import { toUtf8 } from "@cosmjs/encoding";
-import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, User, Asset, PoolExtracted, UserExtracted, AssetExtracted, TransferParams, QueryMsg, MigrateMsg, QueryPoolsAndUsersResponse, QueryUserResponse } from "./Starbound.types";
+import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, User, Asset, PoolExtracted, UserExtracted, AssetExtracted, TransferParams, QueryMsg, MigrateMsg, QueryLedgerResponse, Ledger, QueryPoolsAndUsersResponse, QueryUserResponse } from "./Starbound.types";
 export interface StarboundMessage {
   contractAddress: string;
   sender: string;
@@ -22,10 +22,18 @@ export interface StarboundMessage {
   }: {
     amount: Uint128;
   }, funds?: Coin[]) => MsgExecuteContractEncodeObject;
-  updateScheduler: ({
-    address
+  updateConfig: ({
+    feeDefault,
+    feeOsmo,
+    scheduler,
+    stablecoinDenom,
+    stablecoinPoolId
   }: {
-    address: string;
+    feeDefault?: Decimal;
+    feeOsmo?: Decimal;
+    scheduler?: string;
+    stablecoinDenom?: string;
+    stablecoinPoolId?: number;
   }, funds?: Coin[]) => MsgExecuteContractEncodeObject;
   updatePoolsAndUsers: ({
     pools,
@@ -51,7 +59,7 @@ export class StarboundMessageComposer implements StarboundMessage {
     this.contractAddress = contractAddress;
     this.deposit = this.deposit.bind(this);
     this.withdraw = this.withdraw.bind(this);
-    this.updateScheduler = this.updateScheduler.bind(this);
+    this.updateConfig = this.updateConfig.bind(this);
     this.updatePoolsAndUsers = this.updatePoolsAndUsers.bind(this);
     this.swap = this.swap.bind(this);
     this.transfer = this.transfer.bind(this);
@@ -96,10 +104,18 @@ export class StarboundMessageComposer implements StarboundMessage {
       })
     };
   };
-  updateScheduler = ({
-    address
+  updateConfig = ({
+    feeDefault,
+    feeOsmo,
+    scheduler,
+    stablecoinDenom,
+    stablecoinPoolId
   }: {
-    address: string;
+    feeDefault?: Decimal;
+    feeOsmo?: Decimal;
+    scheduler?: string;
+    stablecoinDenom?: string;
+    stablecoinPoolId?: number;
   }, funds?: Coin[]): MsgExecuteContractEncodeObject => {
     return {
       typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
@@ -107,8 +123,12 @@ export class StarboundMessageComposer implements StarboundMessage {
         sender: this.sender,
         contract: this.contractAddress,
         msg: toUtf8(JSON.stringify({
-          update_scheduler: {
-            address
+          update_config: {
+            fee_default: feeDefault,
+            fee_osmo: feeOsmo,
+            scheduler,
+            stablecoin_denom: stablecoinDenom,
+            stablecoin_pool_id: stablecoinPoolId
           }
         })),
         funds

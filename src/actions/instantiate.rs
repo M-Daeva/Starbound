@@ -1,16 +1,21 @@
 #[cfg(not(feature = "library"))]
-use cosmwasm_std::{DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint128};
+use cosmwasm_std::{DepsMut, Env, MessageInfo, Response, Uint128};
 use cw2::set_contract_version;
 
 use crate::{
-    actions::rebalancer::u128_to_dec,
+    actions::rebalancer::{str_to_dec, u128_to_dec},
     error::ContractError,
     messages::instantiate::InstantiateMsg,
-    state::{Ledger, Pool, State, LEDGER, POOLS, STATE},
+    state::{Config, Ledger, Pool, CONFIG, LEDGER, POOLS},
 };
 
 const CONTRACT_NAME: &str = "crates.io:boilerplate-test";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+// TODO: replace EEUR -> USDC on mainnet
+const STABLECOIN_DENOM: &str =
+    "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F";
+const STABLECOIN_POOL_ID: u64 = 481;
 
 pub fn init(
     deps: DepsMut,
@@ -18,14 +23,13 @@ pub fn init(
     info: MessageInfo,
     _msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
-    // testnet config
     let init_pools = vec![
         // ATOM / OSMO
         (
             "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
             Pool::new(
                 Uint128::one(),
-                u128_to_dec(13),
+                u128_to_dec(10),
                 "channel-1110",
                 "transfer",
                 "uatom",
@@ -36,21 +40,21 @@ pub fn init(
             "ibc/46B44899322F3CD854D2D46DEEF881958467CDD4B3B10086DA49296BBED94BED",
             Pool::new(
                 Uint128::from(497_u128),
-                u128_to_dec(4),
+                u128_to_dec(2),
                 "channel-1110",
                 "transfer",
                 "ujuno",
             ),
         ),
-        // EEUR / OSMO
+        // STABLECOIN / OSMO
         (
-            "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F",
+            STABLECOIN_DENOM,
             Pool::new(
-                Uint128::from(481_u128),
+                Uint128::from(STABLECOIN_POOL_ID as u128),
                 u128_to_dec(1),
-                "debug_ch_id",
+                "ch_id",
                 "transfer",
-                "debug_ueeur",
+                "ustable",
             ),
         ),
     ];
@@ -59,11 +63,15 @@ pub fn init(
         POOLS.save(deps.storage, denom, &pool)?;
     }
 
-    STATE.save(
+    CONFIG.save(
         deps.storage,
-        &State {
+        &Config {
             admin: info.sender.clone(),
             scheduler: info.sender.clone(),
+            stablecoin_denom: STABLECOIN_DENOM.to_string(),
+            stablecoin_pool_id: STABLECOIN_POOL_ID,
+            fee_default: str_to_dec("0.001"),
+            fee_osmo: str_to_dec("0.002"),
         },
     )?;
 
@@ -82,6 +90,5 @@ pub fn init(
     Ok(Response::new().add_attributes(vec![
         ("method", "instantiate"),
         ("admin", info.sender.as_ref()),
-        ("scheduler", info.sender.as_ref()),
     ]))
 }

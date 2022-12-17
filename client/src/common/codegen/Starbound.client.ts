@@ -6,7 +6,7 @@
 
 import { CosmWasmClient, SigningCosmWasmClient, ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 import { Coin, StdFee } from "@cosmjs/amino";
-import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, User, Asset, PoolExtracted, UserExtracted, AssetExtracted, TransferParams, QueryMsg, MigrateMsg, QueryPoolsAndUsersResponse, QueryUserResponse } from "./Starbound.types";
+import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, User, Asset, PoolExtracted, UserExtracted, AssetExtracted, TransferParams, QueryMsg, MigrateMsg, QueryLedgerResponse, Ledger, QueryPoolsAndUsersResponse, QueryUserResponse } from "./Starbound.types";
 export interface StarboundReadOnlyInterface {
   contractAddress: string;
   queryUser: ({
@@ -15,6 +15,7 @@ export interface StarboundReadOnlyInterface {
     address: string;
   }) => Promise<QueryUserResponse>;
   queryPoolsAndUsers: () => Promise<QueryPoolsAndUsersResponse>;
+  queryLedger: () => Promise<QueryLedgerResponse>;
 }
 export class StarboundQueryClient implements StarboundReadOnlyInterface {
   client: CosmWasmClient;
@@ -25,6 +26,7 @@ export class StarboundQueryClient implements StarboundReadOnlyInterface {
     this.contractAddress = contractAddress;
     this.queryUser = this.queryUser.bind(this);
     this.queryPoolsAndUsers = this.queryPoolsAndUsers.bind(this);
+    this.queryLedger = this.queryLedger.bind(this);
   }
 
   queryUser = async ({
@@ -43,6 +45,11 @@ export class StarboundQueryClient implements StarboundReadOnlyInterface {
       query_pools_and_users: {}
     });
   };
+  queryLedger = async (): Promise<QueryLedgerResponse> => {
+    return this.client.queryContractSmart(this.contractAddress, {
+      query_ledger: {}
+    });
+  };
 }
 export interface StarboundInterface extends StarboundReadOnlyInterface {
   contractAddress: string;
@@ -57,10 +64,18 @@ export interface StarboundInterface extends StarboundReadOnlyInterface {
   }: {
     amount: Uint128;
   }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
-  updateScheduler: ({
-    address
+  updateConfig: ({
+    feeDefault,
+    feeOsmo,
+    scheduler,
+    stablecoinDenom,
+    stablecoinPoolId
   }: {
-    address: string;
+    feeDefault?: Decimal;
+    feeOsmo?: Decimal;
+    scheduler?: string;
+    stablecoinDenom?: string;
+    stablecoinPoolId?: number;
   }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
   updatePoolsAndUsers: ({
     pools,
@@ -89,7 +104,7 @@ export class StarboundClient extends StarboundQueryClient implements StarboundIn
     this.contractAddress = contractAddress;
     this.deposit = this.deposit.bind(this);
     this.withdraw = this.withdraw.bind(this);
-    this.updateScheduler = this.updateScheduler.bind(this);
+    this.updateConfig = this.updateConfig.bind(this);
     this.updatePoolsAndUsers = this.updatePoolsAndUsers.bind(this);
     this.swap = this.swap.bind(this);
     this.transfer = this.transfer.bind(this);
@@ -118,14 +133,26 @@ export class StarboundClient extends StarboundQueryClient implements StarboundIn
       }
     }, fee, memo, funds);
   };
-  updateScheduler = async ({
-    address
+  updateConfig = async ({
+    feeDefault,
+    feeOsmo,
+    scheduler,
+    stablecoinDenom,
+    stablecoinPoolId
   }: {
-    address: string;
+    feeDefault?: Decimal;
+    feeOsmo?: Decimal;
+    scheduler?: string;
+    stablecoinDenom?: string;
+    stablecoinPoolId?: number;
   }, fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
     return await this.client.execute(this.sender, this.contractAddress, {
-      update_scheduler: {
-        address
+      update_config: {
+        fee_default: feeDefault,
+        fee_osmo: feeOsmo,
+        scheduler,
+        stablecoin_denom: stablecoinDenom,
+        stablecoin_pool_id: stablecoinPoolId
       }
     }, fee, memo, funds);
   };

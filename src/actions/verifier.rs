@@ -3,7 +3,7 @@ use cosmwasm_std::{Addr, CanonicalAddr, Decimal, DepsMut, MessageInfo, StdError,
 
 use crate::{
     error::ContractError,
-    state::{User, POOLS, STATE},
+    state::{User, CONFIG, POOLS},
 };
 
 // This simple Api provided for address verification
@@ -152,8 +152,8 @@ pub fn verify_deposit_data(
     user: &User,
 ) -> Result<(), ContractError> {
     // check funds
-    // temporary replacement for tests - there is no USDC so we used EEUR
-    let denom_token_in = "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F";
+    let config = CONFIG.load(deps.storage)?;
+    let denom_token_in = config.stablecoin_denom;
 
     // return error if received something differ from required stablecoin
     if info
@@ -225,9 +225,9 @@ pub fn verify_deposit_data(
 // data verification for update_pools_and_users, swap, transfer methods
 pub fn verify_scheduler(deps: &DepsMut, info: &MessageInfo) -> Result<(), ContractError> {
     // check if sender is scheduler
-    let state = STATE.load(deps.storage)?;
+    let config = CONFIG.load(deps.storage)?;
 
-    if info.sender != state.admin && info.sender != state.scheduler {
+    if info.sender != config.admin && info.sender != config.scheduler {
         return Err(ContractError::Unauthorized {});
     }
 

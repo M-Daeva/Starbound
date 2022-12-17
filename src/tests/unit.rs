@@ -1,7 +1,10 @@
 use cosmwasm_std::{attr, coin, from_binary, Addr, Attribute, Decimal, Empty, StdError, Uint128};
 
 use cw_multi_test::{App, Contract, ContractWrapper, Executor};
-use osmosis_testing::{fn_query, Account, Bank, Gamm, Module, OsmosisTestApp, Wasm};
+use osmosis_testing::{
+    cosmrs::proto::cosmos::bank::v1beta1::QueryAllBalancesRequest, fn_query, Account, Bank, Gamm,
+    Module, OsmosisTestApp, Wasm,
+};
 use std::ops::{Add, Div};
 
 use crate::{
@@ -12,7 +15,7 @@ use crate::{
         execute::ExecuteMsg,
         instantiate::InstantiateMsg,
         query::QueryMsg,
-        response::{QueryPoolsAndUsersResponse, QueryUserResponse},
+        response::{QueryLedgerResponse, QueryPoolsAndUsersResponse, QueryUserResponse},
     },
     state::{Asset, AssetExtracted, Pool, PoolExtracted, User, UserExtracted},
     tests::helpers::{
@@ -168,9 +171,18 @@ fn update_scheduler_before() {
 #[test]
 fn update_scheduler_after() {
     let mut st = Starbound::new();
-    let res = st.update_scheduler(ADDR_ADMIN_OSMO, ADDR_BOB_OSMO).unwrap();
+    let res = st
+        .update_config(
+            ADDR_ADMIN_OSMO,
+            Some(ADDR_BOB_OSMO.to_string()),
+            None,
+            None,
+            None,
+            None,
+        )
+        .unwrap();
 
-    assert_eq!(Starbound::get_attr(&res, "scheduler"), ADDR_BOB_OSMO);
+    assert_eq!(Starbound::get_attr(&res, "method"), "update_config");
 
     let QueryPoolsAndUsersResponse {
         pools: res_pools,
@@ -324,17 +336,17 @@ fn update_pools_and_users() {
 
 #[test]
 fn swap() {
-    // create new osmosis appchain instance.
+    // create new osmosis appchain instance
     let app = OsmosisTestApp::new();
 
-    // create new account with initial funds
+    // create new accounts with initial funds
     let accs = app
         .init_accounts(
             &[
-                coin(1_000_000_000_000, DENOM_ATOM),
-                coin(1_000_000_000_000, DENOM_JUNO),
-                coin(1_000_000_000_000, DENOM_EEUR),
-                coin(1_000_000_000_000, DENOM_OSMO),
+                coin(1_000_000_000_000_000, DENOM_ATOM),
+                coin(1_000_000_000_000_000, DENOM_JUNO),
+                coin(1_000_000_000_000_000, DENOM_EEUR),
+                coin(1_000_000_000_000_000, DENOM_OSMO),
             ],
             2,
         )
@@ -347,33 +359,24 @@ fn swap() {
     let gamm = Gamm::new(&app);
 
     // create balancer pool with basic configuration
-    // ATOM - 1
-    let pool_liquidity = vec![coin(1_000, DENOM_ATOM), coin(1_000, DENOM_OSMO)];
-    let pool_id = gamm
-        .create_basic_pool(&pool_liquidity, user)
-        .unwrap()
-        .data
-        .pool_id;
+    // ATOM pool_id is 1, 1 ATOM == 12.5 OSMO
+    let pool_liquidity = vec![coin(1_000_000, DENOM_ATOM), coin(12_500_000, DENOM_OSMO)];
+    gamm.create_basic_pool(&pool_liquidity, user).unwrap();
 
-    // JUNO - 2
-    let pool_liquidity = vec![coin(1_000, DENOM_JUNO), coin(1_000, DENOM_OSMO)];
-    let pool_id = gamm
-        .create_basic_pool(&pool_liquidity, user)
-        .unwrap()
-        .data
-        .pool_id;
+    // JUNO pool_id is 2, 1 JUNO == 2.5 OSMO
+    let pool_liquidity = vec![coin(1_000_000, DENOM_JUNO), coin(2_500_000, DENOM_OSMO)];
+    gamm.create_basic_pool(&pool_liquidity, user).unwrap();
 
-    // EEUR - 3
-    let pool_liquidity = vec![coin(1_000, DENOM_EEUR), coin(1_000, DENOM_OSMO)];
-    let pool_id = gamm
-        .create_basic_pool(&pool_liquidity, user)
-        .unwrap()
-        .data
-        .pool_id;
+    // EEUR pool_id is 3, 1 EEUR == 1.25 OSMO
+    const STABLE_POOL_ID: u64 = 3;
+    let pool_liquidity = vec![coin(1_000_000, DENOM_EEUR), coin(1_250_000, DENOM_OSMO)];
+    gamm.create_basic_pool(&pool_liquidity, user).unwrap();
 
     // `Wasm` is the module we use to interact with cosmwasm releated logic on the appchain
-    // it implements `Module` trait which you will see more later.
     let wasm = Wasm::new(&app);
+
+    // create Bank Module Wrapper
+    let bank = Bank::new(&app);
 
     // Load compiled wasm bytecode
     let wasm_byte_code = std::fs::read("./artifacts/starbound.wasm").unwrap();
@@ -388,10 +391,10 @@ fn swap() {
         .instantiate(
             code_id,
             &InstantiateMsg {},
-            Some(&admin.address()), // contract admin used for migration
-            None,                   // contract label
-            &[],                    // funds
-            admin,                  // signer
+            Some(&admin.address()),
+            None,
+            &[],
+            admin,
         )
         .unwrap()
         .data
@@ -424,6 +427,21 @@ fn swap() {
     )
     .unwrap();
 
+    // update stablecoin pool id for gamm wrapper
+    wasm.execute::<ExecuteMsg>(
+        &contract_addr,
+        &ExecuteMsg::UpdateConfig {
+            scheduler: None,
+            stablecoin_denom: Some(DENOM_EEUR.to_string()),
+            stablecoin_pool_id: Some(STABLE_POOL_ID),
+            fee_default: None,
+            fee_osmo: None,
+        },
+        &[],
+        admin,
+    )
+    .unwrap();
+
     let user_alice = Starbound::get_user(UserName::Alice);
 
     wasm.execute::<ExecuteMsg>(
@@ -436,14 +454,40 @@ fn swap() {
     )
     .unwrap();
 
-    let res = gamm.query_pool(3).unwrap();
-    println!("{:#?}", res);
+    let res = gamm.query_pool(STABLE_POOL_ID).unwrap();
+    println!("{:#?}", res.pool_assets);
+
+    let contract_balances = bank
+        .query_all_balances(&QueryAllBalancesRequest {
+            address: contract_addr.clone(),
+            pagination: None,
+        })
+        .unwrap();
+    println!("{:#?}", contract_balances);
+
+    let ledger = wasm
+        .query::<QueryMsg, QueryLedgerResponse>(&contract_addr, &QueryMsg::QueryLedger {})
+        .unwrap();
+    println!("{:#?}", ledger);
 
     wasm.execute::<ExecuteMsg>(&contract_addr, &ExecuteMsg::Swap {}, &[], admin)
         .unwrap();
 
-    let res = gamm.query_pool(3).unwrap();
-    println!("{:#?}", res);
+    let res = gamm.query_pool(STABLE_POOL_ID).unwrap();
+    println!("{:#?}", res.pool_assets);
+
+    let contract_balances = bank
+        .query_all_balances(&QueryAllBalancesRequest {
+            address: contract_addr.clone(),
+            pagination: None,
+        })
+        .unwrap();
+    println!("{:#?}", contract_balances);
+
+    let ledger = wasm
+        .query::<QueryMsg, QueryLedgerResponse>(&contract_addr, &QueryMsg::QueryLedger {})
+        .unwrap();
+    println!("{:#?}", ledger);
 }
 
 // #[test]

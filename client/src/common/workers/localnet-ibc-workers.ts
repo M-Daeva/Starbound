@@ -92,8 +92,7 @@ async function init() {
   let userAlice: User = {
     asset_list: assetListAlice,
     day_counter: "3",
-    deposited_on_current_period: `${100}`,
-    deposited_on_next_period: "0",
+    deposited: `${100}`,
     is_controlled_rebalancing: false,
   };
 

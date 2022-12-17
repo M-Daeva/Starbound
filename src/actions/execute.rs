@@ -12,16 +12,13 @@ use std::ops::Mul;
 
 use crate::{
     actions::{
-        rebalancer::{
-            dec_to_u128, get_ledger, rebalance_controlled, rebalance_proportional, u128_to_dec,
-            vec_div, vec_mul,
-        },
+        rebalancer::{dec_to_u128, get_ledger, u128_to_dec},
         verifier::{verify_deposit_data, verify_scheduler},
     },
     error::ContractError,
     state::{
-        Asset, Ledger, Pool, PoolExtracted, State, TransferParams, User, UserExtracted, LEDGER,
-        POOLS, STATE, USERS,
+        Asset, Config, Ledger, Pool, PoolExtracted, TransferParams, User, UserExtracted, CONFIG,
+        LEDGER, POOLS, USERS,
     },
 };
 
@@ -93,8 +90,8 @@ pub fn withdraw(
     info: MessageInfo,
     amount: Uint128,
 ) -> Result<Response, ContractError> {
-    // temporary replacement for tests - there is no USDC so we used EEUR
-    let denom_token_out = "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F";
+    let config = CONFIG.load(deps.storage)?;
+    let denom_token_out = config.stablecoin_denom;
 
     let user = USERS.update(
         deps.storage,
@@ -125,27 +122,56 @@ pub fn withdraw(
     ]))
 }
 
-pub fn update_scheduler(
+pub fn update_config(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    address: String,
+    scheduler: Option<String>,
+    stablecoin_denom: Option<String>,
+    stablecoin_pool_id: Option<u64>,
+    fee_default: Option<Decimal>,
+    fee_osmo: Option<Decimal>,
 ) -> Result<Response, ContractError> {
-    STATE.update(deps.storage, |state| -> Result<State, ContractError> {
-        if info.sender != state.admin {
-            return Err(ContractError::Unauthorized {});
-        }
+    CONFIG.update(
+        deps.storage,
+        |mut config| -> Result<Config, ContractError> {
+            if info.sender != config.admin {
+                return Err(ContractError::Unauthorized {});
+            }
 
-        Ok(State {
-            scheduler: deps.api.addr_validate(&address)?,
-            ..state
-        })
-    })?;
+            if let Some(scheduler) = scheduler {
+                config = Config {
+                    scheduler: deps.api.addr_validate(&scheduler)?,
+                    ..config
+                };
+            }
 
-    Ok(Response::new().add_attributes(vec![
-        ("method", "update_scheduler"),
-        ("scheduler", &address),
-    ]))
+            if let Some(stablecoin_denom) = stablecoin_denom {
+                // pool id must be updated same time as denom
+                config = Config {
+                    stablecoin_denom,
+                    stablecoin_pool_id: stablecoin_pool_id
+                        .ok_or(ContractError::StablePoolIdIsNotUpdated {})?,
+                    ..config
+                };
+            }
+
+            if let Some(fee_default) = fee_default {
+                config = Config {
+                    fee_default,
+                    ..config
+                };
+            }
+
+            if let Some(fee_osmo) = fee_osmo {
+                config = Config { fee_osmo, ..config };
+            }
+
+            Ok(config)
+        },
+    )?;
+
+    Ok(Response::new().add_attributes(vec![("method", "update_config")]))
 }
 
 pub fn update_pools_and_users(
@@ -244,8 +270,8 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
 
     let mut msg_list = Vec::<CosmosMsg>::new();
 
-    // TODO: replace eeur with usdc on mainnet
-    let denom_token_in = "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F";
+    let config = CONFIG.load(deps.storage)?;
+    let denom_token_in = &config.stablecoin_denom;
 
     for (i, global_denom) in ledger.global_denom_list.iter().enumerate() {
         // skip eeur
@@ -263,11 +289,9 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
 
         let pool = POOLS.load(deps.storage, global_denom)?;
 
-        // TODO: replace id for USDC
-        // swap eeur to osmo anyway
+        // swap stablecoin to osmo anyway
         let mut routes: Vec<SwapAmountInRoute> = vec![SwapAmountInRoute {
-            //pool_id: 481,
-            pool_id: 3,
+            pool_id: config.stablecoin_pool_id,
             token_out_denom: "uosmo".to_string(),
         }];
 

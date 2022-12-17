@@ -1,6 +1,6 @@
 use crate::state::{PoolExtracted, TransferParams, User, UserExtracted};
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Decimal, Uint128};
 
 #[cw_serde]
 pub enum ExecuteMsg {
@@ -10,8 +10,12 @@ pub enum ExecuteMsg {
     Withdraw {
         amount: Uint128,
     },
-    UpdateScheduler {
-        address: String,
+    UpdateConfig {
+        scheduler: Option<String>,
+        stablecoin_denom: Option<String>,
+        stablecoin_pool_id: Option<u64>,
+        fee_default: Option<Decimal>,
+        fee_osmo: Option<Decimal>,
     },
     UpdatePoolsAndUsers {
         pools: Vec<PoolExtracted>,
