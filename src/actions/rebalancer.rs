@@ -96,7 +96,7 @@ pub fn vec_sub(a: &[Uint128], b: &[Uint128]) -> Vec<Uint128> {
 // replace max(r) with sum(r) - sum(r w/o max(r))
 fn correct_sum(r: Vec<Uint128>, d: Uint128) -> Vec<Uint128> {
     let r_max = *r.iter().max().unwrap();
-    let r_sum_wo_max_item = r.iter().filter(|&&r_item| r_item != r_max).sum::<Uint128>();
+    let r_sum_wo_max_item = r.iter().sum::<Uint128>() - r_max;
     let r_corrected = r
         .iter()
         .map(|&r_item| {

@@ -48,7 +48,7 @@ pub const DENOM_NONEXISTENT: &str = "DENOM_NONEXISTENT";
 
 // pub const CHANNEL_ID: &str = "channel-1100";
 
-pub const IS_CONTROLLED_REBALANCING: bool = true;
+pub const IS_CONTROLLED_REBALANCING: bool = false;
 pub const IS_CURRENT_PERIOD: bool = true;
 pub const FUNDS_AMOUNT: u128 = 10_000;
 

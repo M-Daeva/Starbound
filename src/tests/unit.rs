@@ -8,7 +8,7 @@ use osmosis_testing::{
 use std::ops::{Add, Div};
 
 use crate::{
-    actions::rebalancer::str_to_dec,
+    actions::rebalancer::{dec_to_u128, str_to_dec, u128_to_dec},
     contract::{execute, instantiate, query},
     error::ContractError,
     messages::{
@@ -339,14 +339,16 @@ fn swap() {
     // create new osmosis appchain instance
     let app = OsmosisTestApp::new();
 
+    const ACC_COIN_AMOUNT: u128 = 1_000_000_000_000_000;
+
     // create new accounts with initial funds
     let accs = app
         .init_accounts(
             &[
-                coin(1_000_000_000_000_000, DENOM_ATOM),
-                coin(1_000_000_000_000_000, DENOM_JUNO),
-                coin(1_000_000_000_000_000, DENOM_EEUR),
-                coin(1_000_000_000_000_000, DENOM_OSMO),
+                coin(ACC_COIN_AMOUNT, DENOM_ATOM),
+                coin(ACC_COIN_AMOUNT, DENOM_JUNO),
+                coin(ACC_COIN_AMOUNT, DENOM_EEUR),
+                coin(ACC_COIN_AMOUNT, DENOM_OSMO),
             ],
             2,
         )
@@ -358,18 +360,44 @@ fn swap() {
     // create Gamm Module Wrapper
     let gamm = Gamm::new(&app);
 
+    let asset_prices = Starbound::get_pools()
+        .iter()
+        .map(|x| x.price)
+        .collect::<Vec<Decimal>>();
+
+    const POOL_COIN_AMOUNT: u128 = ACC_COIN_AMOUNT / 1_000_000_000;
+    let osmo_price = str_to_dec("0.8");
+
     // create balancer pool with basic configuration
     // ATOM pool_id is 1, 1 ATOM == 12.5 OSMO
-    let pool_liquidity = vec![coin(1_000_000, DENOM_ATOM), coin(12_500_000, DENOM_OSMO)];
+    let pool_liquidity = vec![
+        coin(POOL_COIN_AMOUNT, DENOM_ATOM),
+        coin(
+            dec_to_u128(u128_to_dec(POOL_COIN_AMOUNT) * asset_prices[0] / osmo_price),
+            DENOM_OSMO,
+        ),
+    ];
     gamm.create_basic_pool(&pool_liquidity, user).unwrap();
 
     // JUNO pool_id is 2, 1 JUNO == 2.5 OSMO
-    let pool_liquidity = vec![coin(1_000_000, DENOM_JUNO), coin(2_500_000, DENOM_OSMO)];
+    let pool_liquidity = vec![
+        coin(POOL_COIN_AMOUNT, DENOM_JUNO),
+        coin(
+            dec_to_u128(u128_to_dec(POOL_COIN_AMOUNT) * asset_prices[1] / osmo_price),
+            DENOM_OSMO,
+        ),
+    ];
     gamm.create_basic_pool(&pool_liquidity, user).unwrap();
 
     // EEUR pool_id is 3, 1 EEUR == 1.25 OSMO
     const STABLE_POOL_ID: u64 = 3;
-    let pool_liquidity = vec![coin(1_000_000, DENOM_EEUR), coin(1_250_000, DENOM_OSMO)];
+    let pool_liquidity = vec![
+        coin(POOL_COIN_AMOUNT, DENOM_EEUR),
+        coin(
+            dec_to_u128(u128_to_dec(POOL_COIN_AMOUNT) * asset_prices[2] / osmo_price),
+            DENOM_OSMO,
+        ),
+    ];
     gamm.create_basic_pool(&pool_liquidity, user).unwrap();
 
     // `Wasm` is the module we use to interact with cosmwasm releated logic on the appchain

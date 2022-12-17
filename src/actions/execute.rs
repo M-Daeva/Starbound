@@ -274,7 +274,7 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
     let denom_token_in = &config.stablecoin_denom;
 
     for (i, global_denom) in ledger.global_denom_list.iter().enumerate() {
-        // skip eeur
+        // skip stablecoin
         if global_denom == denom_token_in {
             continue;
         }
