@@ -92,22 +92,43 @@ pub fn vec_sub(a: &[Uint128], b: &[Uint128]) -> Vec<Uint128> {
     temp
 }
 
-// calculation error correction
-// replace max(r) with sum(r) - sum(r w/o max(r))
+/// transforms r = [a + e1, b + e2] -> [a, b], where sum([a, b]) == d, e1/d -> 0, e2/d -> 0 \
+/// increasing/decreasing maximums of r
 fn correct_sum(r: Vec<Uint128>, d: Uint128) -> Vec<Uint128> {
+    let r_sum = r.iter().sum::<Uint128>();
+    if r_sum == d {
+        return r;
+    }
+
     let r_max = *r.iter().max().unwrap();
-    let r_sum_wo_max_item = r.iter().sum::<Uint128>() - r_max;
-    let r_corrected = r
+    let r_max_amount = r
         .iter()
-        .map(|&r_item| {
-            if r_item == r_max {
-                d - r_sum_wo_max_item
+        .filter(|x| x == &r_max)
+        .collect::<Vec<&Uint128>>()
+        .len();
+
+    let r_is_greater = r_sum > d;
+    let mut offset = if r_is_greater { r_sum - d } else { d - r_sum };
+    let mut offset_list: Vec<Uint128> = vec![Uint128::zero(); r_max_amount];
+    let mut i = 0;
+    while !offset.is_zero() {
+        offset_list[i] += Uint128::one();
+        i = if i < r_max_amount - 1 { i + 1 } else { 0 };
+        offset -= Uint128::one();
+    }
+    let mut j = 0;
+
+    r.iter()
+        .map(|&x| {
+            if x == r_max {
+                let offset = offset_list[j];
+                j += 1;
+                return if r_is_greater { x - offset } else { x + offset };
             } else {
-                r_item
+                x
             }
         })
-        .collect();
-    r_corrected
+        .collect::<Vec<Uint128>>()
 }
 
 /// x1 - vector of current asset costs \
@@ -314,7 +335,9 @@ pub fn get_ledger(
     }
 
     // 8) clamping sum of assets costs by daily_payment_sum
-    global_delta_cost_list = correct_sum(global_delta_cost_list, daily_payment_sum);
+    if global_delta_cost_list.iter().sum::<Uint128>() > daily_payment_sum {
+        global_delta_cost_list = correct_sum(global_delta_cost_list, daily_payment_sum);
+    }
 
     let ledger = Ledger {
         global_denom_list,
@@ -386,6 +409,36 @@ pub mod test {
         let d: Uint128 = Uint128::from(600_000_000_u128);
 
         let xd = u128_vec_to_uint128_vec(vec![100_000_007, 299_999_993, 200_000_000, 0]);
+
+        assert_eq!(correct_sum(r, d), xd);
+    }
+
+    #[test]
+    fn sum_correction2() {
+        let r = u128_vec_to_uint128_vec(vec![300_002, 100_000, 300_002, 200_000, 0]);
+        let d: Uint128 = Uint128::from(900_000_u128);
+
+        let xd = u128_vec_to_uint128_vec(vec![300_000, 100_000, 300_000, 200_000, 0]);
+
+        assert_eq!(correct_sum(r, d), xd);
+    }
+
+    #[test]
+    fn sum_correction3() {
+        let r = u128_vec_to_uint128_vec(vec![300_002, 100_001, 300_002, 200_000, 0]);
+        let d: Uint128 = Uint128::from(900_000_u128);
+
+        let xd = u128_vec_to_uint128_vec(vec![299_999, 100_001, 300_000, 200_000, 0]);
+
+        assert_eq!(correct_sum(r, d), xd);
+    }
+
+    #[test]
+    fn sum_correction4() {
+        let r = u128_vec_to_uint128_vec(vec![299_998, 99_999, 299_998, 200_000, 0]);
+        let d: Uint128 = Uint128::from(900_000_u128);
+
+        let xd = u128_vec_to_uint128_vec(vec![300_001, 99_999, 300_000, 200_000, 0]);
 
         assert_eq!(correct_sum(r, d), xd);
     }
