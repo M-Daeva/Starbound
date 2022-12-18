@@ -23,12 +23,14 @@ export interface StarboundMessage {
     amount: Uint128;
   }, funds?: Coin[]) => MsgExecuteContractEncodeObject;
   updateConfig: ({
+    dappAddressAndDenomList,
     feeDefault,
     feeOsmo,
     scheduler,
     stablecoinDenom,
     stablecoinPoolId
   }: {
+    dappAddressAndDenomList?: string[][][];
     feeDefault?: Decimal;
     feeOsmo?: Decimal;
     scheduler?: string;
@@ -105,12 +107,14 @@ export class StarboundMessageComposer implements StarboundMessage {
     };
   };
   updateConfig = ({
+    dappAddressAndDenomList,
     feeDefault,
     feeOsmo,
     scheduler,
     stablecoinDenom,
     stablecoinPoolId
   }: {
+    dappAddressAndDenomList?: string[][][];
     feeDefault?: Decimal;
     feeOsmo?: Decimal;
     scheduler?: string;
@@ -124,6 +128,7 @@ export class StarboundMessageComposer implements StarboundMessage {
         contract: this.contractAddress,
         msg: toUtf8(JSON.stringify({
           update_config: {
+            dapp_address_and_denom_list: dappAddressAndDenomList,
             fee_default: feeDefault,
             fee_osmo: feeOsmo,
             scheduler,

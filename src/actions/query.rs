@@ -3,7 +3,7 @@ use cosmwasm_std::{to_binary, Binary, Deps, Env, Order, StdResult};
 
 use crate::{
     messages::response::{QueryLedgerResponse, QueryPoolsAndUsersResponse, QueryUserResponse},
-    state::{PoolExtracted, UserExtracted, LEDGER, POOLS, USERS},
+    state::{Pool, PoolExtracted, UserExtracted, LEDGER, POOLS, USERS},
 };
 
 pub fn query_user(deps: Deps, _env: Env, address: String) -> StdResult<Binary> {
@@ -31,14 +31,21 @@ pub fn query_pools_and_users(deps: Deps, _env: Env) -> StdResult<Binary> {
         .range(deps.storage, None, None, Order::Ascending)
         .map(|x| {
             let (denom, pool) = x.unwrap();
+            let Pool {
+                channel_id,
+                id,
+                port_id,
+                price,
+                symbol,
+            } = pool;
 
             PoolExtracted {
-                channel_id: pool.channel_id,
                 denom,
-                id: pool.id,
-                port_id: pool.port_id,
-                price: pool.price,
-                symbol: pool.symbol,
+                channel_id,
+                id,
+                port_id,
+                price,
+                symbol,
             }
         })
         .collect();

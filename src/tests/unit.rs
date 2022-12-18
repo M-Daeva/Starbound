@@ -179,6 +179,7 @@ fn update_scheduler_after() {
             None,
             None,
             None,
+            None,
         )
         .unwrap();
 
@@ -464,6 +465,7 @@ fn swap() {
             stablecoin_pool_id: Some(STABLE_POOL_ID),
             fee_default: None,
             fee_osmo: None,
+            dapp_address_and_denom_list: None,
         },
         &[],
         admin,

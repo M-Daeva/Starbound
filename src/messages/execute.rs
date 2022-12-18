@@ -16,6 +16,7 @@ pub enum ExecuteMsg {
         stablecoin_pool_id: Option<u64>,
         fee_default: Option<Decimal>,
         fee_osmo: Option<Decimal>,
+        dapp_address_and_denom_list: Option<Vec<(String, String)>>,
     },
     UpdatePoolsAndUsers {
         pools: Vec<PoolExtracted>,

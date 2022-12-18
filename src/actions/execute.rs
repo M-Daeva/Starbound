@@ -13,7 +13,7 @@ use std::ops::Mul;
 use crate::{
     actions::{
         rebalancer::{dec_to_u128, get_ledger, u128_to_dec},
-        verifier::{verify_deposit_data, verify_scheduler},
+        verifier::{verify_deposit_data, verify_scheduler, LocalApi},
     },
     error::ContractError,
     state::{
@@ -122,6 +122,7 @@ pub fn withdraw(
     ]))
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn update_config(
     deps: DepsMut,
     _env: Env,
@@ -131,6 +132,7 @@ pub fn update_config(
     stablecoin_pool_id: Option<u64>,
     fee_default: Option<Decimal>,
     fee_osmo: Option<Decimal>,
+    dapp_address_and_denom_list: Option<Vec<(String, String)>>,
 ) -> Result<Response, ContractError> {
     CONFIG.update(
         deps.storage,
@@ -165,6 +167,20 @@ pub fn update_config(
 
             if let Some(fee_osmo) = fee_osmo {
                 config = Config { fee_osmo, ..config };
+            }
+
+            if let Some(dapp_address_and_denom_list) = dapp_address_and_denom_list {
+                let mut verified_list: Vec<(Addr, String)> = vec![];
+                let api = LocalApi::default();
+
+                for (address, denom) in dapp_address_and_denom_list {
+                    verified_list.push((api.addr_validate(&address)?, denom));
+                }
+
+                config = Config {
+                    dapp_address_and_denom_list: verified_list,
+                    ..config
+                };
             }
 
             Ok(config)

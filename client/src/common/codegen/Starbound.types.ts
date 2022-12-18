@@ -15,6 +15,7 @@ export type ExecuteMsg = {
   };
 } | {
   update_config: {
+    dapp_address_and_denom_list?: [string, string][] | null;
     fee_default?: Decimal | null;
     fee_osmo?: Decimal | null;
     scheduler?: string | null;

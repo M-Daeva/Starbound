@@ -63,6 +63,25 @@
           "update_config": {
             "type": "object",
             "properties": {
+              "dapp_address_and_denom_list": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "array",
+                  "items": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ],
+                  "maxItems": 2,
+                  "minItems": 2
+                }
+              },
               "fee_default": {
                 "anyOf": [
                   {

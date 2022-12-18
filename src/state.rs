@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Decimal, Uint128};
+use cosmwasm_std::{Addr, Decimal, Timestamp, Uint128};
 use cw_storage_plus::{Item, Map};
 
 pub const CONFIG: Item<Config> = Item::new("config");
@@ -12,6 +12,8 @@ pub struct Config {
     pub stablecoin_pool_id: u64,
     pub fee_default: Decimal,
     pub fee_osmo: Decimal,
+    pub dapp_address_and_denom_list: Vec<(Addr, String)>,
+    pub timestamp: Timestamp,
 }
 
 pub const LEDGER: Item<Ledger> = Item::new("ledger");

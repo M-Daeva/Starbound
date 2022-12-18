@@ -65,12 +65,14 @@ export interface StarboundInterface extends StarboundReadOnlyInterface {
     amount: Uint128;
   }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
   updateConfig: ({
+    dappAddressAndDenomList,
     feeDefault,
     feeOsmo,
     scheduler,
     stablecoinDenom,
     stablecoinPoolId
   }: {
+    dappAddressAndDenomList?: string[][][];
     feeDefault?: Decimal;
     feeOsmo?: Decimal;
     scheduler?: string;
@@ -134,12 +136,14 @@ export class StarboundClient extends StarboundQueryClient implements StarboundIn
     }, fee, memo, funds);
   };
   updateConfig = async ({
+    dappAddressAndDenomList,
     feeDefault,
     feeOsmo,
     scheduler,
     stablecoinDenom,
     stablecoinPoolId
   }: {
+    dappAddressAndDenomList?: string[][][];
     feeDefault?: Decimal;
     feeOsmo?: Decimal;
     scheduler?: string;
@@ -148,6 +152,7 @@ export class StarboundClient extends StarboundQueryClient implements StarboundIn
   }, fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
     return await this.client.execute(this.sender, this.contractAddress, {
       update_config: {
+        dapp_address_and_denom_list: dappAddressAndDenomList,
         fee_default: feeDefault,
         fee_osmo: feeOsmo,
         scheduler,

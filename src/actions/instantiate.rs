@@ -1,5 +1,5 @@
 #[cfg(not(feature = "library"))]
-use cosmwasm_std::{DepsMut, Env, MessageInfo, Response, Uint128};
+use cosmwasm_std::{DepsMut, Env, MessageInfo, Response, Timestamp, Uint128};
 use cw2::set_contract_version;
 
 use crate::{
@@ -72,6 +72,8 @@ pub fn init(
             stablecoin_pool_id: STABLECOIN_POOL_ID,
             fee_default: str_to_dec("0.001"),
             fee_osmo: str_to_dec("0.002"),
+            dapp_address_and_denom_list: vec![],
+            timestamp: Timestamp::default(),
         },
     )?;
 

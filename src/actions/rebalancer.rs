@@ -1,6 +1,8 @@
-use std::ops::{Div, Mul, Sub};
+use std::ops::{Div, Mul};
 
-use cosmwasm_std::{Addr, Decimal, Uint128};
+use cosmwasm_std::{
+    coin, Addr, BankMsg, Coin, CosmosMsg, Decimal, IbcMsg, IbcTimeout, Timestamp, Uint128,
+};
 
 use crate::state::{Asset, Ledger, Pool, User};
 
@@ -101,11 +103,7 @@ fn correct_sum(r: Vec<Uint128>, d: Uint128) -> Vec<Uint128> {
     }
 
     let r_max = *r.iter().max().unwrap();
-    let r_max_amount = r
-        .iter()
-        .filter(|x| x == &r_max)
-        .collect::<Vec<&Uint128>>()
-        .len();
+    let r_max_amount = r.iter().filter(|x| x == &r_max).count();
 
     let r_is_greater = r_sum > d;
     let mut offset = if r_is_greater { r_sum - d } else { d - r_sum };
@@ -123,7 +121,11 @@ fn correct_sum(r: Vec<Uint128>, d: Uint128) -> Vec<Uint128> {
             if x == r_max {
                 let offset = offset_list[j];
                 j += 1;
-                return if r_is_greater { x - offset } else { x + offset };
+                if r_is_greater {
+                    x - offset
+                } else {
+                    x + offset
+                }
             } else {
                 x
             }
@@ -349,19 +351,319 @@ pub fn get_ledger(
     (ledger, users_with_addresses_updated)
 }
 
+#[allow(clippy::too_many_arguments)]
+pub fn transfer_router(
+    pools_with_denoms: &[(String, Pool)],
+    users_with_addresses: &[(Addr, User)],
+    contract_balances: Vec<Coin>,
+    ledger: Ledger,
+    fee_default: Decimal,
+    fee_osmo: Decimal,
+    dapp_address_and_denom_list: Vec<(Addr, String)>,
+    stablecoin_denom: &str,
+    timestamp: Timestamp,
+) -> (Vec<(Addr, User)>, Vec<CosmosMsg>) {
+    const DENOM_OSMO: &str = "uosmo";
+    let mut fee_list: Vec<Uint128> = vec![Uint128::zero(); ledger.global_denom_list.len()];
+
+    // get vector of ratios to correct amount_to_send_until_next_epoch due to difference between
+    // contract balances and calculated values
+    let asset_amount_correction_vector = ledger
+        .global_denom_list
+        .iter()
+        .enumerate()
+        .map(|(i, denom)| {
+            let asset_amount = match contract_balances.iter().find(|x| &x.denom == denom) {
+                Some(y) => {
+                    let fee_multiplier = if y.denom == DENOM_OSMO {
+                        fee_osmo
+                    } else {
+                        fee_default
+                    };
+                    let amount = uint128_to_dec(y.amount);
+                    let fee = (amount * fee_multiplier).ceil();
+                    fee_list[i] = dec_to_uint128(fee);
+                    amount - fee
+                }
+                _ => Decimal::zero(),
+            };
+
+            match asset_amount.checked_div(uint128_to_dec(ledger.global_delta_balance_list[i])) {
+                Ok(y) => y,
+                _ => Decimal::zero(),
+            }
+        })
+        .collect::<Vec<Decimal>>();
+
+    let mut users_with_addresses_updated: Vec<(Addr, User)> = vec![];
+    let mut msg_list: Vec<CosmosMsg> = vec![];
+
+    for (addr, user) in users_with_addresses.iter().cloned() {
+        let mut asset_list: Vec<Asset> = vec![];
+
+        for asset in &user.asset_list {
+            if let Some(index) = ledger
+                .global_denom_list
+                .iter()
+                .position(|x| x == &asset.asset_denom)
+            {
+                let amount_to_send_until_next_epoch = dec_to_uint128(
+                    (uint128_to_dec(asset.amount_to_send_until_next_epoch)
+                        * asset_amount_correction_vector[index])
+                        .floor(),
+                );
+
+                // reset amount_to_send_until_next_epoch
+                asset_list.push(Asset {
+                    amount_to_send_until_next_epoch: Uint128::zero(),
+                    ..asset.to_owned()
+                });
+
+                // don't create message with zero balance
+                if amount_to_send_until_next_epoch.is_zero() {
+                    continue;
+                }
+
+                if asset.asset_denom == DENOM_OSMO {
+                    let bank_msg = CosmosMsg::Bank(BankMsg::Send {
+                        to_address: asset.wallet_address.to_string(),
+                        amount: vec![coin(
+                            amount_to_send_until_next_epoch.u128(),
+                            &asset.asset_denom,
+                        )],
+                    });
+
+                    msg_list.push(bank_msg);
+                } else {
+                    if let Some((_denom, pool)) = pools_with_denoms
+                        .iter()
+                        .find(|(denom, _pool)| denom == &asset.asset_denom)
+                    {
+                        let ibc_msg = CosmosMsg::Ibc(IbcMsg::Transfer {
+                            channel_id: pool.channel_id.to_owned(),
+                            to_address: asset.wallet_address.to_string(),
+                            amount: coin(
+                                amount_to_send_until_next_epoch.u128(),
+                                &asset.asset_denom,
+                            ),
+                            timeout: IbcTimeout::with_timestamp(timestamp),
+                        });
+
+                        msg_list.push(ibc_msg);
+                    }
+                };
+            };
+        }
+
+        users_with_addresses_updated.push((addr, User { asset_list, ..user }));
+    }
+
+    for (i, fee) in fee_list.iter().enumerate() {
+        // don't create message with zero balance
+        if fee.is_zero() {
+            continue;
+        }
+
+        let fee_denom = &ledger.global_denom_list[i];
+
+        // don't create message with stablecoin
+        if fee_denom == stablecoin_denom {
+            continue;
+        }
+
+        if let Some((addr, denom)) = dapp_address_and_denom_list
+            .iter()
+            .find(|(_addr, denom)| denom == fee_denom)
+        {
+            if denom == DENOM_OSMO {
+                let bank_msg = CosmosMsg::Bank(BankMsg::Send {
+                    to_address: addr.to_string(),
+                    amount: vec![coin(fee.u128(), fee_denom)],
+                });
+
+                msg_list.push(bank_msg);
+            } else {
+                if let Some((_denom, pool)) = pools_with_denoms
+                    .iter()
+                    .find(|(denom, _pool)| denom == fee_denom)
+                {
+                    let ibc_msg = CosmosMsg::Ibc(IbcMsg::Transfer {
+                        channel_id: pool.channel_id.to_owned(),
+                        to_address: addr.to_string(),
+                        amount: coin(fee.u128(), fee_denom),
+                        timeout: IbcTimeout::with_timestamp(timestamp),
+                    });
+
+                    msg_list.push(ibc_msg);
+                }
+            };
+        };
+    }
+
+    // println!(
+    //     "asset_amount_correction_vector {:#?}",
+    //     asset_amount_correction_vector
+    // );
+
+    println!("fee_list {:#?}", fee_list);
+
+    // println!(
+    //     "users_with_addresses_updated {:#?}",
+    //     users_with_addresses_updated
+    // );
+
+    println!("msg_list {:#?}", msg_list);
+
+    (users_with_addresses_updated, msg_list)
+}
+
 #[cfg(test)]
 pub mod test {
+
     use crate::tests::helpers::{
-        ADDR_ALICE_ATOM, ADDR_ALICE_JUNO, ADDR_ALICE_OSMO, ADDR_BOB_ATOM, ADDR_BOB_OSMO,
-        ADDR_BOB_STARS, DENOM_ATOM, DENOM_JUNO, DENOM_OSMO, DENOM_SCRT, DENOM_STARS, FUNDS_AMOUNT,
-        IS_CONTROLLED_REBALANCING,
+        Starbound, UserName, ADDR_ALICE_ATOM, ADDR_ALICE_JUNO, ADDR_ALICE_OSMO, ADDR_BOB_ATOM,
+        ADDR_BOB_JUNO, ADDR_BOB_OSMO, ADDR_BOB_STARS, DENOM_ATOM, DENOM_EEUR, DENOM_JUNO,
+        DENOM_OSMO, DENOM_SCRT, DENOM_STARS, FUNDS_AMOUNT, IS_CONTROLLED_REBALANCING,
     };
 
     use super::{
         correct_sum, dec_to_uint128, get_ledger, rebalance_controlled, rebalance_proportional,
-        str_to_dec, str_vec_to_dec_vec, u128_to_dec, u128_vec_to_uint128_vec, uint128_to_dec,
-        vec_add, vec_div, vec_mul, vec_sub, Addr, Asset, Decimal, Ledger, Pool, Uint128, User,
+        str_to_dec, str_vec_to_dec_vec, transfer_router, u128_to_dec, u128_vec_to_uint128_vec,
+        uint128_to_dec, vec_add, vec_div, vec_mul, vec_sub, Addr, Asset, Coin, Decimal, Ledger,
+        Pool, Timestamp, Uint128, User,
     };
+
+    // TODO: add tests for bank transfer
+    #[test]
+    fn get_transfer_messages() {
+        let asset_list_alice = vec![
+            Asset::new(
+                DENOM_ATOM,
+                &Addr::unchecked(ADDR_ALICE_ATOM),
+                Uint128::zero(),
+                str_to_dec("0.5"),
+                Uint128::from(125_u128),
+            ),
+            Asset::new(
+                DENOM_JUNO,
+                &Addr::unchecked(ADDR_ALICE_JUNO),
+                Uint128::zero(),
+                str_to_dec("0.5"),
+                Uint128::from(625_u128),
+            ),
+        ];
+
+        let user_alice = User::new(
+            &asset_list_alice,
+            Uint128::from(3_u128),
+            Uint128::from(7500_u128),
+            IS_CONTROLLED_REBALANCING,
+        );
+
+        let users_with_addresses: Vec<(Addr, User)> =
+            vec![(Addr::unchecked(ADDR_ALICE_OSMO), user_alice)];
+
+        let contract_balances = vec![
+            Coin {
+                denom: DENOM_ATOM.to_string(),
+                amount: Uint128::from(122_u128),
+            },
+            Coin {
+                denom: DENOM_JUNO.to_string(),
+                amount: Uint128::from(609_u128),
+            },
+            Coin {
+                denom: DENOM_EEUR.to_string(),
+                amount: Uint128::from(7500_u128),
+            },
+        ];
+        let ledger: Ledger = Ledger {
+            global_delta_balance_list: vec![
+                Uint128::from(125_u128),
+                Uint128::from(625_u128),
+                Uint128::from(0_u128),
+            ],
+            global_delta_cost_list: vec![
+                Uint128::from(1250_u128),
+                Uint128::from(1250_u128),
+                Uint128::from(0_u128),
+            ],
+            global_denom_list: vec![
+                DENOM_ATOM.to_string(),
+                DENOM_JUNO.to_string(),
+                DENOM_EEUR.to_string(),
+            ],
+            global_price_list: vec![str_to_dec("10"), str_to_dec("2"), str_to_dec("1")],
+        };
+
+        let fee_default = str_to_dec("0.01");
+        let fee_osmo = str_to_dec("0.02");
+        let dapp_address_and_denom_list: Vec<(Addr, String)> = vec![
+            (Addr::unchecked(ADDR_BOB_ATOM), DENOM_ATOM.to_string()),
+            (Addr::unchecked(ADDR_BOB_JUNO), DENOM_JUNO.to_string()),
+            (Addr::unchecked(ADDR_BOB_STARS), DENOM_STARS.to_string()),
+            (Addr::unchecked(ADDR_BOB_OSMO), DENOM_EEUR.to_string()),
+        ];
+
+        let pools_with_denoms: Vec<(String, Pool)> = vec![
+            // ATOM / OSMO
+            (
+                DENOM_ATOM.to_string(),
+                Pool::new(
+                    Uint128::one(),
+                    str_to_dec("9.5"),
+                    "channel-1110",
+                    "transfer",
+                    "uatom",
+                ),
+            ),
+            // JUNO / OSMO
+            (
+                DENOM_JUNO.to_string(),
+                Pool::new(
+                    Uint128::from(497_u128),
+                    str_to_dec("1.5"),
+                    "channel-1110",
+                    "transfer",
+                    "ujuno",
+                ),
+            ),
+            // STARS / OSMO
+            (
+                DENOM_STARS.to_string(),
+                Pool::new(
+                    Uint128::from(604_u128),
+                    str_to_dec("0.03"),
+                    "channel-",
+                    "transfer",
+                    "ustars",
+                ),
+            ),
+            // SCRT / OSMO
+            (
+                DENOM_SCRT.to_string(),
+                Pool::new(
+                    Uint128::from(584_u128),
+                    str_to_dec("0.7"),
+                    "channel-",
+                    "transfer",
+                    "uscrt",
+                ),
+            ),
+        ];
+
+        transfer_router(
+            &pools_with_denoms,
+            &users_with_addresses,
+            contract_balances,
+            ledger,
+            fee_default,
+            fee_osmo,
+            dapp_address_and_denom_list,
+            DENOM_EEUR,
+            Timestamp::default(),
+        );
+    }
 
     #[test]
     fn vector_addition() {

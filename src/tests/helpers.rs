@@ -201,6 +201,7 @@ impl Starbound {
             .map_err(|err| err.downcast().unwrap())
     }
 
+    #[allow(clippy::too_many_arguments)]
     #[track_caller]
     pub fn update_config(
         &mut self,
@@ -210,6 +211,7 @@ impl Starbound {
         stablecoin_pool_id: Option<u64>,
         fee_default: Option<Decimal>,
         fee_osmo: Option<Decimal>,
+        dapp_address_and_denom_list: Option<Vec<(String, String)>>,
     ) -> Result<AppResponse, StdError> {
         self.app
             .execute_contract(
@@ -221,6 +223,7 @@ impl Starbound {
                     stablecoin_pool_id,
                     fee_default,
                     fee_osmo,
+                    dapp_address_and_denom_list,
                 },
                 &[],
             )
