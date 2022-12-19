@@ -205,6 +205,8 @@ async function init() {
   const junoRevision = "5";
   const junoHeight = "500000";
   let junoAmount = "1";
+  let timeout_in_mins = 5;
+  let timestamp = `${Date.now() + timeout_in_mins * 60 * 1000}000000`;
 
   let junoParams: TransferParams = {
     channel_id: junoChannel,
@@ -213,6 +215,7 @@ async function init() {
     denom: DENOMS.JUNO,
     block_revision: junoRevision,
     block_height: junoHeight,
+    timestamp,
   };
 
   let params: TransferParams[] = [

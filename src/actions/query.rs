@@ -2,8 +2,10 @@
 use cosmwasm_std::{to_binary, Binary, Deps, Env, Order, StdResult};
 
 use crate::{
-    messages::response::{QueryLedgerResponse, QueryPoolsAndUsersResponse, QueryUserResponse},
-    state::{Pool, PoolExtracted, UserExtracted, LEDGER, POOLS, USERS},
+    messages::response::{
+        QueryConfigResponse, QueryLedgerResponse, QueryPoolsAndUsersResponse, QueryUserResponse,
+    },
+    state::{Pool, PoolExtracted, UserExtracted, CONFIG, LEDGER, POOLS, USERS},
 };
 
 pub fn query_user(deps: Deps, _env: Env, address: String) -> StdResult<Binary> {
@@ -56,5 +58,11 @@ pub fn query_pools_and_users(deps: Deps, _env: Env) -> StdResult<Binary> {
 pub fn query_ledger(deps: Deps, _env: Env) -> StdResult<Binary> {
     to_binary(&QueryLedgerResponse {
         ledger: LEDGER.load(deps.storage)?,
+    })
+}
+
+pub fn query_config(deps: Deps, _env: Env) -> StdResult<Binary> {
+    to_binary(&QueryConfigResponse {
+        config: CONFIG.load(deps.storage)?,
     })
 }

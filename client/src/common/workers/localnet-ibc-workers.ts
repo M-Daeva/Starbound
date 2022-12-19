@@ -137,6 +137,8 @@ async function init() {
   const wasmRevision = "5";
   const wasmHeight = "500000";
   let osmoAmount = "1";
+  let timeout_in_mins = 5;
+  let timestamp = `${Date.now() + timeout_in_mins * 60 * 1000}000000`;
 
   let tokenParams: TransferParams = {
     channel_id: wasmChannel,
@@ -145,6 +147,7 @@ async function init() {
     denom: DENOMS.OSMO,
     block_revision: wasmRevision,
     block_height: wasmHeight,
+    timestamp,
   };
 
   let tokenParams2: TransferParams = {
@@ -154,6 +157,7 @@ async function init() {
     denom: DENOMS.OSMO,
     block_revision: wasmRevision,
     block_height: wasmHeight,
+    timestamp,
   };
 
   let params: TransferParams[] = [tokenParams, tokenParams2];

@@ -156,4 +156,5 @@ pub struct TransferParams {
     pub denom: String,
     pub block_revision: Uint128,
     pub block_height: Uint128,
+    pub timestamp: Timestamp,
 }

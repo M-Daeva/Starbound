@@ -12,7 +12,7 @@ use std::ops::Mul;
 
 use crate::{
     actions::{
-        rebalancer::{dec_to_u128, get_ledger, u128_to_dec},
+        rebalancer::{dec_to_u128, get_ledger, transfer_router, u128_to_dec},
         verifier::{verify_deposit_data, verify_scheduler, LocalApi},
     },
     error::ContractError,
@@ -345,143 +345,48 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         .add_attributes(vec![("method", "swap")]))
 }
 
-// TODO: fee collector
-// TODO: osmo handler
 pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     verify_scheduler(&deps, &info)?;
 
-    // get contract balances
-    let mut contract_balances = deps.querier.query_all_balances(env.contract.address)?;
-    let ledger = LEDGER.load(deps.storage)?;
-    let global_vec_len = ledger.global_denom_list.len();
-
-    // vector of coins amount on contract address for all denoms
-    let mut contract_assets: Vec<u128> = vec![0; global_vec_len];
-
-    // vector of coins planned to send on all users adresses for all denoms
-    let mut users_assets: Vec<u128> = vec![0; global_vec_len];
-
-    // vector of correction ratios for users coins planned to send
-    let mut correction_ratios: Vec<Decimal> = vec![];
-
-    let mut user_list_updated: Vec<(Addr, User)> = USERS
+    let pools: Vec<(String, Pool)> = POOLS
         .range(deps.storage, None, None, Order::Ascending)
         .map(|x| x.unwrap())
         .collect();
 
-    // update contract_assets
-    for (i, global_denom) in ledger.global_denom_list.iter().enumerate() {
-        let balance_by_denom = match &contract_balances.iter().find(|x| &x.denom == global_denom) {
-            Some(y) => y.amount.u128(),
-            None => 0,
-        };
-        contract_assets[i] = balance_by_denom;
-
-        // update users_assets
-        user_list_updated.iter().for_each(|(_osmo_address, user)| {
-            for user_asset in &user.asset_list {
-                if &user_asset.asset_denom == global_denom {
-                    users_assets[i] += user_asset.amount_to_send_until_next_epoch.u128();
-                }
-            }
-        });
-    }
-
-    // fill correction_ratios
-    for (i, item) in contract_assets.iter().enumerate() {
-        let res = if *item == 0 || users_assets[i] == 0 {
-            Decimal::zero()
-        } else {
-            u128_to_dec(*item)
-                .checked_div(u128_to_dec(users_assets[i]))
-                .unwrap()
-        };
-        correction_ratios.push(res);
-    }
-
-    let mut msg_list = Vec::<CosmosMsg>::new();
-
-    // correct users coins planned to send
-    user_list_updated = user_list_updated
-        .iter()
-        .map(|(osmo_address, user)| {
-            let mut user_updated = user.clone();
-            let mut asset_list_updated = Vec::<Asset>::new();
-
-            for user_asset in &user.asset_list {
-                let index = ledger
-                    .global_denom_list
-                    .iter()
-                    .position(|x| x == &user_asset.asset_denom)
-                    .unwrap();
-
-                let ratio = correction_ratios[index];
-                let amount = u128_to_dec(user_asset.amount_to_send_until_next_epoch.u128());
-                let mut amount_to_send_until_next_epoch = dec_to_u128(amount.mul(ratio));
-
-                // correct sendable funds
-                contract_balances = contract_balances
-                    .iter()
-                    .map(|x| {
-                        if x.denom == user_asset.asset_denom {
-                            if amount_to_send_until_next_epoch > x.amount.u128() {
-                                amount_to_send_until_next_epoch = x.amount.u128();
-
-                                coin(0, x.denom.clone())
-                            } else {
-                                coin(
-                                    x.amount.u128() - amount_to_send_until_next_epoch,
-                                    x.denom.clone(),
-                                )
-                            }
-                        } else {
-                            x.to_owned()
-                        }
-                    })
-                    .collect();
-
-                // skip if no funds
-                if amount_to_send_until_next_epoch != 0 {
-                    // execute ibc transfer
-                    let block = IbcTimeoutBlock {
-                        revision: 5,
-                        height: 2000000,
-                    };
-                    let pool = POOLS.load(deps.storage, &user_asset.asset_denom).unwrap();
-
-                    let msg = CosmosMsg::Ibc(IbcMsg::Transfer {
-                        channel_id: pool.channel_id,
-                        to_address: user_asset.wallet_address.to_string(),
-                        amount: coin(amount_to_send_until_next_epoch, &user_asset.asset_denom),
-                        timeout: IbcTimeout::with_block(block),
-                    });
-
-                    msg_list.push(msg);
-                }
-
-                // fill asset_list_updated
-                let mut asset_updated = user_asset.clone();
-
-                asset_updated.amount_to_send_until_next_epoch = Uint128::zero();
-                asset_list_updated.push(asset_updated);
-            }
-            user_updated.asset_list = asset_list_updated;
-
-            (osmo_address.to_owned(), user_updated)
-        })
+    let users: Vec<(Addr, User)> = USERS
+        .range(deps.storage, None, None, Order::Ascending)
+        .map(|x| x.unwrap())
         .collect();
 
-    // update user list
-    for (address, user_updated) in user_list_updated {
-        USERS.save(deps.storage, &address, &user_updated)?;
-    }
+    let ledger = LEDGER.load(deps.storage)?;
 
-    // update ledger
-    LEDGER.update(deps.storage, |mut x| -> Result<_, ContractError> {
-        x.global_delta_balance_list = vec![];
-        x.global_delta_cost_list = vec![];
-        Ok(x)
-    })?;
+    let Config {
+        stablecoin_denom,
+        fee_default,
+        fee_osmo,
+        dapp_address_and_denom_list,
+        timestamp,
+        ..
+    } = CONFIG.load(deps.storage)?;
+
+    let contract_balances = deps.querier.query_all_balances(env.contract.address)?;
+
+    let (users_updated, msg_list) = transfer_router(
+        &pools,
+        &users,
+        contract_balances,
+        ledger,
+        fee_default,
+        fee_osmo,
+        dapp_address_and_denom_list,
+        &stablecoin_denom,
+        timestamp,
+    );
+
+    // update users
+    for (address, user) in users_updated {
+        USERS.save(deps.storage, &address, &user)?;
+    }
 
     Ok(Response::new()
         .add_messages(msg_list)
@@ -491,7 +396,7 @@ pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
 // function for testing ibc transfers
 pub fn multi_transfer(
     _deps: DepsMut,
-    env: Env,
+    _env: Env,
     _info: MessageInfo,
     params: Vec<TransferParams>,
 ) -> Result<Response, ContractError> {
@@ -502,7 +407,7 @@ pub fn multi_transfer(
                 channel_id: x.channel_id.to_owned(),
                 to_address: x.to.to_owned(),
                 amount: coin(x.amount.u128(), x.denom.to_owned()),
-                timeout: env.block.time.plus_seconds(300).into(),
+                timeout: IbcTimeout::with_timestamp(x.timestamp),
             })
         })
         .collect::<Vec<CosmosMsg>>();

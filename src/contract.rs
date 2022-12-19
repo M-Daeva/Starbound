@@ -9,7 +9,7 @@ use crate::{
         },
         instantiate::init,
         migrate::migrate_contract,
-        query::{query_ledger, query_pools_and_users, query_user},
+        query::{query_config, query_ledger, query_pools_and_users, query_user},
     },
     error::ContractError,
     messages::{
@@ -73,6 +73,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::QueryUser { address } => query_user(deps, env, address),
         QueryMsg::QueryPoolsAndUsers {} => query_pools_and_users(deps, env),
         QueryMsg::QueryLedger {} => query_ledger(deps, env),
+        QueryMsg::QueryConfig {} => query_config(deps, env),
     }
 }
 

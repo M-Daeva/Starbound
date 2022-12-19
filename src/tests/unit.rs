@@ -1,4 +1,6 @@
-use cosmwasm_std::{attr, coin, from_binary, Addr, Attribute, Decimal, Empty, StdError, Uint128};
+use cosmwasm_std::{
+    attr, coin, from_binary, Addr, Attribute, Decimal, Empty, StdError, Timestamp, Uint128,
+};
 
 use cw_multi_test::{App, Contract, ContractWrapper, Executor};
 use osmosis_testing::{
@@ -15,17 +17,19 @@ use crate::{
         execute::ExecuteMsg,
         instantiate::InstantiateMsg,
         query::QueryMsg,
-        response::{QueryLedgerResponse, QueryPoolsAndUsersResponse, QueryUserResponse},
+        response::{
+            QueryConfigResponse, QueryLedgerResponse, QueryPoolsAndUsersResponse, QueryUserResponse,
+        },
     },
-    state::{Asset, AssetExtracted, Pool, PoolExtracted, User, UserExtracted},
+    state::{Asset, AssetExtracted, Pool, PoolExtracted, TransferParams, User, UserExtracted},
     tests::helpers::{
         Starbound, UserName, ADDR_ADMIN_OSMO, ADDR_ALICE_ATOM, ADDR_ALICE_JUNO, ADDR_ALICE_OSMO,
-        ADDR_BOB_ATOM, ADDR_BOB_JUNO, ADDR_BOB_OSMO, DENOM_ATOM, DENOM_EEUR, DENOM_JUNO,
-        DENOM_OSMO, FUNDS_AMOUNT, IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD,
+        ADDR_BOB_ATOM, ADDR_BOB_JUNO, ADDR_BOB_OSMO, ADDR_BOB_SCRT, DENOM_ATOM, DENOM_EEUR,
+        DENOM_JUNO, DENOM_OSMO, DENOM_SCRT, FUNDS_AMOUNT, IS_CONTROLLED_REBALANCING,
+        IS_CURRENT_PERIOD,
     },
 };
 
-// TODO: check if asset outside pool list can not be deposited
 #[test]
 fn deposit() {
     let mut st = Starbound::new();
@@ -41,6 +45,23 @@ fn deposit() {
     let res = st.query_user(ADDR_ALICE_OSMO);
 
     assert_eq!(res.unwrap(), QueryUserResponse { user });
+}
+
+// TODO: check if asset outside pool list can not be deposited
+#[test]
+fn deposit_unsupported_asset() {
+    let mut st = Starbound::new();
+    let user = Starbound::get_user(UserName::Alice);
+
+    let res = st
+        .deposit(
+            ADDR_ALICE_OSMO,
+            &user,
+            &[coin(user.deposited.u128(), DENOM_OSMO)],
+        )
+        .unwrap_err();
+
+    println!("deposit_unsupported_asset {:#?}", res);
 }
 
 // check if user can not has multiple addresses on same asset
@@ -267,7 +288,6 @@ fn query_pools_and_users() {
     assert_eq!(assets_received, assets_initial)
 }
 
-// TODO: check if asset outside pool list can not be added
 #[test]
 fn update_pools_and_users() {
     // initialize
@@ -333,6 +353,53 @@ fn update_pools_and_users() {
 
     assert_eq!(res_pools_updated, pools_updated);
     assert_eq!(res_users_updated, users_updated);
+}
+
+// check if asset outside pool list can not be added
+#[test]
+fn update_pools_and_users_unsupported_asset() {
+    // initialize
+    let mut st = Starbound::new();
+    let user_alice = Starbound::get_user(UserName::Alice);
+    let user_bob = Starbound::get_user(UserName::Bob);
+
+    st.deposit(
+        ADDR_ALICE_OSMO,
+        &user_alice,
+        &[coin(user_alice.deposited.u128(), DENOM_EEUR)],
+    )
+    .unwrap();
+    st.deposit(
+        ADDR_BOB_OSMO,
+        &user_bob,
+        &[coin(user_bob.deposited.u128(), DENOM_EEUR)],
+    )
+    .unwrap();
+
+    // request data
+    let QueryPoolsAndUsersResponse {
+        pools: res_pools,
+        users: res_users,
+    } = st.query_pools_and_users().unwrap();
+
+    // update data
+    let mut users_updated = res_users.clone();
+    users_updated[0].asset_list.push(AssetExtracted {
+        asset_denom: DENOM_SCRT.to_string(),
+        wallet_address: ADDR_BOB_SCRT.to_string(),
+        wallet_balance: Uint128::zero(),
+    });
+
+    st.update_pools_and_users(ADDR_ADMIN_OSMO, res_pools, users_updated)
+        .unwrap();
+
+    // check changes
+    let QueryPoolsAndUsersResponse {
+        pools: _res_pools_updated,
+        users: res_users_updated,
+    } = st.query_pools_and_users().unwrap();
+
+    assert_eq!(res_users_updated, res_users);
 }
 
 #[test]
@@ -457,12 +524,14 @@ fn swap() {
     .unwrap();
 
     // update stablecoin pool id for gamm wrapper
+    let stablecoin_denom = Some(DENOM_EEUR.to_string());
+    let stablecoin_pool_id = Some(STABLE_POOL_ID);
     wasm.execute::<ExecuteMsg>(
         &contract_addr,
         &ExecuteMsg::UpdateConfig {
             scheduler: None,
-            stablecoin_denom: Some(DENOM_EEUR.to_string()),
-            stablecoin_pool_id: Some(STABLE_POOL_ID),
+            stablecoin_denom: stablecoin_denom.clone(),
+            stablecoin_pool_id,
             fee_default: None,
             fee_osmo: None,
             dapp_address_and_denom_list: None,
@@ -471,6 +540,17 @@ fn swap() {
         admin,
     )
     .unwrap();
+
+    // test QueryConfig
+    let config = wasm
+        .query::<QueryMsg, QueryConfigResponse>(&contract_addr, &QueryMsg::QueryConfig {})
+        .unwrap();
+
+    assert_eq!(config.config.stablecoin_denom, stablecoin_denom.unwrap());
+    assert_eq!(
+        config.config.stablecoin_pool_id,
+        stablecoin_pool_id.unwrap()
+    );
 
     let user_alice = Starbound::get_user(UserName::Alice);
 
@@ -633,17 +713,21 @@ fn swap() {
 // }
 
 // #[test]
-// fn test_execute_transfer() {
-//     let (mut deps, env, mut info, _res) =
-//         instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
+// fn multi_transfer() {
+//     let mut st = Starbound::new();
+//     let user = Starbound::get_user(UserName::Alice);
 
-//     let msg = ExecuteMsg::Swap {};
-//     info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
-//     let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
-
-//     let msg = ExecuteMsg::Transfer {};
-//     info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
-//     let res = execute(deps.as_mut(), env, info, msg);
-
-//     assert_eq!(res.unwrap().attributes, vec![attr("method", "transfer"),])
+//     st.multi_transfer(
+//         ADDR_ADMIN_OSMO,
+//         vec![TransferParams {
+//             amount: Uint128::from(42_u128),
+//             block_height: Uint128::one(),
+//             block_revision: Uint128::one(),
+//             channel_id: "ch_id".to_string(),
+//             denom: DENOM_ATOM.to_string(),
+//             to: ADDR_ALICE_ATOM.to_string(),
+//             timestamp: Timestamp::from_seconds(1_000),
+//         }],
+//     )
+//     .unwrap();
 // }

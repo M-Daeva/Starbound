@@ -312,6 +312,13 @@ impl Starbound {
     }
 
     #[track_caller]
+    pub fn query_config(&self) -> Result<QueryUserResponse, StdError> {
+        self.app
+            .wrap()
+            .query_wasm_smart(self.address.clone(), &QueryMsg::QueryConfig {})
+    }
+
+    #[track_caller]
     pub fn query_contract_balances(&self) -> Result<Vec<Coin>, StdError> {
         self.app.wrap().query_all_balances(&self.address)
     }

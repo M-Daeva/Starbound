@@ -92,6 +92,12 @@ async function getCwHelpers(
     return res;
   }
 
+  async function cwQueryConfig() {
+    const res = await client.queryConfig();
+    l("\n", res, "\n");
+    return res;
+  }
+
   return {
     owner,
 
@@ -107,6 +113,7 @@ async function getCwHelpers(
     cwQueryUser,
     cwQueryPoolsAndUsers,
     cwQueryLedger,
+    cwQueryConfig,
   };
 }
 

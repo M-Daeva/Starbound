@@ -6,7 +6,7 @@
 
 import { CosmWasmClient, SigningCosmWasmClient, ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 import { Coin, StdFee } from "@cosmjs/amino";
-import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, User, Asset, PoolExtracted, UserExtracted, AssetExtracted, TransferParams, QueryMsg, MigrateMsg, QueryLedgerResponse, Ledger, QueryPoolsAndUsersResponse, QueryUserResponse } from "./Starbound.types";
+import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, Timestamp, Uint64, User, Asset, PoolExtracted, UserExtracted, AssetExtracted, TransferParams, QueryMsg, MigrateMsg, QueryConfigResponse, Config, QueryLedgerResponse, Ledger, QueryPoolsAndUsersResponse, QueryUserResponse } from "./Starbound.types";
 export interface StarboundReadOnlyInterface {
   contractAddress: string;
   queryUser: ({
@@ -16,6 +16,7 @@ export interface StarboundReadOnlyInterface {
   }) => Promise<QueryUserResponse>;
   queryPoolsAndUsers: () => Promise<QueryPoolsAndUsersResponse>;
   queryLedger: () => Promise<QueryLedgerResponse>;
+  queryConfig: () => Promise<QueryConfigResponse>;
 }
 export class StarboundQueryClient implements StarboundReadOnlyInterface {
   client: CosmWasmClient;
@@ -27,6 +28,7 @@ export class StarboundQueryClient implements StarboundReadOnlyInterface {
     this.queryUser = this.queryUser.bind(this);
     this.queryPoolsAndUsers = this.queryPoolsAndUsers.bind(this);
     this.queryLedger = this.queryLedger.bind(this);
+    this.queryConfig = this.queryConfig.bind(this);
   }
 
   queryUser = async ({
@@ -48,6 +50,11 @@ export class StarboundQueryClient implements StarboundReadOnlyInterface {
   queryLedger = async (): Promise<QueryLedgerResponse> => {
     return this.client.queryContractSmart(this.contractAddress, {
       query_ledger: {}
+    });
+  };
+  queryConfig = async (): Promise<QueryConfigResponse> => {
+    return this.client.queryContractSmart(this.contractAddress, {
+      query_config: {}
     });
   };
 }

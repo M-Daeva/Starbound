@@ -39,6 +39,8 @@ export type ExecuteMsg = {
 export type Uint128 = string;
 export type Addr = string;
 export type Decimal = string;
+export type Timestamp = Uint64;
+export type Uint64 = string;
 export interface User {
   asset_list: Asset[];
   day_counter: Uint128;
@@ -75,6 +77,7 @@ export interface TransferParams {
   block_revision: Uint128;
   channel_id: string;
   denom: string;
+  timestamp: Timestamp;
   to: string;
 }
 export type QueryMsg = {
@@ -85,8 +88,23 @@ export type QueryMsg = {
   query_pools_and_users: {};
 } | {
   query_ledger: {};
+} | {
+  query_config: {};
 };
 export type MigrateMsg = string;
+export interface QueryConfigResponse {
+  config: Config;
+}
+export interface Config {
+  admin: Addr;
+  dapp_address_and_denom_list: [Addr, string][];
+  fee_default: Decimal;
+  fee_osmo: Decimal;
+  scheduler: Addr;
+  stablecoin_denom: string;
+  stablecoin_pool_id: number;
+  timestamp: Timestamp;
+}
 export interface QueryLedgerResponse {
   ledger: Ledger;
 }

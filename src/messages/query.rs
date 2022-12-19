@@ -3,7 +3,7 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 // preventing optimizer warning message
 #[allow(unused_imports)]
 use crate::messages::response::{
-    QueryLedgerResponse, QueryPoolsAndUsersResponse, QueryUserResponse,
+    QueryConfigResponse, QueryLedgerResponse, QueryPoolsAndUsersResponse, QueryUserResponse,
 };
 
 #[cw_serde]
@@ -15,4 +15,6 @@ pub enum QueryMsg {
     QueryPoolsAndUsers {},
     #[returns(QueryLedgerResponse)]
     QueryLedger {},
+    #[returns(QueryConfigResponse)]
+    QueryConfig {},
 }
