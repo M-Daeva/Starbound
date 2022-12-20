@@ -55,10 +55,24 @@ function displayTxLink(txHash: string, chainName: string = "osmosis-testnet") {
   return `${baseUrl}/${chainName}/txs/${txHash}`;
 }
 
+// calculates time difference between next distribution and current moment
+function getTimeUntilRebalancing(tHour: number = 19) {
+  const curDate = new Date();
+  const hours = curDate.getHours();
+  const mins = curDate.getMinutes();
+
+  const dMins = (60 - mins) % 60;
+  const dHours = ((23 + tHour - hours) % 24) + (dMins ? 0 : 1);
+  const dHoursStr = `${dHours}` + (dHours < 10 ? `0` : ``);
+  const dMinsStr = `${dMins}` + (dMins < 10 ? `0` : ``);
+  return `${dHoursStr}:${dMinsStr}`;
+}
+
 export {
   getAssetInfoByAddress,
   trimPrice,
   generateColorList,
   calcTimeDiff,
   displayTxLink,
+  getTimeUntilRebalancing,
 };

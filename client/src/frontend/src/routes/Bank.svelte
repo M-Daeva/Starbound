@@ -11,7 +11,11 @@
   import { DENOMS } from "../../../common/helpers/assets";
   import { get } from "svelte/store";
   import type { Asset, User } from "../../../common/codegen/Starbound.types";
-  import { calcTimeDiff, displayTxLink } from "../services/helpers";
+  import {
+    calcTimeDiff,
+    displayTxLink,
+    getTimeUntilRebalancing,
+  } from "../services/helpers";
   import {
     Chart as ChartJS,
     Title,
@@ -161,10 +165,10 @@
     CategoryScale
   );
 
-  let time = "30:00:00";
+  let time = "00:00";
 
   function getTime() {
-    time = new Date().toTimeString().split(" ")[0];
+    time = getTimeUntilRebalancing();
   }
 
   setInterval(getTime, 1000);
@@ -184,7 +188,7 @@
 
   <div class="flex flex-row justify-between">
     <div class="chart w-6/12">
-      <h2 class="text-center font-medium text-lg">Cumulative Payments</h2>
+      <h2 class="text-center font-medium text-lg">Payment Schedule</h2>
       <Line class="mt-2" {data} options={{ responsive: true }} />
     </div>
 
