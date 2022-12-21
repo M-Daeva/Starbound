@@ -1,6 +1,4 @@
 <script lang="ts">
-  // @ts-nocheck
-
   import { l } from "../../../common/utils";
   import {
     deposit as _deposit,
@@ -27,10 +25,13 @@
     CategoryScale,
   } from "chart.js";
   import {
+    STABLECOIN_SYMBOL,
+    STABLECOIN_EXPONENT,
     chainRegistryStorage,
     ibcChannellsStorage,
     poolsStorage,
     userFundsStorage,
+    userContractStorage,
     validatorsStorage,
     assetListStorage,
     authzHandlerListStorage,
@@ -40,9 +41,16 @@
     cwHandlerStorage,
   } from "../services/storage";
 
-  // TODO: add checking on assets submit
+  let paymentBalance = 0;
+  let investPeriod = 0;
 
-  const stablecoinExponent = 6; // axelar USDC/ e-money EEUR
+  // displays contract data
+  userContractStorage.subscribe((value) => {
+    paymentBalance = +value?.user?.deposited / 10 ** STABLECOIN_EXPONENT || 0;
+    investPeriod = +value?.user?.day_counter || 0;
+  });
+
+  // TODO: add checking on assets submit
 
   let userToDisplay: User = {
     asset_list: [],
@@ -88,7 +96,7 @@
 
     const userToSend: User = {
       ...userToDisplay,
-      deposited: `${+userToDisplay.deposited * 10 ** stablecoinExponent}`,
+      deposited: `${+userToDisplay.deposited * 10 ** STABLECOIN_EXPONENT}`,
       day_counter: `${calcTimeDiff(userToDisplay.day_counter)}`,
     };
 
@@ -153,7 +161,7 @@
         data: [100, 250, 400, 550, 700, 700],
       },
     ],
-  };
+  } as any;
 
   ChartJS.register(
     Title,
@@ -172,8 +180,6 @@
   }
 
   setInterval(getTime, 1000);
-
-  const stablecoin = "EEUR";
 </script>
 
 <div class="flex flex-col px-4 -mt-3 text-amber-200" style="height: 87vh">
@@ -214,7 +220,7 @@
           </div>
           <div class="text-center mt-4">
             <label class="mb-1 text-center" for="payment"
-              >Payment in {stablecoin}</label
+              >Payment in {STABLECOIN_SYMBOL}</label
             >
             <input
               class="w-40 text-center mx-0 mb-5"
@@ -244,8 +250,8 @@
 
       <div>
         <div class="font-medium text-lg">
-          <h2>Payment Balance: {1000.123456} {stablecoin}</h2>
-          <h2>Investment Period Expires in: {30} days</h2>
+          <h2>Payment Balance: {paymentBalance} {STABLECOIN_SYMBOL}</h2>
+          <h2>Investment Period Expires in: {investPeriod} days</h2>
         </div>
 
         <div
@@ -254,7 +260,7 @@
         >
           <div class="mt-6">
             <label class="mb-1" for="currentPeriod"
-              >Withdrawal Amount in {stablecoin}</label
+              >Withdrawal Amount in {STABLECOIN_SYMBOL}</label
             >
             <input
               class="w-full text-center mx-0 mb-5"

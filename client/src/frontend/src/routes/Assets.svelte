@@ -299,7 +299,7 @@
           <th
             class="flex flex-row justify-start items-center bg-black p-4 pl-11 w-1/4 text-center"
           >
-            <span class="mr-1">GRANT CONTROL</span>
+            <span class="mr-1">ACCESS CONTROL</span>
           </th>
         </tr>
       </thead>

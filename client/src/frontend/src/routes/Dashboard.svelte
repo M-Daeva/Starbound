@@ -1,7 +1,12 @@
 <script lang="ts">
   import { Doughnut } from "svelte-chartjs";
   import Decimal from "decimal.js";
-  import { userFundsStorage } from "../services/storage";
+  import {
+    STABLECOIN_SYMBOL,
+    STABLECOIN_EXPONENT,
+    userFundsStorage,
+    userContractStorage,
+  } from "../services/storage";
   import { l } from "../../../common/utils";
   import { type DashboardAsset } from "../../../common/helpers/interfaces";
   import {
@@ -18,9 +23,8 @@
     CategoryScale,
   } from "chart.js";
 
-  // TODO: query stablecoins data from contract
-
-  const stablecoin = "EEUR";
+  let paymentBalance = 0;
+  let portfolioNetWorth = 0;
 
   let dashboardAssetList: DashboardAsset[] = [];
 
@@ -37,6 +41,11 @@
     responsive: true,
     radius: "90%",
   };
+
+  // displays contract data
+  userContractStorage.subscribe((value) => {
+    paymentBalance = +value?.user?.deposited / 10 ** STABLECOIN_EXPONENT || 0;
+  });
 
   // displays mainnet balances
   userFundsStorage.subscribe((value) => {
@@ -81,6 +90,8 @@
         .reduce((acc, cur) => acc.add(cur), zero)
     );
 
+    portfolioNetWorth = totalCost.toDecimalPlaces(2).toNumber();
+
     dashboardAssetList = initialAssetList.map((item) => {
       const cost = new Decimal(item.cost);
       const allocation = totalCost.eq(zero)
@@ -116,8 +127,8 @@
 <div class="flex justify-between px-4" style="height: 85vh">
   <div class="w-4/12">
     <div class="ml-12">
-      <h2>Payment Balance: {1000} {stablecoin}</h2>
-      <h2>Portfolio Net Worth: {1000} {stablecoin}</h2>
+      <h2>Payment Balance: {paymentBalance} {STABLECOIN_SYMBOL}</h2>
+      <h2>Portfolio Net Worth: {portfolioNetWorth} {STABLECOIN_SYMBOL}</h2>
     </div>
     {#if typeof data !== "undefined"}
       <Doughnut class="mt-6" {data} {options} />

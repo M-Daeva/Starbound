@@ -1,7 +1,10 @@
 import { type Writable, get, writable } from "svelte/store";
 import { createRequest, l } from "../../../common/utils";
 import { baseURL } from "../config";
-import { type PoolExtracted } from "../../../common/codegen/Starbound.types";
+import type {
+  PoolExtracted,
+  QueryUserResponse,
+} from "../../../common/codegen/Starbound.types";
 import type {
   NetworkData,
   IbcResponse,
@@ -13,6 +16,10 @@ import type {
   UserBalance,
 } from "../../../common/helpers/interfaces";
 
+// global constants
+const STABLECOIN_SYMBOL = "EEUR";
+const STABLECOIN_EXPONENT = 6; // axelar USDC/ e-money EEUR
+
 // TODO: replace some writable storages with readable
 
 // api storages
@@ -22,8 +29,10 @@ let poolsStorage: Writable<[string, AssetDescription[]][]> = writable([]);
 let validatorsStorage: Writable<[string, ValidatorResponse[]][]> = writable([]);
 let userFundsStorage: Writable<[string, UserBalance][]> = writable([]);
 
-// frontend storages
+// contract storages
+let userContractStorage: Writable<QueryUserResponse> = writable();
 
+// frontend storages
 // assets from asset page
 let assetListStorage: Writable<AssetListItem[]> = writable([]);
 // multichain grant and revoke handlers
@@ -124,11 +133,14 @@ async function initAll() {
 }
 
 export {
+  STABLECOIN_SYMBOL,
+  STABLECOIN_EXPONENT,
   chainRegistryStorage,
   ibcChannellsStorage,
   poolsStorage,
   validatorsStorage,
   userFundsStorage,
+  userContractStorage,
   assetListStorage,
   authzHandlerListStorage,
   cwHandlerStorage,

@@ -17,12 +17,13 @@ async function withdraw(amount: number) {
   return await cwWithdraw(amount);
 }
 
+// TODO: for debugging - remove it later
 async function queryPoolsAndUsers() {
   const { cwQueryPoolsAndUsers } = await init();
   return await cwQueryPoolsAndUsers();
 }
 
-async function queryUcwQueryUser(address: string) {
+async function queryUser(address: string) {
   const { cwQueryUser } = await init();
   return await cwQueryUser(address);
 }
@@ -47,6 +48,6 @@ export {
   deposit,
   withdraw,
   queryPoolsAndUsers,
-  queryUcwQueryUser,
+  queryUser,
   initCwHandler,
 };

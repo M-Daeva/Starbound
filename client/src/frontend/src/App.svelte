@@ -8,6 +8,7 @@
     chainRegistryStorage,
     poolsStorage,
     userFundsStorage,
+    userContractStorage,
     validatorsStorage,
     cwHandlerStorage,
     getAll,
@@ -15,7 +16,7 @@
   } from "./services/storage";
   import { get } from "svelte/store";
   import { getAddrByChainId } from "../../common/signers";
-  import { localSorageKey, initCwHandler } from "./services/wallet";
+  import { localSorageKey, initCwHandler, queryUser } from "./services/wallet";
 
   const paths = {
     home: "/",
@@ -33,7 +34,10 @@
       return;
     }
     cwHandlerStorage.set({ address });
+    // TODO: optimize async requests
     await initAll();
+    let user = await queryUser(address);
+    userContractStorage.set(user);
   })();
 </script>
 
@@ -51,12 +55,6 @@
           <li>
             <Link
               class="text-center hover:no-underline visited:text-amber-200"
-              to={paths.dashboard}>Dashboard</Link
-            >
-          </li>
-          <li>
-            <Link
-              class="text-center hover:no-underline visited:text-amber-200"
               to={paths.assets}>Assets</Link
             >
           </li>
@@ -64,6 +62,12 @@
             <Link
               class="text-center hover:no-underline visited:text-amber-200"
               to={paths.bank}>Bank</Link
+            >
+          </li>
+          <li>
+            <Link
+              class="text-center hover:no-underline visited:text-amber-200"
+              to={paths.dashboard}>Dashboard</Link
             >
           </li>
         </ul>
@@ -74,9 +78,9 @@
     </header>
 
     <div>
-      <Route primary={false} path={paths.dashboard}><Dashboard /></Route>
       <Route primary={false} path={paths.assets}><Assets /></Route>
       <Route primary={false} path={paths.bank}><Bank /></Route>
+      <Route primary={false} path={paths.dashboard}><Dashboard /></Route>
     </div>
   </div>
 </Router>

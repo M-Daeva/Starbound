@@ -63,8 +63,8 @@ function getTimeUntilRebalancing(tHour: number = 19) {
 
   const dMins = (60 - mins) % 60;
   const dHours = ((23 + tHour - hours) % 24) + (dMins ? 0 : 1);
-  const dHoursStr = `${dHours}` + (dHours < 10 ? `0` : ``);
-  const dMinsStr = `${dMins}` + (dMins < 10 ? `0` : ``);
+  const dHoursStr = (dHours < 10 ? `0` : ``) + `${dHours}`;
+  const dMinsStr = (dMins < 10 ? `0` : ``) + `${dMins}`;
   return `${dHoursStr}:${dMinsStr}`;
 }
 
