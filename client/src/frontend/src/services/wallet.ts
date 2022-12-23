@@ -3,9 +3,11 @@ import type { User } from "../../../common/codegen/Starbound.types";
 import { getAddrByChainId } from "../../../common/signers";
 import { get } from "svelte/store";
 import { l } from "../../../common/utils";
-import { cwHandlerStorage, initAll } from "../services/storage";
-
-const localSorageKey = "starbound-osmo-address";
+import {
+  cwHandlerStorage,
+  initAll,
+  LOCAL_STORAGE_KEY,
+} from "../services/storage";
 
 async function deposit(user: User) {
   const { cwDeposit } = await init();
@@ -34,7 +36,7 @@ async function initCwHandler() {
     const address = await getAddrByChainId();
     cwHandlerStorage.set({ address });
     // TODO: encode address
-    localStorage.setItem(localSorageKey, address);
+    localStorage.setItem(LOCAL_STORAGE_KEY, address);
     await initAll();
   } catch (error) {
     l({ error });
@@ -43,11 +45,4 @@ async function initCwHandler() {
   l(get(cwHandlerStorage));
 }
 
-export {
-  localSorageKey,
-  deposit,
-  withdraw,
-  queryPoolsAndUsers,
-  queryUser,
-  initCwHandler,
-};
+export { deposit, withdraw, queryPoolsAndUsers, queryUser, initCwHandler };

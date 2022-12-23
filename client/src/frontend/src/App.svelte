@@ -3,20 +3,13 @@
   import Dashboard from "./routes/Dashboard.svelte";
   import Assets from "./routes/Assets.svelte";
   import Bank from "./routes/Bank.svelte";
-  import { l } from "../../common/utils";
+  import { initCwHandler } from "./services/wallet";
+  import Modal from "./components/Modal.svelte";
   import {
-    chainRegistryStorage,
-    poolsStorage,
-    userFundsStorage,
-    userContractStorage,
-    validatorsStorage,
-    cwHandlerStorage,
-    getAll,
+    isModalActiveStorage,
     initAll,
+    setUserContractStorage,
   } from "./services/storage";
-  import { get } from "svelte/store";
-  import { getAddrByChainId } from "../../common/signers";
-  import { localSorageKey, initCwHandler, queryUser } from "./services/wallet";
 
   const paths = {
     home: "/",
@@ -25,19 +18,16 @@
     bank: "/bank",
   };
 
+  let isModalActive = false;
+
+  isModalActiveStorage.subscribe((value) => {
+    isModalActive = value;
+  });
+
   // init storages
   (async () => {
-    const address = localStorage.getItem(localSorageKey) || "";
-    if (address === "") {
-      // TODO: add connect wallet error modal window
-      l("Connect wallet first!");
-      return;
-    }
-    cwHandlerStorage.set({ address });
-    // TODO: optimize async requests
+    await setUserContractStorage();
     await initAll();
-    let user = await queryUser(address);
-    userContractStorage.set(user);
   })();
 </script>
 
@@ -82,5 +72,9 @@
       <Route primary={false} path={paths.bank}><Bank /></Route>
       <Route primary={false} path={paths.dashboard}><Dashboard /></Route>
     </div>
+
+    {#if isModalActive}
+      <Modal />
+    {/if}
   </div>
 </Router>

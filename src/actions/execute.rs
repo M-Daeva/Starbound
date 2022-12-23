@@ -30,6 +30,9 @@ pub fn deposit(
 ) -> Result<Response, ContractError> {
     verify_deposit_data(&deps, &info, &user)?;
 
+    let config = CONFIG.load(deps.storage)?;
+    let denom_token_in = config.stablecoin_denom;
+
     // check if user exists or create new
     let user_loaded = match USERS.load(deps.storage, &info.sender) {
         Ok(x) => x,
@@ -37,7 +40,7 @@ pub fn deposit(
     };
 
     // update asset list
-    let asset_list = user
+    let mut asset_list = user
         .asset_list
         .iter()
         .map(|asset| -> Result<Asset, ContractError> {
@@ -68,12 +71,22 @@ pub fn deposit(
         })
         .collect::<Result<Vec<Asset>, ContractError>>()?;
 
+    // received asset_list is empty just take it from user_loaded
+    if asset_list.is_empty() {
+        asset_list = user_loaded.asset_list;
+    }
+
+    let funds_amount = match &info.funds.iter().find(|&x| x.denom == denom_token_in) {
+        Some(x) => x.amount,
+        None => Uint128::zero(),
+    };
+
     USERS.save(
         deps.storage,
         &info.sender,
         &User {
             asset_list,
-            deposited: user_loaded.deposited + user.deposited,
+            deposited: user_loaded.deposited + funds_amount,
             ..user
         },
     )?;

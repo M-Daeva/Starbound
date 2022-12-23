@@ -47,6 +47,48 @@ fn deposit() {
     assert_eq!(res.unwrap(), QueryUserResponse { user });
 }
 
+#[test]
+fn deposit_multiple_times_and_without_assets() {
+    let mut st = Starbound::new();
+    let mut user = Starbound::get_user(UserName::Alice);
+
+    st.deposit(
+        ADDR_ALICE_OSMO,
+        &user,
+        &[coin(FUNDS_AMOUNT / 10, DENOM_EEUR)],
+    )
+    .unwrap();
+
+    st.deposit(
+        ADDR_ALICE_OSMO,
+        &user,
+        &[coin(FUNDS_AMOUNT / 10, DENOM_EEUR)],
+    )
+    .unwrap();
+
+    let res = st.query_user(ADDR_ALICE_OSMO);
+
+    user.deposited = Uint128::from(2 * FUNDS_AMOUNT / 10);
+
+    assert_eq!(res.unwrap(), QueryUserResponse { user: user.clone() });
+
+    st.deposit(
+        ADDR_ALICE_OSMO,
+        &User {
+            asset_list: vec![],
+            ..user
+        },
+        &[coin(FUNDS_AMOUNT / 10, DENOM_EEUR)],
+    )
+    .unwrap();
+
+    let res = st.query_user(ADDR_ALICE_OSMO);
+
+    user.deposited = Uint128::from(3 * FUNDS_AMOUNT / 10);
+
+    assert_eq!(res.unwrap(), QueryUserResponse { user });
+}
+
 // TODO: check if asset outside pool list can not be deposited
 #[test]
 fn deposit_unsupported_asset() {

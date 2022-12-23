@@ -4,15 +4,18 @@
     deposit as _deposit,
     withdraw as _withdraw,
     queryPoolsAndUsers as _queryPoolsAndUsers,
+    queryUser,
   } from "../services/wallet";
   import { Line } from "svelte-chartjs";
   import { DENOMS } from "../../../common/helpers/assets";
   import { get } from "svelte/store";
   import type { Asset, User } from "../../../common/codegen/Starbound.types";
+  import type { AssetListItem } from "../../../common/helpers/interfaces";
   import {
     calcTimeDiff,
     displayTxLink,
     getTimeUntilRebalancing,
+    displayModal,
   } from "../services/helpers";
   import {
     Chart as ChartJS,
@@ -35,10 +38,13 @@
     validatorsStorage,
     assetListStorage,
     authzHandlerListStorage,
+    isModalActiveStorage,
+    txHashStorage,
     sortingConfigStorage,
     getRegistryChannelsPools,
     getValidators,
     cwHandlerStorage,
+    setUserContractStorage,
   } from "../services/storage";
 
   let paymentBalance = 0;
@@ -102,9 +108,17 @@
 
     l({ userToSend });
 
-    const tx = await _deposit(userToSend);
+    try {
+      const tx = await _deposit(userToSend);
 
-    l(displayTxLink(tx.transactionHash));
+      l(displayTxLink(tx.transactionHash));
+
+      displayModal(tx.transactionHash);
+    } catch (error) {
+      displayModal(error);
+    }
+
+    await setUserContractStorage();
   }
 
   const data = {
@@ -271,9 +285,7 @@
             />
           </div>
           <div class="controls">
-            <button
-              class="btn btn-secondary mt-2"
-              on:click={async () => l(await _queryPoolsAndUsers())}
+            <button class="btn btn-secondary mt-2" on:click={async () => {}}
               >Withdraw</button
             >
           </div>

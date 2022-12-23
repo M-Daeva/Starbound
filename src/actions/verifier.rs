@@ -3,7 +3,7 @@ use cosmwasm_std::{Addr, CanonicalAddr, Decimal, DepsMut, MessageInfo, StdError,
 
 use crate::{
     error::ContractError,
-    state::{User, CONFIG, POOLS},
+    state::{User, CONFIG, POOLS, USERS},
 };
 
 // This simple Api provided for address verification
@@ -155,24 +155,14 @@ pub fn verify_deposit_data(
     let config = CONFIG.load(deps.storage)?;
     let denom_token_in = config.stablecoin_denom;
 
-    // return error if received something differ from required stablecoin
-    if info
-        .funds
-        .iter()
-        .filter(|&x| x.denom != denom_token_in)
-        .count()
-        != 0_usize
-    {
+    // only single stablecoin payments are allowed
+    if info.funds.len() > 1 || (info.funds.len() == 1 && info.funds[0].denom != denom_token_in) {
         return Err(ContractError::UnexpectedFunds {});
     }
 
-    let funds_amount = match &info.funds.iter().find(|&x| x.denom == denom_token_in) {
-        Some(x) => x.amount.u128(),
-        None => 0,
-    };
-
-    if funds_amount != (user.deposited.u128()) {
-        return Err(ContractError::FundsAreNotEqual {});
+    // skip checking assets and weight if we need just add funds and update day counter
+    if user.asset_list.is_empty() && USERS.load(deps.storage, &info.sender).is_ok() {
+        return Ok(());
     }
 
     // check if all weights are in range [0, 1]

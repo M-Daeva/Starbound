@@ -1,4 +1,9 @@
-import { chainRegistryStorage, poolsStorage } from "../services/storage";
+import {
+  chainRegistryStorage,
+  poolsStorage,
+  txHashStorage,
+  isModalActiveStorage,
+} from "../services/storage";
 import { get } from "svelte/store";
 
 function getAssetInfoByAddress(address: string) {
@@ -68,6 +73,15 @@ function getTimeUntilRebalancing(tHour: number = 19) {
   return `${dHoursStr}:${dMinsStr}`;
 }
 
+function displayModal(txHash: string = "") {
+  txHashStorage.set(txHash);
+  isModalActiveStorage.set(true);
+
+  setTimeout(() => {
+    isModalActiveStorage.set(false);
+  }, 5_000);
+}
+
 export {
   getAssetInfoByAddress,
   trimPrice,
@@ -75,4 +89,5 @@ export {
   calcTimeDiff,
   displayTxLink,
   getTimeUntilRebalancing,
+  displayModal,
 };

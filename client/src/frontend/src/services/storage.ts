@@ -1,6 +1,8 @@
 import { type Writable, get, writable } from "svelte/store";
 import { createRequest, l } from "../../../common/utils";
 import { baseURL } from "../config";
+import { queryUser } from "./wallet";
+import { displayModal } from "./helpers";
 import type {
   PoolExtracted,
   QueryUserResponse,
@@ -19,6 +21,8 @@ import type {
 // global constants
 const STABLECOIN_SYMBOL = "EEUR";
 const STABLECOIN_EXPONENT = 6; // axelar USDC/ e-money EEUR
+
+const LOCAL_STORAGE_KEY = "starbound-osmo-address";
 
 // TODO: replace some writable storages with readable
 
@@ -44,8 +48,23 @@ let sortingConfigStorage: Writable<{
   key: keyof AssetListItem;
   order: "asc" | "desc";
 }> = writable({ key: "address", order: "asc" });
+// controls tx hash modal
+let isModalActiveStorage: Writable<boolean> = writable(false);
+// keeps last tx hash
+let txHashStorage: Writable<string> = writable("");
 
 let req = createRequest({ baseURL: baseURL + "/api" });
+
+async function setUserContractStorage() {
+  const address = localStorage.getItem(LOCAL_STORAGE_KEY) || "";
+  if (address === "") {
+    displayModal("Connect wallet first!");
+    return;
+  }
+  let user = await queryUser(address);
+  userContractStorage.set(user);
+  cwHandlerStorage.set({ address });
+}
 
 // request main storages
 async function getRegistryChannelsPools(): Promise<{
@@ -135,6 +154,7 @@ async function initAll() {
 export {
   STABLECOIN_SYMBOL,
   STABLECOIN_EXPONENT,
+  LOCAL_STORAGE_KEY,
   chainRegistryStorage,
   ibcChannellsStorage,
   poolsStorage,
@@ -145,6 +165,9 @@ export {
   authzHandlerListStorage,
   cwHandlerStorage,
   sortingConfigStorage,
+  isModalActiveStorage,
+  txHashStorage,
+  setUserContractStorage,
   getRegistryChannelsPools,
   getPools,
   getValidators,
