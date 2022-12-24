@@ -3,6 +3,7 @@ import type { User } from "../../../common/codegen/Starbound.types";
 import { getAddrByChainId } from "../../../common/signers";
 import { get } from "svelte/store";
 import { l } from "../../../common/utils";
+import { displayModal } from "./helpers";
 import {
   cwHandlerStorage,
   initAll,
@@ -37,12 +38,10 @@ async function initCwHandler() {
     cwHandlerStorage.set({ address });
     // TODO: encode address
     localStorage.setItem(LOCAL_STORAGE_KEY, address);
-    await initAll();
+    window.location.reload();
   } catch (error) {
-    l({ error });
+    displayModal(error);
   }
-
-  l(get(cwHandlerStorage));
 }
 
 export { deposit, withdraw, queryPoolsAndUsers, queryUser, initCwHandler };

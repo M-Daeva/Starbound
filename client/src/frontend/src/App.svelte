@@ -45,13 +45,13 @@
           <li>
             <Link
               class="text-center hover:no-underline visited:text-amber-200"
-              to={paths.assets}>Assets</Link
+              to={paths.bank}>Bank</Link
             >
           </li>
           <li>
             <Link
               class="text-center hover:no-underline visited:text-amber-200"
-              to={paths.bank}>Bank</Link
+              to={paths.assets}>Assets</Link
             >
           </li>
           <li>
@@ -68,8 +68,8 @@
     </header>
 
     <div>
-      <Route primary={false} path={paths.assets}><Assets /></Route>
       <Route primary={false} path={paths.bank}><Bank /></Route>
+      <Route primary={false} path={paths.assets}><Assets /></Route>
       <Route primary={false} path={paths.dashboard}><Dashboard /></Route>
     </div>
 

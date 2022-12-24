@@ -5,6 +5,7 @@ import {
   isModalActiveStorage,
 } from "../services/storage";
 import { get } from "svelte/store";
+import { l } from "../../../common/utils";
 
 function getAssetInfoByAddress(address: string) {
   const walletAddressPrefix = address.split("1")[0];
@@ -46,13 +47,22 @@ function generateColorList(quantity: number, baseColorList: string[]) {
 }
 
 // calculates how much swaps will be provided since present time
-function calcTimeDiff(targetDate: string, targetHour: number = 22) {
+function calcTimeDiff(targetDate: string, targetHour: number = 19) {
   const targetDateWithOffset =
     new Date(targetDate).getTime() +
     (targetHour + new Date().getTimezoneOffset() / 60) * 3600 * 1e3;
   const diff = targetDateWithOffset - Date.now();
   const cnt = Math.ceil(diff / (24 * 3600 * 1e3));
   return cnt;
+}
+
+// reversed version of calcTimeDiff()
+function timeDiffToDate(timeDiff: number, targetHour: number = 19) {
+  let date = new Date();
+  date.setDate(date.getDate() + timeDiff);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+    .toISOString()
+    .split("T")[0];
 }
 
 function displayTxLink(txHash: string, chainName: string = "osmosis-testnet") {
@@ -87,6 +97,7 @@ export {
   trimPrice,
   generateColorList,
   calcTimeDiff,
+  timeDiffToDate,
   displayTxLink,
   getTimeUntilRebalancing,
   displayModal,

@@ -6,7 +6,7 @@
     queryPoolsAndUsers as _queryPoolsAndUsers,
     queryUser,
   } from "../services/wallet";
-  import { Line } from "svelte-chartjs";
+  import { Bar } from "svelte-chartjs";
   import { DENOMS } from "../../../common/helpers/assets";
   import { get } from "svelte/store";
   import type { Asset, User } from "../../../common/codegen/Starbound.types";
@@ -16,6 +16,8 @@
     displayTxLink,
     getTimeUntilRebalancing,
     displayModal,
+    generateColorList,
+    timeDiffToDate,
   } from "../services/helpers";
   import {
     Chart as ChartJS,
@@ -26,6 +28,7 @@
     LinearScale,
     PointElement,
     CategoryScale,
+    BarElement,
   } from "chart.js";
   import {
     STABLECOIN_SYMBOL,
@@ -49,16 +52,11 @@
 
   let paymentBalance = 0;
   let investPeriod = 0;
+  let withdrawalAmountToDisplay = "";
 
-  // displays contract data
-  userContractStorage.subscribe((value) => {
-    paymentBalance = +value?.user?.deposited / 10 ** STABLECOIN_EXPONENT || 0;
-    investPeriod = +value?.user?.day_counter || 0;
-  });
+  let time = "00:00";
 
   // TODO: add checking on assets submit
-
-  let withdrawalAmountToDisplay = "";
 
   let userToDisplay: User = {
     asset_list: [],
@@ -66,6 +64,47 @@
     deposited: "",
     is_controlled_rebalancing: false,
   };
+
+  let data = {
+    labels: [],
+    datasets: [
+      {
+        label: "Current",
+        data: [],
+        backgroundColor: ["rgba(255, 218, 128,0.4)"],
+        borderWidth: 2,
+        borderColor: ["rgba(255, 218, 128, 1)"],
+      },
+      {
+        label: "Estimated",
+        data: [],
+        backgroundColor: ["rgba(170, 128, 252,0.4)"],
+        borderWidth: 2,
+        borderColor: ["rgba(170, 128, 252, 1)"],
+      },
+    ],
+  } as any;
+
+  // displays contract data
+  userContractStorage.subscribe((value) => {
+    paymentBalance =
+      +(value?.user?.deposited || "") / 10 ** STABLECOIN_EXPONENT;
+    investPeriod = +(value?.user?.day_counter || "");
+
+    data.labels = [...Array(investPeriod).keys()].map((i) => i + 1);
+
+    let cuSum = 0;
+    data.datasets[0].data = [...Array(investPeriod).keys()].map(() => {
+      cuSum += paymentBalance / investPeriod;
+      return cuSum;
+    });
+
+    userToDisplay.day_counter = timeDiffToDate(investPeriod);
+    userToDisplay.is_controlled_rebalancing =
+      value?.user?.is_controlled_rebalancing || false;
+
+    estimatePayments(true);
+  });
 
   async function deposit() {
     const chainRegistry = get(chainRegistryStorage);
@@ -104,7 +143,9 @@
 
     const userToSend: User = {
       ...userToDisplay,
-      deposited: `${+userToDisplay.deposited * 10 ** STABLECOIN_EXPONENT}`,
+      deposited: `${
+        Math.abs(+userToDisplay.deposited) * 10 ** STABLECOIN_EXPONENT
+      }`,
       day_counter: `${calcTimeDiff(userToDisplay.day_counter)}`,
     };
 
@@ -125,7 +166,7 @@
 
   async function withdraw() {
     let withdrawalAmountToSend =
-      (+withdrawalAmountToDisplay || 0) * 10 ** STABLECOIN_EXPONENT;
+      Math.abs(+withdrawalAmountToDisplay) * 10 ** STABLECOIN_EXPONENT;
 
     try {
       const tx = await _withdraw(withdrawalAmountToSend);
@@ -140,78 +181,47 @@
     await setUserContractStorage();
   }
 
-  const data = {
-    labels: [
-      "01/01/01",
-      "02/01/01",
-      "03/01/01",
-      "04/01/01",
-      "05/01/01",
-      "06/01/01",
-      "07/01/01",
-    ],
-    datasets: [
-      {
-        label: "Current schedule",
-        fill: true,
-        lineTension: 0.3,
-        backgroundColor: "rgba(225, 204,230, .3)",
-        borderColor: "rgb(205, 130, 158)",
-        borderCapStyle: "butt",
-        borderDash: [],
-        borderDashOffset: 0.0,
-        borderJoinStyle: "miter",
-        pointBorderColor: "rgb(205, 130,1 58)",
-        pointBackgroundColor: "rgb(255, 255, 255)",
-        pointBorderWidth: 10,
-        pointHoverRadius: 5,
-        pointHoverBackgroundColor: "rgb(0, 0, 0)",
-        pointHoverBorderColor: "rgba(220, 220, 220,1)",
-        pointHoverBorderWidth: 2,
-        pointRadius: 1,
-        pointHitRadius: 10,
-        data: [100, 200, 300, 400, 500, 600],
-      },
-      {
-        label: "Estimated schedule",
-        fill: true,
-        lineTension: 0.3,
-        backgroundColor: "rgba(184, 185, 210, .3)",
-        borderColor: "rgb(35, 26, 136)",
-        borderCapStyle: "butt",
-        borderDash: [],
-        borderDashOffset: 0.0,
-        borderJoinStyle: "miter",
-        pointBorderColor: "rgb(35, 26, 136)",
-        pointBackgroundColor: "rgb(255, 255, 255)",
-        pointBorderWidth: 10,
-        pointHoverRadius: 5,
-        pointHoverBackgroundColor: "rgb(0, 0, 0)",
-        pointHoverBorderColor: "rgba(220, 220, 220, 1)",
-        pointHoverBorderWidth: 2,
-        pointRadius: 1,
-        pointHitRadius: 10,
-        data: [100, 250, 400, 550, 700, 700],
-      },
-    ],
-  } as any;
+  function estimatePayments(isDeposit: boolean) {
+    const timeDiff = calcTimeDiff(userToDisplay.day_counter) || investPeriod;
+    const timeDiffArray = [...Array(timeDiff).keys()];
 
-  ChartJS.register(
-    Title,
-    Tooltip,
-    Legend,
-    LineElement,
-    LinearScale,
-    PointElement,
-    CategoryScale
-  );
+    const offset = isDeposit
+      ? Math.abs(+userToDisplay.deposited)
+      : -Math.abs(+withdrawalAmountToDisplay);
 
-  let time = "00:00";
+    if (isDeposit) {
+      withdrawalAmountToDisplay = "";
+    } else {
+      userToDisplay.deposited = "";
+    }
+
+    data.labels = (
+      data.labels.length > timeDiff
+        ? [...Array(investPeriod).keys()]
+        : timeDiffArray
+    ).map((i) => i + 1);
+
+    let cuSum = 0;
+    data.datasets[1].data = timeDiffArray.map(() => {
+      cuSum += (paymentBalance + offset) / timeDiff;
+      return cuSum;
+    });
+  }
 
   function getTime() {
     time = getTimeUntilRebalancing();
   }
 
+  ChartJS.register(
+    Title,
+    Tooltip,
+    Legend,
+    BarElement,
+    CategoryScale,
+    LinearScale
+  );
+
+  getTime();
   setInterval(getTime, 1000);
 </script>
 
@@ -227,8 +237,10 @@
 
   <div class="flex flex-row justify-between">
     <div class="chart w-6/12">
-      <h2 class="text-center font-medium text-lg">Payment Schedule</h2>
-      <Line class="mt-2" {data} options={{ responsive: true }} />
+      <h2 class="text-center font-medium text-lg">
+        Payment Cumulative Sum ({STABLECOIN_SYMBOL}) vs Time (Days)
+      </h2>
+      <Bar class="mt-2" {data} options={{ responsive: true }} />
     </div>
 
     <div class="flex justify-around w-6/12">
@@ -243,7 +255,6 @@
                 type="checkbox"
                 class="sr-only peer"
                 bind:checked={userToDisplay.is_controlled_rebalancing}
-                on:change={() => l(userToDisplay.is_controlled_rebalancing)}
               />
               <div
                 class="w-11 h-6 peer-focus:outline-none peer-focus:ring-0 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"
@@ -262,6 +273,7 @@
               max="1000000"
               id="payment"
               bind:value={userToDisplay.deposited}
+              on:input={() => estimatePayments(true)}
             />
           </div>
         </div>
@@ -272,6 +284,7 @@
             type="date"
             id="period"
             bind:value={userToDisplay.day_counter}
+            on:input={() => estimatePayments(true)}
           />
         </div>
         <div class="controls">
@@ -302,6 +315,7 @@
               max="1000000"
               id="currentPeriod"
               bind:value={withdrawalAmountToDisplay}
+              on:input={() => estimatePayments(false)}
             />
           </div>
           <div class="controls">
