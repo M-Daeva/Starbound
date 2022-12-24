@@ -58,6 +58,8 @@
 
   // TODO: add checking on assets submit
 
+  let withdrawalAmountToDisplay = "";
+
   let userToDisplay: User = {
     asset_list: [],
     day_counter: "",
@@ -110,6 +112,23 @@
 
     try {
       const tx = await _deposit(userToSend);
+
+      l(displayTxLink(tx.transactionHash));
+
+      displayModal(tx.transactionHash);
+    } catch (error) {
+      displayModal(error);
+    }
+
+    await setUserContractStorage();
+  }
+
+  async function withdraw() {
+    let withdrawalAmountToSend =
+      (+withdrawalAmountToDisplay || 0) * 10 ** STABLECOIN_EXPONENT;
+
+    try {
+      const tx = await _withdraw(withdrawalAmountToSend);
 
       l(displayTxLink(tx.transactionHash));
 
@@ -282,10 +301,11 @@
               min="0"
               max="1000000"
               id="currentPeriod"
+              bind:value={withdrawalAmountToDisplay}
             />
           </div>
           <div class="controls">
-            <button class="btn btn-secondary mt-2" on:click={async () => {}}
+            <button class="btn btn-secondary mt-2" on:click={withdraw}
               >Withdraw</button
             >
           </div>
