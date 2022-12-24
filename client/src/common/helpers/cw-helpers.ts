@@ -30,7 +30,9 @@ async function getCwHelpers(
     const { deposited } = user;
     const tokenAmount = +deposited;
     const funds: Coin = { amount: `${tokenAmount}`, denom: DENOMS.EEUR };
-    return await _msgWrapper(composer.deposit({ user }, [funds]));
+    return await _msgWrapper(
+      composer.deposit({ user }, tokenAmount ? [funds] : [])
+    );
   }
 
   async function cwWithdraw(tokenAmount: number) {
