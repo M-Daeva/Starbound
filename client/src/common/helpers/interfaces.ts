@@ -290,10 +290,6 @@ interface DashboardAsset {
   allocation: Decimal;
 }
 
-interface CwHandler {
-  address: string;
-}
-
 interface AssetList {
   $schema: string;
   chain_name: string;
@@ -403,7 +399,6 @@ export {
   AssetDenom,
   SwapStruct,
   AuthzHandler,
-  CwHandler,
   UserBalance,
   UserAdressesWithBalances,
   DashboardAsset,

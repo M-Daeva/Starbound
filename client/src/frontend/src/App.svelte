@@ -26,10 +26,7 @@
   });
 
   // init storages
-  (async () => {
-    await setUserContractStorage();
-    await initAll();
-  })();
+  initAll();
 </script>
 
 <Router>

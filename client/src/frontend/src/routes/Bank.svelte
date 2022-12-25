@@ -45,7 +45,7 @@
     sortingConfigStorage,
     getRegistryChannelsPools,
     getValidators,
-    cwHandlerStorage,
+    addressStorage,
     setUserContractStorage,
   } from "../services/storage";
 
@@ -85,10 +85,9 @@
   } as any;
 
   // displays contract data
-  userContractStorage.subscribe((value) => {
-    paymentBalance =
-      +(value?.user?.deposited || "") / 10 ** STABLECOIN_EXPONENT;
-    investPeriod = +(value?.user?.day_counter || "");
+  userContractStorage.subscribe((user) => {
+    paymentBalance = +(user?.deposited || "") / 10 ** STABLECOIN_EXPONENT;
+    investPeriod = +(user?.day_counter || "");
 
     data.labels = [...Array(investPeriod).keys()].map((i) => i + 1);
 
@@ -100,7 +99,7 @@
 
     userToDisplay.day_counter = timeDiffToDate(investPeriod);
     userToDisplay.is_controlled_rebalancing =
-      value?.user?.is_controlled_rebalancing || false;
+      user?.is_controlled_rebalancing || false;
 
     estimatePayments(true);
   });

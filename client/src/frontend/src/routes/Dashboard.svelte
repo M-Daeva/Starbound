@@ -43,9 +43,8 @@
   };
 
   // displays contract data
-  userContractStorage.subscribe((value) => {
-    paymentBalance =
-      +(value?.user?.deposited || "") / 10 ** STABLECOIN_EXPONENT;
+  userContractStorage.subscribe((user) => {
+    paymentBalance = +(user?.deposited || "") / 10 ** STABLECOIN_EXPONENT;
   });
 
   // displays mainnet balances

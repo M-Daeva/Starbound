@@ -5,7 +5,7 @@ import { queryUser } from "./wallet";
 import { displayModal } from "./helpers";
 import type {
   PoolExtracted,
-  QueryUserResponse,
+  User,
 } from "../../../common/codegen/Starbound.types";
 import type {
   NetworkData,
@@ -14,7 +14,6 @@ import type {
   ValidatorResponse,
   AssetListItem,
   AuthzHandler,
-  CwHandler,
   UserBalance,
 } from "../../../common/helpers/interfaces";
 
@@ -36,15 +35,15 @@ let validatorsStorage: Writable<[string, ValidatorResponse[]][]> = writable([]);
 let userFundsStorage: Writable<[string, UserBalance][]> = writable([]);
 
 // contract storages
-let userContractStorage: Writable<QueryUserResponse> = writable();
+let userContractStorage: Writable<User> = writable();
 
 // frontend storages
 // assets from asset page
 let assetListStorage: Writable<AssetListItem[]> = writable([]);
 // multichain grant and revoke handlers
 let authzHandlerListStorage: Writable<AuthzHandler[]> = writable([]);
-// osmosis address and contract handlers
-let cwHandlerStorage: Writable<CwHandler> = writable();
+// osmosis address
+let addressStorage: Writable<string> = writable();
 // assets sorting config
 let sortingConfigStorage: Writable<{
   key: keyof AssetListItem;
@@ -58,14 +57,10 @@ let txHashStorage: Writable<string> = writable("");
 let req = createRequest({ baseURL: baseURL + "/api" });
 
 async function setUserContractStorage() {
-  const address = localStorage.getItem(LOCAL_STORAGE_KEY);
-  if (!address) {
-    // displayModal("Connect wallet first!");
-    return "";
-  }
-  let user = await queryUser(address);
+  const address = get(addressStorage);
+  if (!address) return "";
+  const { user } = await queryUser(address);
   userContractStorage.set(user);
-  cwHandlerStorage.set({ address });
 }
 
 // request main storages
@@ -140,7 +135,9 @@ async function getAll(userOsmoAddress: string): Promise<{
 
 async function initAll() {
   try {
-    const data = await getAll(get(cwHandlerStorage).address);
+    const address = localStorage.getItem(LOCAL_STORAGE_KEY);
+    addressStorage.set(address);
+    const data = await getAll(address);
     l({ data });
 
     // order matters!
@@ -148,6 +145,9 @@ async function initAll() {
     poolsStorage.set(data.pools);
     chainRegistryStorage.set(data.chainRegistry);
     userFundsStorage.set(data.userFunds);
+
+    const { user } = await queryUser(address);
+    userContractStorage.set(user);
   } catch (error) {
     l(error);
   }
@@ -166,7 +166,7 @@ export {
   userContractStorage,
   assetListStorage,
   authzHandlerListStorage,
-  cwHandlerStorage,
+  addressStorage,
   sortingConfigStorage,
   isModalActiveStorage,
   txHashStorage,

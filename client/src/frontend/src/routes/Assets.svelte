@@ -15,7 +15,7 @@
     sortingConfigStorage,
     getRegistryChannelsPools,
     getValidators,
-    cwHandlerStorage,
+    addressStorage,
   } from "../services/storage";
   import { get } from "svelte/store";
   import { onMount } from "svelte";
@@ -153,10 +153,7 @@
     );
 
     let currentAsset: AssetListItem = {
-      address: getAddrByPrefix(
-        get(cwHandlerStorage).address,
-        registryItem.prefix
-      ),
+      address: getAddrByPrefix(get(addressStorage), registryItem.prefix),
       asset: { symbol: registryItem.symbol, logo: registryItem.img },
       ratio,
       validator: getValidatorListBySymbol(currentSymbol)[0].operator_address,
@@ -206,8 +203,6 @@
           : -1
       );
   }
-
-  onMount(async () => {});
 </script>
 
 <div class="flex flex-col px-4 -mt-3" style="height: 87vh">

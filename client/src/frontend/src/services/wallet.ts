@@ -5,7 +5,7 @@ import { get } from "svelte/store";
 import { l } from "../../../common/utils";
 import { displayModal } from "./helpers";
 import {
-  cwHandlerStorage,
+  addressStorage,
   initAll,
   LOCAL_STORAGE_KEY,
 } from "../services/storage";
@@ -35,7 +35,7 @@ async function queryUser(address: string) {
 async function initCwHandler() {
   try {
     const address = await getAddrByChainId();
-    cwHandlerStorage.set({ address });
+    addressStorage.set(address);
     // TODO: encode address
     localStorage.setItem(LOCAL_STORAGE_KEY, address);
     window.location.reload();
