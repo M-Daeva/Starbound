@@ -21,7 +21,7 @@
   import { onMount } from "svelte";
   import { getAddrByPrefix, initWalletList } from "../../../common/signers";
   import { getSgHelpers } from "../../../common/helpers/sg-helpers";
-  import { getAssetInfoByAddress } from "../services/helpers";
+  import { getAssetInfoByAddress, displayModal } from "../services/helpers";
 
   let assetList: AssetListItem[] = [];
   let ratio: number = 1;
@@ -99,6 +99,7 @@
       );
       let tx = await grant();
       l({ tx });
+      displayModal(tx.transactionHash);
     } catch (error) {
       l({ error });
     }
@@ -111,6 +112,7 @@
       );
       let tx = await revoke();
       l({ tx });
+      displayModal(tx.transactionHash);
     } catch (error) {
       l({ error });
     }
@@ -172,7 +174,7 @@
     currentMoniker = currentMoniker.trim();
     let validatorList = getValidatorListBySymbol(currentSymbol);
     let currentValidator = validatorList.find(
-      ({ description: { moniker } }) => moniker === currentMoniker
+      ({ description: { moniker } }) => moniker.trim() === currentMoniker
     );
 
     assetListStorage.update((rows) =>

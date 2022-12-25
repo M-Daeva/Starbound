@@ -3,6 +3,8 @@ import {
   poolsStorage,
   txHashStorage,
   isModalActiveStorage,
+  LOCAL_STORAGE_KEY,
+  TARGET_HOUR,
 } from "../services/storage";
 import { get } from "svelte/store";
 import { l } from "../../../common/utils";
@@ -47,20 +49,22 @@ function generateColorList(quantity: number, baseColorList: string[]) {
 }
 
 // calculates how much swaps will be provided since present time
-function calcTimeDiff(targetDate: string, targetHour: number = 19) {
+function calcTimeDiff(targetDate: string, targetHour: number = TARGET_HOUR) {
   const targetDateWithOffset =
     new Date(targetDate).getTime() +
-    (targetHour + new Date().getTimezoneOffset() / 60) * 3600 * 1e3;
+    (targetHour * 60 + new Date().getTimezoneOffset()) * 60 * 1e3;
   const diff = targetDateWithOffset - Date.now();
   const cnt = Math.ceil(diff / (24 * 3600 * 1e3));
   return cnt;
 }
 
 // reversed version of calcTimeDiff()
-function timeDiffToDate(timeDiff: number, targetHour: number = 19) {
+function timeDiffToDate(timeDiff: number, targetHour: number = TARGET_HOUR) {
   let date = new Date();
   date.setDate(date.getDate() + timeDiff);
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+  return new Date(
+    date.getTime() - (date.getTimezoneOffset() + targetHour * 60) * 60 * 1e3
+  )
     .toISOString()
     .split("T")[0];
 }
@@ -71,7 +75,7 @@ function displayTxLink(txHash: string, chainName: string = "osmosis-testnet") {
 }
 
 // calculates time difference between next distribution and current moment
-function getTimeUntilRebalancing(tHour: number = 19) {
+function getTimeUntilRebalancing(tHour: number = TARGET_HOUR) {
   const curDate = new Date();
   const hours = curDate.getHours();
   const mins = curDate.getMinutes();
@@ -92,6 +96,19 @@ function displayModal(txHash: string = "") {
   }, 5_000);
 }
 
+function displayAddress() {
+  const address = localStorage.getItem(LOCAL_STORAGE_KEY);
+  if (!address) {
+    // displayModal("Connect wallet first!");
+    return "";
+  }
+
+  const [prefix, ...[postfix]] = address.split("1");
+  return `${prefix}1${postfix.slice(0, 3)}...${postfix.slice(
+    postfix.length - 4
+  )}`;
+}
+
 export {
   getAssetInfoByAddress,
   trimPrice,
@@ -101,4 +118,5 @@ export {
   displayTxLink,
   getTimeUntilRebalancing,
   displayModal,
+  displayAddress,
 };

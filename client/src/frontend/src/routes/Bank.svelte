@@ -13,7 +13,6 @@
   import type { AssetListItem } from "../../../common/helpers/interfaces";
   import {
     calcTimeDiff,
-    displayTxLink,
     getTimeUntilRebalancing,
     displayModal,
     generateColorList,
@@ -153,13 +152,8 @@
 
     try {
       const tx = await _deposit(userToSend);
-
-      l(displayTxLink(tx.transactionHash));
-
       displayModal(tx.transactionHash);
-    } catch (error) {
-      displayModal(error);
-    }
+    } catch (error) {}
 
     await setUserContractStorage();
   }
@@ -171,12 +165,8 @@
     try {
       const tx = await _withdraw(withdrawalAmountToSend);
 
-      l(displayTxLink(tx.transactionHash));
-
       displayModal(tx.transactionHash);
-    } catch (error) {
-      displayModal(error);
-    }
+    } catch (error) {}
 
     await setUserContractStorage();
   }

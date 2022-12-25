@@ -24,6 +24,8 @@ const STABLECOIN_EXPONENT = 6; // axelar USDC/ e-money EEUR
 
 const LOCAL_STORAGE_KEY = "starbound-osmo-address";
 
+const TARGET_HOUR = 19;
+
 // TODO: replace some writable storages with readable
 
 // api storages
@@ -56,10 +58,10 @@ let txHashStorage: Writable<string> = writable("");
 let req = createRequest({ baseURL: baseURL + "/api" });
 
 async function setUserContractStorage() {
-  const address = localStorage.getItem(LOCAL_STORAGE_KEY) || "";
-  if (address === "") {
-    displayModal("Connect wallet first!");
-    return;
+  const address = localStorage.getItem(LOCAL_STORAGE_KEY);
+  if (!address) {
+    // displayModal("Connect wallet first!");
+    return "";
   }
   let user = await queryUser(address);
   userContractStorage.set(user);
@@ -155,6 +157,7 @@ export {
   STABLECOIN_SYMBOL,
   STABLECOIN_EXPONENT,
   LOCAL_STORAGE_KEY,
+  TARGET_HOUR,
   chainRegistryStorage,
   ibcChannellsStorage,
   poolsStorage,

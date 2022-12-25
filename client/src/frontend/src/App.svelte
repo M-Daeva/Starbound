@@ -5,6 +5,7 @@
   import Bank from "./routes/Bank.svelte";
   import { initCwHandler } from "./services/wallet";
   import Modal from "./components/Modal.svelte";
+  import { displayAddress } from "./services/helpers";
   import {
     isModalActiveStorage,
     initAll,
@@ -36,9 +37,9 @@
     <header
       class="flex justify-between items-center px-3 mb-5 border-white border-b-2"
     >
-      <div class="flex justify-center align-middle items-center w-4/12 -mt-2">
-        <img class="w-1/12" src="src/public/s.png" alt="logo" />
-        <h1 class="font-bold text-3xl -ml-2 -mb-1">tarbound</h1>
+      <div class="flex justify-center align-middle items-center w-3/12 -mt-2">
+        <!-- <img class="w-1/12" src="src/public/s.png" alt="logo" /> -->
+        <h1 class="font-bold text-3xl -ml-2 -mb-1">Starbound</h1>
       </div>
       <nav class="w-6/12 font-medium text-xl">
         <ul class="my-5 flex justify-around">
@@ -62,6 +63,10 @@
           </li>
         </ul>
       </nav>
+      <div class="w-36 flex flex-row">
+        <img class="w-5 mr-1" src="src/public/wallet.png" alt="wallet" />
+        <div>{displayAddress()}</div>
+      </div>
       <button class="btn btn-primary mt-1.5 mr-1" on:click={initCwHandler}
         >Connect Wallet</button
       >
