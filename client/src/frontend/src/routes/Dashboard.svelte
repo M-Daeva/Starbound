@@ -1,12 +1,6 @@
 <script lang="ts">
   import { Doughnut } from "svelte-chartjs";
   import Decimal from "decimal.js";
-  import {
-    STABLECOIN_SYMBOL,
-    STABLECOIN_EXPONENT,
-    userFundsStorage,
-    userContractStorage,
-  } from "../services/storage";
   import { l } from "../../../common/utils";
   import { type DashboardAsset } from "../../../common/helpers/interfaces";
   import {
@@ -14,6 +8,12 @@
     trimPrice,
     generateColorList,
   } from "../services/helpers";
+  import {
+    STABLECOIN_SYMBOL,
+    STABLECOIN_EXPONENT,
+    userFundsStorage,
+    userContractStorage,
+  } from "../services/storage";
   import {
     Chart as ChartJS,
     Title,

@@ -1,36 +1,31 @@
 <script lang="ts">
+  import { l } from "../../../common/utils";
+  import { get } from "svelte/store";
+  import { getAddrByPrefix, initWalletList } from "../../../common/signers";
+  import { getSgHelpers } from "../../../common/helpers/sg-helpers";
   import type {
     AssetListItem,
     DelegationStruct,
   } from "../../../common/helpers/interfaces";
-  import { l } from "../../../common/utils";
+  import {
+    displayModal,
+    getValidatorListBySymbol,
+    sortAssets,
+  } from "../services/helpers";
   import {
     chainRegistryStorage,
-    ibcChannellsStorage,
-    poolsStorage,
-    userFundsStorage,
-    validatorsStorage,
     assetListStorage,
     authzHandlerListStorage,
     sortingConfigStorage,
-    getRegistryChannelsPools,
-    getValidators,
     addressStorage,
+    DAPP_ADDR,
+    CHAIN_TYPE,
   } from "../services/storage";
-  import { get } from "svelte/store";
-  import { onMount } from "svelte";
-  import { getAddrByPrefix, initWalletList } from "../../../common/signers";
-  import { getSgHelpers } from "../../../common/helpers/sg-helpers";
-  import { getAssetInfoByAddress, displayModal } from "../services/helpers";
 
   let assetList: AssetListItem[] = [];
   let ratio: number = 1;
   let denoms: string[] = [];
   let currentSymbol = "";
-
-  userFundsStorage.subscribe((value) => {
-    value.forEach(([k]) => addAsset(getAssetInfoByAddress(k).asset.symbol));
-  });
 
   assetListStorage.subscribe((value) => {
     assetList = value;
@@ -42,19 +37,16 @@
 
   // TODO: try to find better RPC provider
   async function addAuthzHandler(currentSymbol: string, validator: string) {
-    const DAPP_ADDR = "osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt";
-    const chainType: "main" | "test" = "test";
-
     let authzHandlerList = get(authzHandlerListStorage);
     const chain = get(chainRegistryStorage).find(
       ({ symbol }) => symbol === currentSymbol
     );
 
-    if (typeof chain[chainType] === "string") return;
+    if (typeof chain[CHAIN_TYPE] === "string") return;
 
     try {
-      const RPC = chain[chainType].apis.rpc[0].address;
-      const chainId = chain[chainType].chain_id;
+      const RPC = chain[CHAIN_TYPE].apis.rpc[0].address;
+      const chainId = chain[CHAIN_TYPE].chain_id;
       const wallet = await initWalletList([chain]);
 
       l({
@@ -118,18 +110,6 @@
     }
   }
 
-  function sortAssets(list: AssetListItem[]) {
-    const { key, order } = get(sortingConfigStorage);
-    let sign = order === "asc" ? 1 : -1;
-
-    return list.sort((a, b) => {
-      if (key === "asset") {
-        return a.asset.symbol > b.asset.symbol ? sign : -sign;
-      }
-      return a[key] > b[key] ? sign : -sign;
-    });
-  }
-
   function sortAndUpdateAssets(key: keyof AssetListItem) {
     sortingConfigStorage.update(({ order }) => {
       return {
@@ -148,13 +128,15 @@
   }
 
   function addAsset(currentSymbol: string) {
-    let registryItem = get(chainRegistryStorage).find(
+    const registryItem = get(chainRegistryStorage).find(
       ({ symbol }) => symbol === currentSymbol
     );
+    if (!registryItem) return;
 
-    let currentAsset: AssetListItem = {
-      address: getAddrByPrefix(get(addressStorage), registryItem.prefix),
-      asset: { symbol: registryItem.symbol, logo: registryItem.img },
+    const { prefix, symbol, img } = registryItem;
+    const currentAsset: AssetListItem = {
+      address: getAddrByPrefix(get(addressStorage), prefix),
+      asset: { symbol, logo: img },
       ratio,
       validator: getValidatorListBySymbol(currentSymbol)[0].operator_address,
     };
@@ -182,26 +164,6 @@
         return row;
       })
     );
-  }
-
-  function getValidatorListBySymbol(currentSymbol: string) {
-    let fullValidatorList = get(validatorsStorage);
-    let currentChain = get(chainRegistryStorage).find(
-      ({ symbol }) => symbol === currentSymbol
-    ).main;
-
-    if (typeof currentChain === "string") return [];
-    let currentChainName = currentChain.chain_name;
-
-    // TODO: improve sorting
-    return fullValidatorList
-      .find(([chainName]) => chainName === currentChainName)[1]
-      .sort((a, b) =>
-        a.description.moniker.toLowerCase() >
-        b.description.moniker.toLowerCase()
-          ? 1
-          : -1
-      );
   }
 </script>
 

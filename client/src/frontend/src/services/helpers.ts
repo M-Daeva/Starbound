@@ -1,3 +1,6 @@
+import type { AssetListItem } from "../../../common/helpers/interfaces";
+import { get } from "svelte/store";
+import { l } from "../../../common/utils";
 import {
   chainRegistryStorage,
   poolsStorage,
@@ -5,9 +8,9 @@ import {
   isModalActiveStorage,
   LOCAL_STORAGE_KEY,
   TARGET_HOUR,
+  validatorsStorage,
+  sortingConfigStorage,
 } from "../services/storage";
-import { get } from "svelte/store";
-import { l } from "../../../common/utils";
 
 function getAssetInfoByAddress(address: string) {
   const walletAddressPrefix = address.split("1")[0];
@@ -109,6 +112,37 @@ function displayAddress() {
   )}`;
 }
 
+function getValidatorListBySymbol(currentSymbol: string) {
+  let fullValidatorList = get(validatorsStorage);
+  let currentChain = get(chainRegistryStorage).find(
+    ({ symbol }) => symbol === currentSymbol
+  ).main;
+
+  if (typeof currentChain === "string") return [];
+  let currentChainName = currentChain.chain_name;
+
+  // TODO: improve sorting
+  return fullValidatorList
+    .find(([chainName]) => chainName === currentChainName)[1]
+    .sort((a, b) =>
+      a.description.moniker.toLowerCase() > b.description.moniker.toLowerCase()
+        ? 1
+        : -1
+    );
+}
+
+function sortAssets(list: AssetListItem[]) {
+  const { key, order } = get(sortingConfigStorage);
+  let sign = order === "asc" ? 1 : -1;
+
+  return list.sort((a, b) => {
+    if (key === "asset") {
+      return a.asset.symbol > b.asset.symbol ? sign : -sign;
+    }
+    return a[key] > b[key] ? sign : -sign;
+  });
+}
+
 export {
   getAssetInfoByAddress,
   trimPrice,
@@ -119,4 +153,6 @@ export {
   getTimeUntilRebalancing,
   displayModal,
   displayAddress,
+  getValidatorListBySymbol,
+  sortAssets,
 };

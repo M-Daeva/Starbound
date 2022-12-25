@@ -2,7 +2,8 @@ import { type Writable, get, writable } from "svelte/store";
 import { createRequest, l } from "../../../common/utils";
 import { baseURL } from "../config";
 import { queryUser } from "./wallet";
-import { displayModal } from "./helpers";
+import { getValidatorListBySymbol, sortAssets } from "./helpers";
+import { getAddrByPrefix } from "../../../common/signers";
 import type {
   PoolExtracted,
   User,
@@ -24,6 +25,9 @@ const STABLECOIN_EXPONENT = 6; // axelar USDC/ e-money EEUR
 const LOCAL_STORAGE_KEY = "starbound-osmo-address";
 
 const TARGET_HOUR = 19;
+
+const DAPP_ADDR = "osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt";
+const CHAIN_TYPE: "main" | "test" = "test";
 
 // TODO: replace some writable storages with readable
 
@@ -148,6 +152,28 @@ async function initAll() {
 
     const { user } = await queryUser(address);
     userContractStorage.set(user);
+
+    // init assetListStorage
+    let assetList: AssetListItem[] = [];
+
+    for (let asset of user?.asset_list) {
+      const registryItem = get(chainRegistryStorage).find(
+        ({ denomIbc }) => denomIbc === asset.asset_denom
+      );
+      if (!registryItem) continue;
+
+      const { prefix, symbol, img } = registryItem;
+      const assetListItem: AssetListItem = {
+        address: getAddrByPrefix(get(addressStorage), prefix),
+        asset: { symbol, logo: img },
+        ratio: +asset.weight * 100,
+        validator: getValidatorListBySymbol(symbol)[0].operator_address,
+      };
+
+      assetList.push(assetListItem);
+    }
+
+    assetListStorage.set(sortAssets(assetList));
   } catch (error) {
     l(error);
   }
@@ -158,6 +184,8 @@ export {
   STABLECOIN_EXPONENT,
   LOCAL_STORAGE_KEY,
   TARGET_HOUR,
+  DAPP_ADDR,
+  CHAIN_TYPE,
   chainRegistryStorage,
   ibcChannellsStorage,
   poolsStorage,

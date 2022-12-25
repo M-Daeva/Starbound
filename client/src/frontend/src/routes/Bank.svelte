@@ -1,21 +1,17 @@
 <script lang="ts">
   import { l } from "../../../common/utils";
+  import { Bar } from "svelte-chartjs";
+  import { get } from "svelte/store";
+  import type { Asset, User } from "../../../common/codegen/Starbound.types";
   import {
     deposit as _deposit,
     withdraw as _withdraw,
     queryPoolsAndUsers as _queryPoolsAndUsers,
-    queryUser,
   } from "../services/wallet";
-  import { Bar } from "svelte-chartjs";
-  import { DENOMS } from "../../../common/helpers/assets";
-  import { get } from "svelte/store";
-  import type { Asset, User } from "../../../common/codegen/Starbound.types";
-  import type { AssetListItem } from "../../../common/helpers/interfaces";
   import {
     calcTimeDiff,
     getTimeUntilRebalancing,
     displayModal,
-    generateColorList,
     timeDiffToDate,
   } from "../services/helpers";
   import {
@@ -23,9 +19,7 @@
     Title,
     Tooltip,
     Legend,
-    LineElement,
     LinearScale,
-    PointElement,
     CategoryScale,
     BarElement,
   } from "chart.js";
@@ -33,19 +27,9 @@
     STABLECOIN_SYMBOL,
     STABLECOIN_EXPONENT,
     chainRegistryStorage,
-    ibcChannellsStorage,
-    poolsStorage,
     userFundsStorage,
     userContractStorage,
-    validatorsStorage,
     assetListStorage,
-    authzHandlerListStorage,
-    isModalActiveStorage,
-    txHashStorage,
-    sortingConfigStorage,
-    getRegistryChannelsPools,
-    getValidators,
-    addressStorage,
     setUserContractStorage,
   } from "../services/storage";
 
@@ -117,17 +101,19 @@
           asset_denom: denomIbc,
           wallet_address: address,
           wallet_balance: "0",
-          weight: `${ratio / 100}`,
+          weight: `${Math.abs(ratio) / 100}`,
           amount_to_send_until_next_epoch: "0", // contract doesn't read this field on deposit
         };
 
+        // try to update wallet_balance
         const userFunds = get(userFundsStorage); // returns [] if userToDisplay is not registered
         if (userFunds.length) {
-          const [_k, { holded, staked }] = userFunds.find(
-            ([k]) => k === address
-          );
+          const userFundsCurrent = userFunds.find(([k]) => k === address);
 
-          asset.wallet_balance = `${+holded.amount + +staked.amount}`;
+          if (userFundsCurrent) {
+            const [_k, { holded, staked }] = userFundsCurrent;
+            asset.wallet_balance = `${+holded.amount + +staked.amount}`;
+          }
         }
 
         return asset;
@@ -152,9 +138,8 @@
     try {
       const tx = await _deposit(userToSend);
       displayModal(tx.transactionHash);
+      await setUserContractStorage();
     } catch (error) {}
-
-    await setUserContractStorage();
   }
 
   async function withdraw() {
@@ -165,9 +150,8 @@
       const tx = await _withdraw(withdrawalAmountToSend);
 
       displayModal(tx.transactionHash);
+      await setUserContractStorage();
     } catch (error) {}
-
-    await setUserContractStorage();
   }
 
   function estimatePayments(isDeposit: boolean) {
