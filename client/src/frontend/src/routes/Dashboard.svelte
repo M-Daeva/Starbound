@@ -23,6 +23,8 @@
     CategoryScale,
   } from "chart.js";
 
+  // TODO: solve the problem when chart and table doesn't appears immidiately on the page
+  // after updating data in contract via deposit
   let paymentBalance = 0;
   let portfolioNetWorth = 0;
 
@@ -67,8 +69,12 @@
         // const staked = new Decimal(_staked.amount)
         //   .div(divider)
         //   .toDecimalPlaces(6);
-        const holded = new Decimal(10_000_100).div(divider).toDecimalPlaces(6);
-        const staked = new Decimal(20_000_000).div(divider).toDecimalPlaces(6);
+        const holded = new Decimal(10e6 * Math.random())
+          .div(divider)
+          .toDecimalPlaces(6);
+        const staked = new Decimal(10e6 * Math.random())
+          .div(divider)
+          .toDecimalPlaces(6);
         const cost = price.mul(holded.add(staked)).toDecimalPlaces(2);
 
         let res: DashboardAsset = {

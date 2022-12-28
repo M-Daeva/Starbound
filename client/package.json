@@ -5,7 +5,7 @@
   "main": "./dist/backend/index.js",
   "private": true,
   "engines": {
-    "node": ">=12.x"
+    "node": ">=15.x"
   },
   "scripts": {
     "start": "node ./dist/backend/index.js",
