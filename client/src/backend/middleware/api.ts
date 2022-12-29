@@ -1,6 +1,15 @@
 import { init } from "../../common/workers/testnet-backend-workers";
 import { l } from "../../common/utils";
 import {
+  initStorage,
+  ChainRegistryStorage,
+  IbcChannellsStorage,
+  PoolsStorage,
+  ValidatorsStorage,
+  UserFundsStorage,
+  PoolsAndUsersStorage,
+} from "../storages";
+import {
   getChainRegistry as _getChainRegistry,
   getIbcChannnels as _getIbcChannnels,
   getPools as _getPools,
@@ -8,29 +17,29 @@ import {
   getUserFunds as _getUserFunds,
   filterChainRegistry as _filterChainRegistry,
 } from "../../common/helpers/api-helpers";
-import { type QueryPoolsAndUsersResponse } from "../../common/codegen/Starbound.types";
-import type {
-  NetworkData,
-  ValidatorResponse,
-  IbcResponse,
-  AssetDescription,
-  UserBalance,
-} from "../../common/helpers/interfaces";
 
 // client specific storages
-let chainRegistryStorage: NetworkData[] = [];
-let ibcChannellsStorage: IbcResponse[] = [];
-let poolsStorage: [string, AssetDescription[]][] = [];
-let validatorsStorage: [string, ValidatorResponse[]][] = [];
-let userFundsStorage: [string, UserBalance][] = [];
+let chainRegistryStorage = initStorage<ChainRegistryStorage>(
+  "chain-registry-storage"
+);
+let ibcChannellsStorage = initStorage<IbcChannellsStorage>(
+  "ibc-channells-storage"
+);
+let poolsStorage = initStorage<PoolsStorage>("pools-storage");
+let validatorsStorage = initStorage<ValidatorsStorage>("validators-storage");
+let userFundsStorage = initStorage<UserFundsStorage>("user-funds-storage");
 // contract specific storage
-let poolsAndUsersStorage: QueryPoolsAndUsersResponse = { pools: [], users: [] };
+let poolsAndUsersStorage = initStorage<PoolsAndUsersStorage>(
+  "pools-and-users-storage"
+);
 
 async function updateChainRegistry() {
   let isStorageUpdated = false;
 
   try {
-    chainRegistryStorage = await _getChainRegistry();
+    const res = await _getChainRegistry();
+    chainRegistryStorage.set(res);
+    chainRegistryStorage.write(res);
     isStorageUpdated = true;
   } catch (error) {}
 
@@ -40,10 +49,10 @@ async function updateChainRegistry() {
 async function getChainRegistry() {
   const { activeNetworks, chainRegistry, ibcChannels, pools } =
     _filterChainRegistry(
-      chainRegistryStorage,
-      ibcChannellsStorage,
-      poolsStorage,
-      validatorsStorage
+      chainRegistryStorage.get(),
+      ibcChannellsStorage.get(),
+      poolsStorage.get(),
+      validatorsStorage.get()
     );
   return chainRegistry;
 }
@@ -52,7 +61,9 @@ async function updateIbcChannels() {
   let isStorageUpdated = false;
 
   try {
-    ibcChannellsStorage = await _getIbcChannnels();
+    const res = await _getIbcChannnels();
+    ibcChannellsStorage.set(res);
+    ibcChannellsStorage.write(res);
     isStorageUpdated = true;
   } catch (error) {
     l(error);
@@ -64,10 +75,10 @@ async function updateIbcChannels() {
 async function getIbcChannnels() {
   const { activeNetworks, chainRegistry, ibcChannels, pools } =
     _filterChainRegistry(
-      chainRegistryStorage,
-      ibcChannellsStorage,
-      poolsStorage,
-      validatorsStorage
+      chainRegistryStorage.get(),
+      ibcChannellsStorage.get(),
+      poolsStorage.get(),
+      validatorsStorage.get()
     );
   return ibcChannels;
 }
@@ -76,7 +87,9 @@ async function updatePools() {
   let isStorageUpdated = false;
 
   try {
-    poolsStorage = await _getPools();
+    const res = await _getPools();
+    poolsStorage.set(res);
+    poolsStorage.write(res);
     isStorageUpdated = true;
   } catch (error) {}
 
@@ -86,10 +99,10 @@ async function updatePools() {
 async function getPools() {
   const { activeNetworks, chainRegistry, ibcChannels, pools } =
     _filterChainRegistry(
-      chainRegistryStorage,
-      ibcChannellsStorage,
-      poolsStorage,
-      validatorsStorage
+      chainRegistryStorage.get(),
+      ibcChannellsStorage.get(),
+      poolsStorage.get(),
+      validatorsStorage.get()
     );
   return pools;
 }
@@ -98,7 +111,9 @@ async function updateValidators() {
   let isStorageUpdated = false;
 
   try {
-    validatorsStorage = await _getValidators();
+    const res = await _getValidators();
+    validatorsStorage.set(res);
+    validatorsStorage.write(res);
     isStorageUpdated = true;
   } catch (error) {}
 
@@ -106,7 +121,7 @@ async function updateValidators() {
 }
 
 async function getValidators() {
-  return validatorsStorage;
+  return validatorsStorage.get();
 }
 
 // transforms contract response to all users address-balance list
@@ -114,9 +129,11 @@ async function updateUserFunds() {
   let isStorageUpdated = false;
 
   try {
-    userFundsStorage = (await _getUserFunds(poolsAndUsersStorage)).map(
-      ({ address, holded, staked }) => [address, { holded, staked }]
-    );
+    const res: UserFundsStorage = (
+      await _getUserFunds(poolsAndUsersStorage.get())
+    ).map(({ address, holded, staked }) => [address, { holded, staked }]);
+    userFundsStorage.set(res);
+    userFundsStorage.write(res);
     isStorageUpdated = true;
   } catch (error) {}
 
@@ -125,16 +142,18 @@ async function updateUserFunds() {
 
 // filters all users address-balance list by specified user osmo address
 async function getUserFunds(userOsmoAddress: string) {
-  const userAssets = poolsAndUsersStorage.users.find(
-    ({ osmo_address }) => osmo_address === userOsmoAddress
-  );
+  const userAssets = poolsAndUsersStorage
+    .get()
+    .users.find(({ osmo_address }) => osmo_address === userOsmoAddress);
   if (!userAssets) return [];
 
   const addressList = userAssets.asset_list.map(
     ({ wallet_address }) => wallet_address
   );
 
-  return userFundsStorage.filter(([address]) => addressList.includes(address));
+  return userFundsStorage
+    .get()
+    .filter(([address]) => addressList.includes(address));
 }
 
 async function updatePoolsAndUsers() {
@@ -142,7 +161,9 @@ async function updatePoolsAndUsers() {
   const { cwQueryPoolsAndUsers } = await init();
 
   try {
-    poolsAndUsersStorage = await cwQueryPoolsAndUsers();
+    const res = await cwQueryPoolsAndUsers();
+    poolsAndUsersStorage.set(res);
+    poolsAndUsersStorage.write(res);
     isStorageUpdated = true;
   } catch (error) {}
 
@@ -150,15 +171,15 @@ async function updatePoolsAndUsers() {
 }
 
 async function getPoolsAndUsers() {
-  return poolsAndUsersStorage;
+  return poolsAndUsersStorage.get();
 }
 
 async function filterChainRegistry() {
   return _filterChainRegistry(
-    chainRegistryStorage,
-    ibcChannellsStorage,
-    poolsStorage,
-    validatorsStorage
+    chainRegistryStorage.get(),
+    ibcChannellsStorage.get(),
+    poolsStorage.get(),
+    validatorsStorage.get()
   );
 }
 
@@ -181,10 +202,10 @@ async function updateAll() {
 async function getAll(userOsmoAddress: string) {
   const { activeNetworks, chainRegistry, ibcChannels, pools } =
     _filterChainRegistry(
-      chainRegistryStorage,
-      ibcChannellsStorage,
-      poolsStorage,
-      validatorsStorage
+      chainRegistryStorage.get(),
+      ibcChannellsStorage.get(),
+      poolsStorage.get(),
+      validatorsStorage.get()
     );
 
   let userFunds = await getUserFunds(userOsmoAddress);
@@ -194,7 +215,7 @@ async function getAll(userOsmoAddress: string) {
     chainRegistry,
     ibcChannels,
     pools,
-    validatorsStorage,
+    validatorsStorage: validatorsStorage.get(),
     userFunds,
   };
 }

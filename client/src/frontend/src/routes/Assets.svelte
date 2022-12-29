@@ -153,7 +153,7 @@
     currentMoniker = currentMoniker.trim();
     let validatorList = getValidatorListBySymbol(currentSymbol);
     let currentValidator = validatorList.find(
-      ({ description: { moniker } }) => moniker.trim() === currentMoniker
+      ({ moniker }) => moniker.trim() === currentMoniker
     );
 
     assetListStorage.update((rows) =>
@@ -297,7 +297,7 @@
                   updateValidator(asset.symbol, e.currentTarget.value)}
                 class="w-40 m-0"
               >
-                {#each getValidatorListBySymbol(asset.symbol) as { operator_address, description: { moniker } }}
+                {#each getValidatorListBySymbol(asset.symbol) as { operator_address, moniker }}
                   <option selected={validator === operator_address}>
                     {moniker}
                   </option>

@@ -235,6 +235,11 @@ interface ValidatorResponse {
   min_self_delegation: string;
 }
 
+interface ValidatorResponseReduced {
+  operator_address: string;
+  moniker: string;
+}
+
 interface IbcResponse {
   source: string;
   destination: string;
@@ -255,14 +260,14 @@ interface SwapStruct {
 
 interface NetworkData {
   prefix: string;
-  main: ChainResponse | string;
-  test: ChainResponse | string;
+  main?: ChainResponse;
+  test?: ChainResponse;
   img: string;
   symbol: string;
   exponent: number;
   denomNative: string;
   denomIbc: string;
-  coinGeckoId: undefined | string;
+  coinGeckoId?: string;
 }
 
 interface AuthzHandler {
@@ -394,6 +399,7 @@ export {
   DelegationsResponse,
   ValidatorListResponse,
   ValidatorResponse,
+  ValidatorResponseReduced,
   IbcResponse,
   AssetSymbol,
   AssetDenom,

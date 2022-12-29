@@ -16,6 +16,7 @@ import {
   DelegationsResponse,
   ValidatorListResponse,
   ValidatorResponse,
+  ValidatorResponseReduced,
   IbcResponse,
   NetworkData,
   AssetList,
@@ -70,8 +71,8 @@ async function _queryNetworkNames() {
 async function _mainnetQuerier(chainUrl: string, assetListUrl: string) {
   let data: NetworkData = {
     prefix: "",
-    main: "",
-    test: "",
+    main: undefined,
+    test: undefined,
     img: "",
     symbol: "",
     denomNative: "",
@@ -111,8 +112,8 @@ async function _mainnetQuerier(chainUrl: string, assetListUrl: string) {
 async function _testnetQuerier(chainUrl: string) {
   let data: NetworkData = {
     prefix: "",
-    main: "",
-    test: "",
+    main: undefined,
+    test: undefined,
     img: "",
     symbol: "",
     denomNative: "",
@@ -150,8 +151,8 @@ async function _queryNetworksData(mainList: string[], testList: string[]) {
 
   let rawNetworkData = await Promise.all(promises);
 
-  let networkData = rawNetworkData.filter((item) => item.main !== "");
-  let testnetData = rawNetworkData.filter((item) => item.test !== "");
+  let networkData = rawNetworkData.filter((item) => item.main);
+  let testnetData = rawNetworkData.filter((item) => item.test);
 
   for (let networkDataItem of networkData) {
     for (let testnetDataItem of testnetData) {
@@ -266,7 +267,7 @@ function filterChainRegistry(
   chainRegistry: NetworkData[],
   ibcChannels: IbcResponse[],
   pools: [string, AssetDescription[]][],
-  validators: [string, ValidatorResponse[]][]
+  validators: [string, ValidatorResponseReduced[]][]
 ): {
   chainRegistry: NetworkData[];
   ibcChannels: IbcResponse[];
@@ -283,7 +284,7 @@ function filterChainRegistry(
   const validatorsChains = validators.map((item) => item[0]);
 
   let chainRegistryFiltered = chainRegistry.filter(({ symbol, main }) => {
-    if (typeof main === "string") return false;
+    if (!main) return false;
     return (
       ibcChannelDestinations.includes(main.chain_id) &&
       poolSymbols.includes(symbol) &&
@@ -308,7 +309,7 @@ function filterChainRegistry(
 
   const chainRegistryFilteredDestinations = chainRegistryFiltered.map(
     ({ main }) => {
-      if (typeof main === "string") return "";
+      if (!main) return "";
       return main.chain_id;
     }
   );
@@ -325,18 +326,18 @@ function filterChainRegistry(
 
   for (let chainRegistry of chainRegistryFiltered) {
     const { main } = chainRegistry;
-    if (typeof main === "string") continue;
+    if (!main) continue;
 
     const pool = poolsFiltered.find(
       ([k, [v1, v2]]) => v1.symbol === chainRegistry.symbol
     );
-    if (typeof pool === "undefined") continue;
+    if (!pool) continue;
     const [key, [v0, v1]] = pool;
 
     const ibcChannel = ibcChannelsFiltered.find(
       ({ destination }) => destination === main.chain_id
     );
-    if (typeof ibcChannel === "undefined") continue;
+    if (!ibcChannel) continue;
 
     activeNetworks.push({
       channel_id: ibcChannel.channel_id,
@@ -640,7 +641,16 @@ async function getValidators() {
 
   validatorList = validatorList.filter(([_, b]) => b.length);
 
-  return validatorList;
+  const validatorListReduced: [string, ValidatorResponseReduced[]][] =
+    validatorList.map(([symbol, vals]) => {
+      const valsReduced: ValidatorResponseReduced[] = vals.map((val) => ({
+        operator_address: val.operator_address,
+        moniker: val.description.moniker,
+      }));
+      return [symbol, valsReduced];
+    });
+
+  return validatorListReduced;
 }
 
 export {

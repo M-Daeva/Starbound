@@ -125,9 +125,7 @@ function getValidatorListBySymbol(currentSymbol: string) {
   return fullValidatorList
     .find(([chainName]) => chainName === currentChainName)[1]
     .sort((a, b) =>
-      a.description.moniker.toLowerCase() > b.description.moniker.toLowerCase()
-        ? 1
-        : -1
+      a.moniker.toLowerCase() > b.moniker.toLowerCase() ? 1 : -1
     );
 }
 

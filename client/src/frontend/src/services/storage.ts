@@ -12,7 +12,7 @@ import type {
   NetworkData,
   IbcResponse,
   AssetDescription,
-  ValidatorResponse,
+  ValidatorResponseReduced,
   AssetListItem,
   AuthzHandler,
   UserBalance,
@@ -35,7 +35,8 @@ const CHAIN_TYPE: "main" | "test" = "test";
 let chainRegistryStorage: Writable<NetworkData[]> = writable([]);
 let ibcChannellsStorage: Writable<IbcResponse[]> = writable([]);
 let poolsStorage: Writable<[string, AssetDescription[]][]> = writable([]);
-let validatorsStorage: Writable<[string, ValidatorResponse[]][]> = writable([]);
+let validatorsStorage: Writable<[string, ValidatorResponseReduced[]][]> =
+  writable([]);
 let userFundsStorage: Writable<[string, UserBalance][]> = writable([]);
 
 // contract storages
@@ -96,7 +97,9 @@ async function getPools(): Promise<[string, AssetDescription[]][]> {
 }
 
 // request validator list for all networks
-async function getValidators(): Promise<[string, ValidatorResponse[]][]> {
+async function getValidators(): Promise<
+  [string, ValidatorResponseReduced[]][]
+> {
   try {
     return await req.get("/get-validators");
   } catch (error) {
@@ -125,7 +128,7 @@ async function getAll(userOsmoAddress: string): Promise<{
   chainRegistry: NetworkData[];
   ibcChannels: IbcResponse[];
   pools: [string, AssetDescription[]][];
-  validatorsStorage: [string, ValidatorResponse[]][];
+  validatorsStorage: [string, ValidatorResponseReduced[]][];
   userFunds: [string, UserBalance][];
 }> {
   try {
