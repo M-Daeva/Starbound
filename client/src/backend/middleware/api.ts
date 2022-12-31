@@ -1,14 +1,14 @@
 import { init } from "../../common/workers/testnet-backend-workers";
 import { l } from "../../common/utils";
+import { initStorage } from "../storages";
 import {
-  initStorage,
   ChainRegistryStorage,
-  IbcChannellsStorage,
+  IbcChannelsStorage,
   PoolsStorage,
   ValidatorsStorage,
   UserFundsStorage,
   PoolsAndUsersStorage,
-} from "../storages";
+} from "../../common/helpers/interfaces";
 import {
   getChainRegistry as _getChainRegistry,
   getIbcChannnels as _getIbcChannnels,
@@ -16,14 +16,17 @@ import {
   getValidators as _getValidators,
   getUserFunds as _getUserFunds,
   filterChainRegistry as _filterChainRegistry,
+  mergeChainRegistry,
+  mergeIbcChannels,
+  mergePools,
 } from "../../common/helpers/api-helpers";
 
 // client specific storages
 let chainRegistryStorage = initStorage<ChainRegistryStorage>(
   "chain-registry-storage"
 );
-let ibcChannellsStorage = initStorage<IbcChannellsStorage>(
-  "ibc-channells-storage"
+let ibcChannelsStorage = initStorage<IbcChannelsStorage>(
+  "ibc-channels-storage"
 );
 let poolsStorage = initStorage<PoolsStorage>("pools-storage");
 let validatorsStorage = initStorage<ValidatorsStorage>("validators-storage");
@@ -37,7 +40,11 @@ async function updateChainRegistry() {
   let isStorageUpdated = false;
 
   try {
-    const res = await _getChainRegistry();
+    const res = mergeChainRegistry(
+      chainRegistryStorage.get(),
+      await _getChainRegistry()
+    );
+
     chainRegistryStorage.set(res);
     chainRegistryStorage.write(res);
     isStorageUpdated = true;
@@ -50,7 +57,7 @@ async function getChainRegistry() {
   const { activeNetworks, chainRegistry, ibcChannels, pools } =
     _filterChainRegistry(
       chainRegistryStorage.get(),
-      ibcChannellsStorage.get(),
+      ibcChannelsStorage.get(),
       poolsStorage.get(),
       validatorsStorage.get()
     );
@@ -61,9 +68,13 @@ async function updateIbcChannels() {
   let isStorageUpdated = false;
 
   try {
-    const res = await _getIbcChannnels();
-    ibcChannellsStorage.set(res);
-    ibcChannellsStorage.write(res);
+    const res = mergeIbcChannels(
+      ibcChannelsStorage.get(),
+      await _getIbcChannnels()
+    );
+
+    ibcChannelsStorage.set(res);
+    ibcChannelsStorage.write(res);
     isStorageUpdated = true;
   } catch (error) {
     l(error);
@@ -76,7 +87,7 @@ async function getIbcChannnels() {
   const { activeNetworks, chainRegistry, ibcChannels, pools } =
     _filterChainRegistry(
       chainRegistryStorage.get(),
-      ibcChannellsStorage.get(),
+      ibcChannelsStorage.get(),
       poolsStorage.get(),
       validatorsStorage.get()
     );
@@ -87,7 +98,8 @@ async function updatePools() {
   let isStorageUpdated = false;
 
   try {
-    const res = await _getPools();
+    const res = mergePools(poolsStorage.get(), await _getPools());
+
     poolsStorage.set(res);
     poolsStorage.write(res);
     isStorageUpdated = true;
@@ -100,7 +112,7 @@ async function getPools() {
   const { activeNetworks, chainRegistry, ibcChannels, pools } =
     _filterChainRegistry(
       chainRegistryStorage.get(),
-      ibcChannellsStorage.get(),
+      ibcChannelsStorage.get(),
       poolsStorage.get(),
       validatorsStorage.get()
     );
@@ -177,7 +189,7 @@ async function getPoolsAndUsers() {
 async function filterChainRegistry() {
   return _filterChainRegistry(
     chainRegistryStorage.get(),
-    ibcChannellsStorage.get(),
+    ibcChannelsStorage.get(),
     poolsStorage.get(),
     validatorsStorage.get()
   );
@@ -203,7 +215,7 @@ async function getAll(userOsmoAddress: string) {
   const { activeNetworks, chainRegistry, ibcChannels, pools } =
     _filterChainRegistry(
       chainRegistryStorage.get(),
-      ibcChannellsStorage.get(),
+      ibcChannelsStorage.get(),
       poolsStorage.get(),
       validatorsStorage.get()
     );

@@ -1,36 +1,6 @@
 import { readFileSync, writeFileSync, accessSync } from "fs";
-import { QueryPoolsAndUsersResponse } from "../../common/codegen/Starbound.types";
 import { rootPath } from "../../common/utils";
-import {
-  NetworkData,
-  ValidatorResponseReduced,
-  IbcResponse,
-  AssetDescription,
-  UserBalance,
-} from "../../common/helpers/interfaces";
-
-type StorageNames =
-  | "chain-registry-storage"
-  | "ibc-channells-storage"
-  | "pools-storage"
-  | "validators-storage"
-  | "user-funds-storage"
-  | "pools-and-users-storage";
-
-type ChainRegistryStorage = NetworkData[];
-type IbcChannellsStorage = IbcResponse[];
-type PoolsStorage = [string, AssetDescription[]][];
-type ValidatorsStorage = [string, ValidatorResponseReduced[]][];
-type UserFundsStorage = [string, UserBalance][];
-type PoolsAndUsersStorage = QueryPoolsAndUsersResponse;
-
-type StorageTypes =
-  | ChainRegistryStorage
-  | IbcChannellsStorage
-  | PoolsStorage
-  | ValidatorsStorage
-  | UserFundsStorage
-  | PoolsAndUsersStorage;
+import { StorageNames, StorageTypes } from "../../common/helpers/interfaces";
 
 const encoding = "utf8";
 
@@ -72,12 +42,4 @@ function initStorage<T extends StorageTypes>(name: StorageNames) {
   };
 }
 
-export {
-  initStorage,
-  ChainRegistryStorage,
-  IbcChannellsStorage,
-  PoolsStorage,
-  ValidatorsStorage,
-  UserFundsStorage,
-  PoolsAndUsersStorage,
-};
+export { initStorage };

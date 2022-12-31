@@ -1,6 +1,7 @@
 import { Coin, DeliverTxResponse } from "@cosmjs/stargate";
 import { Keplr } from "@keplr-wallet/types";
 import Decimal from "decimal.js";
+import { QueryPoolsAndUsersResponse } from "../../common/codegen/Starbound.types";
 
 // TODO: split to different files for better navigation
 
@@ -394,6 +395,29 @@ type AssetSymbol =
   | "BLD"
   | "CUDOS";
 
+type StorageNames =
+  | "chain-registry-storage"
+  | "ibc-channels-storage"
+  | "pools-storage"
+  | "validators-storage"
+  | "user-funds-storage"
+  | "pools-and-users-storage";
+
+type ChainRegistryStorage = NetworkData[];
+type IbcChannelsStorage = IbcResponse[];
+type PoolsStorage = [string, AssetDescription[]][];
+type ValidatorsStorage = [string, ValidatorResponseReduced[]][];
+type UserFundsStorage = [string, UserBalance][];
+type PoolsAndUsersStorage = QueryPoolsAndUsersResponse;
+
+type StorageTypes =
+  | ChainRegistryStorage
+  | IbcChannelsStorage
+  | PoolsStorage
+  | ValidatorsStorage
+  | UserFundsStorage
+  | PoolsAndUsersStorage;
+
 export type { NetworkData };
 
 export {
@@ -426,4 +450,12 @@ export {
   UserAdressesWithBalances,
   DashboardAsset,
   NetworkContentResponse,
+  StorageNames,
+  ChainRegistryStorage,
+  IbcChannelsStorage,
+  PoolsStorage,
+  ValidatorsStorage,
+  UserFundsStorage,
+  PoolsAndUsersStorage,
+  StorageTypes,
 };

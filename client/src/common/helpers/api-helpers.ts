@@ -21,6 +21,9 @@ import {
   AssetList,
   AssetDescription,
   NetworkContentResponse,
+  ChainRegistryStorage,
+  IbcChannelsStorage,
+  PoolsStorage,
 } from "./interfaces";
 
 const req = createRequest({});
@@ -172,6 +175,53 @@ async function _queryNetworksData(mainList: string[], testList: string[]) {
 async function getChainRegistry() {
   let { main, test } = await _queryNetworkNames();
   return await _queryNetworksData(main, test);
+}
+
+function mergeChainRegistry(
+  chainRegistryStorage: ChainRegistryStorage,
+  chainRegistryResponse: NetworkData[]
+) {
+  for (let resItem of chainRegistryResponse) {
+    // replace item if it's found in storage or add a new
+    chainRegistryStorage = [
+      ...chainRegistryStorage.filter(({ prefix }) => prefix !== resItem.prefix),
+      resItem,
+    ];
+  }
+
+  return chainRegistryStorage;
+}
+
+function mergeIbcChannels(
+  ibcChannelsStorage: IbcChannelsStorage,
+  ibcChannelsResponse: IbcResponse[]
+) {
+  for (let resItem of ibcChannelsResponse) {
+    // replace item if it's found in storage or add a new
+    ibcChannelsStorage = [
+      ...ibcChannelsStorage.filter(
+        ({ destination }) => destination !== resItem.destination
+      ),
+      resItem,
+    ];
+  }
+
+  return ibcChannelsStorage;
+}
+
+function mergePools(
+  poolsStorage: PoolsStorage,
+  poolsResponse: [string, AssetDescription[]][]
+) {
+  for (let resItem of poolsResponse) {
+    // replace item if it's found in storage or add a new
+    poolsStorage = [
+      ...poolsStorage.filter(([k, v]) => k !== resItem[0]),
+      resItem,
+    ];
+  }
+
+  return poolsStorage;
 }
 
 async function getIbcChannnels() {
@@ -666,4 +716,7 @@ export {
   getValidators,
   getUserFunds,
   filterChainRegistry,
+  mergeChainRegistry,
+  mergeIbcChannels,
+  mergePools,
 };

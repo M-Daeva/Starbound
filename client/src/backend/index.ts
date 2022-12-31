@@ -51,6 +51,6 @@ express()
     l(`Ready on port ${E.PORT}`);
     // process();
 
-    // await initStorages();
-    // setInterval(initStorages, 5 * 60 * 1000);
+    await initStorages();
+    setInterval(initStorages, 5 * 60 * 1000);
   });
