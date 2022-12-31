@@ -318,6 +318,23 @@ interface AssetList {
   }[];
 }
 
+interface NetworkContentResponse {
+  name: string;
+  path: string;
+  sha: string;
+  size: number;
+  url: string;
+  html_url: string;
+  git_url: string;
+  download_url: null;
+  type: string;
+  _links: {
+    self: string;
+    git: string;
+    html: string;
+  };
+}
+
 interface AssetListItem {
   asset: { logo: string; symbol: string };
   address: string;
@@ -408,4 +425,5 @@ export {
   UserBalance,
   UserAdressesWithBalances,
   DashboardAsset,
+  NetworkContentResponse,
 };

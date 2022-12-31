@@ -1,7 +1,6 @@
 import { l, createRequest, getLast } from "../utils";
 import { Coin, coin } from "@cosmjs/stargate";
 import { DENOMS } from "../helpers/assets";
-import { parse } from "node-html-parser";
 import { chains as chainRegistryList } from "chain-registry";
 import {
   PoolExtracted,
@@ -21,24 +20,30 @@ import {
   NetworkData,
   AssetList,
   AssetDescription,
+  NetworkContentResponse,
 } from "./interfaces";
 
 const req = createRequest({});
 
-async function _queryNetworkFactory(url: string, route: string) {
+async function _queryMainnetNames() {
   try {
-    let res = await req.get(url);
-    let attrs = parse(res).querySelectorAll("a.js-navigation-open");
+    const mainnetContentResponseList: NetworkContentResponse[] = await req.get(
+      "https://api.github.com/repos/cosmos/chain-registry/contents"
+    );
+
     let names: string[] = [];
 
-    for (let attr of attrs) {
-      let rawAttr = getLast(attr.rawAttrs.split(" "));
-      if (!rawAttr.includes("tree")) continue;
-      let rawName = getLast(rawAttr.split(route)).slice(0, -1);
+    for (let { name: rawName } of mainnetContentResponseList) {
+      const code = rawName.charCodeAt(0);
 
-      let code = rawName.charCodeAt(0);
-      if (rawName !== "testnets" && code >= 97 && code < 123)
+      if (
+        !rawName.includes(".") &&
+        rawName !== "testnets" &&
+        code >= 97 &&
+        code < 123
+      ) {
         names.push(rawName);
+      }
     }
 
     return names;
@@ -48,23 +53,22 @@ async function _queryNetworkFactory(url: string, route: string) {
   }
 }
 
-async function _queryMainnetNames() {
-  return await _queryNetworkFactory(
-    "https://github.com/cosmos/chain-registry",
-    "master/"
-  );
-}
-
 async function _queryTestnetNames() {
-  return await _queryNetworkFactory(
-    "https://github.com/cosmos/chain-registry/tree/master/testnets",
-    "testnets/"
-  );
+  try {
+    const testnetContentResponseList: NetworkContentResponse[] = await req.get(
+      "https://api.github.com/repos/cosmos/chain-registry/contents/testnets"
+    );
+
+    return testnetContentResponseList.map(({ name }) => name);
+  } catch (error) {
+    l(error);
+    return [];
+  }
 }
 
 async function _queryNetworkNames() {
-  let promises = [_queryMainnetNames(), _queryTestnetNames()];
-  let [main, test] = await Promise.all(promises);
+  const promises = [_queryMainnetNames(), _queryTestnetNames()];
+  const [main, test] = await Promise.all(promises);
   return { main, test };
 }
 
