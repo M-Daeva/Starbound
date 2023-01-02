@@ -2,6 +2,7 @@ import { l, createRequest, getLast } from "../utils";
 import { Coin, coin } from "@cosmjs/stargate";
 import { DENOMS } from "../helpers/assets";
 import { chains as chainRegistryList } from "chain-registry";
+import { getSgClient } from "../signers";
 import {
   PoolExtracted,
   QueryPoolsAndUsersResponse,
@@ -24,9 +25,85 @@ import {
   ChainRegistryStorage,
   IbcChannelsStorage,
   PoolsStorage,
+  ClientStruct,
 } from "./interfaces";
 
 const req = createRequest({});
+
+// allows to get 1 working rpc from chain registry rpc list for single network
+async function _verifyRpc(rpcList: string[], prefix: string, seed: string) {
+  const portList = ["443", "26657"];
+  let urlList: string[] = [];
+
+  for (let rpc of rpcList) {
+    // check if we got rpc with port
+    if (rpc.split(":").length === 3) {
+      urlList.push(rpc);
+      continue;
+    }
+
+    // remove '/' if it's found
+    const lastCharIndex = rpc.length - 1;
+    if (rpc.slice(lastCharIndex) === "/") {
+      rpc = rpc.slice(0, lastCharIndex);
+    }
+
+    for (let port of portList) {
+      urlList.push(`${rpc}:${port}`);
+    }
+  }
+
+  let urlChecked: string | undefined;
+  let promiseList: Promise<void>[] = [];
+
+  for (let url of urlList) {
+    const clientStruct: ClientStruct = {
+      isKeplrType: false,
+      RPC: url,
+      prefix,
+      seed,
+    };
+
+    // query balances to check if url is fine
+    const fn = async () => {
+      const { client, owner } = await getSgClient(clientStruct);
+      await client.getAllBalances(owner);
+      urlChecked = url;
+    };
+
+    promiseList.push(fn());
+  }
+
+  try {
+    await Promise.any(promiseList);
+  } catch (error) {}
+
+  return urlChecked;
+}
+
+// allows to get 1 working rpc from chain registry rpc list for all networks
+async function _verifyRpcList(
+  prefixAndRpcList: [string, string, string[]][],
+  seed: string
+) {
+  let resultList: [string, string, string | undefined][] = [];
+  let promiseList: Promise<void>[] = [];
+
+  for (let [prefix, chainType, rpcList] of prefixAndRpcList) {
+    const fn = async () => {
+      try {
+        const rpcChecked = await _verifyRpc(rpcList, prefix, seed);
+        resultList.push([prefix, chainType, rpcChecked]);
+      } catch (error) {}
+    };
+
+    promiseList.push(fn());
+  }
+
+  await Promise.all(promiseList);
+
+  return resultList;
+}
 
 async function _queryMainnetNames() {
   try {
@@ -719,4 +796,6 @@ export {
   mergeChainRegistry,
   mergeIbcChannels,
   mergePools,
+  _verifyRpc,
+  _verifyRpcList,
 };
