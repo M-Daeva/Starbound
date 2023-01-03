@@ -32,8 +32,13 @@ async function process() {
 
 async function initStorages() {
   try {
+    const t = Date.now();
     const res = await req.get(API_ROUTES.updateAll);
+    const delta = (Date.now() - t) / 1e3;
+    const minutes = Math.floor(delta / 60);
+    const seconds = Math.floor(delta % 60);
     l("\n", res, "\n");
+    l("\n", `${minutes} minutes ${seconds} seconds`, "\n");
   } catch (error) {
     l(error);
   }
@@ -52,5 +57,5 @@ express()
     // process();
 
     await initStorages();
-    setInterval(initStorages, 5 * 60 * 1000);
+    setInterval(initStorages, 7 * 60 * 1000);
   });

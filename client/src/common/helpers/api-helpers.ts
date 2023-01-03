@@ -26,9 +26,74 @@ import {
   IbcChannelsStorage,
   PoolsStorage,
   ClientStruct,
+  PoolsAndUsersStorage,
 } from "./interfaces";
 
 const req = createRequest({});
+
+// allows to get 1 working rest from chain registry rest list for single network
+async function _verifyRest(restList: string[]) {
+  let urlList: string[] = [];
+
+  for (let rest of restList) {
+    // check if we got rest with port
+    const restParts = rest.split(":");
+    if (restParts.length === 3) {
+      rest = `${restParts[0]}:${restParts[1]}`;
+    }
+
+    // remove '/' if it's found
+    const lastCharIndex = rest.length - 1;
+    if (rest.slice(lastCharIndex) === "/") {
+      rest = rest.slice(0, lastCharIndex);
+    }
+
+    urlList.push(rest);
+  }
+
+  let urlChecked: string | undefined;
+  let promiseList: Promise<void>[] = [];
+
+  for (let url of urlList) {
+    // query bank module params to check if url is fine
+    const fn = async () => {
+      const testUrl = `${url}/cosmos/bank/v1beta1/params`;
+      await req.get(testUrl);
+      urlChecked = url;
+    };
+
+    promiseList.push(fn());
+  }
+
+  try {
+    await Promise.any(promiseList);
+  } catch (error) {}
+
+  return urlChecked;
+}
+
+// allows to get 1 working rest from chain registry rest list for all networks
+async function _verifyRestList(
+  prefixAndRestList: [string, string, string[]][]
+) {
+  let resultList: [string, string, string | undefined][] = [];
+  let promiseList: Promise<void>[] = [];
+
+  for (let [prefix, chainType, restList] of prefixAndRestList) {
+    const fn = async () => {
+      try {
+        const restChecked = await _verifyRest(restList);
+        resultList.push([prefix, chainType, restChecked]);
+      } catch (error) {}
+    };
+
+    promiseList.push(fn());
+  }
+
+  await Promise.all(promiseList);
+
+  return resultList;
+}
 
 // allows to get 1 working rpc from chain registry rpc list for single network
 async function _verifyRpc(rpcList: string[], prefix: string, seed: string) {
@@ -87,20 +152,15 @@ async function _verifyRpcList(
   seed: string
 ) {
   let resultList: [string, string, string | undefined][] = [];
-  let promiseList: Promise<void>[] = [];
 
+  // for some reasons Promise.all returns array of undefined
+  // so sequential requests must be used here
   for (let [prefix, chainType, rpcList] of prefixAndRpcList) {
-    const fn = async () => {
-      try {
-        const rpcChecked = await _verifyRpc(rpcList, prefix, seed);
-        resultList.push([prefix, chainType, rpcChecked]);
-      } catch (error) {}
-    };
-
-    promiseList.push(fn());
+    try {
+      const rpcChecked = await _verifyRpc(rpcList, prefix, seed);
+      resultList.push([prefix, chainType, rpcChecked]);
+    } catch (error) {}
   }
-
-  await Promise.all(promiseList);
 
   return resultList;
 }
@@ -219,7 +279,11 @@ async function _testnetQuerier(chainUrl: string) {
   return data;
 }
 
-async function _queryNetworksData(mainList: string[], testList: string[]) {
+async function _queryNetworksData(
+  mainList: string[],
+  testList: string[],
+  seed: string
+) {
   let promises: Promise<NetworkData>[] = [];
 
   for (let chainName of mainList) {
@@ -246,18 +310,109 @@ async function _queryNetworksData(mainList: string[], testList: string[]) {
     }
   }
 
-  return networkData;
+  // update rpc and rest lists with their verified versions
+  let prefixAndRpcList: [string, string, string[]][] = [];
+  let prefixAndRestList: [string, string, string[]][] = [];
+
+  for (let { prefix, main, test } of networkData) {
+    if (main) {
+      const chainType = "main";
+      const rpcList = (main?.apis?.rpc || []).map(({ address }) => address);
+      const restList = (main?.apis?.rest || []).map(({ address }) => address);
+      prefixAndRpcList.push([prefix, chainType, rpcList]);
+      prefixAndRestList.push([prefix, chainType, restList]);
+    }
+
+    if (test) {
+      const chainType = "test";
+      const rpcList = (test?.apis?.rpc || []).map(({ address }) => address);
+      const restList = (test?.apis?.rest || []).map(({ address }) => address);
+      prefixAndRpcList.push([prefix, chainType, rpcList]);
+      prefixAndRestList.push([prefix, chainType, restList]);
+    }
+  }
+
+  const [prefixAndRpcChecked, prefixAndRestChecked] = await Promise.all([
+    _verifyRpcList(prefixAndRpcList, seed),
+    _verifyRestList(prefixAndRestList),
+  ]);
+
+  let networkDataChecked: NetworkData[] = [];
+
+  for (let networkDataItem of networkData) {
+    const { prefix, main, test } = networkDataItem;
+    const provider = "Starbound";
+    let mainChecked = main;
+    let testChecked = test;
+
+    const rpcListChecked = prefixAndRpcChecked.filter(([p]) => p === prefix);
+    const restListChecked = prefixAndRestChecked.filter(([p]) => p === prefix);
+
+    if (main) {
+      const chainType = "main";
+      const rpcMain = rpcListChecked.find(([p, c]) => c === chainType);
+      const restMain = restListChecked.find(([p, c]) => c === chainType);
+
+      const rpcAddress = rpcMain?.[2];
+      const rpcMainChecked = rpcAddress
+        ? [{ address: rpcAddress, provider }]
+        : [];
+
+      const restAddress = restMain?.[2];
+      const restMainChecked = restAddress
+        ? [{ address: restAddress, provider }]
+        : [];
+
+      const { apis } = main;
+      mainChecked = {
+        ...main,
+        apis: { ...apis, rpc: rpcMainChecked, rest: restMainChecked },
+      };
+    }
+
+    if (test) {
+      const chainType = "test";
+      const rpcTest = rpcListChecked.find(([p, c]) => c === chainType);
+      const restTest = restListChecked.find(([p, c]) => c === chainType);
+
+      const rpcAddress = rpcTest?.[2];
+      const rpcTestChecked = rpcAddress
+        ? [{ address: rpcAddress, provider }]
+        : [];
+
+      const restAddress = restTest?.[2];
+      const restTestChecked = restAddress
+        ? [{ address: restAddress, provider }]
+        : [];
+
+      const { apis } = test;
+      testChecked = {
+        ...test,
+        apis: { ...apis, rpc: rpcTestChecked, rest: restTestChecked },
+      };
+    }
+
+    networkDataChecked.push({
+      ...networkDataItem,
+      main: mainChecked,
+      test: testChecked,
+    });
+  }
+
+  return networkDataChecked;
 }
 
-async function getChainRegistry() {
-  let { main, test } = await _queryNetworkNames();
-  return await _queryNetworksData(main, test);
+async function getChainRegistry(seed: string) {
+  const { main, test } = await _queryNetworkNames();
+  return await _queryNetworksData(main, test, seed);
 }
 
 function mergeChainRegistry(
-  chainRegistryStorage: ChainRegistryStorage,
+  chainRegistryStorage: ChainRegistryStorage | undefined,
   chainRegistryResponse: NetworkData[]
 ) {
+  if (!chainRegistryStorage) return chainRegistryResponse;
+
   for (let resItem of chainRegistryResponse) {
     // replace item if it's found in storage or add a new
     chainRegistryStorage = [
@@ -270,9 +425,11 @@ function mergeChainRegistry(
 }
 
 function mergeIbcChannels(
-  ibcChannelsStorage: IbcChannelsStorage,
+  ibcChannelsStorage: IbcChannelsStorage | undefined,
   ibcChannelsResponse: IbcResponse[]
 ) {
+  if (!ibcChannelsStorage) return ibcChannelsResponse;
+
   for (let resItem of ibcChannelsResponse) {
     // replace item if it's found in storage or add a new
     ibcChannelsStorage = [
@@ -287,9 +444,11 @@ function mergeIbcChannels(
 }
 
 function mergePools(
-  poolsStorage: PoolsStorage,
+  poolsStorage: PoolsStorage | undefined,
   poolsResponse: [string, AssetDescription[]][]
 ) {
+  if (!poolsStorage) return poolsResponse;
+
   for (let resItem of poolsResponse) {
     // replace item if it's found in storage or add a new
     poolsStorage = [
@@ -395,16 +554,25 @@ async function getPools() {
 }
 
 function filterChainRegistry(
-  chainRegistry: NetworkData[],
-  ibcChannels: IbcResponse[],
-  pools: [string, AssetDescription[]][],
-  validators: [string, ValidatorResponseReduced[]][]
+  chainRegistry: NetworkData[] | undefined,
+  ibcChannels: IbcResponse[] | undefined,
+  pools: [string, AssetDescription[]][] | undefined,
+  validators: [string, ValidatorResponseReduced[]][] | undefined
 ): {
   chainRegistry: NetworkData[];
   ibcChannels: IbcResponse[];
   pools: [string, AssetDescription[]][];
   activeNetworks: PoolExtracted[];
 } {
+  if (!chainRegistry || !ibcChannels || !pools || !validators) {
+    return {
+      chainRegistry: chainRegistry || [],
+      ibcChannels: ibcChannels || [],
+      pools: pools || [],
+      activeNetworks: [],
+    };
+  }
+
   const ibcChannelDestinations = ibcChannels.map(
     ({ destination }) => destination
   );
@@ -623,8 +791,10 @@ function _getBalanceUrl(chain: string, address: string) {
 }
 
 async function getUserFunds(
-  queryPoolsAndUsersResponse: QueryPoolsAndUsersResponse
+  queryPoolsAndUsersResponse: QueryPoolsAndUsersResponse | undefined
 ) {
+  if (!queryPoolsAndUsersResponse) return [];
+
   // request chain list
   let baseUrl = "https://cosmos-chain.directory/chains/";
   let { chains }: ChainsResponse = await req.get(baseUrl);
@@ -741,7 +911,7 @@ function _getValidatorListUrl(chain: string) {
   return url;
 }
 
-async function getValidators() {
+async function getValidators(prefixAndRestList: [string, string][]) {
   // request chain list
   let baseUrl = "https://cosmos-chain.directory/chains/";
   let { chains }: ChainsResponse = await req.get(baseUrl);
@@ -784,6 +954,72 @@ async function getValidators() {
   return validatorListReduced;
 }
 
+async function _getValidatorsNew(rest: string) {
+  const [a, b] = rest.split(":");
+  const url = `${a}:${b}/cosmos/staking/v1beta1/validators`;
+
+  try {
+    const res: ValidatorListResponse = await req.get(url);
+
+    return res.validators
+      .filter(({ jailed }) => !jailed)
+      .map(({ operator_address, description: { moniker } }) => ({
+        operator_address,
+        moniker: moniker.trim(),
+      }));
+  } catch (error) {
+    return [];
+  }
+}
+
+// async function getValidators(
+//   prefixAndRestList: [string, string][]
+// ): Promise<[string, ValidatorResponseReduced[]][]> {
+//   let validatorList: [string, ValidatorResponseReduced[]][] = [];
+//   let promiseList: Promise<void>[] = [];
+
+//   for (let [prefix, rest] of prefixAndRestList) {
+//     const fn = async () => {
+//       validatorList.push([prefix, await _getValidatorsNew(rest)]);
+//     };
+
+//     promiseList.push(fn());
+//   }
+
+//   await Promise.all(promiseList);
+
+//   return validatorList;
+// }
+
+function getPrefixAndRestList(
+  chainRegistryStorage: ChainRegistryStorage | undefined,
+  chainType: "main" | "test"
+): [string, string][] {
+  if (!chainRegistryStorage) return [];
+
+  let prefixAndRestList: [string, string][] = [];
+
+  for (let { prefix, main, test } of chainRegistryStorage) {
+    if (chainType === "main" && main) {
+      const rest = main?.apis?.rest || [];
+      if (!rest.length) {
+        continue;
+      }
+      prefixAndRestList.push([prefix, rest[0].address]);
+    }
+
+    if (chainType === "test" && test) {
+      const rest = test?.apis?.rest || [];
+      if (!rest.length) {
+        continue;
+      }
+      prefixAndRestList.push([prefix, rest[0].address]);
+    }
+  }
+
+  return prefixAndRestList;
+}
+
 export {
   updatePoolsAndUsers,
   mockUpdatePoolsAndUsers,
@@ -798,4 +1034,8 @@ export {
   mergePools,
   _verifyRpc,
   _verifyRpcList,
+  _getValidatorsNew,
+  _verifyRest,
+  _verifyRestList,
+  getPrefixAndRestList,
 };

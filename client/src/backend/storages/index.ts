@@ -8,7 +8,7 @@ function _getPath(name: string) {
   return rootPath(`./src/backend/storages/${name}.json`);
 }
 
-function _readDecorator<T>(name: string): () => T {
+function _readDecorator<T>(name: string): () => T | undefined {
   return () => JSON.parse(readFileSync(_getPath(name), { encoding }));
 }
 
@@ -19,7 +19,7 @@ function _writeDecorator<T>(name: string) {
 }
 
 function initStorage<T extends StorageTypes>(name: StorageNames) {
-  let st: T;
+  let st: T | undefined;
 
   const read = _readDecorator<T>(name);
   const write = _writeDecorator<T>(name);

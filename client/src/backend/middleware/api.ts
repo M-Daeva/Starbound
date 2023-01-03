@@ -1,4 +1,5 @@
 import { init } from "../../common/workers/testnet-backend-workers";
+import { SEED_DAPP } from "../../common/config/testnet-config.json";
 import { l } from "../../common/utils";
 import { initStorage } from "../storages";
 import {
@@ -19,7 +20,11 @@ import {
   mergeChainRegistry,
   mergeIbcChannels,
   mergePools,
+  getPrefixAndRestList as _getPrefixAndRestList,
 } from "../../common/helpers/api-helpers";
+
+// TODO: change on maiinet
+let chainType: "main" | "test" = "test";
 
 // client specific storages
 let chainRegistryStorage = initStorage<ChainRegistryStorage>(
@@ -42,7 +47,7 @@ async function updateChainRegistry() {
   try {
     const res = mergeChainRegistry(
       chainRegistryStorage.get(),
-      await _getChainRegistry()
+      await _getChainRegistry(SEED_DAPP)
     );
 
     chainRegistryStorage.set(res);
@@ -123,10 +128,12 @@ async function updateValidators() {
   let isStorageUpdated = false;
 
   try {
-    const res = await _getValidators();
+    const res = await _getValidators(
+      _getPrefixAndRestList(chainRegistryStorage.get(), chainType)
+    );
     validatorsStorage.set(res);
     validatorsStorage.write(res);
-    isStorageUpdated = true;
+    isStorageUpdated = !!res.length;
   } catch (error) {}
 
   return { fn: "updateValidators", isStorageUpdated };
@@ -154,18 +161,21 @@ async function updateUserFunds() {
 
 // filters all users address-balance list by specified user osmo address
 async function getUserFunds(userOsmoAddress: string) {
-  const userAssets = poolsAndUsersStorage
-    .get()
-    .users.find(({ osmo_address }) => osmo_address === userOsmoAddress);
+  const poolsAndUsers = poolsAndUsersStorage.get();
+  if (!poolsAndUsers) return [];
+
+  const userAssets = poolsAndUsers.users.find(
+    ({ osmo_address }) => osmo_address === userOsmoAddress
+  );
   if (!userAssets) return [];
 
   const addressList = userAssets.asset_list.map(
     ({ wallet_address }) => wallet_address
   );
 
-  return userFundsStorage
-    .get()
-    .filter(([address]) => addressList.includes(address));
+  const userFunds = userFundsStorage.get();
+  if (!userFunds) return [];
+  return userFunds.filter(([address]) => addressList.includes(address));
 }
 
 async function updatePoolsAndUsers() {
@@ -200,15 +210,15 @@ async function updateAll() {
   const resCw = await updatePoolsAndUsers();
 
   // process it and request data from other sources
+  const resChainRegistry = await updateChainRegistry();
   const res = await Promise.all([
-    updateChainRegistry(),
     updateIbcChannels(),
     updatePools(),
     updateValidators(),
     updateUserFunds(),
   ]);
 
-  return [resCw, ...res];
+  return [resCw, resChainRegistry, ...res];
 }
 
 async function getAll(userOsmoAddress: string) {
