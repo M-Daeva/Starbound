@@ -1,7 +1,6 @@
 import { l, createRequest, getLast } from "../utils";
 import { Coin, coin } from "@cosmjs/stargate";
 import { DENOMS } from "../helpers/assets";
-import { chains as chainRegistryList } from "chain-registry";
 import { getSgClient } from "../signers";
 import {
   PoolExtracted,
@@ -51,25 +50,35 @@ async function _verifyRest(restList: string[]) {
     urlList.push(rest);
   }
 
-  let urlChecked: string | undefined;
+  let urlAndValidatorsList: [string, number][] = []; // url and validator set length
   let promiseList: Promise<void>[] = [];
 
-  for (let url of urlList) {
-    // query bank module params to check if url is fine
+  for (let urlItem of urlList) {
+    // data provided by validators via REST API may differ
+    // so we gonna use largest dataset
     const fn = async () => {
-      const testUrl = `${url}/cosmos/bank/v1beta1/params`;
-      await req.get(testUrl);
-      urlChecked = url;
+      const [a, b] = urlItem.split(":");
+      const url = `${a}:${b}/cosmos/staking/v1beta1/validators?pagination.limit=200&status=BOND_STATUS_BONDED`;
+      try {
+        const res: ValidatorListResponse = await req.get(url);
+        urlAndValidatorsList.push([urlItem, res.validators.length]);
+      } catch (error) {}
     };
 
     promiseList.push(fn());
   }
 
-  try {
-    await Promise.any(promiseList);
-  } catch (error) {}
+  await Promise.all(promiseList);
+  const valSetList = urlAndValidatorsList.map(([a, b]) => b);
+  const maxValSetLength = Math.max(...valSetList);
+  const targetUrl = (
+    urlAndValidatorsList.find(([a, b]) => b === maxValSetLength) as [
+      string,
+      number
+    ]
+  )[0];
 
-  return urlChecked;
+  return targetUrl;
 }
 
 // allows to get 1 working rest from chain registry rest list for all networks
@@ -695,8 +704,13 @@ async function getActiveNetworksInfo(): Promise<PoolExtracted[]> {
   return temp;
 }
 
-async function updatePoolsAndUsers(response: QueryPoolsAndUsersResponse) {
-  let { pools, users } = response;
+async function updatePoolsAndUsers(
+  chainRegistryResponse: ChainRegistryStorage | undefined,
+  queryPoolsAndUsersResponse: QueryPoolsAndUsersResponse | undefined,
+  chainType: "main" | "test"
+) {
+  if (!queryPoolsAndUsersResponse) return queryPoolsAndUsersResponse;
+  let { pools, users } = queryPoolsAndUsersResponse;
 
   let poolsData = await getActiveNetworksInfo();
 
@@ -708,7 +722,11 @@ async function updatePoolsAndUsers(response: QueryPoolsAndUsersResponse) {
     }
   }
 
-  let usersFundsList = await getUserFunds(response);
+  let usersFundsList = await getUserFunds(
+    chainRegistryResponse,
+    queryPoolsAndUsersResponse,
+    chainType
+  );
 
   for (let user of users) {
     for (let asset of user.asset_list) {
@@ -780,183 +798,9 @@ async function mockUpdatePoolsAndUsers(): Promise<QueryPoolsAndUsersResponse> {
   return new Promise((res) => res(data));
 }
 
-function _getDelegationsUrl(chain: string, address: string) {
-  let url = `https://api-${chain}-ia.cosmosia.notional.ventures/cosmos/staking/v1beta1/delegations/${address}`;
-  return url;
-}
-
-function _getBalanceUrl(chain: string, address: string) {
-  let url = `https://api-${chain}-ia.cosmosia.notional.ventures/cosmos/bank/v1beta1/balances/${address}`;
-  return url;
-}
-
-async function getUserFunds(
-  queryPoolsAndUsersResponse: QueryPoolsAndUsersResponse | undefined
-) {
-  if (!queryPoolsAndUsersResponse) return [];
-
-  // request chain list
-  let baseUrl = "https://cosmos-chain.directory/chains/";
-  let { chains }: ChainsResponse = await req.get(baseUrl);
-  chains = chains.filter((chain) => chain !== "testnets");
-
-  // iterate over chain list
-  let chainPromises: Promise<[string, string]>[] = [];
-
-  async function _requestChain(chain: string): Promise<[string, string]> {
-    try {
-      let res: ChainResponse = await req.get(baseUrl + chain);
-      return [chain, res.bech32_prefix];
-    } catch (error) {
-      return ["", ""];
-    }
-  }
-
-  for (let chain of chains) {
-    chainPromises.push(_requestChain(chain));
-  }
-
-  let prefixes: [string, string][] = await Promise.all(chainPromises);
-  prefixes = prefixes
-    .filter(([a, b]) => a !== "" || b !== "")
-    .map(([a, b]) => {
-      if (a === "likecoin") return [a, "like"]; // fix likecoin bech32prefix
-      return [a, b];
-    });
-
-  const { users } = queryPoolsAndUsersResponse;
-
-  // transform {osmoAddr, {address, holded, staked}[]}[] nested structure
-  // to {chain, osmoAddr, address, holded, staked}[] flat structure
-  let userAdressesWithBalancesPromises: Promise<{
-    chain: string;
-    osmoAddr: string;
-    address: string;
-    holded: Coin;
-    staked: Coin;
-  }>[] = [];
-
-  for (let { osmo_address, asset_list } of users) {
-    for (let { wallet_address } of asset_list) {
-      for (let [chain, prefix] of prefixes) {
-        let walletAddressPrefix = wallet_address.split("1")[0];
-        if (walletAddressPrefix === prefix) {
-          let getPromise = async () => {
-            let balance: BalancesResponse = {
-              balances: [],
-              pagination: { next_key: null, total: "1" },
-            };
-            let delegation: DelegationsResponse = {
-              delegation_responses: [],
-              pagination: { next_key: null, total: "1" },
-            };
-
-            try {
-              await Promise.all([
-                (async () => {
-                  try {
-                    balance = await req.get(
-                      _getBalanceUrl(chain, wallet_address)
-                    );
-                  } catch (error) {}
-                })(),
-
-                (async () => {
-                  try {
-                    delegation = await req.get(
-                      _getDelegationsUrl(chain, wallet_address)
-                    );
-                  } catch (error) {}
-                })(),
-              ]);
-
-              let denom =
-                chainRegistryList.find(({ chain_name }) => chain_name === chain)
-                  ?.fees?.fee_tokens[0].denom || "ucosm";
-              let balanceHolded =
-                balance.balances.find((coin) => coin.denom === denom)?.amount ||
-                "0";
-              let balanceStaked =
-                delegation?.delegation_responses[0]?.balance.amount || "0";
-
-              return {
-                chain,
-                osmoAddr: osmo_address,
-                address: wallet_address,
-                holded: coin(balanceHolded, denom),
-                staked: coin(balanceStaked, denom),
-              };
-            } catch (error) {
-              return {
-                chain,
-                osmoAddr: osmo_address,
-                address: wallet_address,
-                holded: coin(0, "ucosm"),
-                staked: coin(0, "ucosm"),
-              };
-            }
-          };
-
-          userAdressesWithBalancesPromises.push(getPromise());
-        }
-      }
-    }
-  }
-
-  return await Promise.all(userAdressesWithBalancesPromises);
-}
-
-function _getValidatorListUrl(chain: string) {
-  let url = `https://api-${chain}-ia.cosmosia.notional.ventures/cosmos/staking/v1beta1/validators?pagination.limit=200&status=BOND_STATUS_BONDED`;
-  return url;
-}
-
-async function getValidators(prefixAndRestList: [string, string][]) {
-  // request chain list
-  let baseUrl = "https://cosmos-chain.directory/chains/";
-  let { chains }: ChainsResponse = await req.get(baseUrl);
-  chains = chains.filter((chain) => chain !== "testnets");
-
-  let validatorListPromises: Promise<[string, ValidatorResponse[]]>[] = [];
-
-  async function _requestValidatorList(
-    chain: string
-  ): Promise<[string, ValidatorResponse[]]> {
-    let url = _getValidatorListUrl(chain);
-    try {
-      let res: ValidatorListResponse = await req.get(url);
-
-      return [chain, res.validators];
-    } catch (error) {
-      return [chain, []];
-    }
-  }
-
-  for (let chain of chains) {
-    validatorListPromises.push(_requestValidatorList(chain));
-  }
-
-  let validatorList: [string, ValidatorResponse[]][] = await Promise.all(
-    validatorListPromises
-  );
-
-  validatorList = validatorList.filter(([_, b]) => b.length);
-
-  const validatorListReduced: [string, ValidatorResponseReduced[]][] =
-    validatorList.map(([symbol, vals]) => {
-      const valsReduced: ValidatorResponseReduced[] = vals.map((val) => ({
-        operator_address: val.operator_address,
-        moniker: val.description.moniker,
-      }));
-      return [symbol, valsReduced];
-    });
-
-  return validatorListReduced;
-}
-
-async function _getValidatorsNew(rest: string) {
+async function _getValidators(rest: string) {
   const [a, b] = rest.split(":");
-  const url = `${a}:${b}/cosmos/staking/v1beta1/validators`;
+  const url = `${a}:${b}/cosmos/staking/v1beta1/validators?pagination.limit=200&status=BOND_STATUS_BONDED`;
 
   try {
     const res: ValidatorListResponse = await req.get(url);
@@ -972,40 +816,40 @@ async function _getValidatorsNew(rest: string) {
   }
 }
 
-// async function getValidators(
-//   prefixAndRestList: [string, string][]
-// ): Promise<[string, ValidatorResponseReduced[]][]> {
-//   let validatorList: [string, ValidatorResponseReduced[]][] = [];
-//   let promiseList: Promise<void>[] = [];
+async function getValidators(
+  cnainNameAndRestList: [string, string][]
+): Promise<[string, ValidatorResponseReduced[]][]> {
+  let validatorList: [string, ValidatorResponseReduced[]][] = [];
+  let promiseList: Promise<void>[] = [];
 
-//   for (let [prefix, rest] of prefixAndRestList) {
-//     const fn = async () => {
-//       validatorList.push([prefix, await _getValidatorsNew(rest)]);
-//     };
+  for (let [cnainName, rest] of cnainNameAndRestList) {
+    const fn = async () => {
+      validatorList.push([cnainName, await _getValidators(rest)]);
+    };
 
-//     promiseList.push(fn());
-//   }
+    promiseList.push(fn());
+  }
 
-//   await Promise.all(promiseList);
+  await Promise.all(promiseList);
 
-//   return validatorList;
-// }
+  return validatorList;
+}
 
-function getPrefixAndRestList(
+function getChainNameAndRestList(
   chainRegistryStorage: ChainRegistryStorage | undefined,
   chainType: "main" | "test"
 ): [string, string][] {
   if (!chainRegistryStorage) return [];
 
-  let prefixAndRestList: [string, string][] = [];
+  let chainNameAndRestList: [string, string][] = [];
 
-  for (let { prefix, main, test } of chainRegistryStorage) {
+  for (let { main, test } of chainRegistryStorage) {
     if (chainType === "main" && main) {
       const rest = main?.apis?.rest || [];
       if (!rest.length) {
         continue;
       }
-      prefixAndRestList.push([prefix, rest[0].address]);
+      chainNameAndRestList.push([main.chain_name, rest[0].address]);
     }
 
     if (chainType === "test" && test) {
@@ -1013,11 +857,130 @@ function getPrefixAndRestList(
       if (!rest.length) {
         continue;
       }
-      prefixAndRestList.push([prefix, rest[0].address]);
+      chainNameAndRestList.push([test.chain_name, rest[0].address]);
     }
   }
 
-  return prefixAndRestList;
+  return chainNameAndRestList;
+}
+
+async function getUserFunds(
+  chainRegistryResponse: ChainRegistryStorage | undefined,
+  queryPoolsAndUsersResponse: QueryPoolsAndUsersResponse | undefined,
+  chainType: "main" | "test"
+): Promise<
+  {
+    chain: string;
+    osmoAddr: string;
+    address: string;
+    holded: Coin;
+    staked: Coin;
+  }[]
+> {
+  if (!chainRegistryResponse || !queryPoolsAndUsersResponse) return [];
+
+  let resList: {
+    chain: string;
+    osmoAddr: string;
+    address: string;
+    holded: Coin;
+    staked: Coin;
+  }[] = [];
+
+  let promiseList: Promise<void>[] = [];
+
+  for (let user of queryPoolsAndUsersResponse.users) {
+    for (let asset of user.asset_list) {
+      const chain = chainRegistryResponse.find(
+        ({ prefix }) => prefix === asset.wallet_address.split("1")[0]
+      );
+      if (!chain) continue;
+
+      const { denomNative } = chain;
+      if (chainType === "main" && chain.main) {
+        const rest = chain.main?.apis?.rest?.[0]?.address;
+
+        if (rest) {
+          const urlHolded = `${rest}/cosmos/bank/v1beta1/balances/${asset.wallet_address}`;
+          const urlStaked = `${rest}/cosmos/staking/v1beta1/delegations/${asset.wallet_address}`;
+
+          const fn = async () => {
+            try {
+              const balHolded: BalancesResponse = await req.get(urlHolded);
+              const balStaked: DelegationsResponse = await req.get(urlStaked);
+
+              const amountHolded =
+                balHolded.balances.find(({ denom }) => denom === denomNative)
+                  ?.amount || "0";
+              const amountStaked =
+                balStaked.delegation_responses.find(
+                  ({ balance: { denom } }) => denom === denomNative
+                )?.balance.amount || "0";
+
+              resList.push({
+                address: asset.wallet_address,
+                osmoAddr: user.osmo_address,
+                chain: chain.main?.chain_name as string,
+                holded: coin(amountHolded, denomNative),
+                staked: coin(amountStaked, denomNative),
+              });
+            } catch (error) {}
+          };
+
+          promiseList.push(fn());
+        }
+      }
+
+      if (chainType === "test" && chain.test) {
+        const rest = chain.test?.apis?.rest?.[0]?.address;
+
+        if (rest) {
+          const urlHolded = `${rest}/cosmos/bank/v1beta1/balances/${asset.wallet_address}`;
+          const urlStaked = `${rest}/cosmos/staking/v1beta1/delegations/${asset.wallet_address}`;
+
+          const fn = async () => {
+            try {
+              const balHolded: BalancesResponse = await req.get(urlHolded);
+              const balStaked: DelegationsResponse = await req.get(urlStaked);
+
+              const amountHolded =
+                balHolded.balances.find(({ denom }) => {
+                  if (denom === "ujunox") {
+                    return chain.denomNative === "ujuno";
+                  } else {
+                    denom === chain.denomNative;
+                  }
+                })?.amount || "0";
+              const amountStaked =
+                balStaked.delegation_responses.find(
+                  ({ balance: { denom } }) => {
+                    if (denom === "ujunox") {
+                      return denomNative === "ujuno";
+                    } else {
+                      denom === denomNative;
+                    }
+                  }
+                )?.balance.amount || "0";
+
+              resList.push({
+                address: asset.wallet_address,
+                osmoAddr: user.osmo_address,
+                chain: chain.test?.chain_name as string,
+                holded: coin(amountHolded, denomNative),
+                staked: coin(amountStaked, denomNative),
+              });
+            } catch (error) {}
+          };
+
+          promiseList.push(fn());
+        }
+      }
+    }
+  }
+
+  await Promise.all(promiseList);
+
+  return resList;
 }
 
 export {
@@ -1034,8 +997,7 @@ export {
   mergePools,
   _verifyRpc,
   _verifyRpcList,
-  _getValidatorsNew,
   _verifyRest,
   _verifyRestList,
-  getPrefixAndRestList,
+  getChainNameAndRestList,
 };

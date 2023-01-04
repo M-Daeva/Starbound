@@ -20,7 +20,7 @@ import {
   mergeChainRegistry,
   mergeIbcChannels,
   mergePools,
-  getPrefixAndRestList as _getPrefixAndRestList,
+  getChainNameAndRestList as _getChainNameAndRestList,
 } from "../../common/helpers/api-helpers";
 
 // TODO: change on maiinet
@@ -129,7 +129,7 @@ async function updateValidators() {
 
   try {
     const res = await _getValidators(
-      _getPrefixAndRestList(chainRegistryStorage.get(), chainType)
+      _getChainNameAndRestList(chainRegistryStorage.get(), chainType)
     );
     validatorsStorage.set(res);
     validatorsStorage.write(res);
@@ -149,7 +149,11 @@ async function updateUserFunds() {
 
   try {
     const res: UserFundsStorage = (
-      await _getUserFunds(poolsAndUsersStorage.get())
+      await _getUserFunds(
+        chainRegistryStorage.get(),
+        poolsAndUsersStorage.get(),
+        chainType
+      )
     ).map(({ address, holded, staked }) => [address, { holded, staked }]);
     userFundsStorage.set(res);
     userFundsStorage.write(res);
