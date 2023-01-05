@@ -27,6 +27,7 @@ const LOCAL_STORAGE_KEY = "starbound-osmo-address";
 const TARGET_HOUR = 19;
 
 const DAPP_ADDR = "osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt";
+// TODO: change on mainnet
 const CHAIN_TYPE: "main" | "test" = "test";
 
 // TODO: replace some writable storages with readable

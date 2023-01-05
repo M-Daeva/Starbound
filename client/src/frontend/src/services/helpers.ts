@@ -1,4 +1,7 @@
-import type { AssetListItem } from "../../../common/helpers/interfaces";
+import type {
+  AssetListItem,
+  ChainResponse,
+} from "../../../common/helpers/interfaces";
 import { get } from "svelte/store";
 import { l } from "../../../common/utils";
 import {
@@ -6,6 +9,7 @@ import {
   poolsStorage,
   txHashStorage,
   isModalActiveStorage,
+  CHAIN_TYPE,
   LOCAL_STORAGE_KEY,
   TARGET_HOUR,
   validatorsStorage,
@@ -113,14 +117,18 @@ function displayAddress() {
 }
 
 function getValidatorListBySymbol(currentSymbol: string) {
-  let fullValidatorList = get(validatorsStorage);
-  let currentChain = get(chainRegistryStorage).find(
+  const fullValidatorList = get(validatorsStorage);
+  const chainRegistryStorageitem = get(chainRegistryStorage).find(
     ({ symbol }) => symbol === currentSymbol
-  ).main;
+  );
+
+  const currentChain =
+    CHAIN_TYPE === "main"
+      ? chainRegistryStorageitem.main
+      : chainRegistryStorageitem.test;
 
   if (typeof currentChain === "string") return [];
-  let currentChainName = currentChain.chain_name;
-
+  const currentChainName = currentChain.chain_name;
   // TODO: improve sorting
   return fullValidatorList
     .find(([chainName]) => chainName === currentChainName)[1]

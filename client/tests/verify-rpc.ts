@@ -176,7 +176,12 @@ async function main() {
       "test"
     );
 
-  // l({ activeNetworks, chainRegistry, ibcChannels, pools });
+  l({
+    activeNetworks: activeNetworks.length,
+    chainRegistry: chainRegistry.length,
+    ibcChannels: ibcChannels.length,
+    pools: pools.length,
+  });
 }
 
 main();

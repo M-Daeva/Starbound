@@ -582,12 +582,12 @@ function filterChainRegistry(
     };
   }
 
-  l({
-    chainRegistry: chainRegistry.length,
-    ibcChannels: ibcChannels.length,
-    pools: pools.length,
-    validators: validators.length,
-  });
+  // l({
+  //   chainRegistry: chainRegistry.length,
+  //   ibcChannels: ibcChannels.length,
+  //   pools: pools.length,
+  //   validators: validators.length,
+  // });
 
   const ibcChannelDestinations = ibcChannels.map(
     ({ destination }) => destination
@@ -612,6 +612,9 @@ function filterChainRegistry(
     });
   } else {
     // TODO: use it on mainnet
+    // ibc channels storage uses mainnet data (from imperator api)
+    // so testnet chain_id can not be found in this storage
+
     // chainRegistryFiltered = chainRegistry.filter(({ symbol, test }) => {
     //   if (!test) return false;
     //   l({ ibcChannelDestinations, chain_id: test.chain_id });
@@ -632,13 +635,6 @@ function filterChainRegistry(
       );
     });
   }
-
-  l({
-    chainRegistryFiltered: chainRegistryFiltered.length,
-    ibcChannels: ibcChannels.length,
-    pools: pools.length,
-    validators: validators.length,
-  });
 
   const osmoChainRegistry = chainRegistry.find(
     ({ symbol }) => symbol === "OSMO"
@@ -665,10 +661,18 @@ function filterChainRegistry(
       }
     );
   } else {
+    // TODO: use it on mainnet
+    // chainRegistryFilteredDestinations = chainRegistryFiltered.map(
+    //   ({ test }) => {
+    //     if (!test) return "";
+    //     return test.chain_id;
+    //   }
+    // );
+
     chainRegistryFilteredDestinations = chainRegistryFiltered.map(
-      ({ test }) => {
-        if (!test) return "";
-        return test.chain_id;
+      ({ main }) => {
+        if (!main) return "";
+        return main.chain_id;
       }
     );
   }
@@ -703,8 +707,22 @@ function filterChainRegistry(
         ({ destination }) => destination === main.chain_id
       );
     } else {
-      const { test } = chainRegistry;
-      if (!test) continue;
+      // TODO: use it on mainnet
+      // const { test } = chainRegistry;
+      // if (!test) continue;
+
+      // const pool = poolsFiltered.find(
+      //   ([k, [v1, v2]]) => v1.symbol === chainRegistry.symbol
+      // );
+      // if (!pool) continue;
+      // [id, [{ denom, price }]] = pool;
+
+      // ibcChannel = ibcChannelsFiltered.find(
+      //   ({ destination }) => destination === test.chain_id
+      // );
+
+      const { main } = chainRegistry;
+      if (!main) continue;
 
       const pool = poolsFiltered.find(
         ([k, [v1, v2]]) => v1.symbol === chainRegistry.symbol
@@ -713,7 +731,7 @@ function filterChainRegistry(
       [id, [{ denom, price }]] = pool;
 
       ibcChannel = ibcChannelsFiltered.find(
-        ({ destination }) => destination === test.chain_id
+        ({ destination }) => destination === main.chain_id
       );
     }
 
