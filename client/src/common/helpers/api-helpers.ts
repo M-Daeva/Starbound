@@ -1,4 +1,3 @@
-import { l, createRequest, getLast } from "../utils";
 import { Coin, coin } from "@cosmjs/stargate";
 import { DENOMS } from "../helpers/assets";
 import { getSgClient } from "../signers";
@@ -6,6 +5,12 @@ import {
   PoolExtracted,
   QueryPoolsAndUsersResponse,
 } from "../codegen/Starbound.types";
+import {
+  l,
+  createRequest,
+  getLast,
+  specifyTimeout as _specifyTimeout,
+} from "../utils";
 import {
   RelayerStruct,
   PoolDatabase,
@@ -58,9 +63,10 @@ async function _verifyRest(restList: string[]) {
     // so we gonna use largest dataset
     const fn = async () => {
       const [a, b] = urlItem.split(":");
+      // TODO: write validator set to storage
       const url = `${a}:${b}/cosmos/staking/v1beta1/validators?pagination.limit=200&status=BOND_STATUS_BONDED`;
       try {
-        const res: ValidatorListResponse = await req.get(url);
+        const res: ValidatorListResponse = await _specifyTimeout(req.get(url));
         urlAndValidatorsList.push([urlItem, res.validators.length]);
       } catch (error) {}
     };
@@ -71,12 +77,10 @@ async function _verifyRest(restList: string[]) {
   await Promise.all(promiseList);
   const valSetList = urlAndValidatorsList.map(([a, b]) => b);
   const maxValSetLength = Math.max(...valSetList);
-  const targetUrl = (
-    urlAndValidatorsList.find(([a, b]) => b === maxValSetLength) as [
-      string,
-      number
-    ]
-  )[0];
+  const [targetUrl, targetValSet] = urlAndValidatorsList.find(
+    ([a, b]) => b === maxValSetLength
+  ) as [string, number];
+  l({ targetUrl, targetValSet });
 
   return targetUrl;
 }
@@ -86,20 +90,15 @@ async function _verifyRestList(
   prefixAndRestList: [string, string, string[]][]
 ) {
   let resultList: [string, string, string | undefined][] = [];
-  let promiseList: Promise<void>[] = [];
 
+  // for some reasons Promise.all usage leads to data losses
+  // so sequential requests must be used here
   for (let [prefix, chainType, restList] of prefixAndRestList) {
-    const fn = async () => {
-      try {
-        const restChecked = await _verifyRest(restList);
-        resultList.push([prefix, chainType, restChecked]);
-      } catch (error) {}
-    };
-
-    promiseList.push(fn());
+    try {
+      const restChecked = await _specifyTimeout(_verifyRest(restList), 10_000);
+      resultList.push([prefix, chainType, restChecked]);
+    } catch (error) {}
   }
-
-  await Promise.all(promiseList);
 
   return resultList;
 }
@@ -141,7 +140,7 @@ async function _verifyRpc(rpcList: string[], prefix: string, seed: string) {
     // query balances to check if url is fine
     const fn = async () => {
       const { client, owner } = await getSgClient(clientStruct);
-      await client.getAllBalances(owner);
+      await _specifyTimeout(client.getAllBalances(owner));
       urlChecked = url;
     };
 
@@ -151,7 +150,7 @@ async function _verifyRpc(rpcList: string[], prefix: string, seed: string) {
   try {
     await Promise.any(promiseList);
   } catch (error) {}
-
+  l({ urlChecked });
   return urlChecked;
 }
 
@@ -566,7 +565,8 @@ function filterChainRegistry(
   chainRegistry: NetworkData[] | undefined,
   ibcChannels: IbcResponse[] | undefined,
   pools: [string, AssetDescription[]][] | undefined,
-  validators: [string, ValidatorResponseReduced[]][] | undefined
+  validators: [string, ValidatorResponseReduced[]][] | undefined,
+  chainType: "main" | "test"
 ): {
   chainRegistry: NetworkData[];
   ibcChannels: IbcResponse[];
@@ -582,6 +582,13 @@ function filterChainRegistry(
     };
   }
 
+  l({
+    chainRegistry: chainRegistry.length,
+    ibcChannels: ibcChannels.length,
+    pools: pools.length,
+    validators: validators.length,
+  });
+
   const ibcChannelDestinations = ibcChannels.map(
     ({ destination }) => destination
   );
@@ -591,13 +598,46 @@ function filterChainRegistry(
 
   const validatorsChains = validators.map((item) => item[0]);
 
-  let chainRegistryFiltered = chainRegistry.filter(({ symbol, main }) => {
-    if (!main) return false;
-    return (
-      ibcChannelDestinations.includes(main.chain_id) &&
-      poolSymbols.includes(symbol) &&
-      validatorsChains.includes(main.chain_name)
-    );
+  let chainRegistryFiltered: NetworkData[] = [];
+
+  if (chainType === "main") {
+    chainRegistryFiltered = chainRegistry.filter(({ symbol, main }) => {
+      if (!main) return false;
+
+      return (
+        ibcChannelDestinations.includes(main.chain_id) &&
+        poolSymbols.includes(symbol) &&
+        validatorsChains.includes(main.chain_name)
+      );
+    });
+  } else {
+    // TODO: use it on mainnet
+    // chainRegistryFiltered = chainRegistry.filter(({ symbol, test }) => {
+    //   if (!test) return false;
+    //   l({ ibcChannelDestinations, chain_id: test.chain_id });
+    //   return (
+    //     ibcChannelDestinations.includes(test.chain_id) &&
+    //     poolSymbols.includes(symbol) &&
+    //     validatorsChains.includes(test.chain_name)
+    //   );
+    // });
+
+    chainRegistryFiltered = chainRegistry.filter(({ symbol, test, main }) => {
+      if (!test || !main) return false;
+
+      return (
+        ibcChannelDestinations.includes(main.chain_id) &&
+        poolSymbols.includes(symbol) &&
+        validatorsChains.includes(test.chain_name)
+      );
+    });
+  }
+
+  l({
+    chainRegistryFiltered: chainRegistryFiltered.length,
+    ibcChannels: ibcChannels.length,
+    pools: pools.length,
+    validators: validators.length,
   });
 
   const osmoChainRegistry = chainRegistry.find(
@@ -615,12 +655,23 @@ function filterChainRegistry(
     ({ symbol }) => symbol
   );
 
-  const chainRegistryFilteredDestinations = chainRegistryFiltered.map(
-    ({ main }) => {
-      if (!main) return "";
-      return main.chain_id;
-    }
-  );
+  let chainRegistryFilteredDestinations: string[] = [];
+
+  if (chainType === "main") {
+    chainRegistryFilteredDestinations = chainRegistryFiltered.map(
+      ({ main }) => {
+        if (!main) return "";
+        return main.chain_id;
+      }
+    );
+  } else {
+    chainRegistryFilteredDestinations = chainRegistryFiltered.map(
+      ({ test }) => {
+        if (!test) return "";
+        return test.chain_id;
+      }
+    );
+  }
 
   const ibcChannelsFiltered = ibcChannels.filter(({ destination }) =>
     chainRegistryFilteredDestinations.includes(destination)
@@ -633,26 +684,47 @@ function filterChainRegistry(
   let activeNetworks: PoolExtracted[] = [];
 
   for (let chainRegistry of chainRegistryFiltered) {
-    const { main } = chainRegistry;
-    if (!main) continue;
+    let ibcChannel: IbcResponse | undefined;
+    let denom: string;
+    let id: string;
+    let price: number;
 
-    const pool = poolsFiltered.find(
-      ([k, [v1, v2]]) => v1.symbol === chainRegistry.symbol
-    );
-    if (!pool) continue;
-    const [key, [v0, v1]] = pool;
+    if (chainType === "main") {
+      const { main } = chainRegistry;
+      if (!main) continue;
 
-    const ibcChannel = ibcChannelsFiltered.find(
-      ({ destination }) => destination === main.chain_id
-    );
+      const pool = poolsFiltered.find(
+        ([k, [v1, v2]]) => v1.symbol === chainRegistry.symbol
+      );
+      if (!pool) continue;
+      [id, [{ denom, price }]] = pool;
+
+      ibcChannel = ibcChannelsFiltered.find(
+        ({ destination }) => destination === main.chain_id
+      );
+    } else {
+      const { test } = chainRegistry;
+      if (!test) continue;
+
+      const pool = poolsFiltered.find(
+        ([k, [v1, v2]]) => v1.symbol === chainRegistry.symbol
+      );
+      if (!pool) continue;
+      [id, [{ denom, price }]] = pool;
+
+      ibcChannel = ibcChannelsFiltered.find(
+        ({ destination }) => destination === test.chain_id
+      );
+    }
+
     if (!ibcChannel) continue;
 
     activeNetworks.push({
       channel_id: ibcChannel.channel_id,
-      denom: v0.denom,
-      id: key,
+      denom,
+      id,
       port_id: "transfer",
-      price: v0.price.toString(),
+      price: price.toString(),
       symbol: chainRegistry.symbol,
     });
   }

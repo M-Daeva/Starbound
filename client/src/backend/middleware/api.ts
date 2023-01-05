@@ -64,7 +64,8 @@ async function getChainRegistry() {
       chainRegistryStorage.get(),
       ibcChannelsStorage.get(),
       poolsStorage.get(),
-      validatorsStorage.get()
+      validatorsStorage.get(),
+      chainType
     );
   return chainRegistry;
 }
@@ -94,7 +95,8 @@ async function getIbcChannnels() {
       chainRegistryStorage.get(),
       ibcChannelsStorage.get(),
       poolsStorage.get(),
-      validatorsStorage.get()
+      validatorsStorage.get(),
+      chainType
     );
   return ibcChannels;
 }
@@ -119,7 +121,8 @@ async function getPools() {
       chainRegistryStorage.get(),
       ibcChannelsStorage.get(),
       poolsStorage.get(),
-      validatorsStorage.get()
+      validatorsStorage.get(),
+      chainType
     );
   return pools;
 }
@@ -205,7 +208,8 @@ async function filterChainRegistry() {
     chainRegistryStorage.get(),
     ibcChannelsStorage.get(),
     poolsStorage.get(),
-    validatorsStorage.get()
+    validatorsStorage.get(),
+    chainType
   );
 }
 
@@ -231,7 +235,8 @@ async function getAll(userOsmoAddress: string) {
       chainRegistryStorage.get(),
       ibcChannelsStorage.get(),
       poolsStorage.get(),
-      validatorsStorage.get()
+      validatorsStorage.get(),
+      chainType
     );
 
   let userFunds = await getUserFunds(userOsmoAddress);

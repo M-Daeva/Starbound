@@ -36,4 +36,19 @@ const createRequest = (config: Object) => {
   };
 };
 
-export { l, r, createRequest, rootPath, SEP, getLast };
+async function specifyTimeout(
+  promise: Promise<any>,
+  timeout: number = 5_000,
+  exception: Function = () => {
+    throw new Error("Timeout!");
+  }
+) {
+  let timer: NodeJS.Timeout;
+
+  return Promise.race([
+    promise,
+    new Promise((_r, rej) => (timer = setTimeout(rej, timeout, exception))),
+  ]).finally(() => clearTimeout(timer));
+}
+
+export { l, r, createRequest, rootPath, SEP, getLast, specifyTimeout };

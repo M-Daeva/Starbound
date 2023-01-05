@@ -7,10 +7,13 @@ import {
   getUserFunds,
   getValidators,
   getChainNameAndRestList,
+  filterChainRegistry,
 } from "../src/common/helpers/api-helpers";
 import {
   ChainRegistryStorage,
-  PoolsAndUsersStorage,
+  IbcChannelsStorage,
+  PoolsStorage,
+  ValidatorsStorage,
 } from "../src/common/helpers/interfaces";
 import { initStorage } from "../src/backend/storages";
 import { l } from "../src/common/utils";
@@ -122,20 +125,13 @@ import { SEED_DAPP } from "../src/common/config/testnet-config.json";
 let chainRegistryStorage = initStorage<ChainRegistryStorage>(
   "chain-registry-storage"
 );
-
-let poolsAndUsersStorage = initStorage<PoolsAndUsersStorage>(
-  "pools-and-users-storage"
+let ibcChannelsStorage = initStorage<IbcChannelsStorage>(
+  "ibc-channels-storage"
 );
+let poolsStorage = initStorage<PoolsStorage>("pools-storage");
+let validatorsStorage = initStorage<ValidatorsStorage>("validators-storage");
 
 async function main() {
-  // let res = await getChainRegistry(SEED_DAPP);
-  // l(res);
-  // const res = await getBal(
-  //   "https://lcd-juno.keplr.app",
-  //   "juno1j5ft99lyd36e5fyp8kh8ze7qcj00relm3ja78t"
-  // );
-  // l(res.balHolded.balances, res.balStaked.delegation_responses);
-
   // let res = await getUserFunds(
   //   chainRegistryStorage.get(),
   //   poolsAndUsersStorage.get(),
@@ -143,11 +139,44 @@ async function main() {
   // );
   // l(res.map(({ address, holded, staked }) => ({ address, holded, staked })));
 
-  const res = await getValidators(
-    getChainNameAndRestList(chainRegistryStorage.get(), "main")
-  );
-  const res2 = res.map(([k, v]) => [k, v.length]);
-  l(res2);
+  // const res = await getValidators(
+  //   getChainNameAndRestList(chainRegistryStorage.get(), "test")
+  // );
+  // const res2 = res.map(([k, v]) => [k, v.length]);
+  // l(res2);
+
+  // const prefixAndRestList: [string, string, string[]][] = [
+  //   [
+  //     "cosmos",
+  //     "test",
+  //     [
+  //       "https://rest.sentry-01.theta-testnet.polypore.xyz",
+
+  //       "https://rest.sentry-02.theta-testnet.polypore.xyz",
+
+  //       "https://rest.state-sync-01.theta-testnet.polypore.xyz",
+
+  //       "https://rest.state-sync-02.theta-testnet.polypore.xyz",
+
+  //       "https://public-cosmos-theta.w3node.com/rest/",
+  //     ],
+  //   ],
+  // ];
+  // const t = Date.now();
+  // let res = await _verifyRestList(prefixAndRestList);
+  // l(res);
+  // l((Date.now() - t) / 1e3);
+
+  const { activeNetworks, chainRegistry, ibcChannels, pools } =
+    filterChainRegistry(
+      chainRegistryStorage.get(),
+      ibcChannelsStorage.get(),
+      poolsStorage.get(),
+      validatorsStorage.get(),
+      "test"
+    );
+
+  // l({ activeNetworks, chainRegistry, ibcChannels, pools });
 }
 
 main();
