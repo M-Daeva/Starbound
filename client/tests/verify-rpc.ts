@@ -8,6 +8,7 @@ import {
   getValidators,
   getChainNameAndRestList,
   filterChainRegistry,
+  getIbcChannelList,
 } from "../src/common/helpers/api-helpers";
 import {
   ChainRegistryStorage,
@@ -16,7 +17,7 @@ import {
   ValidatorsStorage,
 } from "../src/common/helpers/interfaces";
 import { initStorage } from "../src/backend/storages";
-import { l } from "../src/common/utils";
+import { l, createRequest } from "../src/common/utils";
 import { SEED_DAPP } from "../src/common/config/testnet-config.json";
 
 // async function main() {
@@ -167,21 +168,29 @@ async function main() {
   // l(res);
   // l((Date.now() - t) / 1e3);
 
-  const { activeNetworks, chainRegistry, ibcChannels, pools } =
-    filterChainRegistry(
-      chainRegistryStorage.get(),
-      ibcChannelsStorage.get(),
-      poolsStorage.get(),
-      validatorsStorage.get(),
-      "test"
-    );
+  // const { activeNetworks, chainRegistry, ibcChannels, pools } =
+  //   filterChainRegistry(
+  //     chainRegistryStorage.get(),
+  //     ibcChannelsStorage.get(),
+  //     poolsStorage.get(),
+  //     validatorsStorage.get(),
+  //     "test"
+  //   );
 
-  l({
-    activeNetworks: activeNetworks.length,
-    chainRegistry: chainRegistry.length,
-    ibcChannels: ibcChannels.length,
-    pools: pools.length,
-  });
+  // l({
+  //   activeNetworks: activeNetworks.length,
+  //   chainRegistry: chainRegistry.length,
+  //   ibcChannels: ibcChannels.length,
+  //   pools: pools.length,
+  // });
+
+  // let res = await getIbcChannelList(chainRegistryStorage.get(), "main");
+  // l(res);
+
+  let baseURL = "https://rest-osmosis.ecostake.com";
+  let urlHash = "/ibc/apps/transfer/v1/denom_hashes/transfer/channel-42/ujuno";
+
+  let req = createRequest({ baseURL });
 }
 
 main();

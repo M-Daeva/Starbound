@@ -336,6 +336,28 @@ interface NetworkContentResponse {
   };
 }
 
+interface IbcTracesResponse {
+  denom_traces: {
+    path: string;
+    base_denom: string;
+  }[];
+  pagination: Pagination;
+}
+
+interface IbcAckResponse {
+  acknowledgements: {
+    port_id: string;
+    channel_id: string;
+    sequence: string;
+    data: string;
+  }[];
+  pagination: Pagination;
+  height: {
+    revision_number: string;
+    revision_height: string;
+  };
+}
+
 interface AssetListItem {
   asset: { logo: string; symbol: string };
   address: string;
@@ -458,4 +480,6 @@ export {
   UserFundsStorage,
   PoolsAndUsersStorage,
   StorageTypes,
+  IbcTracesResponse,
+  IbcAckResponse,
 };

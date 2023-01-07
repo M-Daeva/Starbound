@@ -31,9 +31,98 @@ import {
   PoolsStorage,
   ClientStruct,
   PoolsAndUsersStorage,
+  IbcTracesResponse,
+  IbcAckResponse,
 } from "./interfaces";
 
 const req = createRequest({});
+
+function _setPagination(offset: number, limit: number) {
+  return {
+    params: {
+      "pagination.offset": offset,
+      "pagination.limit": limit,
+      "pagination.count_total": true,
+    },
+  };
+}
+
+async function getIbcChannelList(
+  chainRegistryStorage: ChainRegistryStorage | undefined,
+  chainType: "main" | "test"
+) {
+  if (!chainRegistryStorage) return;
+
+  const chain = chainRegistryStorage.find(
+    ({ denomNative }) => denomNative === "uosmo"
+  );
+  if (!chain) return;
+
+  const re = /^transfer\/channel-[0-9]*$/;
+  const urlTraces = "/ibc/apps/transfer/v1/denom_traces";
+  let rest: string | undefined;
+
+  if (chainType === "main" && chain.main) {
+    rest = chain.main.apis.rest?.[0]?.address;
+  }
+  if (chainType === "test" && chain.test) {
+    rest = chain.test.apis.rest?.[0]?.address;
+  }
+  if (!rest) return;
+
+  let resTraces: IbcTracesResponse | undefined;
+
+  try {
+    // get ibc channels
+    resTraces = await _specifyTimeout(
+      req.get(rest + urlTraces, _setPagination(0, 10_000))
+    );
+  } catch (error) {}
+  if (!resTraces) return;
+
+  let denomList = chainRegistryStorage.map(({ denomNative }) => denomNative);
+  let denomAndChannelIdList: [string, string | undefined][] = [];
+
+  for (let denom of denomList) {
+    // get direct routes
+    const tracesByDenom = resTraces.denom_traces.filter(
+      ({ base_denom, path }) => base_denom === denom && re.test(path)
+    );
+
+    let txAmountAndChannelId: [number, string | undefined] = [0, undefined];
+    let promises: Promise<void>[] = [];
+
+    // find working channel by amount of txs
+    for (let item of tracesByDenom) {
+      const [port, channel] = item.path.split("/");
+
+      const fn = async () => {
+        try {
+          const resPackets: IbcAckResponse = await _specifyTimeout(
+            req.get(
+              rest +
+                `/ibc/core/channel/v1/channels/${channel}/ports/${port}/packet_acknowledgements`
+            )
+          );
+
+          const txAmount = +resPackets.pagination.total;
+
+          if (txAmount > txAmountAndChannelId[0]) {
+            txAmountAndChannelId = [txAmount, channel];
+          }
+        } catch (error) {}
+      };
+
+      promises.push(fn());
+    }
+
+    await Promise.all(promises);
+
+    denomAndChannelIdList.push([denom, txAmountAndChannelId[1]]);
+  }
+
+  return denomAndChannelIdList.filter(([denom, channel]) => channel);
+}
 
 // allows to get 1 working rest from chain registry rest list for single network
 async function _verifyRest(restList: string[]) {
@@ -1090,4 +1179,5 @@ export {
   _verifyRest,
   _verifyRestList,
   getChainNameAndRestList,
+  getIbcChannelList,
 };
