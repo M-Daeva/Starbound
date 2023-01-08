@@ -9,6 +9,8 @@ import {
   getChainNameAndRestList,
   filterChainRegistry,
   getIbcChannelList,
+  getIbcChannnels,
+  _modifyRpcList,
 } from "../src/common/helpers/api-helpers";
 import {
   ChainRegistryStorage,
@@ -19,6 +21,8 @@ import {
 import { initStorage } from "../src/backend/storages";
 import { l, createRequest } from "../src/common/utils";
 import { SEED_DAPP } from "../src/common/config/testnet-config.json";
+
+import { DENOMS } from "../src/common/helpers/assets";
 
 // async function main() {
 //   const a = Date.now();
@@ -184,13 +188,24 @@ async function main() {
   //   pools: pools.length,
   // });
 
-  // let res = await getIbcChannelList(chainRegistryStorage.get(), "main");
+  // let res = await getIbcChannelList(chainRegistryStorage.get(), "test");
   // l(res);
 
-  let baseURL = "https://rest-osmosis.ecostake.com";
-  let urlHash = "/ibc/apps/transfer/v1/denom_hashes/transfer/channel-42/ujuno";
+  // let baseURL = "https://rest-osmosis.ecostake.com";
+  // let urlHash = "/ibc/apps/transfer/v1/denom_hashes/";
+  // let req = createRequest({ baseURL });
 
-  let req = createRequest({ baseURL });
+  // l(getIbcDenom("channel-42", "ujuno"));
+  // l(DENOMS.JUNO);
+
+  // l((await getIbcChannnels(chainRegistryStorage.get(), "test"))?.length);
+
+  let rl: [string, string, string[]][] = [["q", "test", ["1", "2", "3"]]];
+  let al: [string, string, string[]][] = [["q", "test", ["1", "4"]]];
+  let il: [string, string, string[]][] = [["q", "test", ["2", "3", "5"]]];
+
+  l(_modifyRpcList(rl, al, []));
+  l(_modifyRpcList(rl, [], il));
 }
 
 main();

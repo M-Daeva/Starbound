@@ -135,11 +135,11 @@ async function addChain(wallet: Keplr) {
     // Chain-id of the Osmosis chain.
     chainId: "osmo-test-4",
     // The name of the chain to be displayed to the user.
-    chainName: "Osmosis Testnet",
+    chainName: "osmosistestnet",
     // RPC endpoint of the chain. In this case we are using blockapsis, as it's accepts connections from any host currently. No Cors limitations.
-    rpc: "https://testnet-rpc.osmosis.zone/",
+    rpc: "https://osmosistest-rpc.quickapi.com/",
     // REST endpoint of the chain.
-    rest: "https://testnet-rest.osmosis.zone/",
+    rest: "https://osmosistest-lcd.quickapi.com/",
     // Staking coin information
     stakeCurrency: {
       // Coin denomination to be displayed to the user.

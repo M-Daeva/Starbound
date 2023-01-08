@@ -54,41 +54,45 @@
     const zero = new Decimal(0);
     const multiplier = new Decimal(100);
 
-    const initialAssetList = value.map(
-      ([addr, { holded: _holded, staked: _staked }]) => {
-        const {
-          asset: { symbol, exponent },
-          price: _price,
-        } = getAssetInfoByAddress(addr);
-        const price = new Decimal(trimPrice(_price));
-        const divider = new Decimal(10 ** exponent);
-        // TODO: uncomment on mainnet
-        // const holded = new Decimal(_holded.amount)
-        //   .div(divider)
-        //   .toDecimalPlaces(6);
-        // const staked = new Decimal(_staked.amount)
-        //   .div(divider)
-        //   .toDecimalPlaces(6);
-        const holded = new Decimal(10e6 * Math.random())
-          .div(divider)
-          .toDecimalPlaces(6);
-        const staked = new Decimal(10e6 * Math.random())
-          .div(divider)
-          .toDecimalPlaces(6);
-        const cost = price.mul(holded.add(staked)).toDecimalPlaces(2);
+    let initialAssetList: DashboardAsset[] = [];
 
-        let res: DashboardAsset = {
-          asset: symbol,
-          price,
-          holded,
-          staked,
-          cost,
-          allocation: zero,
-        };
+    for (let [addr, { holded: _holded, staked: _staked }] of value) {
+      const assetInfoByAddress = getAssetInfoByAddress(addr);
+      if (!assetInfoByAddress) continue;
 
-        return res;
-      }
-    );
+      const {
+        asset: { symbol, exponent },
+        price: _price,
+      } = assetInfoByAddress;
+
+      const price = new Decimal(trimPrice(_price));
+      const divider = new Decimal(10 ** exponent);
+      // TODO: uncomment on mainnet
+      // const holded = new Decimal(_holded.amount)
+      //   .div(divider)
+      //   .toDecimalPlaces(6);
+      // const staked = new Decimal(_staked.amount)
+      //   .div(divider)
+      //   .toDecimalPlaces(6);
+      const holded = new Decimal(10e6 * Math.random())
+        .div(divider)
+        .toDecimalPlaces(6);
+      const staked = new Decimal(10e6 * Math.random())
+        .div(divider)
+        .toDecimalPlaces(6);
+      const cost = price.mul(holded.add(staked)).toDecimalPlaces(2);
+
+      let res: DashboardAsset = {
+        asset: symbol,
+        price,
+        holded,
+        staked,
+        cost,
+        allocation: zero,
+      };
+
+      return res;
+    }
 
     const totalCost = new Decimal(
       initialAssetList

@@ -21,6 +21,7 @@ function getAssetInfoByAddress(address: string) {
   const asset = get(chainRegistryStorage).find(
     ({ prefix }) => prefix === walletAddressPrefix
   );
+  if (!asset) return;
 
   const pool = get(poolsStorage).find(
     ([k, [v0, v1]]) => v0.symbol === asset.symbol

@@ -42,11 +42,19 @@
       ({ symbol }) => symbol === currentSymbol
     );
 
-    if (typeof chain[CHAIN_TYPE] === "string") return;
+    let RPC: string | undefined;
+    let chainId: string | undefined;
+
+    if (CHAIN_TYPE === "main" && chain?.main) {
+      RPC = chain.main.apis.rpc?.[0]?.address;
+      chainId = chain.main.chain_id;
+    }
+    if (CHAIN_TYPE === "test" && chain?.test) {
+      RPC = chain.test.apis.rpc?.[0]?.address;
+      chainId = chain.test.chain_id;
+    }
 
     try {
-      const RPC = chain[CHAIN_TYPE].apis.rpc[0].address;
-      const chainId = chain[CHAIN_TYPE].chain_id;
       const wallet = await initWalletList([chain]);
 
       l({

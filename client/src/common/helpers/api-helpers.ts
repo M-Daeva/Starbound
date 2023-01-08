@@ -37,6 +37,27 @@ import {
 
 const req = createRequest({});
 
+function _getChainIdbyDenom(
+  chainRegistryStorage: ChainRegistryStorage | undefined,
+  chainType: "main" | "test",
+  denom: string
+) {
+  if (!chainRegistryStorage) return;
+
+  const chain = chainRegistryStorage.find(
+    ({ denomNative }) => denomNative === denom
+  );
+  if (!chain) return;
+
+  if (chainType === "main" && chain.main) {
+    return chain.main.chain_id;
+  }
+  if (chainType === "test" && chain.test) {
+    return chain.test.chain_id;
+  }
+  return;
+}
+
 function _setPagination(offset: number, limit: number) {
   return {
     params: {
@@ -376,10 +397,59 @@ async function _testnetQuerier(chainUrl: string) {
   return data;
 }
 
+function _modifyRpcList(
+  prefixAndRpcList: [string, string, string[]][],
+  allowList: [string, string, string[]][],
+  ignoreList: [string, string, string[]][]
+): [string, string, string[]][] {
+  if (!allowList.length && !ignoreList.length) return prefixAndRpcList;
+
+  let temp: [string, string, string[]][] = [];
+
+  for (let [prefix1, chainType1, rpcList1] of prefixAndRpcList) {
+    const allowListItem = allowList.find(
+      ([prefix2, chainType2, rpcList2]) =>
+        prefix1 === prefix2 && chainType1 === chainType2
+    );
+    if (!allowListItem) {
+      temp.push([prefix1, chainType1, rpcList1]);
+      continue;
+    }
+
+    temp.push([
+      prefix1,
+      chainType1,
+      Array.from(new Set([...rpcList1, ...allowListItem[2]]).values()),
+    ]);
+  }
+
+  temp = temp.map(([prefix1, chainType1, rpcList1]) => {
+    const ignoreListItem = ignoreList.find(
+      ([prefix2, chainType2, rpcList2]) =>
+        prefix1 === prefix2 && chainType1 === chainType2
+    );
+    if (!ignoreListItem) return [prefix1, chainType1, rpcList1];
+
+    let res: string[] = [];
+
+    for (let rpc of rpcList1) {
+      if (!ignoreListItem[2].includes(rpc)) {
+        res.push(rpc);
+      }
+    }
+
+    return [prefix1, chainType1, res];
+  });
+
+  return temp;
+}
+
 async function _queryNetworksData(
   mainList: string[],
   testList: string[],
-  seed: string
+  seed: string,
+  allowList: [string, string, string[]][],
+  ignoreList: [string, string, string[]][]
 ) {
   let promises: Promise<NetworkData>[] = [];
 
@@ -430,7 +500,10 @@ async function _queryNetworksData(
   }
 
   const [prefixAndRpcChecked, prefixAndRestChecked] = await Promise.all([
-    _verifyRpcList(prefixAndRpcList, seed),
+    _verifyRpcList(
+      _modifyRpcList(prefixAndRpcList, allowList, ignoreList),
+      seed
+    ),
     _verifyRestList(prefixAndRestList),
   ]);
 
@@ -499,10 +572,31 @@ async function _queryNetworksData(
   return networkDataChecked;
 }
 
-async function getChainRegistry(seed: string) {
+async function getChainRegistry(
+  seed: string,
+  allowList: [string, string, string[]][],
+  ignoreList: [string, string, string[]][]
+) {
   const { main, test } = await _queryNetworkNames();
-  return await _queryNetworksData(main, test, seed);
+  return await _queryNetworksData(main, test, seed, allowList, ignoreList);
 }
+
+// function mergeChainRegistry(
+//   chainRegistryStorage: ChainRegistryStorage | undefined,
+//   chainRegistryResponse: NetworkData[]
+// ) {
+//   if (!chainRegistryStorage) return chainRegistryResponse;
+
+//   for (let resItem of chainRegistryResponse) {
+//     // replace item if it's found in storage or add a new
+//     chainRegistryStorage = [
+//       ...chainRegistryStorage.filter(({ prefix }) => prefix !== resItem.prefix),
+//       resItem,
+//     ];
+//   }
+
+//   return chainRegistryStorage;
+// }
 
 function mergeChainRegistry(
   chainRegistryStorage: ChainRegistryStorage | undefined,
@@ -510,22 +604,94 @@ function mergeChainRegistry(
 ) {
   if (!chainRegistryStorage) return chainRegistryResponse;
 
+  let result: ChainRegistryStorage = [];
+
+  // find intersection of old and new lists
+  // and update rpc and rest if it's needed
   for (let resItem of chainRegistryResponse) {
-    // replace item if it's found in storage or add a new
-    chainRegistryStorage = [
-      ...chainRegistryStorage.filter(({ prefix }) => prefix !== resItem.prefix),
-      resItem,
-    ];
+    for (let storageItem of chainRegistryStorage) {
+      if (resItem.prefix === storageItem.prefix) {
+        const resMainRpc = resItem.main?.apis?.rpc || [];
+        const resMainRest = resItem.main?.apis?.rest || [];
+        const resMainRpcLen = resMainRpc.length;
+        const resMainRestLen = resMainRest.length;
+
+        const resTestRpc = resItem.test?.apis?.rpc || [];
+        const resTestRest = resItem.test?.apis?.rest || [];
+        const resTestRpcLen = resTestRpc.length;
+        const resTestRestLen = resTestRest.length;
+
+        let storMainRpc = storageItem.main?.apis?.rpc || [];
+        let storMainRest = storageItem.main?.apis?.rest || [];
+        const storMainRpcLen = storMainRpc.length;
+        const storMainRestLen = storMainRest.length;
+
+        let storTestRpc = storageItem.test?.apis?.rpc || [];
+        let storTestRest = storageItem.test?.apis?.rest || [];
+        const storTestRpcLen = storTestRpc.length;
+        const storTestRestLen = storTestRest.length;
+
+        // doesn't update if operating adresses are not received
+        if (resMainRpcLen >= storMainRpcLen) storMainRpc = resMainRpc;
+        if (resMainRestLen >= storMainRestLen) storMainRest = resMainRest;
+        if (resTestRpcLen >= storTestRpcLen) storTestRpc = resTestRpc;
+        if (resTestRestLen >= storTestRestLen) storTestRest = resTestRest;
+
+        let temp: NetworkData = resItem;
+
+        if (temp.main) {
+          const { main } = temp;
+          const { apis } = main;
+
+          temp = {
+            ...temp,
+            main: {
+              ...main,
+              apis: { ...apis, rpc: storMainRpc, rest: storMainRest },
+            },
+          };
+        }
+
+        if (temp.test) {
+          const { test } = temp;
+          const { apis } = test;
+
+          temp = {
+            ...temp,
+            test: {
+              ...test,
+              apis: { ...apis, rpc: storTestRpc, rest: storTestRest },
+            },
+          };
+        }
+
+        result.push(temp);
+      }
+    }
   }
 
-  return chainRegistryStorage;
+  // add unchanged old items
+  for (let storItem of chainRegistryStorage) {
+    if (!result.map(({ prefix }) => prefix).includes(storItem.prefix)) {
+      result.push(storItem);
+    }
+  }
+
+  // add new items
+  for (let resItem of chainRegistryResponse) {
+    if (!result.map(({ prefix }) => prefix).includes(resItem.prefix)) {
+      result.push(resItem);
+    }
+  }
+
+  return result;
 }
 
 function mergeIbcChannels(
   ibcChannelsStorage: IbcChannelsStorage | undefined,
-  ibcChannelsResponse: IbcResponse[]
+  ibcChannelsResponse: IbcResponse[] | undefined
 ) {
-  if (!ibcChannelsStorage) return ibcChannelsResponse;
+  if (!ibcChannelsStorage || !ibcChannelsResponse) return ibcChannelsResponse;
 
   for (let resItem of ibcChannelsResponse) {
     // replace item if it's found in storage or add a new
@@ -557,44 +723,90 @@ function mergePools(
   return poolsStorage;
 }
 
-async function getIbcChannnels() {
-  //const url = "https://api-osmosis.imperator.co/ibc/v1/info";
-  const url = "https://api-osmosis.imperator.co/ibc/v1/all?dex=osmosis";
+async function getIbcChannnels(
+  chainRegistryStorage: ChainRegistryStorage | undefined,
+  chainType: "main" | "test"
+): Promise<IbcResponse[] | undefined> {
+  if (!chainRegistryStorage) return;
 
-  try {
-    let channels: IbcResponse[] = await req.get(url);
-    let fromOsmoChannels: IbcResponse[] = [];
-    let toOsmoChannels: string[] = [];
+  const ibcChannelList = await getIbcChannelList(
+    chainRegistryStorage,
+    chainType
+  );
+  if (!ibcChannelList) return;
 
-    // split channels by direction
-    for (let item of channels) {
-      let { size_queue, token_symbol, source } = item;
-      if (size_queue >= 5) continue; // allow using channels with some txs in queue
-      if (token_symbol === "OSMO") fromOsmoChannels.push(item);
-      else toOsmoChannels.push(source);
-    }
+  let IbcResponseList: IbcResponse[] = [];
 
-    // use bidirectional channels
-    return fromOsmoChannels.filter(({ destination }) =>
-      toOsmoChannels.includes(destination)
+  for (let [denom, channelId] of ibcChannelList) {
+    if (!channelId) continue;
+
+    const destination = _getChainIdbyDenom(
+      chainRegistryStorage,
+      chainType,
+      denom
     );
-  } catch (error) {
-    return [];
+    if (!destination) continue;
+
+    IbcResponseList.push({
+      source: chainType === "main" ? "osmosis-1" : "osmo-test-4",
+      destination,
+      channel_id: channelId || "",
+      token_symbol: "OSMO",
+      token_name: "Osmosis",
+      token_liquidity: 0,
+      last_tx: "",
+      size_queue: 0,
+      duration_minutes: 0,
+    });
   }
+
+  return IbcResponseList;
 }
 
-async function requestRelayers(): Promise<RelayerStruct[]> {
+// async function getIbcChannnels() {
+//   //const url = "https://api-osmosis.imperator.co/ibc/v1/info";
+//   const url = "https://api-osmosis.imperator.co/ibc/v1/all?dex=osmosis";
+
+//   try {
+//     let channels: IbcResponse[] = await req.get(url);
+//     let fromOsmoChannels: IbcResponse[] = [];
+//     let toOsmoChannels: string[] = [];
+
+//     // split channels by direction
+//     for (let item of channels) {
+//       let { size_queue, token_symbol, source } = item;
+//       if (size_queue >= 5) continue; // allow using channels with some txs in queue
+//       if (token_symbol === "OSMO") fromOsmoChannels.push(item);
+//       else toOsmoChannels.push(source);
+//     }
+
+//     // use bidirectional channels
+//     return fromOsmoChannels.filter(({ destination }) =>
+//       toOsmoChannels.includes(destination)
+//     );
+//   } catch (error) {
+//     return [];
+//   }
+// }
+
+async function requestRelayers(
+  chainRegistryStorage: ChainRegistryStorage | undefined,
+  chainType: "main" | "test"
+): Promise<RelayerStruct[] | undefined> {
   const url = "https://api-osmosis.imperator.co/ibc/v1/all?dex=osmosis";
 
   let relayerStructList: RelayerStruct[] = [];
-  let ibcResponseList: IbcResponse[] = []; // from osmo channels only
+  let ibcResponseList: IbcResponse[] | undefined; // from osmo channels only
   let poolList: [string, AssetDescription[]][] = [];
   let channels: IbcResponse[] = []; // all channels
 
   await Promise.all([
     (async () => {
       try {
-        ibcResponseList = await getIbcChannnels();
+        ibcResponseList = await getIbcChannnels(
+          chainRegistryStorage,
+          chainType
+        );
       } catch (error) {}
     })(),
     (async () => {
@@ -608,6 +820,7 @@ async function requestRelayers(): Promise<RelayerStruct[]> {
       } catch (error) {}
     })(),
   ]);
+  if (!ibcResponseList) return;
 
   for (let [k, [{ symbol, denom }, v1]] of poolList) {
     if (v1.symbol !== "OSMO") continue;
@@ -704,25 +917,25 @@ function filterChainRegistry(
     // ibc channels storage uses mainnet data (from imperator api)
     // so testnet chain_id can not be found in this storage
 
-    // chainRegistryFiltered = chainRegistry.filter(({ symbol, test }) => {
-    //   if (!test) return false;
-    //   l({ ibcChannelDestinations, chain_id: test.chain_id });
-    //   return (
-    //     ibcChannelDestinations.includes(test.chain_id) &&
-    //     poolSymbols.includes(symbol) &&
-    //     validatorsChains.includes(test.chain_name)
-    //   );
-    // });
-
-    chainRegistryFiltered = chainRegistry.filter(({ symbol, test, main }) => {
-      if (!test || !main) return false;
+    chainRegistryFiltered = chainRegistry.filter(({ symbol, test }) => {
+      if (!test) return false;
 
       return (
-        ibcChannelDestinations.includes(main.chain_id) &&
+        ibcChannelDestinations.includes(test.chain_id) &&
         poolSymbols.includes(symbol) &&
         validatorsChains.includes(test.chain_name)
       );
     });
+
+    // chainRegistryFiltered = chainRegistry.filter(({ symbol, test, main }) => {
+    //   if (!test || !main) return false;
+
+    //   return (
+    //     ibcChannelDestinations.includes(main.chain_id) &&
+    //     poolSymbols.includes(symbol) &&
+    //     validatorsChains.includes(test.chain_name)
+    //   );
+    // });
   }
 
   const osmoChainRegistry = chainRegistry.find(
@@ -751,19 +964,19 @@ function filterChainRegistry(
     );
   } else {
     // TODO: use it on mainnet
-    // chainRegistryFilteredDestinations = chainRegistryFiltered.map(
-    //   ({ test }) => {
-    //     if (!test) return "";
-    //     return test.chain_id;
-    //   }
-    // );
-
     chainRegistryFilteredDestinations = chainRegistryFiltered.map(
-      ({ main }) => {
-        if (!main) return "";
-        return main.chain_id;
+      ({ test }) => {
+        if (!test) return "";
+        return test.chain_id;
       }
     );
+
+    // chainRegistryFilteredDestinations = chainRegistryFiltered.map(
+    //   ({ main }) => {
+    //     if (!main) return "";
+    //     return main.chain_id;
+    //   }
+    // );
   }
 
   const ibcChannelsFiltered = ibcChannels.filter(({ destination }) =>
@@ -797,21 +1010,8 @@ function filterChainRegistry(
       );
     } else {
       // TODO: use it on mainnet
-      // const { test } = chainRegistry;
-      // if (!test) continue;
-
-      // const pool = poolsFiltered.find(
-      //   ([k, [v1, v2]]) => v1.symbol === chainRegistry.symbol
-      // );
-      // if (!pool) continue;
-      // [id, [{ denom, price }]] = pool;
-
-      // ibcChannel = ibcChannelsFiltered.find(
-      //   ({ destination }) => destination === test.chain_id
-      // );
-
-      const { main } = chainRegistry;
-      if (!main) continue;
+      const { test } = chainRegistry;
+      if (!test) continue;
 
       const pool = poolsFiltered.find(
         ([k, [v1, v2]]) => v1.symbol === chainRegistry.symbol
@@ -820,8 +1020,21 @@ function filterChainRegistry(
       [id, [{ denom, price }]] = pool;
 
       ibcChannel = ibcChannelsFiltered.find(
-        ({ destination }) => destination === main.chain_id
+        ({ destination }) => destination === test.chain_id
       );
+
+      // const { main } = chainRegistry;
+      // if (!main) continue;
+
+      // const pool = poolsFiltered.find(
+      //   ([k, [v1, v2]]) => v1.symbol === chainRegistry.symbol
+      // );
+      // if (!pool) continue;
+      // [id, [{ denom, price }]] = pool;
+
+      // ibcChannel = ibcChannelsFiltered.find(
+      //   ({ destination }) => destination === main.chain_id
+      // );
     }
 
     if (!ibcChannel) continue;
@@ -857,8 +1070,12 @@ function filterChainRegistry(
 
 // merge requestRelayers with requestPools to validate asset symbols
 // and filter IBC active networks
-async function getActiveNetworksInfo(): Promise<PoolExtracted[]> {
-  let relayers = await requestRelayers();
+async function getActiveNetworksInfo(
+  chainRegistryStorage: ChainRegistryStorage | undefined,
+  chainType: "main" | "test"
+): Promise<PoolExtracted[] | undefined> {
+  let relayers = await requestRelayers(chainRegistryStorage, chainType);
+  if (!relayers) return;
   let pools = await getPools();
 
   let temp: PoolExtracted[] = [];
@@ -891,7 +1108,8 @@ async function updatePoolsAndUsers(
   if (!queryPoolsAndUsersResponse) return queryPoolsAndUsersResponse;
   let { pools, users } = queryPoolsAndUsersResponse;
 
-  let poolsData = await getActiveNetworksInfo();
+  let poolsData = await getActiveNetworksInfo(chainRegistryResponse, chainType);
+  if (!poolsData) return;
 
   for (let pool of pools) {
     for (let poolsDataItem of poolsData) {
@@ -1180,4 +1398,5 @@ export {
   _verifyRestList,
   getChainNameAndRestList,
   getIbcChannelList,
+  _modifyRpcList,
 };

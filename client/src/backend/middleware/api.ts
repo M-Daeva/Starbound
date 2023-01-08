@@ -26,6 +26,12 @@ import {
 // TODO: change on maiinet
 let chainType: "main" | "test" = "test";
 
+const allowList: [string, string, string[]][] = [];
+const ignoreList: [string, string, string[]][] = [];
+//  [
+//   ["osmo", "test", ["https://osmosistest-rpc.quickapi.com/"]],
+// ];
+
 // client specific storages
 let chainRegistryStorage = initStorage<ChainRegistryStorage>(
   "chain-registry-storage"
@@ -42,20 +48,21 @@ let poolsAndUsersStorage = initStorage<PoolsAndUsersStorage>(
 );
 
 async function updateChainRegistry() {
-  let isStorageUpdated = false;
-
   try {
     const res = mergeChainRegistry(
       chainRegistryStorage.get(),
-      await _getChainRegistry(SEED_DAPP)
+      await _getChainRegistry(SEED_DAPP, allowList, ignoreList)
     );
 
     chainRegistryStorage.set(res);
     chainRegistryStorage.write(res);
-    isStorageUpdated = true;
-  } catch (error) {}
 
-  return { fn: "updateChainRegistry", isStorageUpdated };
+    return { fn: "updateChainRegistry", isStorageUpdated: true };
+  } catch (error) {
+    l(error);
+
+    return { fn: "updateChainRegistry", isStorageUpdated: false };
+  }
 }
 
 async function getChainRegistry() {
@@ -71,22 +78,22 @@ async function getChainRegistry() {
 }
 
 async function updateIbcChannels() {
-  let isStorageUpdated = false;
-
   try {
     const res = mergeIbcChannels(
       ibcChannelsStorage.get(),
-      await _getIbcChannnels()
+      await _getIbcChannnels(chainRegistryStorage.get(), chainType)
     );
+    if (!res) throw new Error("mergeIbcChannels returned undefined!");
 
     ibcChannelsStorage.set(res);
     ibcChannelsStorage.write(res);
-    isStorageUpdated = true;
+
+    return { fn: "updateIbcChannels", isStorageUpdated: true };
   } catch (error) {
     l(error);
-  }
 
-  return { fn: "updateIbcChannels", isStorageUpdated };
+    return { fn: "updateIbcChannels", isStorageUpdated: false };
+  }
 }
 
 async function getIbcChannnels() {
@@ -102,17 +109,18 @@ async function getIbcChannnels() {
 }
 
 async function updatePools() {
-  let isStorageUpdated = false;
-
   try {
     const res = mergePools(poolsStorage.get(), await _getPools());
 
     poolsStorage.set(res);
     poolsStorage.write(res);
-    isStorageUpdated = true;
-  } catch (error) {}
 
-  return { fn: "updatePools", isStorageUpdated };
+    return { fn: "updatePools", isStorageUpdated: true };
+  } catch (error) {
+    l(error);
+
+    return { fn: "updatePools", isStorageUpdated: false };
+  }
 }
 
 async function getPools() {
@@ -128,18 +136,21 @@ async function getPools() {
 }
 
 async function updateValidators() {
-  let isStorageUpdated = false;
-
   try {
     const res = await _getValidators(
       _getChainNameAndRestList(chainRegistryStorage.get(), chainType)
     );
     validatorsStorage.set(res);
     validatorsStorage.write(res);
-    isStorageUpdated = !!res.length;
-  } catch (error) {}
 
-  return { fn: "updateValidators", isStorageUpdated };
+    if (!res.length) throw new Error("_getValidators returned empty list");
+
+    return { fn: "updateValidators", isStorageUpdated: true };
+  } catch (error) {
+    l(error);
+
+    return { fn: "updateValidators", isStorageUpdated: false };
+  }
 }
 
 async function getValidators() {
@@ -148,8 +159,6 @@ async function getValidators() {
 
 // transforms contract response to all users address-balance list
 async function updateUserFunds() {
-  let isStorageUpdated = false;
-
   try {
     const res: UserFundsStorage = (
       await _getUserFunds(
@@ -160,10 +169,13 @@ async function updateUserFunds() {
     ).map(({ address, holded, staked }) => [address, { holded, staked }]);
     userFundsStorage.set(res);
     userFundsStorage.write(res);
-    isStorageUpdated = true;
-  } catch (error) {}
 
-  return { fn: "updateUserFunds", isStorageUpdated };
+    return { fn: "updateUserFunds", isStorageUpdated: true };
+  } catch (error) {
+    l(error);
+
+    return { fn: "updateUserFunds", isStorageUpdated: false };
+  }
 }
 
 // filters all users address-balance list by specified user osmo address
@@ -186,17 +198,19 @@ async function getUserFunds(userOsmoAddress: string) {
 }
 
 async function updatePoolsAndUsers() {
-  let isStorageUpdated = false;
   const { cwQueryPoolsAndUsers } = await init();
 
   try {
     const res = await cwQueryPoolsAndUsers();
     poolsAndUsersStorage.set(res);
     poolsAndUsersStorage.write(res);
-    isStorageUpdated = true;
-  } catch (error) {}
 
-  return { fn: "updatePoolsAndUsers", isStorageUpdated };
+    return { fn: "updatePoolsAndUsers", isStorageUpdated: true };
+  } catch (error) {
+    l(error);
+
+    return { fn: "updatePoolsAndUsers", isStorageUpdated: false };
+  }
 }
 
 async function getPoolsAndUsers() {
