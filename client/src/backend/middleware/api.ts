@@ -26,11 +26,10 @@ import {
 // TODO: change on maiinet
 let chainType: "main" | "test" = "test";
 
-const allowList: [string, string, string[]][] = [];
+const allowList: [string, string, string[]][] = [
+  ["osmo", "test", ["https://rpc-test.osmosis.zone/"]],
+];
 const ignoreList: [string, string, string[]][] = [];
-//  [
-//   ["osmo", "test", ["https://osmosistest-rpc.quickapi.com/"]],
-// ];
 
 // client specific storages
 let chainRegistryStorage = initStorage<ChainRegistryStorage>(
@@ -140,10 +139,10 @@ async function updateValidators() {
     const res = await _getValidators(
       _getChainNameAndRestList(chainRegistryStorage.get(), chainType)
     );
+    if (!res.length) throw new Error("_getValidators returned empty list");
+
     validatorsStorage.set(res);
     validatorsStorage.write(res);
-
-    if (!res.length) throw new Error("_getValidators returned empty list");
 
     return { fn: "updateValidators", isStorageUpdated: true };
   } catch (error) {

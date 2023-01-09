@@ -237,7 +237,6 @@ async function _verifyRpc(rpcList: string[], prefix: string, seed: string) {
   }
 
   let urlChecked: string | undefined;
-  let promiseList: Promise<void>[] = [];
 
   for (let url of urlList) {
     const clientStruct: ClientStruct = {
@@ -248,18 +247,14 @@ async function _verifyRpc(rpcList: string[], prefix: string, seed: string) {
     };
 
     // query balances to check if url is fine
-    const fn = async () => {
+    try {
       const { client, owner } = await getSgClient(clientStruct);
       await _specifyTimeout(client.getAllBalances(owner));
       urlChecked = url;
-    };
-
-    promiseList.push(fn());
+      break;
+    } catch (error) {}
   }
 
-  try {
-    await Promise.any(promiseList);
-  } catch (error) {}
   l({ urlChecked });
   return urlChecked;
 }
@@ -419,7 +414,7 @@ function _modifyRpcList(
     temp.push([
       prefix1,
       chainType1,
-      Array.from(new Set([...rpcList1, ...allowListItem[2]]).values()),
+      Array.from(new Set([...allowListItem[2], ...rpcList1]).values()),
     ]);
   }
 
