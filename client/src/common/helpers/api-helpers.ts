@@ -1340,7 +1340,7 @@ async function getUserFunds(
                   if (denom === "ujunox") {
                     return chain.denomNative === "ujuno";
                   } else {
-                    denom === chain.denomNative;
+                    return denom === chain.denomNative;
                   }
                 })?.amount || "0";
               const amountStaked =
@@ -1349,7 +1349,7 @@ async function getUserFunds(
                     if (denom === "ujunox") {
                       return denomNative === "ujuno";
                     } else {
-                      denom === denomNative;
+                      return denom === denomNative;
                     }
                   }
                 )?.balance.amount || "0";

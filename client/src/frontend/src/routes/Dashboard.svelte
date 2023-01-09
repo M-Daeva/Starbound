@@ -67,19 +67,14 @@
 
       const price = new Decimal(trimPrice(_price));
       const divider = new Decimal(10 ** exponent);
-      // TODO: uncomment on mainnet
-      // const holded = new Decimal(_holded.amount)
-      //   .div(divider)
-      //   .toDecimalPlaces(6);
-      // const staked = new Decimal(_staked.amount)
-      //   .div(divider)
-      //   .toDecimalPlaces(6);
-      const holded = new Decimal(10e6 * Math.random())
+
+      const holded = new Decimal(_holded.amount)
         .div(divider)
-        .toDecimalPlaces(6);
-      const staked = new Decimal(10e6 * Math.random())
+        .toDecimalPlaces(exponent);
+      const staked = new Decimal(_staked.amount)
         .div(divider)
-        .toDecimalPlaces(6);
+        .toDecimalPlaces(exponent);
+
       const cost = price.mul(holded.add(staked)).toDecimalPlaces(2);
 
       let res: DashboardAsset = {
@@ -91,7 +86,7 @@
         allocation: zero,
       };
 
-      return res;
+      initialAssetList.push(res);
     }
 
     const totalCost = new Decimal(
