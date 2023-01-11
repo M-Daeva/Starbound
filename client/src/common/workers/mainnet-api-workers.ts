@@ -1,14 +1,32 @@
 import { l } from "../utils";
 import { PoolExtracted, UserExtracted } from "../codegen/Starbound.types";
+import { initStorage } from "../../backend/storages";
 import {
   updatePoolsAndUsers as _updatePoolsAndUsers,
   getValidators as _getValidators,
 } from "../helpers/api-helpers";
+import {
+  ChainRegistryStorage,
+  IbcChannelsStorage,
+  PoolsStorage,
+  ValidatorsStorage,
+} from "../helpers/interfaces";
+
+let chainRegistryStorage = initStorage<ChainRegistryStorage>(
+  "chain-registry-storage"
+);
+let ibcChannelsStorage = initStorage<IbcChannelsStorage>(
+  "ibc-channels-storage"
+);
+let poolsStorage = initStorage<PoolsStorage>("pools-storage");
+let validatorsStorage = initStorage<ValidatorsStorage>("validators-storage");
 
 async function getValidators() {
   l("getValidators");
   try {
-    let res = await _getValidators();
+    let res = await _getValidators([
+      ["osmosis", "https://osmosis-api.polkachu.com"],
+    ]);
     l(res);
   } catch (error) {
     l(error, "\n");
@@ -60,7 +78,12 @@ let poolsAndUsers: { pools: PoolExtracted[]; users: UserExtracted[] } = {
 async function updatePoolsAndUsers() {
   l("updatePoolsAndUsers");
   try {
-    let _res = await _updatePoolsAndUsers(poolsAndUsers);
+    let res = await _updatePoolsAndUsers(
+      chainRegistryStorage.get(),
+      poolsAndUsers,
+      "main"
+    );
+    l(res);
   } catch (error) {
     l(error, "\n");
   }

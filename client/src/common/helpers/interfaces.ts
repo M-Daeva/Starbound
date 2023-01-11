@@ -5,14 +5,19 @@ import { QueryPoolsAndUsersResponse } from "../../common/codegen/Starbound.types
 
 // TODO: split to different files for better navigation
 
-interface ClientStruct {
-  isKeplrType: boolean;
+interface ClientStructWithKeplr {
   RPC: string;
-  wallet?: Keplr;
-  chainId?: string;
-  seed?: string;
-  prefix?: string;
+  wallet: Keplr;
+  chainId: string;
 }
+
+interface ClientStructWithoutKeplr {
+  RPC: string;
+  seed: string;
+  prefix: string;
+}
+
+type ClientStruct = ClientStructWithKeplr | ClientStructWithoutKeplr;
 
 interface IbcStruct {
   dstPrefix: string;
@@ -440,7 +445,7 @@ type StorageTypes =
   | UserFundsStorage
   | PoolsAndUsersStorage;
 
-export type { NetworkData };
+export type { NetworkData, ClientStructWithKeplr, ClientStructWithoutKeplr };
 
 export {
   AssetListItem,

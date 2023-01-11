@@ -9,6 +9,8 @@ import { OfflineSigner } from "@cosmjs/launchpad";
 import { OfflineDirectSigner } from "@cosmjs/proto-signing";
 import {
   ClientStruct,
+  type ClientStructWithKeplr,
+  type ClientStructWithoutKeplr,
   NetworkData,
   ChainResponse,
 } from "../helpers/interfaces";
@@ -26,107 +28,114 @@ declare global {
 
 function detectWallet() {
   const { keplr } = window;
-  if (!keplr) l("You need to install Keplr");
+  if (!keplr) throw new Error("You need to install Keplr");
   return keplr;
 }
 
-function getChainInfo(asset: NetworkData, isMain: boolean) {
-  let network = (isMain ? asset.main : asset.test) as unknown as ChainResponse;
+function getChainInfo(
+  asset: NetworkData | undefined,
+  chainType: "main" | "test"
+) {
+  if (!asset) throw new Error("Chain registry info is not provided!");
 
-  try {
-    // fix for juno testnet and mainnet denoms
-    if (network.chain_id.includes("uni-")) {
-      asset.denomNative = "ujunox";
-    }
+  let network: ChainResponse | undefined;
 
-    let chainInfo: ChainInfo = {
-      chainId: network.chain_id,
-      chainName: network.chain_name,
-      rpc: network.apis.rpc[0].address,
-      rest: network.apis.rest[0].address,
-      stakeCurrency: {
+  if (chainType === "main" && asset.main) {
+    network = asset.main;
+  }
+  if (chainType === "test" && asset.test) {
+    network = asset.test;
+  }
+  if (!network) throw new Error("Chain info is not found!");
+
+  // fix for juno testnet and mainnet denoms
+  if (network.chain_id.includes("uni-")) {
+    asset.denomNative = "ujunox";
+  }
+
+  let chainInfo: ChainInfo = {
+    chainId: network.chain_id,
+    chainName: network.chain_name,
+    rpc: network.apis.rpc[0].address,
+    rest: network.apis.rest[0].address,
+    stakeCurrency: {
+      coinDenom: asset.symbol,
+      coinMinimalDenom: asset.denomNative,
+      coinDecimals: asset.exponent,
+      coinGeckoId: asset.coinGeckoId,
+    },
+    bip44: { coinType: 118 },
+    bech32Config: {
+      bech32PrefixAccAddr: `${network.bech32_prefix}`,
+      bech32PrefixAccPub: `${network.bech32_prefix}pub`,
+      bech32PrefixValAddr: `${network.bech32_prefix}valoper`,
+      bech32PrefixValPub: `${network.bech32_prefix}valoperpub`,
+      bech32PrefixConsAddr: `${network.bech32_prefix}valcons`,
+      bech32PrefixConsPub: `${network.bech32_prefix}valconspub`,
+    },
+    currencies: [
+      {
         coinDenom: asset.symbol,
         coinMinimalDenom: asset.denomNative,
         coinDecimals: asset.exponent,
         coinGeckoId: asset.coinGeckoId,
       },
-      bip44: { coinType: 118 },
-      bech32Config: {
-        bech32PrefixAccAddr: `${network.bech32_prefix}`,
-        bech32PrefixAccPub: `${network.bech32_prefix}pub`,
-        bech32PrefixValAddr: `${network.bech32_prefix}valoper`,
-        bech32PrefixValPub: `${network.bech32_prefix}valoperpub`,
-        bech32PrefixConsAddr: `${network.bech32_prefix}valcons`,
-        bech32PrefixConsPub: `${network.bech32_prefix}valconspub`,
+    ],
+    feeCurrencies: [
+      {
+        coinDenom: asset.symbol,
+        coinMinimalDenom: asset.denomNative,
+        coinDecimals: asset.exponent,
+        coinGeckoId: asset.coinGeckoId,
       },
-      currencies: [
-        {
-          coinDenom: asset.symbol,
-          coinMinimalDenom: asset.denomNative,
-          coinDecimals: asset.exponent,
-          coinGeckoId: asset.coinGeckoId,
-        },
-      ],
-      feeCurrencies: [
-        {
-          coinDenom: asset.symbol,
-          coinMinimalDenom: asset.denomNative,
-          coinDecimals: asset.exponent,
-          coinGeckoId: asset.coinGeckoId,
-        },
-      ],
-    };
+    ],
+  };
 
-    return chainInfo;
-  } catch (error) {
-    return;
-  }
+  return chainInfo;
 }
 
-async function addChainList(wallet: Keplr, chainRegistry: NetworkData[]) {
+async function addChainList(
+  wallet: Keplr,
+  chainRegistry: NetworkData[],
+  chainType: "main" | "test"
+) {
   for (let asset of chainRegistry) {
-    if (typeof asset.main !== "string") {
-      let chainInfo = getChainInfo(asset, true);
-      if (!chainInfo) continue;
+    try {
+      const chainInfo = getChainInfo(asset, chainType);
       await wallet.experimentalSuggestChain(chainInfo);
-    }
-
-    if (typeof asset.test !== "string") {
-      let chainInfo = getChainInfo(asset, false);
-      if (!chainInfo) continue;
-      await wallet.experimentalSuggestChain(chainInfo);
+    } catch (error) {
+      l(error);
     }
   }
 }
 
 async function unlockWalletList(
   wallet: Keplr,
-  chainRegistry: NetworkData[]
+  chainRegistry: NetworkData[],
+  chainType: "main" | "test"
 ): Promise<void> {
   let promises: Promise<void>[] = [];
 
   for (let asset of chainRegistry) {
-    if (typeof asset.main !== "string") {
-      let chainInfo = getChainInfo(asset, true);
-      if (!chainInfo) continue;
+    try {
+      const chainInfo = getChainInfo(asset, chainType);
       promises.push(wallet.enable(chainInfo.chainId));
-    }
-
-    if (typeof asset.test !== "string") {
-      let chainInfo = getChainInfo(asset, false);
-      if (!chainInfo) continue;
-      promises.push(wallet.enable(chainInfo.chainId));
+    } catch (error) {
+      l(error);
     }
   }
 
   await Promise.all(promises);
 }
 
-async function initWalletList(chainRegistry: NetworkData[]) {
-  let wallet = detectWallet();
-  if (!wallet) return;
-  await addChainList(wallet, chainRegistry); // add network to Keplr
-  await unlockWalletList(wallet, chainRegistry); // give permission for the webpage to access Keplr
+async function initWalletList(
+  chainRegistry: NetworkData[] | undefined,
+  chainType: "main" | "test"
+) {
+  const wallet = detectWallet();
+  if (!chainRegistry || !wallet) return;
+  await addChainList(wallet, chainRegistry, chainType); // add network to Keplr
+  await unlockWalletList(wallet, chainRegistry, chainType); // give permission for the webpage to access Keplr
   return wallet;
 }
 
@@ -282,22 +291,23 @@ async function unlockWallet(wallet: Keplr): Promise<void> {
  * @returns
  */
 async function getSigner(clientStruct: ClientStruct) {
-  let { isKeplrType, RPC, wallet, chainId, prefix, seed } = clientStruct;
   let owner: string;
   let signer:
     | (OfflineSigner & OfflineDirectSigner)
     | undefined
     | DirectSecp256k1HdWallet;
 
-  if (isKeplrType && wallet !== undefined && chainId !== undefined) {
+  if ("wallet" in clientStruct) {
+    const { chainId, wallet } = clientStruct;
     signer = window.getOfflineSigner?.(chainId);
     owner = (await wallet.getKey(chainId)).bech32Address;
-  } else if (!isKeplrType && prefix !== undefined && seed !== undefined) {
+  } else if ("seed" in clientStruct) {
+    const { seed, prefix } = clientStruct;
     signer = await DirectSecp256k1HdWallet.fromMnemonic(seed, { prefix });
     owner = (await signer.getAccounts())[0].address;
   } else throw new Error("Wrong arguments!");
 
-  return { signer, owner, RPC };
+  return { signer, owner, RPC: clientStruct.RPC };
 }
 
 async function getSgClient(clientStruct: ClientStruct): Promise<{
@@ -305,7 +315,7 @@ async function getSgClient(clientStruct: ClientStruct): Promise<{
   owner: string;
 }> {
   const { signer, owner, RPC } = await getSigner(clientStruct);
-  if (signer === undefined) throw new Error("Signer is undefined!");
+  if (!signer) throw new Error("Signer is undefined!");
   const client = await SigningStargateClient.connectWithSigner(RPC, signer);
   return { client, owner };
 }
@@ -315,7 +325,7 @@ async function getCwClient(clientStruct: ClientStruct): Promise<{
   owner: string;
 }> {
   const { signer, owner, RPC } = await getSigner(clientStruct);
-  if (signer === undefined) throw new Error("Signer is undefined!");
+  if (!signer) throw new Error("Signer is undefined!");
   const client = await SigningCosmWasmClient.connectWithSigner(RPC, signer);
   return { client, owner };
 }
@@ -341,7 +351,7 @@ async function getAddrByChainId(chainId: string = "osmosis-1") {
 }
 
 export {
-  initWallet,
+  // initWallet,
   getSgClient,
   getCwClient,
   getAddrByPrefix,

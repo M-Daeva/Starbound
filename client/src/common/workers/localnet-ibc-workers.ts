@@ -3,7 +3,11 @@ import { getCwHelpers } from "../helpers/cw-helpers";
 import { getSgHelpers } from "../helpers/sg-helpers";
 import { DENOMS } from "../helpers/assets";
 import { TransferParams, Asset, User } from "../codegen/Starbound.types";
-import { IbcStruct, SwapStruct, ClientStruct } from "../helpers/interfaces";
+import {
+  IbcStruct,
+  SwapStruct,
+  ClientStructWithoutKeplr,
+} from "../helpers/interfaces";
 import {
   CONTRACT_ADDRESS,
   PREFIX,
@@ -13,8 +17,7 @@ import {
   SEED_DAPP,
 } from "../config/localnet-ibc-config.json";
 
-const aliceClientStruct: ClientStruct = {
-  isKeplrType: false,
+const aliceClientStruct: ClientStructWithoutKeplr = {
   prefix: PREFIX,
   RPC,
   seed: SEED_ALICE,

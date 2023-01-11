@@ -12,7 +12,7 @@ import {
 } from "../codegen/Starbound.types";
 import {
   DelegationStruct,
-  ClientStruct,
+  ClientStructWithoutKeplr,
   IbcStruct,
 } from "../helpers/interfaces";
 import {
@@ -24,26 +24,22 @@ import {
   SEED_DAPP,
 } from "../config/testnet-config.json";
 
-const aliceClientStruct: ClientStruct = {
-  isKeplrType: false,
+const aliceClientStruct: ClientStructWithoutKeplr = {
   prefix: PREFIX,
   RPC,
   seed: SEED_ALICE,
 };
-const bobClientStruct: ClientStruct = {
-  isKeplrType: false,
+const bobClientStruct: ClientStructWithoutKeplr = {
   prefix: PREFIX,
   RPC,
   seed: SEED_BOB,
 };
-const dappClientStruct: ClientStruct = {
-  isKeplrType: false,
+const dappClientStruct: ClientStructWithoutKeplr = {
   prefix: PREFIX,
   RPC,
   seed: SEED_DAPP,
 };
-const dappClientStructJuno: ClientStruct = {
-  isKeplrType: false,
+const dappClientStructJuno: ClientStructWithoutKeplr = {
   prefix: "juno",
   //RPC: "https://rpc.uni.juno.deuslabs.fi:443",
   RPC: "https://rpc.uni.junonetwork.io:443",

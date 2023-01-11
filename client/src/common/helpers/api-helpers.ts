@@ -29,7 +29,7 @@ import {
   ChainRegistryStorage,
   IbcChannelsStorage,
   PoolsStorage,
-  ClientStruct,
+  ClientStructWithoutKeplr,
   PoolsAndUsersStorage,
   IbcTracesResponse,
   IbcAckResponse,
@@ -239,8 +239,7 @@ async function _verifyRpc(rpcList: string[], prefix: string, seed: string) {
   let urlChecked: string | undefined;
 
   for (let url of urlList) {
-    const clientStruct: ClientStruct = {
-      isKeplrType: false,
+    const clientStruct: ClientStructWithoutKeplr = {
       RPC: url,
       prefix,
       seed,
