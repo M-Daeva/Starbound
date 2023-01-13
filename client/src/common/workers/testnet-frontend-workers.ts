@@ -5,22 +5,14 @@ import { initWalletList } from "../signers";
 import { type User } from "../codegen/Starbound.types";
 import {
   type ClientStructWithKeplr,
-  ChainRegistryStorage,
-  ChainResponse,
-  NetworkData,
+  type ChainRegistryStorage,
+  type ChainResponse,
+  type NetworkData,
 } from "../helpers/interfaces";
 import { CONTRACT_ADDRESS, RPC } from "../config/testnet-config.json";
 import { initStorage } from "../../backend/storages";
 
-const chainType: "main" | "test" = "test";
-
-const chainRegistryStorage = initStorage<ChainRegistryStorage>(
-  "chain-registry-storage"
-);
-
-const chains = chainRegistryStorage.get();
-
-async function init() {
+async function init(chains: ChainRegistryStorage, chainType: "main" | "test") {
   let response: ChainResponse | undefined;
   let chainId: string | undefined;
   const chain = chains?.find((item) => item.denomNative === "uosmo");

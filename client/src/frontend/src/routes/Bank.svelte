@@ -4,9 +4,10 @@
   import { get } from "svelte/store";
   import type { Asset, User } from "../../../common/codegen/Starbound.types";
   import {
-    deposit as _deposit,
-    withdraw as _withdraw,
-    queryPoolsAndUsers as _queryPoolsAndUsers,
+    // deposit as _deposit,
+    // withdraw as _withdraw,
+    // queryPoolsAndUsers as _queryPoolsAndUsers,
+    init,
   } from "../services/wallet";
   import {
     calcTimeDiff,
@@ -24,13 +25,14 @@
     BarElement,
   } from "chart.js";
   import {
+    CHAIN_TYPE,
     STABLECOIN_SYMBOL,
     STABLECOIN_EXPONENT,
     chainRegistryStorage,
     userFundsStorage,
     userContractStorage,
     assetListStorage,
-    setUserContractStorage,
+    // setUserContractStorage,
   } from "../services/storage";
 
   let paymentBalance = 0;
@@ -136,6 +138,10 @@
     l({ userToSend });
 
     try {
+      const { deposit: _deposit, setUserContractStorage } = await init(
+        get(chainRegistryStorage),
+        CHAIN_TYPE
+      );
       const tx = await _deposit(userToSend);
       displayModal(tx.transactionHash);
       await setUserContractStorage();
@@ -147,6 +153,10 @@
       Math.abs(+withdrawalAmountToDisplay) * 10 ** STABLECOIN_EXPONENT;
 
     try {
+      const { withdraw: _withdraw, setUserContractStorage } = await init(
+        get(chainRegistryStorage),
+        CHAIN_TYPE
+      );
       const tx = await _withdraw(withdrawalAmountToSend);
 
       displayModal(tx.transactionHash);

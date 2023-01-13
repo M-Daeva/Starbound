@@ -3,13 +3,15 @@
   import Dashboard from "./routes/Dashboard.svelte";
   import Assets from "./routes/Assets.svelte";
   import Bank from "./routes/Bank.svelte";
-  import { initCwHandler } from "./services/wallet";
+  import { init } from "./services/wallet";
   import Modal from "./components/Modal.svelte";
   import { displayAddress } from "./services/helpers";
+  import { get } from "svelte/store";
   import {
     isModalActiveStorage,
     initAll,
-    setUserContractStorage,
+    CHAIN_TYPE,
+    chainRegistryStorage,
   } from "./services/storage";
 
   const paths = {
@@ -64,8 +66,15 @@
         <img class="w-5 mr-1" src="src/public/wallet.png" alt="wallet" />
         <div>{displayAddress()}</div>
       </div>
-      <button class="btn btn-primary mt-1.5 mr-1" on:click={initCwHandler}
-        >Connect Wallet</button
+      <button
+        class="btn btn-primary mt-1.5 mr-1"
+        on:click={async () => {
+          const { initCwHandler } = await init(
+            get(chainRegistryStorage),
+            CHAIN_TYPE
+          );
+          initCwHandler();
+        }}>Connect Wallet</button
       >
     </header>
 

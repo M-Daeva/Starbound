@@ -55,7 +55,7 @@
     }
 
     try {
-      const wallet = await initWalletList([chain]);
+      const wallet = await initWalletList([chain], CHAIN_TYPE);
 
       l({
         RPC,
@@ -65,7 +65,6 @@
 
       // add handlers
       const { sgGrantStakeAuth, sgRevokeStakeAuth } = await getSgHelpers({
-        isKeplrType: true,
         RPC,
         wallet,
         chainId,

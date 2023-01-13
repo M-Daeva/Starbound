@@ -1,7 +1,7 @@
 import { type Writable, get, writable } from "svelte/store";
 import { createRequest, l } from "../../../common/utils";
 import { baseURL } from "../config";
-import { queryUser } from "./wallet";
+import { init } from "./wallet";
 import { getValidatorListBySymbol, sortAssets } from "./helpers";
 import { getAddrByPrefix } from "../../../common/signers";
 import type {
@@ -61,13 +61,6 @@ let isModalActiveStorage: Writable<boolean> = writable(false);
 let txHashStorage: Writable<string> = writable("");
 
 let req = createRequest({ baseURL: baseURL + "/api" });
-
-async function setUserContractStorage() {
-  const address = get(addressStorage);
-  if (!address) return "";
-  const { user } = await queryUser(address);
-  userContractStorage.set(user);
-}
 
 // request main storages
 async function getRegistryChannelsPools(): Promise<{
@@ -153,10 +146,12 @@ async function initAll() {
     poolsStorage.set(data.pools);
     chainRegistryStorage.set(data.chainRegistry);
     userFundsStorage.set(data.userFunds);
+    l(get(chainRegistryStorage), CHAIN_TYPE, address);
+    const { queryUser } = await init(get(chainRegistryStorage), CHAIN_TYPE);
 
     const { user } = await queryUser(address);
     userContractStorage.set(user);
-
+    l({ user });
     // init assetListStorage
     let assetList: AssetListItem[] = [];
 
@@ -202,7 +197,6 @@ export {
   sortingConfigStorage,
   isModalActiveStorage,
   txHashStorage,
-  setUserContractStorage,
   getRegistryChannelsPools,
   getPools,
   getValidators,
