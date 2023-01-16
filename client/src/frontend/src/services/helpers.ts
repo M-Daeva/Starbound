@@ -112,9 +112,7 @@ function displayAddress() {
   }
 
   const [prefix, ...[postfix]] = address.split("1");
-  return `${prefix}1${postfix.slice(0, 3)}...${postfix.slice(
-    postfix.length - 4
-  )}`;
+  return `${prefix}...${postfix.slice(postfix.length - 4)}`;
 }
 
 function getValidatorListBySymbol(currentSymbol: string) {
