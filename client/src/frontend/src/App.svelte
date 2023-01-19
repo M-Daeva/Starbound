@@ -42,7 +42,7 @@
 <Router>
   <div class="bg-indigo-900 text-amber-200">
     <header
-      class="flex justify-between items-center px-3 mb-5 border-white border-b-2"
+      class="flex justify-between items-center px-4 mb-5 border-white border-b-2"
     >
       <div
         class="hidden sm:flex justify-center align-middle items-center w-3/12 -mt-2"
@@ -55,7 +55,7 @@
       <!-- hamburger -->
       <div
         class={"flex sm:hidden items-center w-16 h-16 z-50 sm:static " +
-          (checked ? "fixed" : "justify-center")}
+          (checked ? "fixed" : "justify-start")}
       >
         <label class="flex flex-col cursor-pointer">
           <input
@@ -116,7 +116,7 @@
         <div class="font-normal">{displayAddress()}</div>
       </div>
       <button
-        class="btn btn-primary mt-1.5 mr-1 w-32"
+        class="btn btn-primary mt-1.5 w-32 leading-4"
         on:click={async () => {
           const { initCwHandler } = await init(
             get(chainRegistryStorage),

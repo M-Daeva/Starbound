@@ -176,11 +176,13 @@
 
 <div class="flex flex-col px-4 -mt-3" style="height: 87vh">
   <div
-    class="container flex justify-around items-center py-2 pr-28 text-amber-200 font-medium my-2"
+    class="flex flex-col sm:flex-row justify-around items-center py-5 sm:py-2 text-amber-200 font-medium my-2"
     style="background-color: rgb(42 48 60);"
   >
-    <div class="flex flex-row justify-center items-center w-4/12">
-      <label for="symbol-selector" class="mr-3">Select Asset</label>
+    <div
+      class="flex flex-row justify-between sm:justify-center items-center w-64 sm:w-52 mb-5 sm:mb-0"
+    >
+      <label for="symbol-selector" class="mr-2">Select Asset</label>
       <select id="symbol-selector" class="w-28 m-0" bind:value={currentSymbol}>
         {#each denoms as denom}
           <option value={denom}>
@@ -189,8 +191,10 @@
         {/each}
       </select>
     </div>
-    <div class="flex flex-row justify-center items-center w-4/12">
-      <label for="weight-selector" class="mr-3">Specify Weight in %</label>
+    <div
+      class="flex flex-row justify-between sm:justify-center items-center w-64 mb-5 sm:mb-0"
+    >
+      <label for="weight-selector" class="mr-2">Specify Weight in %</label>
       <input
         id="weight-selector"
         type="number"
@@ -200,7 +204,7 @@
         bind:value={ratio}
       />
     </div>
-    <div class="flex justify-end w-3/12 pr-1">
+    <div class="flex justify-center pr-1">
       <button
         class="btn btn-secondary m-0 w-28"
         on:click={() => addAsset(currentSymbol)}>Add Asset</button
@@ -209,13 +213,13 @@
   </div>
 
   <div class="w-full overflow-x-auto mt-1">
-    <table class="table table-compact w-full">
-      <thead class="bg-black flex text-white w-full pr-4">
-        <tr class="flex w-full mb-1">
+    <table class="table table-compact w-full overflow-x-scroll">
+      <thead class="bg-black flex text-white w-full">
+        <tr class="flex w-full mb-1 justify-around">
           <th
-            class="flex flex-row justify-start items-center bg-black p-4 w-1/6 text-center"
+            class="flex flex-row justify-center items-center bg-black w-[116px] text-center"
           >
-            <span class="mr-1 ml-5">ASSET</span>
+            <span class="mr-1">ASSET</span>
             <button
               on:click={() => sortAndUpdateAssets("asset")}
               class="bg-transparent outline-none border-none my-auto"
@@ -228,9 +232,9 @@
             </button>
           </th>
           <th
-            class="flex flex-row justify-start items-center bg-black p-4 pl-14 w-1/4 text-center"
+            class="flex flex-row justify-center items-center bg-black w-[370px] text-center"
           >
-            <span class="mr-1 ml-5">ADDRESS</span>
+            <span class="mr-1">ADDRESS</span>
             <button
               on:click={() => sortAndUpdateAssets("address")}
               class="bg-transparent outline-none border-none my-auto"
@@ -243,7 +247,7 @@
             </button>
           </th>
           <th
-            class="flex flex-row justify-start items-center bg-black p-4 pl-10 w-1/6 text-center"
+            class="flex flex-row justify-center items-center bg-black w-36 text-center"
           >
             <span class="mr-1">WEIGHT in %</span>
             <button
@@ -258,15 +262,16 @@
             </button>
           </th>
           <th
-            class="flex flex-row justify-start items-center bg-black p-4 pl-8 w-1/6 text-center"
+            class="flex flex-row justify-center items-center bg-black w-36 text-center"
           >
-            <span class="mr-1 ml-5">VALIDATOR</span>
+            <span>VALIDATOR</span>
           </th>
           <th
-            class="flex flex-row justify-start items-center bg-black p-4 pl-11 w-1/4 text-center"
+            class="flex flex-row justify-center items-center bg-black w-44 text-center"
           >
-            <span class="mr-1">ACCESS CONTROL</span>
+            <span>ACCESS CONTROL</span>
           </th>
+          <th class="w-12 bg-black"><div /></th>
         </tr>
       </thead>
 
@@ -275,34 +280,36 @@
         style="max-height: 63vh; min-height: fit-content;"
       >
         {#each assetList as { asset, address, ratio, validator }}
-          <tr class="flex justify-start items-stretch w-full mt-4 first:mt-0">
-            <td class="flex flex-row justify-start items-center w-2/12 pl-5">
-              <img class="w-2/12" src={asset.logo} alt="logo" />
+          <tr
+            class="flex justify-around w-full mt-4 first:mt-0"
+            style="background-color: rgb(42 48 60);"
+          >
+            <td class="flex flex-row justify-start items-center w-[116px]">
+              <img class="w-7" src={asset.logo} alt="logo" />
               <span class="ml-1">{asset.symbol}</span></td
             >
-            <td class="flex justify-center items-center w-4/12 p-0 -ml-20"
+            <td class="flex justify-center items-center w-[370px]"
               ><input
                 type="text"
-                class="m-0 text-center"
-                style="width: 90%;"
+                class="m-0 text-center w-full"
                 bind:value={address}
               /></td
             >
-            <td class="flex justify-start items-center w-2/12"
+            <td class="flex justify-center items-center w-36"
               ><input
                 type="number"
                 min="1"
                 max="100"
-                class="w-24 m-0 text-center ml-6"
+                class="w-full m-0 text-center"
                 bind:value={ratio}
               /></td
             >
 
-            <td class="flex justify-start items-center w-2/12">
+            <td class="flex justify-center items-center w-36">
               <select
                 on:change={(e) =>
                   updateValidator(asset.symbol, e.currentTarget.value)}
-                class="w-40 m-0"
+                class="w-full m-0"
               >
                 {#each getValidatorListBySymbol(asset.symbol) as { operator_address, moniker }}
                   <option selected={validator === operator_address}>
@@ -313,17 +320,17 @@
             </td>
 
             <td
-              class="flex justify-around items-center w-2/12 bg-opacity-90 bg-slate-800"
+              class="flex justify-around items-center w-44 bg-opacity-90 bg-slate-800"
             >
               <button
-                class="btn btn-secondary m-0 w-20"
+                class="btn btn-secondary m-0 w-5/12"
                 on:click={async () => {
                   await addAuthzHandler(asset.symbol, validator);
                   await tryGrant(asset.symbol);
                 }}>Grant</button
               >
               <button
-                class="btn btn-warning m-0 w-20"
+                class="btn btn-warning m-0 w-5/12"
                 on:click={async () => {
                   await addAuthzHandler(asset.symbol, validator);
                   await tryRevoke(asset.symbol);
@@ -331,7 +338,7 @@
               >
             </td>
 
-            <td class="flex justify-center items-center w-1/12"
+            <td class="flex justify-center items-center w-12"
               ><button
                 class="btn btn-circle m-0"
                 on:click={() => removeAsset(address)}>❌</button
