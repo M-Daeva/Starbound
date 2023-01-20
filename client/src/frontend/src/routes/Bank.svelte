@@ -72,6 +72,31 @@
     ],
   } as any;
 
+  const color = "rgb(253 230 138)";
+
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: {
+        labels: {
+          color,
+        },
+      },
+    },
+    scales: {
+      y: {
+        ticks: {
+          color,
+        },
+      },
+      x: {
+        ticks: {
+          color,
+        },
+      },
+    },
+  };
+
   // displays contract data
   userContractStorage.subscribe((user) => {
     paymentBalance = +(user?.deposited || "") / 10 ** STABLECOIN_EXPONENT;
@@ -210,7 +235,7 @@
   setInterval(getTime, 1000);
 </script>
 
-<div class="flex flex-col px-4 -mt-3 text-amber-200 pt-2 sm:pt-0">
+<div class="flex flex-col px-4 -mt-3 text-amber-200 pt-2 sm:pt-0 pb-4">
   <p class="font-bold text-xl text-center">
     <input
       class="bg-transparent outline-none border-none select-none text-center"
@@ -225,7 +250,7 @@
       <h2 class="text-center font-medium text-lg">
         Payment Cumulative Sum ({STABLECOIN_SYMBOL}) vs Time (Days)
       </h2>
-      <Bar class="mt-2" {data} options={{ responsive: true }} />
+      <Bar class="mt-2" {data} {options} />
 
       <div>
         <div class="mt-3 mb-5 font-medium text-sm sm:text-base">

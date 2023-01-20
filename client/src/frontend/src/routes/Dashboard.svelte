@@ -39,9 +39,16 @@
     }[];
   };
 
-  let options = {
+  const options = {
     responsive: true,
     radius: "90%",
+    plugins: {
+      legend: {
+        labels: {
+          color: "rgb(253 230 138)",
+        },
+      },
+    },
   };
 
   // displays contract data
@@ -129,9 +136,13 @@
   });
 </script>
 
-<div class="flex justify-between px-4" style="height: 85vh">
-  <div class="w-4/12">
-    <div class="ml-12">
+<div
+  class="flex flex-col justify-center sm:flex-row sm:justify-between px-4 pb-4"
+>
+  <div class="w-full sm:w-4/12">
+    <div
+      class="text-base sm:text-sm md:text-base ml-4 sm:ml-0 md:ml-4 lg:ml-12"
+    >
       <h2>Payment Balance: {paymentBalance} {STABLECOIN_SYMBOL}</h2>
       <h2>Portfolio Net Worth: {portfolioNetWorth} {STABLECOIN_SYMBOL}</h2>
     </div>
@@ -140,13 +151,13 @@
     {/if}
   </div>
 
-  <div class="w-7/12 overflow-x-auto">
+  <div class="mt-3 sm:mt-0 w-full sm:w-7/12 overflow-x-auto">
     {#if dashboardAssetList.length}
-      <table class="table table-compact w-full ">
-        <thead class="bg-black flex text-white w-full pr-4">
-          <tr class="flex w-full mb-1">
+      <table class="table table-compact w-full overflow-x-scroll">
+        <thead class="bg-black flex text-white w-full">
+          <tr class="flex justify-between w-full mb-1 pr-3">
             {#each Object.keys(dashboardAssetList[0]) as key}
-              <th class="bg-black p-4 w-1/4 text-center">{key}</th>
+              <th class="bg-black py-4 w-24 text-center">{key}</th>
             {/each}
           </tr>
         </thead>
@@ -156,9 +167,12 @@
           style="max-height: 72vh; min-height: fit-content;"
         >
           {#each dashboardAssetList as dashboardAsset}
-            <tr class="flex w-full mt-4 first:mt-0">
+            <tr
+              class="flex w-full mt-4 first:mt-0 justify-between pr-3"
+              style="background-color: rgb(42 48 60);"
+            >
               {#each Object.values(dashboardAsset) as rowValue}
-                <td class="p-2.5 w-1/4 text-center">{rowValue}</td>
+                <td class="py-2.5 w-24 text-center">{rowValue}</td>
               {/each}
             </tr>
           {/each}

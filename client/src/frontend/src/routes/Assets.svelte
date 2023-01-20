@@ -174,7 +174,7 @@
   }
 </script>
 
-<div class="flex flex-col px-4 -mt-3" style="height: 87vh">
+<div class="flex flex-col px-4 -mt-3 pb-4">
   <div
     class="flex flex-col sm:flex-row justify-around items-center py-5 sm:py-2 text-amber-200 font-medium my-2"
     style="background-color: rgb(42 48 60);"
