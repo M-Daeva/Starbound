@@ -11,6 +11,7 @@ import {
   getIbcChannelList,
   getIbcChannnels,
   _modifyRpcList,
+  _getAllGrants,
 } from "../src/common/helpers/api-helpers";
 import {
   ChainRegistryStorage,
@@ -200,12 +201,24 @@ async function main() {
 
   // l((await getIbcChannnels(chainRegistryStorage.get(), "test"))?.length);
 
-  let rl: [string, string, string[]][] = [["q", "test", ["1", "2", "3"]]];
-  let al: [string, string, string[]][] = [["q", "test", ["1", "4"]]];
-  let il: [string, string, string[]][] = [["q", "test", ["2", "3", "5"]]];
+  // let rl: [string, string, string[]][] = [["q", "test", ["1", "2", "3"]]];
+  // let al: [string, string, string[]][] = [["q", "test", ["1", "4"]]];
+  // let il: [string, string, string[]][] = [["q", "test", ["2", "3", "5"]]];
 
-  l(_modifyRpcList(rl, al, []));
-  l(_modifyRpcList(rl, [], il));
+  // l(_modifyRpcList(rl, al, []));
+  // l(_modifyRpcList(rl, [], il));
+
+  let res = await _getAllGrants(
+    "osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt",
+    chainRegistryStorage.get(),
+    "test"
+  );
+
+  if (!res) return;
+
+  for (let item of res) {
+    l(item);
+  }
 }
 
 main();

@@ -207,6 +207,23 @@ interface DelegationsResponse {
   pagination: Pagination;
 }
 
+interface GrantsResponse {
+  grants: {
+    granter: string;
+    grantee: string;
+    authorization: {
+      "@type": string;
+      max_tokens: Coin;
+      allow_list: {
+        address: string[];
+      };
+      authorization_type: string;
+    };
+    expiration: string; // '2023-11-14T22:13:20Z'
+  }[];
+  pagination: Pagination;
+}
+
 interface ValidatorListResponse {
   validators: ValidatorResponse[];
 }
@@ -487,4 +504,5 @@ export {
   StorageTypes,
   IbcTracesResponse,
   IbcAckResponse,
+  GrantsResponse,
 };

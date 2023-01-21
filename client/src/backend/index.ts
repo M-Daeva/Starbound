@@ -4,6 +4,8 @@ import { text, json } from "body-parser";
 import cors from "cors";
 import E from "./config";
 import { rootPath } from "../common/utils";
+import { updatePoolsAndUsers as _updatePoolsAndUsers } from "../common/helpers/api-helpers";
+import { ChainRegistryStorage } from "../common/helpers/interfaces";
 import { init } from "../common/workers/testnet-backend-workers";
 import dashboard from "./routes/dashboard";
 import assets from "./routes/assets";
@@ -16,17 +18,28 @@ async function process() {
   const {
     cwSwap,
     cwTransfer,
-    cwMockUpdatePoolsAndUsers,
     cwQueryPoolsAndUsers,
     sgDelegateFromAll,
+    cwUpdatePoolsAndUsers,
   } = await init();
 
   setInterval(async () => {
-    let poolsAndUsers = await cwQueryPoolsAndUsers();
-    await sgDelegateFromAll(poolsAndUsers.users);
-    await cwMockUpdatePoolsAndUsers(poolsAndUsers);
+    const poolsAndUsers = await cwQueryPoolsAndUsers();
+    const chainRegistry: ChainRegistryStorage = await req.get(
+      API_ROUTES.getChainRegistry
+    );
+    const res = await _updatePoolsAndUsers(
+      chainRegistry,
+      poolsAndUsers,
+      E.CHAIN_TYPE
+    );
+    if (!res) return;
+    const { pools, users } = res;
+    await cwUpdatePoolsAndUsers(pools, users);
+
     await cwSwap();
     await cwTransfer();
+    // await sgDelegateFromAll(poolsAndUsers.users);
   }, 30_000);
 }
 

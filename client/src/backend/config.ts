@@ -20,6 +20,7 @@ let envs = {
     TO_STATIC: e.PATH_TO_STATIC_FROM_ROOT_DIR,
   },
   BASE_URL: e.BASE_URL_PROD,
+  CHAIN_TYPE: e.CHAIN_TYPE as "main" | "test",
 };
 
 if (e.NODE_ENV === "development") {

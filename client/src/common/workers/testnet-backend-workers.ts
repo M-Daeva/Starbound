@@ -9,6 +9,7 @@ import {
   QueryPoolsAndUsersResponse,
   UserExtracted,
   TransferParams,
+  PoolExtracted,
 } from "../codegen/Starbound.types";
 import {
   DelegationStruct,
@@ -138,6 +139,19 @@ async function init() {
     }
   }
 
+  async function cwUpdatePoolsAndUsers(
+    pools: PoolExtracted[],
+    users: UserExtracted[]
+  ) {
+    l("cwUpdatePoolsAndUsers");
+    try {
+      const res = await _cwUpdatePoolsAndUsers(pools, users);
+      l(res.rawLog);
+    } catch (error) {
+      l(error);
+    }
+  }
+
   async function cwMockUpdatePoolsAndUsers(
     poolsAndUsers: QueryPoolsAndUsersResponse
   ) {
@@ -263,6 +277,7 @@ async function init() {
     cwQueryUser,
     cwTransfer,
     cwMultiTransfer,
+    cwUpdatePoolsAndUsers,
     sgTransfer,
     sgSend,
     sgDelegateFromAll,

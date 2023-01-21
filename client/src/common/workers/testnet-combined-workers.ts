@@ -205,7 +205,7 @@ async function init() {
     asset_list: assetListBob,
     day_counter: "3",
     deposited: `${600_000}`,
-    is_controlled_rebalancing: false, // TODO: try true
+    is_controlled_rebalancing: false,
   };
 
   async function cwDepositBob() {

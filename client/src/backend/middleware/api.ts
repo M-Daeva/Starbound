@@ -2,6 +2,7 @@ import { init } from "../../common/workers/testnet-backend-workers";
 import { SEED_DAPP } from "../../common/config/testnet-config.json";
 import { l } from "../../common/utils";
 import { initStorage } from "../storages";
+import E from "../config";
 import {
   ChainRegistryStorage,
   IbcChannelsStorage,
@@ -24,7 +25,7 @@ import {
 } from "../../common/helpers/api-helpers";
 
 // TODO: change on maiinet
-let chainType: "main" | "test" = "test";
+const chainType: "main" | "test" = E.CHAIN_TYPE;
 
 const allowList: [string, string, string[]][] = [
   ["osmo", "test", ["https://rpc-test.osmosis.zone/"]],

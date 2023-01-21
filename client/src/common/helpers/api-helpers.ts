@@ -1,6 +1,6 @@
 import { Coin, coin } from "@cosmjs/stargate";
 import { DENOMS } from "../helpers/assets";
-import { getSgClient } from "../signers";
+import { getSgClient, getAddrByPrefix } from "../signers";
 import {
   PoolExtracted,
   QueryPoolsAndUsersResponse,
@@ -33,6 +33,7 @@ import {
   PoolsAndUsersStorage,
   IbcTracesResponse,
   IbcAckResponse,
+  GrantsResponse,
 } from "./interfaces";
 
 const req = createRequest({});
@@ -575,23 +576,6 @@ async function getChainRegistry(
   return await _queryNetworksData(main, test, seed, allowList, ignoreList);
 }
 
-// function mergeChainRegistry(
-//   chainRegistryStorage: ChainRegistryStorage | undefined,
-//   chainRegistryResponse: NetworkData[]
-// ) {
-//   if (!chainRegistryStorage) return chainRegistryResponse;
-
-//   for (let resItem of chainRegistryResponse) {
-//     // replace item if it's found in storage or add a new
-//     chainRegistryStorage = [
-//       ...chainRegistryStorage.filter(({ prefix }) => prefix !== resItem.prefix),
-//       resItem,
-//     ];
-//   }
-
-//   return chainRegistryStorage;
-// }
-
 function mergeChainRegistry(
   chainRegistryStorage: ChainRegistryStorage | undefined,
   chainRegistryResponse: NetworkData[]
@@ -757,32 +741,6 @@ async function getIbcChannnels(
   return IbcResponseList;
 }
 
-// async function getIbcChannnels() {
-//   //const url = "https://api-osmosis.imperator.co/ibc/v1/info";
-//   const url = "https://api-osmosis.imperator.co/ibc/v1/all?dex=osmosis";
-
-//   try {
-//     let channels: IbcResponse[] = await req.get(url);
-//     let fromOsmoChannels: IbcResponse[] = [];
-//     let toOsmoChannels: string[] = [];
-
-//     // split channels by direction
-//     for (let item of channels) {
-//       let { size_queue, token_symbol, source } = item;
-//       if (size_queue >= 5) continue; // allow using channels with some txs in queue
-//       if (token_symbol === "OSMO") fromOsmoChannels.push(item);
-//       else toOsmoChannels.push(source);
-//     }
-
-//     // use bidirectional channels
-//     return fromOsmoChannels.filter(({ destination }) =>
-//       toOsmoChannels.includes(destination)
-//     );
-//   } catch (error) {
-//     return [];
-//   }
-// }
-
 async function requestRelayers(
   chainRegistryStorage: ChainRegistryStorage | undefined,
   chainType: "main" | "test"
@@ -878,13 +836,6 @@ function filterChainRegistry(
     };
   }
 
-  // l({
-  //   chainRegistry: chainRegistry.length,
-  //   ibcChannels: ibcChannels.length,
-  //   pools: pools.length,
-  //   validators: validators.length,
-  // });
-
   const ibcChannelDestinations = ibcChannels.map(
     ({ destination }) => destination
   );
@@ -907,10 +858,6 @@ function filterChainRegistry(
       );
     });
   } else {
-    // TODO: use it on mainnet
-    // ibc channels storage uses mainnet data (from imperator api)
-    // so testnet chain_id can not be found in this storage
-
     chainRegistryFiltered = chainRegistry.filter(({ symbol, test }) => {
       if (!test) return false;
 
@@ -920,16 +867,6 @@ function filterChainRegistry(
         validatorsChains.includes(test.chain_name)
       );
     });
-
-    // chainRegistryFiltered = chainRegistry.filter(({ symbol, test, main }) => {
-    //   if (!test || !main) return false;
-
-    //   return (
-    //     ibcChannelDestinations.includes(main.chain_id) &&
-    //     poolSymbols.includes(symbol) &&
-    //     validatorsChains.includes(test.chain_name)
-    //   );
-    // });
   }
 
   const osmoChainRegistry = chainRegistry.find(
@@ -957,20 +894,12 @@ function filterChainRegistry(
       }
     );
   } else {
-    // TODO: use it on mainnet
     chainRegistryFilteredDestinations = chainRegistryFiltered.map(
       ({ test }) => {
         if (!test) return "";
         return test.chain_id;
       }
     );
-
-    // chainRegistryFilteredDestinations = chainRegistryFiltered.map(
-    //   ({ main }) => {
-    //     if (!main) return "";
-    //     return main.chain_id;
-    //   }
-    // );
   }
 
   const ibcChannelsFiltered = ibcChannels.filter(({ destination }) =>
@@ -1003,7 +932,6 @@ function filterChainRegistry(
         ({ destination }) => destination === main.chain_id
       );
     } else {
-      // TODO: use it on mainnet
       const { test } = chainRegistry;
       if (!test) continue;
 
@@ -1016,19 +944,6 @@ function filterChainRegistry(
       ibcChannel = ibcChannelsFiltered.find(
         ({ destination }) => destination === test.chain_id
       );
-
-      // const { main } = chainRegistry;
-      // if (!main) continue;
-
-      // const pool = poolsFiltered.find(
-      //   ([k, [v1, v2]]) => v1.symbol === chainRegistry.symbol
-      // );
-      // if (!pool) continue;
-      // [id, [{ denom, price }]] = pool;
-
-      // ibcChannel = ibcChannelsFiltered.find(
-      //   ({ destination }) => destination === main.chain_id
-      // );
     }
 
     if (!ibcChannel) continue;
@@ -1374,6 +1289,59 @@ async function getUserFunds(
   return resList;
 }
 
+// returns [denom, [granter, valoper][]][] for specified grantee on all chains
+async function _getAllGrants(
+  grantee: string,
+  chainRegistryResponse: ChainRegistryStorage | undefined,
+  chainType: "main" | "test"
+) {
+  if (!chainRegistryResponse) return;
+
+  let denomGranterValoperList: [string, [string, string][]][] = [];
+  let promiseList: Promise<void>[] = [];
+
+  for (let chain of chainRegistryResponse) {
+    let rest: string | undefined;
+
+    if (chainType === "main" && chain.main) {
+      rest = chain.main?.apis?.rest?.[0]?.address;
+    }
+    if (chainType === "test" && chain.test) {
+      rest = chain.test?.apis?.rest?.[0]?.address;
+    }
+    if (!rest) continue;
+
+    const urlGrants = `${rest}/cosmos/authz/v1beta1/grants/grantee/${getAddrByPrefix(
+      grantee,
+      chain.prefix
+    )}`;
+
+    const fn = async () => {
+      try {
+        const res: GrantsResponse = await req.get(urlGrants);
+
+        const granterAndValoperList: [string, string][] = res.grants.map(
+          ({ granter, authorization: { allow_list } }) => [
+            granter,
+            allow_list.address[0],
+          ]
+        );
+
+        denomGranterValoperList.push([
+          chain.denomNative,
+          granterAndValoperList,
+        ]);
+      } catch (error) {}
+    };
+
+    promiseList.push(fn());
+  }
+
+  await Promise.all(promiseList);
+
+  return denomGranterValoperList.filter(([chain, list]) => list.length);
+}
+
 export {
   updatePoolsAndUsers,
   mockUpdatePoolsAndUsers,
@@ -1393,4 +1361,5 @@ export {
   getChainNameAndRestList,
   getIbcChannelList,
   _modifyRpcList,
+  _getAllGrants,
 };
