@@ -49,12 +49,12 @@ async function process() {
     poolsAndUsers,
     E.CHAIN_TYPE
   );
-  if (!res) return;
-  const { pools, users } = res;
-  await cwUpdatePoolsAndUsers(pools, users);
+  // if (!res) return;
+  // const { pools, users } = res;
+  // await cwUpdatePoolsAndUsers(pools, users);
 
-  await cwSwap();
-  await cwTransfer();
+  // await cwSwap();
+  // await cwTransfer();
 
   // setInterval(async () => {
   //   const poolsAndUsers = await cwQueryPoolsAndUsers();
@@ -100,8 +100,8 @@ express()
 
   .listen(E.PORT, async () => {
     l(`Ready on port ${E.PORT}`);
-    // process();
+    await process();
 
-    // await initStorages();
+    //  await initStorages();
     // setInterval(initStorages, 15 * 60 * 1000);
   });

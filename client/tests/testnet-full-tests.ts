@@ -12,32 +12,35 @@ async function main() {
     cwTransfer,
   } = await init();
 
-  await cwDepositAlice();
-  await cwDepositBob();
-  await cwQueryUser();
+  let r = await cwQueryPoolsAndUsers();
+  console.log(r);
 
-  await cwWithdrawAlice();
-  await cwQueryUser();
+  // await cwDepositAlice();
+  // await cwDepositBob();
+  // await cwQueryUser();
 
-  let poolsAndUsers = await cwQueryPoolsAndUsers();
-  await cwMockUpdatePoolsAndUsers();
-  await cwQueryUser();
+  // await cwWithdrawAlice();
+  // await cwQueryUser();
 
-  await cwSwap();
-  await cwQueryUser();
+  // let poolsAndUsers = await cwQueryPoolsAndUsers();
+  // await cwMockUpdatePoolsAndUsers();
+  // await cwQueryUser();
 
-  await cwTransfer();
-  await cwQueryUser();
+  // await cwSwap();
+  // await cwQueryUser();
 
-  let cnt = 3;
+  // await cwTransfer();
+  // await cwQueryUser();
 
-  while (cnt--) {
-    await cwSwap();
-    await cwQueryUser();
+  // let cnt = 3;
 
-    await cwTransfer();
-    await cwQueryUser();
-  }
+  // while (cnt--) {
+  //   await cwSwap();
+  //   await cwQueryUser();
+
+  //   await cwTransfer();
+  //   await cwQueryUser();
+  // }
 }
 
 main();

@@ -11,7 +11,7 @@ import { getAddrByPrefix } from "../signers";
 import {
   QueryPoolsAndUsersResponse,
   UserExtracted,
-  TransferParams,
+  // TransferParams,
   PoolExtracted,
 } from "../codegen/Starbound.types";
 import {
@@ -63,7 +63,7 @@ async function init() {
     cwUpdatePoolsAndUsers: _cwUpdatePoolsAndUsers,
     cwQueryUser: _cwQueryUser,
     cwTransfer: _cwTransfer,
-    cwMultiTransfer: _cwMultiTransfer,
+    // cwMultiTransfer: _cwMultiTransfer,
   } = await getCwHelpers(dappClientStruct, CONTRACT_ADDRESS);
 
   // dapp stargate helpers
@@ -318,29 +318,29 @@ async function init() {
   let timeout_in_mins = 5;
   let timestamp = `${Date.now() + timeout_in_mins * 60 * 1000}000000`;
 
-  let junoParams: TransferParams = {
-    channel_id: junoChannel,
-    to: junoAddr,
-    amount: junoAmount,
-    denom: DENOMS.JUNO,
-    block_revision: junoRevision,
-    block_height: junoHeight,
-    timestamp,
-  };
+  // let junoParams: TransferParams = {
+  //   channel_id: junoChannel,
+  //   to: junoAddr,
+  //   amount: junoAmount,
+  //   denom: DENOMS.JUNO,
+  //   block_revision: junoRevision,
+  //   block_height: junoHeight,
+  //   timestamp,
+  // };
 
-  let params: TransferParams[] = [
-    junoParams,
-    //	junoParams
-  ];
+  // let params: TransferParams[] = [
+  //   junoParams,
+  //   //	junoParams
+  // ];
 
-  async function cwMultiTransfer() {
-    l("cwMultiTransfer");
-    try {
-      await _cwMultiTransfer(params);
-    } catch (error) {
-      l(error, "\n");
-    }
-  }
+  // async function cwMultiTransfer() {
+  //   l("cwMultiTransfer");
+  //   try {
+  //     await _cwMultiTransfer(params);
+  //   } catch (error) {
+  //     l(error, "\n");
+  //   }
+  // }
 
   let ibcStruct: IbcStruct = {
     amount: 1,
@@ -376,7 +376,7 @@ async function init() {
     cwMockUpdatePoolsAndUsers,
     cwQueryUser,
     cwTransfer,
-    cwMultiTransfer,
+    // cwMultiTransfer,
     cwUpdatePoolsAndUsers,
     sgTransfer,
     sgSend,

@@ -987,6 +987,9 @@ async function getActiveNetworksInfo(
   if (!relayers) return;
   let pools = await getPools();
 
+  l({ relayers });
+  l({ pools });
+
   let temp: PoolExtracted[] = [];
 
   for (let [key, [v0, v1]] of pools) {
@@ -1014,12 +1017,18 @@ async function updatePoolsAndUsers(
   queryPoolsAndUsersResponse: QueryPoolsAndUsersResponse | undefined,
   chainType: "main" | "test"
 ) {
-  if (!queryPoolsAndUsersResponse) return queryPoolsAndUsersResponse;
+  if (!queryPoolsAndUsersResponse || !chainRegistryResponse)
+    return queryPoolsAndUsersResponse;
   let { pools, users } = queryPoolsAndUsersResponse;
 
   let poolsData = await getActiveNetworksInfo(chainRegistryResponse, chainType);
   if (!poolsData) return;
 
+  l({ poolsData });
+  l({ chainRegistryResponse });
+  l({ queryPoolsAndUsersResponse });
+
+  // update existing pools
   for (let pool of pools) {
     for (let poolsDataItem of poolsData) {
       if (pool.denom === poolsDataItem.denom) {
@@ -1046,7 +1055,7 @@ async function updatePoolsAndUsers(
     }
   }
 
-  l({ fn: "updatePoolsAndUsers", pools, users: users[0].asset_list });
+  l({ fn: "updatePoolsAndUsers", pools, users: users?.[0]?.asset_list });
   return { pools, users };
 }
 

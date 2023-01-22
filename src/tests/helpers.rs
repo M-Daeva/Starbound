@@ -16,7 +16,7 @@ use crate::{
         query::QueryMsg,
         response::{QueryPoolsAndUsersResponse, QueryUserResponse},
     },
-    state::{Asset, Pool, PoolExtracted, TransferParams, User, UserExtracted},
+    state::{Asset, Pool, PoolExtracted, User, UserExtracted},
 };
 
 pub const ADDR_ADMIN_OSMO: &str = "osmo1k6ja23e7t9w2n87m2dn0cc727ag9pjkm2xlmck";
@@ -24,8 +24,6 @@ pub const ADDR_ADMIN_OSMO: &str = "osmo1k6ja23e7t9w2n87m2dn0cc727ag9pjkm2xlmck";
 pub const ADDR_ALICE_OSMO: &str = "osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx";
 pub const ADDR_ALICE_JUNO: &str = "juno1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyqd4qeg";
 pub const ADDR_ALICE_ATOM: &str = "cosmos1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyklkm75";
-pub const ADDR_ALICE_STARS: &str = "stargaze1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyjhqmnc";
-pub const ADDR_ALICE_SCRT: &str = "secret19m0fuxgmavuujxctyg7hmsk06yfuz9khrnmd52";
 
 pub const ADDR_BOB_OSMO: &str = "osmo1chgwz55h9kepjq0fkj5supl2ta3nwu63e3ds8x";
 pub const ADDR_BOB_JUNO: &str = "juno1chgwz55h9kepjq0fkj5supl2ta3nwu638camkg";
@@ -44,13 +42,13 @@ pub const DENOM_STARS: &str =
 pub const DENOM_SCRT: &str = "ibc/0954E1C28EB7AF5B72D24F3BC2B47BBB2FDF91BDDFD57B74B99E133AED40972A";
 pub const DENOM_NONEXISTENT: &str = "DENOM_NONEXISTENT";
 
-// pub const POOLS_AMOUNT_INITIAL: &str = "3";
-
-// pub const CHANNEL_ID: &str = "channel-1100";
-
 pub const IS_CONTROLLED_REBALANCING: bool = false;
-pub const IS_CURRENT_PERIOD: bool = true;
 pub const FUNDS_AMOUNT: u128 = 10_000;
+
+// TODO: replace EEUR -> USDC on mainnet
+const STABLECOIN_DENOM: &str =
+    "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F";
+const STABLECOIN_POOL_ID: u64 = 481;
 
 pub enum UserName {
     Alice,
@@ -74,45 +72,108 @@ pub fn get_instance(addr: &str) -> Instance {
     (deps, env, info, res)
 }
 
-pub fn instantiate_and_deposit(
-    is_controlled_rebalancing: bool,
-    is_current_period: bool,
-    funds_amount: u128,
-) -> Instance {
-    let funds_denom = DENOM_EEUR;
+// pub fn instantiate_and_deposit(
+//     is_controlled_rebalancing: bool,
+//     is_current_period: bool,
+//     funds_amount: u128,
+// ) -> Instance {
+//     let funds_denom = DENOM_EEUR;
 
-    let (mut deps, env, mut info, _) = get_instance(ADDR_ADMIN_OSMO);
+//     let (mut deps, env, mut info, _) = get_instance(ADDR_ADMIN_OSMO);
 
-    let asset_list_alice = vec![
-        Asset {
-            asset_denom: DENOM_ATOM.to_string(),
-            wallet_address: Addr::unchecked(ADDR_ALICE_ATOM),
-            wallet_balance: Uint128::zero(),
-            weight: str_to_dec("0.5"),
-            amount_to_send_until_next_epoch: Uint128::zero(),
-        },
-        Asset {
-            asset_denom: DENOM_JUNO.to_string(),
-            wallet_address: Addr::unchecked(ADDR_ALICE_JUNO),
-            wallet_balance: Uint128::zero(),
-            weight: str_to_dec("0.5"),
-            amount_to_send_until_next_epoch: Uint128::zero(),
-        },
+//     let asset_list_alice = vec![
+//         Asset {
+//             asset_denom: DENOM_ATOM.to_string(),
+//             wallet_address: Addr::unchecked(ADDR_ALICE_ATOM),
+//             wallet_balance: Uint128::zero(),
+//             weight: str_to_dec("0.5"),
+//             amount_to_send_until_next_epoch: Uint128::zero(),
+//         },
+//         Asset {
+//             asset_denom: DENOM_JUNO.to_string(),
+//             wallet_address: Addr::unchecked(ADDR_ALICE_JUNO),
+//             wallet_balance: Uint128::zero(),
+//             weight: str_to_dec("0.5"),
+//             amount_to_send_until_next_epoch: Uint128::zero(),
+//         },
+//     ];
+
+//     let user = User {
+//         asset_list: asset_list_alice,
+//         day_counter: Uint128::from(3_u128),
+//         deposited: Uint128::from(funds_amount),
+//         is_controlled_rebalancing,
+//     };
+
+//     let msg = ExecuteMsg::Deposit { user };
+//     info.funds = vec![coin(funds_amount, funds_denom)];
+//     info.sender = Addr::unchecked(ADDR_ALICE_OSMO);
+//     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
+
+//     (deps, env, info, res)
+// }
+
+pub fn get_initial_pools() -> Vec<PoolExtracted> {
+    let init_pools = vec![
+        // ATOM / OSMO
+        (
+            "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+            Pool::new(
+                Uint128::one(),
+                u128_to_dec(10),
+                "channel-1110",
+                "transfer",
+                "uatom",
+            ),
+        ),
+        // JUNO / OSMO
+        (
+            "ibc/46B44899322F3CD854D2D46DEEF881958467CDD4B3B10086DA49296BBED94BED",
+            Pool::new(
+                Uint128::from(497_u128),
+                u128_to_dec(2),
+                "channel-1110",
+                "transfer",
+                "ujuno",
+            ),
+        ),
+        // STABLECOIN / OSMO
+        (
+            STABLECOIN_DENOM,
+            Pool::new(
+                Uint128::from(STABLECOIN_POOL_ID as u128),
+                u128_to_dec(1),
+                "",
+                "",
+                "",
+            ),
+        ),
     ];
 
-    let user = User {
-        asset_list: asset_list_alice,
-        day_counter: Uint128::from(3_u128),
-        deposited: Uint128::from(funds_amount),
-        is_controlled_rebalancing,
-    };
+    let extracted_pools: Vec<PoolExtracted> = init_pools
+        .iter()
+        .map(|x| {
+            let (denom, pool) = x.to_owned();
+            let Pool {
+                channel_id,
+                port_id,
+                symbol,
+                id,
+                price,
+            } = pool;
 
-    let msg = ExecuteMsg::Deposit { user };
-    info.funds = vec![coin(funds_amount, funds_denom)];
-    info.sender = Addr::unchecked(ADDR_ALICE_OSMO);
-    let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
+            PoolExtracted {
+                id,
+                denom: denom.to_owned(),
+                price,
+                symbol,
+                channel_id,
+                port_id,
+            }
+        })
+        .collect();
 
-    (deps, env, info, res)
+    extracted_pools
 }
 
 pub struct Starbound {
@@ -248,44 +309,33 @@ impl Starbound {
     }
 
     #[track_caller]
-    pub fn swap(&mut self, sender: &str) -> Result<AppResponse, StdError> {
-        self.app
-            .execute_contract(
-                Addr::unchecked(sender.to_string()),
-                self.address.clone(),
-                &ExecuteMsg::Swap {},
-                &[],
-            )
-            .map_err(|err| err.downcast().unwrap())
+    pub fn init_pools(&mut self, sender: &str) -> Result<AppResponse, StdError> {
+        self.update_pools_and_users(sender, get_initial_pools(), vec![])
     }
 
-    #[track_caller]
-    pub fn transfer(&mut self, sender: &str) -> Result<AppResponse, StdError> {
-        self.app
-            .execute_contract(
-                Addr::unchecked(sender.to_string()),
-                self.address.clone(),
-                &ExecuteMsg::Transfer {},
-                &[],
-            )
-            .map_err(|err| err.downcast().unwrap())
-    }
+    // #[track_caller]
+    // pub fn swap(&mut self, sender: &str) -> Result<AppResponse, StdError> {
+    //     self.app
+    //         .execute_contract(
+    //             Addr::unchecked(sender.to_string()),
+    //             self.address.clone(),
+    //             &ExecuteMsg::Swap {},
+    //             &[],
+    //         )
+    //         .map_err(|err| err.downcast().unwrap())
+    // }
 
-    #[track_caller]
-    pub fn multi_transfer(
-        &mut self,
-        sender: &str,
-        params: Vec<TransferParams>,
-    ) -> Result<AppResponse, StdError> {
-        self.app
-            .execute_contract(
-                Addr::unchecked(sender.to_string()),
-                self.address.clone(),
-                &ExecuteMsg::MultiTransfer { params },
-                &[],
-            )
-            .map_err(|err| err.downcast().unwrap())
-    }
+    // #[track_caller]
+    // pub fn transfer(&mut self, sender: &str) -> Result<AppResponse, StdError> {
+    //     self.app
+    //         .execute_contract(
+    //             Addr::unchecked(sender.to_string()),
+    //             self.address.clone(),
+    //             &ExecuteMsg::Transfer {},
+    //             &[],
+    //         )
+    //         .map_err(|err| err.downcast().unwrap())
+    // }
 
     #[track_caller]
     pub fn query_user(&self, address: &str) -> Result<QueryUserResponse, StdError> {
@@ -304,24 +354,24 @@ impl Starbound {
             .query_wasm_smart(self.address.clone(), &QueryMsg::QueryPoolsAndUsers {})
     }
 
-    #[track_caller]
-    pub fn query_ledger(&self) -> Result<QueryUserResponse, StdError> {
-        self.app
-            .wrap()
-            .query_wasm_smart(self.address.clone(), &QueryMsg::QueryLedger {})
-    }
+    // #[track_caller]
+    // pub fn query_ledger(&self) -> Result<QueryUserResponse, StdError> {
+    //     self.app
+    //         .wrap()
+    //         .query_wasm_smart(self.address.clone(), &QueryMsg::QueryLedger {})
+    // }
 
-    #[track_caller]
-    pub fn query_config(&self) -> Result<QueryUserResponse, StdError> {
-        self.app
-            .wrap()
-            .query_wasm_smart(self.address.clone(), &QueryMsg::QueryConfig {})
-    }
+    // #[track_caller]
+    // pub fn query_config(&self) -> Result<QueryUserResponse, StdError> {
+    //     self.app
+    //         .wrap()
+    //         .query_wasm_smart(self.address.clone(), &QueryMsg::QueryConfig {})
+    // }
 
-    #[track_caller]
-    pub fn query_contract_balances(&self) -> Result<Vec<Coin>, StdError> {
-        self.app.wrap().query_all_balances(&self.address)
-    }
+    // #[track_caller]
+    // pub fn query_contract_balances(&self) -> Result<Vec<Coin>, StdError> {
+    //     self.app.wrap().query_all_balances(&self.address)
+    // }
 
     pub fn get_attrs(res: &AppResponse) -> Vec<Attribute> {
         let mut attrs: Vec<Attribute> = vec![];
@@ -416,13 +466,7 @@ impl Starbound {
                 "ujuno",
             ),
             // "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F",
-            Pool::new(
-                Uint128::from(481_u128),
-                u128_to_dec(1),
-                "ch_id",
-                "transfer",
-                "ustable",
-            ),
+            Pool::new(Uint128::from(481_u128), u128_to_dec(1), "", "", ""),
         ]
     }
 }

@@ -434,23 +434,18 @@ pub fn transfer_router(
                     });
 
                     msg_list.push(bank_msg);
-                } else {
-                    if let Some((_denom, pool)) = pools_with_denoms
-                        .iter()
-                        .find(|(denom, _pool)| denom == &asset.asset_denom)
-                    {
-                        let ibc_msg = CosmosMsg::Ibc(IbcMsg::Transfer {
-                            channel_id: pool.channel_id.to_owned(),
-                            to_address: asset.wallet_address.to_string(),
-                            amount: coin(
-                                amount_to_send_until_next_epoch.u128(),
-                                &asset.asset_denom,
-                            ),
-                            timeout: IbcTimeout::with_timestamp(timestamp),
-                        });
+                } else if let Some((_denom, pool)) = pools_with_denoms
+                    .iter()
+                    .find(|(denom, _pool)| denom == &asset.asset_denom)
+                {
+                    let ibc_msg = CosmosMsg::Ibc(IbcMsg::Transfer {
+                        channel_id: pool.channel_id.to_owned(),
+                        to_address: asset.wallet_address.to_string(),
+                        amount: coin(amount_to_send_until_next_epoch.u128(), &asset.asset_denom),
+                        timeout: IbcTimeout::with_timestamp(timestamp),
+                    });
 
-                        msg_list.push(ibc_msg);
-                    }
+                    msg_list.push(ibc_msg);
                 };
             };
         }
@@ -482,20 +477,18 @@ pub fn transfer_router(
                 });
 
                 msg_list.push(bank_msg);
-            } else {
-                if let Some((_denom, pool)) = pools_with_denoms
-                    .iter()
-                    .find(|(denom, _pool)| denom == fee_denom)
-                {
-                    let ibc_msg = CosmosMsg::Ibc(IbcMsg::Transfer {
-                        channel_id: pool.channel_id.to_owned(),
-                        to_address: addr.to_string(),
-                        amount: coin(fee.u128(), fee_denom),
-                        timeout: IbcTimeout::with_timestamp(timestamp),
-                    });
+            } else if let Some((_denom, pool)) = pools_with_denoms
+                .iter()
+                .find(|(denom, _pool)| denom == fee_denom)
+            {
+                let ibc_msg = CosmosMsg::Ibc(IbcMsg::Transfer {
+                    channel_id: pool.channel_id.to_owned(),
+                    to_address: addr.to_string(),
+                    amount: coin(fee.u128(), fee_denom),
+                    timeout: IbcTimeout::with_timestamp(timestamp),
+                });
 
-                    msg_list.push(ibc_msg);
-                }
+                msg_list.push(ibc_msg);
             };
         };
     }
@@ -521,16 +514,16 @@ pub fn transfer_router(
 pub mod test {
 
     use crate::tests::helpers::{
-        Starbound, UserName, ADDR_ALICE_ATOM, ADDR_ALICE_JUNO, ADDR_ALICE_OSMO, ADDR_BOB_ATOM,
-        ADDR_BOB_JUNO, ADDR_BOB_OSMO, ADDR_BOB_STARS, DENOM_ATOM, DENOM_EEUR, DENOM_JUNO,
-        DENOM_OSMO, DENOM_SCRT, DENOM_STARS, FUNDS_AMOUNT, IS_CONTROLLED_REBALANCING,
+        ADDR_ALICE_ATOM, ADDR_ALICE_JUNO, ADDR_ALICE_OSMO, ADDR_BOB_ATOM, ADDR_BOB_JUNO,
+        ADDR_BOB_OSMO, ADDR_BOB_STARS, DENOM_ATOM, DENOM_EEUR, DENOM_JUNO, DENOM_SCRT, DENOM_STARS,
+        IS_CONTROLLED_REBALANCING,
     };
 
     use super::{
         correct_sum, dec_to_uint128, get_ledger, rebalance_controlled, rebalance_proportional,
-        str_to_dec, str_vec_to_dec_vec, transfer_router, u128_to_dec, u128_vec_to_uint128_vec,
-        uint128_to_dec, vec_add, vec_div, vec_mul, vec_sub, Addr, Asset, Coin, Decimal, Ledger,
-        Pool, Timestamp, Uint128, User,
+        str_to_dec, str_vec_to_dec_vec, transfer_router, u128_vec_to_uint128_vec, uint128_to_dec,
+        vec_add, vec_div, vec_mul, vec_sub, Addr, Asset, Coin, Ledger, Pool, Timestamp, Uint128,
+        User,
     };
 
     // TODO: add tests for bank transfer

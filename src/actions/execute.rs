@@ -1,24 +1,21 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::{
-    coin, Addr, BankMsg, CosmosMsg, Decimal, DepsMut, Env, IbcMsg, IbcTimeout, IbcTimeoutBlock,
-    MessageInfo, Order, Response, StdResult, Uint128,
+    coin, Addr, BankMsg, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Order, Response, Uint128,
 };
 
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as PoolCoin,
     osmosis::gamm::v1beta1::{MsgSwapExactAmountIn, SwapAmountInRoute},
 };
-use std::ops::Mul;
 
 use crate::{
     actions::{
-        rebalancer::{dec_to_u128, get_ledger, transfer_router, u128_to_dec},
+        rebalancer::{get_ledger, transfer_router},
         verifier::{verify_deposit_data, verify_scheduler, LocalApi},
     },
     error::ContractError,
     state::{
-        Asset, Config, Ledger, Pool, PoolExtracted, TransferParams, User, UserExtracted, CONFIG,
-        LEDGER, POOLS, USERS,
+        Asset, Config, Pool, PoolExtracted, User, UserExtracted, CONFIG, LEDGER, POOLS, USERS,
     },
 };
 
@@ -404,28 +401,4 @@ pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
     Ok(Response::new()
         .add_messages(msg_list)
         .add_attributes(vec![("method", "transfer")]))
-}
-
-// function for testing ibc transfers
-pub fn multi_transfer(
-    _deps: DepsMut,
-    _env: Env,
-    _info: MessageInfo,
-    params: Vec<TransferParams>,
-) -> Result<Response, ContractError> {
-    let msg_list = params
-        .iter()
-        .map(|x| {
-            CosmosMsg::Ibc(IbcMsg::Transfer {
-                channel_id: x.channel_id.to_owned(),
-                to_address: x.to.to_owned(),
-                amount: coin(x.amount.u128(), x.denom.to_owned()),
-                timeout: IbcTimeout::with_timestamp(x.timestamp),
-            })
-        })
-        .collect::<Vec<CosmosMsg>>();
-
-    Ok(Response::new()
-        .add_messages(msg_list)
-        .add_attributes(vec![("method", "multi_transfer")]))
 }

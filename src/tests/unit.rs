@@ -1,18 +1,13 @@
-use cosmwasm_std::{
-    attr, coin, from_binary, Addr, Attribute, Decimal, Empty, StdError, Timestamp, Uint128,
-};
+use cosmwasm_std::{coin, Addr, Decimal, Uint128};
 
-use cw_multi_test::{App, Contract, ContractWrapper, Executor};
 use osmosis_testing::{
-    cosmrs::proto::cosmos::bank::v1beta1::QueryAllBalancesRequest, fn_query, Account, Bank, Gamm,
-    Module, OsmosisTestApp, Wasm,
+    cosmrs::proto::cosmos::bank::v1beta1::QueryAllBalancesRequest, Account, Bank, Gamm, Module,
+    OsmosisTestApp, Wasm,
 };
 use std::ops::{Add, Div};
 
 use crate::{
     actions::rebalancer::{dec_to_u128, str_to_dec, u128_to_dec},
-    contract::{execute, instantiate, query},
-    error::ContractError,
     messages::{
         execute::ExecuteMsg,
         instantiate::InstantiateMsg,
@@ -21,12 +16,11 @@ use crate::{
             QueryConfigResponse, QueryLedgerResponse, QueryPoolsAndUsersResponse, QueryUserResponse,
         },
     },
-    state::{Asset, AssetExtracted, Pool, PoolExtracted, TransferParams, User, UserExtracted},
+    state::{Asset, AssetExtracted, Pool, PoolExtracted, User, UserExtracted},
     tests::helpers::{
-        Starbound, UserName, ADDR_ADMIN_OSMO, ADDR_ALICE_ATOM, ADDR_ALICE_JUNO, ADDR_ALICE_OSMO,
-        ADDR_BOB_ATOM, ADDR_BOB_JUNO, ADDR_BOB_OSMO, ADDR_BOB_SCRT, DENOM_ATOM, DENOM_EEUR,
-        DENOM_JUNO, DENOM_OSMO, DENOM_SCRT, FUNDS_AMOUNT, IS_CONTROLLED_REBALANCING,
-        IS_CURRENT_PERIOD,
+        get_initial_pools, Starbound, UserName, ADDR_ADMIN_OSMO, ADDR_ALICE_ATOM, ADDR_ALICE_OSMO,
+        ADDR_BOB_ATOM, ADDR_BOB_OSMO, ADDR_BOB_SCRT, DENOM_ATOM, DENOM_EEUR, DENOM_JUNO,
+        DENOM_OSMO, DENOM_SCRT, FUNDS_AMOUNT,
     },
 };
 
@@ -34,6 +28,8 @@ use crate::{
 fn deposit() {
     let mut st = Starbound::new();
     let user = Starbound::get_user(UserName::Alice);
+
+    st.init_pools(ADDR_ADMIN_OSMO).unwrap();
 
     st.deposit(
         ADDR_ALICE_OSMO,
@@ -51,6 +47,8 @@ fn deposit() {
 fn deposit_multiple_times_and_without_assets() {
     let mut st = Starbound::new();
     let mut user = Starbound::get_user(UserName::Alice);
+
+    st.init_pools(ADDR_ADMIN_OSMO).unwrap();
 
     st.deposit(
         ADDR_ALICE_OSMO,
@@ -112,6 +110,8 @@ fn deposit_and_update_wallet_address() {
     let mut st = Starbound::new();
     let mut user = Starbound::get_user(UserName::Alice);
 
+    st.init_pools(ADDR_ADMIN_OSMO).unwrap();
+
     st.deposit(
         ADDR_ALICE_OSMO,
         &user,
@@ -142,6 +142,8 @@ fn deposit_and_update_wallet_address() {
 fn deposit_and_update_asset_list() {
     let mut st = Starbound::new();
     let user = Starbound::get_user(UserName::Alice);
+
+    st.init_pools(ADDR_ADMIN_OSMO).unwrap();
 
     // add atom to asset list
     let asset_list = vec![Asset::new(
@@ -194,6 +196,8 @@ fn deposit_and_update_asset_list() {
 fn withdraw() {
     let mut st = Starbound::new();
     let user = Starbound::get_user(UserName::Alice);
+
+    st.init_pools(ADDR_ADMIN_OSMO).unwrap();
 
     st.deposit(
         ADDR_ALICE_OSMO,
@@ -263,6 +267,8 @@ fn query_user() {
     let user_alice = Starbound::get_user(UserName::Alice);
     let user_bob = Starbound::get_user(UserName::Bob);
 
+    st.init_pools(ADDR_ADMIN_OSMO).unwrap();
+
     st.deposit(
         ADDR_ALICE_OSMO,
         &user_alice,
@@ -287,6 +293,8 @@ fn query_pools_and_users() {
     let pools = Starbound::get_pools();
     let user_alice = Starbound::get_user(UserName::Alice);
     let user_bob = Starbound::get_user(UserName::Bob);
+
+    st.init_pools(ADDR_ADMIN_OSMO).unwrap();
 
     st.deposit(
         ADDR_ALICE_OSMO,
@@ -336,6 +344,8 @@ fn update_pools_and_users() {
     let mut st = Starbound::new();
     let user_alice = Starbound::get_user(UserName::Alice);
     let user_bob = Starbound::get_user(UserName::Bob);
+
+    st.init_pools(ADDR_ADMIN_OSMO).unwrap();
 
     st.deposit(
         ADDR_ALICE_OSMO,
@@ -404,6 +414,8 @@ fn update_pools_and_users_unsupported_asset() {
     let mut st = Starbound::new();
     let user_alice = Starbound::get_user(UserName::Alice);
     let user_bob = Starbound::get_user(UserName::Bob);
+
+    st.init_pools(ADDR_ADMIN_OSMO).unwrap();
 
     st.deposit(
         ADDR_ALICE_OSMO,
@@ -538,7 +550,19 @@ fn swap() {
         .data
         .address;
 
-    // query contract state to check if contract instantiation works properly
+    // init pools with old ids
+    wasm.execute::<ExecuteMsg>(
+        &contract_addr,
+        &ExecuteMsg::UpdatePoolsAndUsers {
+            pools: get_initial_pools(),
+            users: vec![],
+        },
+        &[],
+        admin,
+    )
+    .unwrap();
+
+    // query pools
     let QueryPoolsAndUsersResponse { pools, .. } = wasm
         .query::<QueryMsg, QueryPoolsAndUsersResponse>(
             &contract_addr,

@@ -236,9 +236,9 @@ mod test {
         messages::execute::ExecuteMsg,
         state::{Asset, User},
         tests::helpers::{
-            get_instance, ADDR_ADMIN_OSMO, ADDR_ALICE_ATOM, ADDR_ALICE_JUNO, ADDR_ALICE_OSMO,
-            ADDR_INVALID, DENOM_ATOM, DENOM_EEUR, DENOM_JUNO, DENOM_NONEXISTENT, FUNDS_AMOUNT,
-            IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD,
+            get_initial_pools, get_instance, ADDR_ADMIN_OSMO, ADDR_ALICE_ATOM, ADDR_ALICE_JUNO,
+            ADDR_ALICE_OSMO, ADDR_INVALID, DENOM_ATOM, DENOM_EEUR, DENOM_JUNO, DENOM_NONEXISTENT,
+            FUNDS_AMOUNT, IS_CONTROLLED_REBALANCING,
         },
     };
 
@@ -279,7 +279,6 @@ mod test {
         // try to deposit ATOM istead of stablecoin
         let funds_denom = DENOM_ATOM;
         let funds_amount = FUNDS_AMOUNT;
-        let is_current_period = IS_CURRENT_PERIOD;
         let is_controlled_rebalancing = IS_CONTROLLED_REBALANCING;
 
         let (mut deps, env, mut info, _) = get_instance(ADDR_ADMIN_OSMO);
@@ -464,6 +463,14 @@ mod test {
             ),
         ];
 
+        // init pools
+        let msg = ExecuteMsg::UpdatePoolsAndUsers {
+            pools: get_initial_pools(),
+            users: vec![],
+        };
+        info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
+        execute(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
+
         let user = User {
             asset_list: asset_list_alice,
             day_counter: Uint128::from(3_u128),
@@ -472,6 +479,7 @@ mod test {
         };
 
         let msg = ExecuteMsg::Deposit { user };
+        info.sender = Addr::unchecked(ADDR_ALICE_OSMO);
         let res = execute(deps.as_mut(), env, info, msg);
 
         assert_eq!(

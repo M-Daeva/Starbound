@@ -2,7 +2,11 @@ import { l, SEP } from "../utils";
 import { getCwHelpers } from "../helpers/cw-helpers";
 import { getSgHelpers } from "../helpers/sg-helpers";
 import { DENOMS } from "../helpers/assets";
-import { TransferParams, Asset, User } from "../codegen/Starbound.types";
+import {
+  // TransferParams,
+  Asset,
+  User,
+} from "../codegen/Starbound.types";
 import {
   IbcStruct,
   SwapStruct,
@@ -38,8 +42,10 @@ const fromOsmoToAtom: SwapStruct = {
 
 async function init() {
   // alice cosmwasm helpers
-  const { cwDeposit: _cwDeposit, cwMultiTransfer: _cwMultiTransfer } =
-    await getCwHelpers(aliceClientStruct, CONTRACT_ADDRESS);
+  const {
+    cwDeposit: _cwDeposit,
+    // cwMultiTransfer: _cwMultiTransfer
+  } = await getCwHelpers(aliceClientStruct, CONTRACT_ADDRESS);
 
   // alice stargate helpers
   const {
@@ -135,50 +141,50 @@ async function init() {
   //   }
   // }
 
-  const wasmChannel = "channel-0";
-  const wasmAddr = "wasm1chgwz55h9kepjq0fkj5supl2ta3nwu63mk04cl";
-  const wasmRevision = "5";
-  const wasmHeight = "500000";
-  let osmoAmount = "1";
-  let timeout_in_mins = 5;
-  let timestamp = `${Date.now() + timeout_in_mins * 60 * 1000}000000`;
+  // const wasmChannel = "channel-0";
+  // const wasmAddr = "wasm1chgwz55h9kepjq0fkj5supl2ta3nwu63mk04cl";
+  // const wasmRevision = "5";
+  // const wasmHeight = "500000";
+  // let osmoAmount = "1";
+  // let timeout_in_mins = 5;
+  // let timestamp = `${Date.now() + timeout_in_mins * 60 * 1000}000000`;
 
-  let tokenParams: TransferParams = {
-    channel_id: wasmChannel,
-    to: wasmAddr,
-    amount: osmoAmount,
-    denom: DENOMS.OSMO,
-    block_revision: wasmRevision,
-    block_height: wasmHeight,
-    timestamp,
-  };
+  // let tokenParams: TransferParams = {
+  //   channel_id: wasmChannel,
+  //   to: wasmAddr,
+  //   amount: osmoAmount,
+  //   denom: DENOMS.OSMO,
+  //   block_revision: wasmRevision,
+  //   block_height: wasmHeight,
+  //   timestamp,
+  // };
 
-  let tokenParams2: TransferParams = {
-    channel_id: wasmChannel,
-    to: wasmAddr,
-    amount: "2",
-    denom: DENOMS.OSMO,
-    block_revision: wasmRevision,
-    block_height: wasmHeight,
-    timestamp,
-  };
+  // let tokenParams2: TransferParams = {
+  //   channel_id: wasmChannel,
+  //   to: wasmAddr,
+  //   amount: "2",
+  //   denom: DENOMS.OSMO,
+  //   block_revision: wasmRevision,
+  //   block_height: wasmHeight,
+  //   timestamp,
+  // };
 
-  let params: TransferParams[] = [tokenParams, tokenParams2];
+  // let params: TransferParams[] = [tokenParams, tokenParams2];
 
-  async function cwMultiTransfer() {
-    l("cwMultiTransfer");
-    try {
-      await _cwMultiTransfer(params);
-    } catch (error) {
-      l(error, "\n");
-    }
-  }
+  // async function cwMultiTransfer() {
+  //   l("cwMultiTransfer");
+  //   try {
+  //     await _cwMultiTransfer(params);
+  //   } catch (error) {
+  //     l(error, "\n");
+  //   }
+  // }
 
   return {
     sgTransfer,
     sgSwap,
     cwDeposit,
-    cwMultiTransfer,
+    // cwMultiTransfer,
   };
 }
 
