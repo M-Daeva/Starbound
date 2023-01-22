@@ -1342,6 +1342,24 @@ async function _getAllGrants(
   return denomGranterValoperList.filter(([chain, list]) => list.length);
 }
 
+// transforms [denom, [granter, valoper][]][] -> [[denom, granter, valoper][]][]
+// to provide async signing txs on different chains
+function _transformGrantList(
+  denomGranterValoperList: [string, [string, string][]][]
+) {
+  let res: [string, string, string][][] = [];
+
+  for (const [denom, granterValoperList] of denomGranterValoperList) {
+    for (let i in granterValoperList) {
+      const [granter, valoper] = granterValoperList[i];
+
+      res[i] = [...(res[i] || []), [denom, granter, valoper]];
+    }
+  }
+
+  return res;
+}
+
 export {
   updatePoolsAndUsers,
   mockUpdatePoolsAndUsers,
@@ -1362,4 +1380,5 @@ export {
   getIbcChannelList,
   _modifyRpcList,
   _getAllGrants,
+  _transformGrantList,
 };

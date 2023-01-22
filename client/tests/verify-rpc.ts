@@ -12,6 +12,7 @@ import {
   getIbcChannnels,
   _modifyRpcList,
   _getAllGrants,
+  _transformGrantList,
 } from "../src/common/helpers/api-helpers";
 import {
   ChainRegistryStorage,
@@ -208,17 +209,38 @@ async function main() {
   // l(_modifyRpcList(rl, al, []));
   // l(_modifyRpcList(rl, [], il));
 
-  let res = await _getAllGrants(
-    "osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt",
-    chainRegistryStorage.get(),
-    "test"
+  // let res = await _getAllGrants(
+  //   "osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt",
+  //   chainRegistryStorage.get(),
+  //   "test"
+  // );
+
+  // if (!res) return;
+
+  // for (let item of res) {
+  //   l(item);
+  // }
+
+  l(
+    _transformGrantList([
+      ["juno", [["juno_addr_1", "juno_val_1"]]],
+      [
+        "osmo",
+        [
+          ["osmo_addr_1", "osmo_val_1"],
+          ["osmo_addr_2", "osmo_val_2"],
+          ["osmo_addr_3", "osmo_val_3"],
+        ],
+      ],
+      [
+        "atom",
+        [
+          ["atom_addr_1", "atom_val_1"],
+          ["atom_addr_2", "atom_val_2"],
+        ],
+      ],
+    ])
   );
-
-  if (!res) return;
-
-  for (let item of res) {
-    l(item);
-  }
 }
 
 main();

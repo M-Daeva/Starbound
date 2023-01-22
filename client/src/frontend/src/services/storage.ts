@@ -145,6 +145,7 @@ async function initAll() {
     validatorsStorage.set(data.validatorsStorage);
     poolsStorage.set(data.pools);
     chainRegistryStorage.set(data.chainRegistry);
+    // TODO: increase data update freq
     userFundsStorage.set(data.userFunds);
     l(get(chainRegistryStorage), CHAIN_TYPE, address);
     const { queryUser } = await init(get(chainRegistryStorage), CHAIN_TYPE);
@@ -152,6 +153,7 @@ async function initAll() {
     const { user } = await queryUser(address);
     userContractStorage.set(user);
     l({ user });
+
     // init assetListStorage
     let assetList: AssetListItem[] = [];
 

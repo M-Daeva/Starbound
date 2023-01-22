@@ -1,4 +1,4 @@
-import { coin, MsgSendEncodeObject, Coin } from "@cosmjs/stargate";
+import { coin, MsgSendEncodeObject, Coin, StdFee } from "@cosmjs/stargate";
 import { MsgTransfer } from "osmojs/types/codegen/ibc/applications/transfer/v1/tx";
 import Long from "osmojs/node_modules/long";
 import {
@@ -138,7 +138,10 @@ async function getSgHelpers(clientStruct: ClientStruct) {
     return tx;
   }
 
-  async function sgDelegateFrom(delegationStruct: DelegationStruct) {
+  async function sgDelegateFrom(
+    delegationStruct: DelegationStruct,
+    specifiedFee: StdFee = fee
+  ) {
     const { targetAddr, tokenAmount, tokenDenom, validatorAddr } =
       delegationStruct;
 
@@ -163,7 +166,7 @@ async function getSgHelpers(clientStruct: ClientStruct) {
       value: msgExec,
     };
 
-    const tx = await client.signAndBroadcast(owner, [msg], fee);
+    const tx = await client.signAndBroadcast(owner, [msg], specifiedFee);
 
     return tx;
   }

@@ -4,7 +4,10 @@ import { text, json } from "body-parser";
 import cors from "cors";
 import E from "./config";
 import { rootPath } from "../common/utils";
-import { updatePoolsAndUsers as _updatePoolsAndUsers } from "../common/helpers/api-helpers";
+import {
+  updatePoolsAndUsers as _updatePoolsAndUsers,
+  _getAllGrants,
+} from "../common/helpers/api-helpers";
 import { ChainRegistryStorage } from "../common/helpers/interfaces";
 import { init } from "../common/workers/testnet-backend-workers";
 import dashboard from "./routes/dashboard";
@@ -20,27 +23,57 @@ async function process() {
     cwTransfer,
     cwQueryPoolsAndUsers,
     sgDelegateFromAll,
+    sgDelegateFromAll2,
     cwUpdatePoolsAndUsers,
   } = await init();
 
-  setInterval(async () => {
-    const poolsAndUsers = await cwQueryPoolsAndUsers();
-    const chainRegistry: ChainRegistryStorage = await req.get(
-      API_ROUTES.getChainRegistry
-    );
-    const res = await _updatePoolsAndUsers(
-      chainRegistry,
-      poolsAndUsers,
-      E.CHAIN_TYPE
-    );
-    if (!res) return;
-    const { pools, users } = res;
-    await cwUpdatePoolsAndUsers(pools, users);
+  // const chainRegistry: ChainRegistryStorage = await req.get(
+  //   API_ROUTES.getChainRegistry
+  // );
 
-    await cwSwap();
-    await cwTransfer();
-    // await sgDelegateFromAll(poolsAndUsers.users);
-  }, 30_000);
+  // const grantList = await _getAllGrants(
+  //   "osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt",
+  //   chainRegistry,
+  //   "test"
+  // );
+  // if (!grantList) return;
+
+  // await sgDelegateFromAll2(grantList, chainRegistry, "test", 8_959_812);
+
+  const poolsAndUsers = await cwQueryPoolsAndUsers();
+  const chainRegistry: ChainRegistryStorage = await req.get(
+    API_ROUTES.getChainRegistry
+  );
+  const res = await _updatePoolsAndUsers(
+    chainRegistry,
+    poolsAndUsers,
+    E.CHAIN_TYPE
+  );
+  if (!res) return;
+  const { pools, users } = res;
+  await cwUpdatePoolsAndUsers(pools, users);
+
+  await cwSwap();
+  await cwTransfer();
+
+  // setInterval(async () => {
+  //   const poolsAndUsers = await cwQueryPoolsAndUsers();
+  //   const chainRegistry: ChainRegistryStorage = await req.get(
+  //     API_ROUTES.getChainRegistry
+  //   );
+  //   const res = await _updatePoolsAndUsers(
+  //     chainRegistry,
+  //     poolsAndUsers,
+  //     E.CHAIN_TYPE
+  //   );
+  //   if (!res) return;
+  //   const { pools, users } = res;
+  //   await cwUpdatePoolsAndUsers(pools, users);
+
+  //   await cwSwap();
+  //   await cwTransfer();
+  //   // await sgDelegateFromAll(poolsAndUsers.users);
+  // }, 30_000);
 }
 
 async function initStorages() {

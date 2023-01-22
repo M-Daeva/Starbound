@@ -1,6 +1,9 @@
-import { l } from "../utils";
-import { coin } from "@cosmjs/stargate";
-import { mockUpdatePoolsAndUsers as _mockUpdatePoolsAndUsers } from "../helpers/api-helpers";
+import { l, createRequest, specifyTimeout as _specifyTimeout } from "../utils";
+import { coin, StdFee } from "@cosmjs/stargate";
+import {
+  mockUpdatePoolsAndUsers as _mockUpdatePoolsAndUsers,
+  _transformGrantList,
+} from "../helpers/api-helpers";
 import { getCwHelpers } from "../helpers/cw-helpers";
 import { DENOMS } from "../helpers/assets";
 import { getSgHelpers } from "../helpers/sg-helpers";
@@ -15,6 +18,8 @@ import {
   DelegationStruct,
   ClientStructWithoutKeplr,
   IbcStruct,
+  ChainRegistryStorage,
+  BalancesResponse,
 } from "../helpers/interfaces";
 import {
   CONTRACT_ADDRESS,
@@ -46,6 +51,8 @@ const dappClientStructJuno: ClientStructWithoutKeplr = {
   RPC: "https://rpc.uni.junonetwork.io:443",
   seed: SEED_DAPP,
 };
+
+const req = createRequest({});
 
 async function init() {
   // dapp cosmwasm helpers
@@ -126,6 +133,99 @@ async function init() {
 
     for (let user of users) {
       await delegate(user);
+    }
+  }
+
+  async function sgDelegateFromAll2(
+    denomGranterValoperList: [string, [string, string][]][],
+    chainRegistryResponse: ChainRegistryStorage | undefined,
+    chainType: "main" | "test",
+    threshold: number = 100_000
+  ) {
+    if (!chainRegistryResponse) return;
+
+    const grantList = _transformGrantList(denomGranterValoperList);
+
+    for (let grantListItem of grantList) {
+      for (let [denom, granter, valoper] of grantListItem) {
+        const chain = chainRegistryResponse.find(
+          (item) => item.denomNative === denom
+        );
+        if (!chain) continue;
+
+        let rest: string | undefined;
+        let rpc: string | undefined;
+        const gasPriceDefault = 125;
+        let gasPrice: number = gasPriceDefault;
+
+        if (chainType === "main" && chain.main) {
+          rest = chain.main?.apis?.rest?.[0]?.address;
+          rpc = chain.main?.apis?.rpc?.[0]?.address;
+          gasPrice =
+            chain.main.fees.fee_tokens?.[0]?.fixed_min_gas_price ||
+            gasPriceDefault;
+        }
+        if (chainType === "test" && chain.test) {
+          rest = chain.test?.apis?.rest?.[0]?.address;
+          rpc = chain.test?.apis?.rpc?.[0]?.address;
+          gasPrice =
+            chain.test.fees.fee_tokens?.[0]?.fixed_min_gas_price ||
+            gasPriceDefault;
+        }
+        if (!rest || !rpc) continue;
+
+        const fee: StdFee = {
+          amount: [coin(gasPrice, denom)],
+          gas: "500000",
+        };
+
+        l({ denom, granter });
+
+        try {
+          const urlHolded = `${rest}/cosmos/bank/v1beta1/balances/${granter}`;
+          const balHolded: BalancesResponse = await _specifyTimeout(
+            req.get(urlHolded),
+            10_000
+          );
+          const balance = balHolded.balances.find(
+            (item) => item.denom === denom
+          );
+          const amount = +(balance?.amount || "0");
+
+          l({ amount });
+
+          // skip delegation if amount <= threshold
+          //if (amount <= threshold) return;
+
+          const dappClientStruct: ClientStructWithoutKeplr = {
+            prefix: chain.prefix,
+            RPC: rpc as string,
+            seed: SEED_DAPP,
+          };
+
+          const { sgDelegateFrom: _sgDelegateFrom } = await getSgHelpers(
+            dappClientStruct
+          );
+
+          const tx = await _specifyTimeout(
+            _sgDelegateFrom(
+              {
+                targetAddr: granter,
+                // tokenAmount: amount - threshold,
+                tokenAmount: 100,
+                tokenDenom: denom,
+                validatorAddr: valoper,
+              },
+              fee
+            ),
+            10_000
+          );
+
+          l(tx);
+        } catch (error) {
+          l(error);
+        }
+      }
     }
   }
 
@@ -281,6 +381,7 @@ async function init() {
     sgTransfer,
     sgSend,
     sgDelegateFromAll,
+    sgDelegateFromAll2,
   };
 }
 
