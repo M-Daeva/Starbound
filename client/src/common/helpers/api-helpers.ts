@@ -745,12 +745,9 @@ async function requestRelayers(
   chainRegistryStorage: ChainRegistryStorage | undefined,
   chainType: "main" | "test"
 ): Promise<RelayerStruct[] | undefined> {
-  const url = "https://api-osmosis.imperator.co/ibc/v1/all?dex=osmosis";
-
   let relayerStructList: RelayerStruct[] = [];
   let ibcResponseList: IbcResponse[] | undefined; // from osmo channels only
   let poolList: [string, AssetDescription[]][] = [];
-  let channels: IbcResponse[] = []; // all channels
 
   await Promise.all([
     (async () => {
@@ -766,30 +763,33 @@ async function requestRelayers(
         poolList = await getPools();
       } catch (error) {}
     })(),
-    (async () => {
-      try {
-        channels = await req.get(url);
-      } catch (error) {}
-    })(),
   ]);
   if (!ibcResponseList) return;
 
-  for (let [k, [{ symbol, denom }, v1]] of poolList) {
-    if (v1.symbol !== "OSMO") continue;
+  for (const { destination: chain_id, channel_id } of ibcResponseList) {
+    let chain: NetworkData | undefined;
 
-    const toOsmoChannel = channels.find(
-      ({ token_symbol }) => token_symbol === symbol
+    if (chainType === "main") {
+      chain = chainRegistryStorage?.find(
+        (item) => item.main?.chain_id === chain_id
+      );
+    }
+    if (chainType === "test") {
+      chain = chainRegistryStorage?.find(
+        (item) => item.test?.chain_id === chain_id
+      );
+    }
+    if (!chain) continue;
+
+    const pool = poolList.find(
+      ([k, [{ symbol, denom }, v1]]) => symbol === chain?.symbol
     );
-    if (!toOsmoChannel) continue;
+    if (!pool) continue;
 
-    const fromOsmoChannel = ibcResponseList.find(
-      ({ destination }) => destination === toOsmoChannel.source
-    );
-    if (!fromOsmoChannel) continue;
+    const [k, [{ symbol, denom }, v1]] = pool;
 
-    const { destination, channel_id } = fromOsmoChannel;
     relayerStructList.push({
-      chain_id: destination,
+      chain_id,
       channel_id,
       port_id: "transfer",
       denom,
@@ -977,6 +977,7 @@ function filterChainRegistry(
   };
 }
 
+// TODO: simplify getActiveNetworksInfo -> requestRelayers -> getIbcChannnels -> getIbcChannelList
 // merge requestRelayers with requestPools to validate asset symbols
 // and filter IBC active networks
 async function getActiveNetworksInfo(
@@ -1391,4 +1392,5 @@ export {
   _getAllGrants,
   _transformGrantList,
   requestRelayers,
+  getActiveNetworksInfo,
 };

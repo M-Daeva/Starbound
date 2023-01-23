@@ -15,6 +15,7 @@ import {
   _transformGrantList,
   updatePoolsAndUsers,
   requestRelayers,
+  getActiveNetworksInfo,
 } from "../src/common/helpers/api-helpers";
 import {
   ChainRegistryStorage,
@@ -245,17 +246,21 @@ async function main() {
   //   ])
   // );
 
-  // const poolsAndUsers: PoolsAndUsersStorage = { pools: [], users: [] };
-  // const res = await updatePoolsAndUsers(
-  //   chainRegistryStorage.get(),
-  //   poolsAndUsers,
-  //   "test"
-  // );
-
   // l(await getIbcChannnels(chainRegistryStorage.get(), "test"));
 
-  let res = await requestRelayers(chainRegistryStorage.get(), "test");
-  l(res);
+  // let res = await requestRelayers(chainRegistryStorage.get(), "test");
+  // l(res);
+
+  // TODO: test on mainnet
+  // let res = await getActiveNetworksInfo(chainRegistryStorage.get(), "test");
+  // l(res);
+
+  const poolsAndUsers: PoolsAndUsersStorage = { pools: [], users: [] };
+  const res = await updatePoolsAndUsers(
+    chainRegistryStorage.get(),
+    poolsAndUsers,
+    "test"
+  );
 }
 
 main();
