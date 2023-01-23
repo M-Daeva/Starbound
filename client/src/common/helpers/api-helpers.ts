@@ -127,7 +127,7 @@ async function getIbcChannelList(
             )
           );
 
-          const txAmount = +resPackets.pagination.total;
+          const txAmount = resPackets.acknowledgements.length;
 
           if (txAmount > txAmountAndChannelId[0]) {
             txAmountAndChannelId = [txAmount, channel];
@@ -1390,4 +1390,5 @@ export {
   _modifyRpcList,
   _getAllGrants,
   _transformGrantList,
+  requestRelayers,
 };

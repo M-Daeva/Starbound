@@ -13,12 +13,15 @@ import {
   _modifyRpcList,
   _getAllGrants,
   _transformGrantList,
+  updatePoolsAndUsers,
+  requestRelayers,
 } from "../src/common/helpers/api-helpers";
 import {
   ChainRegistryStorage,
   IbcChannelsStorage,
   PoolsStorage,
   ValidatorsStorage,
+  PoolsAndUsersStorage,
 } from "../src/common/helpers/interfaces";
 import { initStorage } from "../src/backend/storages";
 import { l, createRequest } from "../src/common/utils";
@@ -221,26 +224,38 @@ async function main() {
   //   l(item);
   // }
 
-  l(
-    _transformGrantList([
-      ["juno", [["juno_addr_1", "juno_val_1"]]],
-      [
-        "osmo",
-        [
-          ["osmo_addr_1", "osmo_val_1"],
-          ["osmo_addr_2", "osmo_val_2"],
-          ["osmo_addr_3", "osmo_val_3"],
-        ],
-      ],
-      [
-        "atom",
-        [
-          ["atom_addr_1", "atom_val_1"],
-          ["atom_addr_2", "atom_val_2"],
-        ],
-      ],
-    ])
-  );
+  // l(
+  //   _transformGrantList([
+  //     ["juno", [["juno_addr_1", "juno_val_1"]]],
+  //     [
+  //       "osmo",
+  //       [
+  //         ["osmo_addr_1", "osmo_val_1"],
+  //         ["osmo_addr_2", "osmo_val_2"],
+  //         ["osmo_addr_3", "osmo_val_3"],
+  //       ],
+  //     ],
+  //     [
+  //       "atom",
+  //       [
+  //         ["atom_addr_1", "atom_val_1"],
+  //         ["atom_addr_2", "atom_val_2"],
+  //       ],
+  //     ],
+  //   ])
+  // );
+
+  // const poolsAndUsers: PoolsAndUsersStorage = { pools: [], users: [] };
+  // const res = await updatePoolsAndUsers(
+  //   chainRegistryStorage.get(),
+  //   poolsAndUsers,
+  //   "test"
+  // );
+
+  // l(await getIbcChannnels(chainRegistryStorage.get(), "test"));
+
+  let res = await requestRelayers(chainRegistryStorage.get(), "test");
+  l(res);
 }
 
 main();
