@@ -1,11 +1,12 @@
 <script lang="ts">
   import { fade, scale } from "svelte/transition";
-  import { txHashStorage } from "../services/storage";
+  import { txResStorage } from "../services/storage";
+  import { closeModal } from "../services/helpers";
   import { get } from "svelte/store";
   import { l } from "../../../common/utils";
 
-  let txHash = get(txHashStorage);
-  let hashToDisplay = `${txHash.slice(0, 3)}...${txHash.slice(
+  const [txStatus, txHash] = get(txResStorage);
+  let dataToDisplay = `${txStatus}: ${txHash.slice(0, 3)}...${txHash.slice(
     txHash.length - 4
   )}`;
 
@@ -13,7 +14,7 @@
     try {
       await navigator.clipboard.writeText(txHash);
       l({ txHash });
-      hashToDisplay = "Copied!";
+      dataToDisplay = "Copied!";
     } catch (error) {}
   }
 </script>
@@ -24,15 +25,18 @@
   class="flex flex-row justify-between w-72 absolute right-10 bottom-10 p-5 rounded-lg text-center"
   style="background-color: rgb(42 48 60);"
 >
-  <div>{hashToDisplay}</div>
   <button
     on:click={copyToClipboard}
     class="bg-transparent outline-none border-none my-auto"
   >
     <img
-      class="hover:cursor-pointer w-5 mr-1"
+      class="hover:cursor-pointer w-10 mr-1"
       src="src/public/copy.png"
       alt="copy"
     />
   </button>
+  <div class="w-full pl-2 text-center flex items-center">
+    {dataToDisplay}
+  </div>
+  <button class="btn btn-circle m-0" on:click={closeModal}>❌</button>
 </div>

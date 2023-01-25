@@ -1,13 +1,14 @@
+import { get } from "svelte/store";
+import { l } from "../../../common/utils";
+import type { DeliverTxResponse } from "@cosmjs/cosmwasm-stargate";
 import type {
   AssetListItem,
   ChainResponse,
 } from "../../../common/helpers/interfaces";
-import { get } from "svelte/store";
-import { l } from "../../../common/utils";
 import {
   chainRegistryStorage,
   poolsStorage,
-  txHashStorage,
+  txResStorage,
   isModalActiveStorage,
   CHAIN_TYPE,
   LOCAL_STORAGE_KEY,
@@ -95,13 +96,14 @@ function getTimeUntilRebalancing(tHour: number = TARGET_HOUR) {
   return `${dHoursStr}:${dMinsStr}`;
 }
 
-function displayModal(txHash: string = "") {
-  txHashStorage.set(txHash);
+function displayModal(tx: DeliverTxResponse) {
+  const status = tx.rawLog.includes("failed") ? "Err" : "Ok";
+  txResStorage.set([status, tx.transactionHash]);
   isModalActiveStorage.set(true);
+}
 
-  setTimeout(() => {
-    isModalActiveStorage.set(false);
-  }, 5_000);
+function closeModal() {
+  isModalActiveStorage.set(false);
 }
 
 function displayAddress() {
@@ -157,6 +159,7 @@ export {
   displayTxLink,
   getTimeUntilRebalancing,
   displayModal,
+  closeModal,
   displayAddress,
   getValidatorListBySymbol,
   sortAssets,

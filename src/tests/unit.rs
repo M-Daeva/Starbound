@@ -87,7 +87,6 @@ fn deposit_multiple_times_and_without_assets() {
     assert_eq!(res.unwrap(), QueryUserResponse { user });
 }
 
-// TODO: check if asset outside pool list can not be deposited
 #[test]
 fn deposit_unsupported_asset() {
     let mut st = Starbound::new();
@@ -101,7 +100,56 @@ fn deposit_unsupported_asset() {
         )
         .unwrap_err();
 
-    println!("deposit_unsupported_asset {:#?}", res);
+    assert_eq!(&res.to_string(), "Overflow: Cannot Sub with 0 and 10000")
+}
+
+// check if asset outside pool list can not be deposited (excluding osmo)
+#[test]
+fn deposit_non_pool_asset_osmo() {
+    let mut st = Starbound::new();
+    let mut user = Starbound::get_user(UserName::Alice);
+    user.asset_list.push(Asset::new(
+        DENOM_OSMO,
+        &Addr::unchecked(ADDR_ALICE_OSMO),
+        Uint128::zero(),
+        u128_to_dec(0_u128),
+        Uint128::zero(),
+    ));
+
+    st.init_pools(ADDR_ADMIN_OSMO).unwrap();
+
+    st.deposit(
+        ADDR_ALICE_OSMO,
+        &user,
+        &[coin(user.deposited.u128(), DENOM_EEUR)],
+    )
+    .unwrap();
+
+    let res = st.query_user(ADDR_ALICE_OSMO);
+
+    assert_eq!(res.unwrap(), QueryUserResponse { user });
+}
+
+// check if asset outside pool list can not be deposited
+#[test]
+#[should_panic]
+fn deposit_non_pool_asset_scrt() {
+    let mut st = Starbound::new();
+    let mut user = Starbound::get_user(UserName::Alice);
+    user.asset_list.push(Asset::new(
+        DENOM_SCRT,
+        &Addr::unchecked(ADDR_BOB_SCRT),
+        Uint128::zero(),
+        u128_to_dec(0_u128),
+        Uint128::zero(),
+    ));
+
+    st.deposit(
+        ADDR_ALICE_OSMO,
+        &user,
+        &[coin(user.deposited.u128(), DENOM_EEUR)],
+    )
+    .unwrap();
 }
 
 // check if user can not has multiple addresses on same asset

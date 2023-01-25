@@ -36,6 +36,10 @@ import {
   GrantsResponse,
 } from "./interfaces";
 
+const stableDenom =
+  "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F";
+const stablePoolId = "481";
+
 const req = createRequest({});
 
 function _getChainIdbyDenom(
@@ -988,9 +992,6 @@ async function getActiveNetworksInfo(
   if (!relayers) return;
   let pools = await getPools();
 
-  l({ relayers });
-  l({ pools });
-
   let temp: PoolExtracted[] = [];
 
   for (let [key, [v0, v1]] of pools) {
@@ -1025,18 +1026,29 @@ async function updatePoolsAndUsers(
   let poolsData = await getActiveNetworksInfo(chainRegistryResponse, chainType);
   if (!poolsData) return;
 
-  l({ poolsData });
-  l({ chainRegistryResponse });
-  l({ queryPoolsAndUsersResponse });
-
   // update existing pools
-  for (let pool of pools) {
-    for (let poolsDataItem of poolsData) {
-      if (pool.denom === poolsDataItem.denom) {
-        pool.price = poolsDataItem.price;
-      }
-    }
+  for (let poolsDataItem of poolsData) {
+    // replace item if it's found in storage or add a new
+    pools = [
+      ...pools.filter((pool) => pool.channel_id !== poolsDataItem.channel_id),
+      poolsDataItem,
+    ];
   }
+
+  // update stablecoin pool
+  const stablePool = {
+    id: stablePoolId,
+    denom: stableDenom,
+    price: "1",
+    symbol: "",
+    channel_id: "",
+    port_id: "",
+  };
+
+  pools = [
+    ...pools.filter((pool) => pool.denom !== stablePool.denom),
+    stablePool,
+  ];
 
   let usersFundsList = await getUserFunds(
     chainRegistryResponse,
@@ -1056,7 +1068,7 @@ async function updatePoolsAndUsers(
     }
   }
 
-  l({ fn: "updatePoolsAndUsers", pools, users: users?.[0]?.asset_list });
+  l({ fn: "updatePoolsAndUsers", pools, assetList: users?.[0]?.asset_list });
   return { pools, users };
 }
 

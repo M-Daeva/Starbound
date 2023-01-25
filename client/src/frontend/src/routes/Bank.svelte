@@ -122,9 +122,9 @@
 
     const assetList: Asset[] = get(assetListStorage).map(
       ({ address, asset: { symbol }, ratio }) => {
-        const { denomIbc } = chainRegistry.find(
-          (item) => item.symbol === symbol
-        );
+        const chain = chainRegistry.find((item) => item.symbol === symbol);
+        let { denomIbc } = chain;
+        if (chain.denomNative === "uosmo") denomIbc = "uosmo";
 
         let asset: Asset = {
           asset_denom: denomIbc,
@@ -170,7 +170,7 @@
         CHAIN_TYPE
       );
       const tx = await _deposit(userToSend);
-      displayModal(tx.transactionHash);
+      displayModal(tx);
       await setUserContractStorage();
     } catch (error) {}
   }
@@ -185,8 +185,7 @@
         CHAIN_TYPE
       );
       const tx = await _withdraw(withdrawalAmountToSend);
-
-      displayModal(tx.transactionHash);
+      displayModal(tx);
       await setUserContractStorage();
     } catch (error) {}
   }

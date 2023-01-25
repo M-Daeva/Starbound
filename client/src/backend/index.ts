@@ -49,9 +49,9 @@ async function process() {
     poolsAndUsers,
     E.CHAIN_TYPE
   );
-  // if (!res) return;
-  // const { pools, users } = res;
-  // await cwUpdatePoolsAndUsers(pools, users);
+  if (!res) return;
+  const { pools, users } = res;
+  await cwUpdatePoolsAndUsers(pools, users);
 
   // await cwSwap();
   // await cwTransfer();
@@ -100,9 +100,10 @@ express()
 
   .listen(E.PORT, async () => {
     l(`Ready on port ${E.PORT}`);
-    await process();
+    // await process();
 
     // TODO: fix multiple terra chains bug
-    //  await initStorages();
+    // TODO: split updating api and cw storages
+    // await initStorages();
     // setInterval(initStorages, 15 * 60 * 1000);
   });

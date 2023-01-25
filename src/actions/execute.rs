@@ -42,7 +42,9 @@ pub fn deposit(
         .iter()
         .map(|asset| -> Result<Asset, ContractError> {
             // check if asset is in pool
-            if POOLS.load(deps.storage, &asset.asset_denom).is_err() {
+            if (asset.asset_denom != "uosmo")
+                && POOLS.load(deps.storage, &asset.asset_denom).is_err()
+            {
                 return Err(ContractError::AssetIsNotFound {});
             };
 
@@ -248,7 +250,9 @@ pub fn update_pools_and_users(
             .iter()
             .map(|asset_loaded| -> Result<Asset, ContractError> {
                 // check if asset is in pool
-                if POOLS.load(deps.storage, &asset_loaded.asset_denom).is_err() {
+                if (asset_loaded.asset_denom != "uosmo")
+                    && POOLS.load(deps.storage, &asset_loaded.asset_denom).is_err()
+                {
                     return Err(ContractError::AssetIsNotFound {});
                 };
 

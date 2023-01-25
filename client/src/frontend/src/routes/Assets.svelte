@@ -35,7 +35,6 @@
     denoms = value.map((item) => item.symbol);
   });
 
-  // TODO: try to find better RPC provider
   async function addAuthzHandler(currentSymbol: string, validator: string) {
     let authzHandlerList = get(authzHandlerListStorage);
     const chain = get(chainRegistryStorage).find(
@@ -96,11 +95,10 @@
       const { grant } = get(authzHandlerListStorage).find(
         ({ symbol }) => symbol === currentSymbol
       );
-      let tx = await grant();
-      l({ tx });
-      displayModal(tx.transactionHash);
+      const tx = await grant();
+      displayModal(tx);
     } catch (error) {
-      l({ error });
+      l(error);
     }
   }
 
@@ -109,11 +107,10 @@
       const { revoke } = get(authzHandlerListStorage).find(
         ({ symbol }) => symbol === currentSymbol
       );
-      let tx = await revoke();
-      l({ tx });
-      displayModal(tx.transactionHash);
+      const tx = await revoke();
+      displayModal(tx);
     } catch (error) {
-      l({ error });
+      l(error);
     }
   }
 

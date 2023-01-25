@@ -261,6 +261,7 @@ async function main() {
     poolsAndUsers,
     "test"
   );
+  l(res);
 }
 
 main();

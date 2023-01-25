@@ -201,7 +201,7 @@ pub fn verify_deposit_data(
     // verify asset list
     for asset in &user.asset_list {
         // check if asset exists in pool list
-        if POOLS.load(deps.storage, &asset.asset_denom).is_err() {
+        if (asset.asset_denom != "uosmo") && POOLS.load(deps.storage, &asset.asset_denom).is_err() {
             return Err(ContractError::AssetIsNotFound {});
         };
 

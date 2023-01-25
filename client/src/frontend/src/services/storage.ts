@@ -58,7 +58,7 @@ let sortingConfigStorage: Writable<{
 // controls tx hash modal
 let isModalActiveStorage: Writable<boolean> = writable(false);
 // keeps last tx hash
-let txHashStorage: Writable<string> = writable("");
+let txResStorage: Writable<["Ok" | "Err", string]> = writable(["Ok", ""]);
 
 let req = createRequest({ baseURL: baseURL + "/api" });
 
@@ -158,9 +158,10 @@ async function initAll() {
     let assetList: AssetListItem[] = [];
 
     for (let asset of user?.asset_list) {
-      const registryItem = get(chainRegistryStorage).find(
-        ({ denomIbc }) => denomIbc === asset.asset_denom
-      );
+      const registryItem = get(chainRegistryStorage).find(({ denomIbc }) => {
+        if (denomIbc && asset.asset_denom === "uosmo") return true;
+        return denomIbc === asset.asset_denom;
+      });
       if (!registryItem) continue;
 
       const { prefix, symbol, img } = registryItem;
@@ -198,7 +199,7 @@ export {
   addressStorage,
   sortingConfigStorage,
   isModalActiveStorage,
-  txHashStorage,
+  txResStorage,
   getRegistryChannelsPools,
   getPools,
   getValidators,
