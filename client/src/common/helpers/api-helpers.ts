@@ -464,6 +464,8 @@ async function _queryNetworksData(
   }
 
   let rawNetworkData = await Promise.all(promises);
+  // remove terra chain duplication
+  rawNetworkData = rawNetworkData.filter(({ symbol }) => symbol !== "LUNC");
 
   let networkData = rawNetworkData.filter((item) => item.main);
   let testnetData = rawNetworkData.filter((item) => item.test);
