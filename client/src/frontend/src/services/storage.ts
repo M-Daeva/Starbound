@@ -159,7 +159,7 @@ async function initAll() {
 
     for (let asset of user?.asset_list) {
       const registryItem = get(chainRegistryStorage).find(({ denomIbc }) => {
-        if (denomIbc && asset.asset_denom === "uosmo") return true;
+        if (!denomIbc && asset.asset_denom === "uosmo") return true;
         return denomIbc === asset.asset_denom;
       });
       if (!registryItem) continue;

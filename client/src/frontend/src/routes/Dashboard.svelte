@@ -7,6 +7,7 @@
     getAssetInfoByAddress,
     trimPrice,
     generateColorList,
+    getOsmoPrice,
   } from "../services/helpers";
   import {
     STABLECOIN_SYMBOL,
@@ -66,11 +67,15 @@
     for (let [addr, { holded: _holded, staked: _staked }] of value) {
       const assetInfoByAddress = getAssetInfoByAddress(addr);
       if (!assetInfoByAddress) continue;
-
-      const {
+      l({ addr, assetInfoByAddress });
+      let {
         asset: { symbol, exponent },
         price: _price,
       } = assetInfoByAddress;
+
+      if (symbol === "OSMO") {
+        _price = getOsmoPrice().toString();
+      }
 
       const price = new Decimal(trimPrice(_price));
       const divider = new Decimal(10 ** exponent);
@@ -112,6 +117,8 @@
 
       return { ...item, allocation };
     });
+
+    dashboardAssetList.sort((a, b) => (a.allocation > b.allocation ? -1 : 1));
 
     data = {
       labels: dashboardAssetList.map(({ asset }) => asset),
@@ -155,7 +162,7 @@
     {#if dashboardAssetList.length}
       <table class="table table-compact w-full overflow-x-scroll">
         <thead class="bg-black flex text-white w-full">
-          <tr class="flex justify-between w-full mb-1 pr-3">
+          <tr class="flex justify-between w-full mb-1 pr-6">
             {#each Object.keys(dashboardAssetList[0]) as key}
               <th class="bg-black py-4 w-24 text-center">{key}</th>
             {/each}

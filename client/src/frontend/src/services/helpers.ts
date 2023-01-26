@@ -1,5 +1,6 @@
 import { get } from "svelte/store";
 import { l } from "../../../common/utils";
+import { Decimal } from "decimal.js";
 import type { DeliverTxResponse } from "@cosmjs/cosmwasm-stargate";
 import type {
   AssetListItem,
@@ -32,17 +33,23 @@ function getAssetInfoByAddress(address: string) {
 }
 
 // removes additional digits on display
-function trimPrice(price: string) {
-  // if price looks like "15000" return it unchanged
+const trimPrice = (price: string, err: string = "0.001") => {
   if (!price.includes(".")) return price;
 
-  // if price looks like "0.0000011" return it unchanged
-  let [prefix, postfix]: string[] = price.split(".");
-  if (prefix === "0") return price;
+  const one = new Decimal("1");
+  const target = one.sub(new Decimal(err));
 
-  // if price looks like "3.0000011" return "3.00"
-  return `${prefix}.${postfix.slice(0, 2)}`;
-}
+  let priceNew = price;
+  let ratio = one;
+
+  while (ratio.greaterThan(target)) {
+    price = price.slice(0, price.length - 1);
+    priceNew = price.slice(0, price.length - 1);
+    ratio = new Decimal(priceNew).div(new Decimal(price));
+  }
+
+  return price;
+};
 
 // transforms (3, ["a","b"]) -> ["a","b","a"]
 function generateColorList(quantity: number, baseColorList: string[]) {
@@ -150,6 +157,14 @@ function sortAssets(list: AssetListItem[]) {
   });
 }
 
+function getOsmoPrice() {
+  const priceList = get(poolsStorage).map(
+    ([id, [assetFirst, assetOsmo]]) => assetOsmo.price
+  );
+  const mean = priceList.reduce((acc, cur) => acc + cur, 0) / priceList.length;
+  return mean;
+}
+
 export {
   getAssetInfoByAddress,
   trimPrice,
@@ -163,4 +178,5 @@ export {
   displayAddress,
   getValidatorListBySymbol,
   sortAssets,
+  getOsmoPrice,
 };

@@ -102,7 +102,6 @@ express()
     l(`Ready on port ${E.PORT}`);
     // await process();
 
-    // TODO: fix multiple terra chains bug
     // TODO: split updating api and cw storages
     // await initStorages();
     // setInterval(initStorages, 15 * 60 * 1000);
