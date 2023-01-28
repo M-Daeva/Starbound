@@ -17,7 +17,22 @@ import {
 
 let req = createRequest({ baseURL: E.BASE_URL + "/api" });
 
-async function _process() {
+async function updateTimeSensitiveStorages() {
+  await Promise.all([
+    req.get(API_ROUTES.updatePools),
+    req.get(API_ROUTES.updateUserFunds),
+  ]);
+}
+
+async function updateTimeInsensitiveStorages() {
+  await Promise.all([
+    req.get(API_ROUTES.updateChainRegistry),
+    req.get(API_ROUTES.updateIbcChannels),
+    req.get(API_ROUTES.updateValidators),
+  ]);
+}
+
+async function triggerContract() {
   const {
     cwSwap,
     cwTransfer,
@@ -53,11 +68,6 @@ async function _process() {
   await sgDelegateFromAll(grants, chainRegistry, E.CHAIN_TYPE);
 }
 
-async function process() {
-  await _process();
-  setInterval(_process, 300_000);
-}
-
 async function initStorages() {
   try {
     const t = Date.now();
@@ -82,9 +92,19 @@ express()
 
   .listen(E.PORT, async () => {
     l(`Ready on port ${E.PORT}`);
-    // await process();
+    // await initStorages(); // initial filling storages
+    // await triggerContract();
+    // setInterval(triggerContract, 24 * 60 * 60 * 1000); // 24 h update period
 
-    // TODO: split updating api and cw storages
-    // await initStorages();
-    // setInterval(initStorages, 15 * 60 * 1000);
+    const periodSensitive = 30 * 1000; // 30 s update period
+    const periodInsensitive = 6 * 60 * 60 * 1000; // 6 h update period
+    let cnt = periodInsensitive / periodSensitive;
+
+    setInterval(async () => {
+      await updateTimeSensitiveStorages();
+      if (!--cnt) {
+        cnt = periodInsensitive / periodSensitive;
+        await updateTimeInsensitiveStorages();
+      }
+    }, periodSensitive);
   });

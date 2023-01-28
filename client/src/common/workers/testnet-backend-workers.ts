@@ -143,9 +143,9 @@ async function init() {
       }
       if (!rest || !rpc) continue;
 
-      gasPriceAmount = (
-        Math.min(+gasPriceAmountDefault, +gasPriceAmount) ||
-        +gasPriceAmountDefault
+      gasPriceAmount = Math.max(
+        +gasPriceAmountDefault,
+        +gasPriceAmount
       ).toString();
 
       const gasPrice = `${gasPriceAmount}${denom}`;
