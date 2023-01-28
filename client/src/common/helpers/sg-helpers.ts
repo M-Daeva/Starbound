@@ -1,28 +1,28 @@
 import { coin, MsgSendEncodeObject, Coin, StdFee } from "@cosmjs/stargate";
 import { MsgTransfer } from "osmojs/types/codegen/ibc/applications/transfer/v1/tx";
 import Long from "osmojs/node_modules/long";
-import {
-  MsgGrant,
-  MsgExec,
-  MsgRevoke,
-} from "cosmjs-types/cosmos/authz/v1beta1/tx";
 import { StakeAuthorization } from "cosmjs-types/cosmos/staking/v1beta1/authz";
 import { MsgDelegate } from "cosmjs-types/cosmos/staking/v1beta1/tx";
 import { Grant } from "cosmjs-types/cosmos/authz/v1beta1/authz";
 import { Timestamp } from "cosmjs-types/google/protobuf/timestamp";
 import { EncodeObject } from "@cosmjs/proto-signing/build";
 import { l, createRequest } from "../utils";
-import { getSgClient, getAddrByPrefix, fee } from "../signers";
+import { getSgClient, getAddrByPrefix, fee, calculateFee } from "../signers";
+import Decimal from "decimal.js";
+import { PoolInfo, PoolDatabase } from "./interfaces";
+import { MsgSwapExactAmountIn } from "osmojs/types/codegen/osmosis/gamm/v1beta1/tx";
+import { getRoutes, getSymbolByDenom, DENOMS } from "./assets";
+import {
+  MsgGrant,
+  MsgExec,
+  MsgRevoke,
+} from "cosmjs-types/cosmos/authz/v1beta1/tx";
 import {
   DelegationStruct,
   IbcStruct,
   ClientStruct,
   SwapStruct,
 } from "./interfaces";
-import Decimal from "decimal.js";
-import { PoolInfo, PoolDatabase } from "./interfaces";
-import { MsgSwapExactAmountIn } from "osmojs/types/codegen/osmosis/gamm/v1beta1/tx";
-import { getRoutes, getSymbolByDenom, DENOMS } from "./assets";
 
 const req = createRequest({});
 
@@ -171,6 +171,41 @@ async function getSgHelpers(clientStruct: ClientStruct) {
     return tx;
   }
 
+  async function sgDelegateFromList(
+    delegationStructList: DelegationStruct[],
+    gasLimit: number,
+    gasPrice: string
+  ) {
+    const msgList = delegationStructList.map(
+      ({ targetAddr, tokenAmount, tokenDenom, validatorAddr }) => ({
+        typeUrl: "/cosmos.staking.v1beta1.MsgDelegate",
+        value: MsgDelegate.encode(
+          MsgDelegate.fromPartial({
+            delegatorAddress: targetAddr,
+            validatorAddress: validatorAddr,
+            amount: coin(tokenAmount, tokenDenom),
+          })
+        ).finish(),
+      })
+    );
+
+    const msgExec: MsgExec = {
+      grantee: owner,
+      msgs: msgList,
+    };
+
+    const msg: EncodeObject = {
+      typeUrl: "/cosmos.authz.v1beta1.MsgExec",
+      value: msgExec,
+    };
+
+    const specifiedFee: StdFee = calculateFee(gasLimit, gasPrice);
+
+    const tx = await client.signAndBroadcast(owner, [msg], specifiedFee);
+
+    return tx;
+  }
+
   async function sgGetTokenBalances(addr: string = owner) {
     let balances = await client.getAllBalances(addr);
     return balances.map(({ amount, denom }) => ({
@@ -228,6 +263,7 @@ async function getSgHelpers(clientStruct: ClientStruct) {
     sgGetTokenBalances,
     sgUpdatePoolList,
     sgSend,
+    sgDelegateFromList,
   };
 }
 

@@ -21,6 +21,7 @@ let envs = {
   },
   BASE_URL: e.BASE_URL_PROD,
   CHAIN_TYPE: e.CHAIN_TYPE as "main" | "test",
+  DAPP_ADDRESS: e.DAPP_ADDRESS,
 };
 
 if (e.NODE_ENV === "development") {

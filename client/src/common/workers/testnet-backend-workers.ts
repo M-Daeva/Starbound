@@ -1,13 +1,11 @@
 import { l, createRequest, specifyTimeout as _specifyTimeout } from "../utils";
-import { coin, StdFee } from "@cosmjs/stargate";
+import { coin } from "@cosmjs/stargate";
+import { getCwHelpers } from "../helpers/cw-helpers";
+import { getSgHelpers } from "../helpers/sg-helpers";
 import {
   mockUpdatePoolsAndUsers as _mockUpdatePoolsAndUsers,
   _transformGrantList,
 } from "../helpers/api-helpers";
-import { getCwHelpers } from "../helpers/cw-helpers";
-import { DENOMS } from "../helpers/assets";
-import { getSgHelpers } from "../helpers/sg-helpers";
-import { getAddrByPrefix } from "../signers";
 import {
   QueryPoolsAndUsersResponse,
   UserExtracted,
@@ -104,85 +102,70 @@ async function init() {
     }
   }
 
-  async function sgDelegateFromAll(users: UserExtracted[]) {
-    const denom = "ujunox";
-
-    async function delegate(user: UserExtracted) {
-      try {
-        let addr = getAddrByPrefix(user.osmo_address, "juno");
-        let balance = (await _sgGetTokenBalances(addr)).find(
-          (item) => item.symbol === denom
-        );
-        let delegation = balance !== undefined ? +balance.amount - 1000 : 0;
-
-        l(addr, balance, delegation);
-
-        if (delegation >= 1000) {
-          let tx = await _sgDelegateFrom({
-            targetAddr: addr,
-            tokenAmount: delegation,
-            tokenDenom: denom,
-            validatorAddr: "junovaloper1w8cpaaljwrytquj86kvp9s72lvmddcc208ghun",
-          });
-          l(tx);
-        }
-      } catch (error) {
-        l(error);
-      }
-    }
-
-    for (let user of users) {
-      await delegate(user);
-    }
-  }
-
-  async function sgDelegateFromAll2(
+  async function sgDelegateFromAll(
     denomGranterValoperList: [string, [string, string][]][],
     chainRegistryResponse: ChainRegistryStorage | undefined,
     chainType: "main" | "test",
     threshold: number = 100_000
   ) {
+    const gasPriceAmountDefault = "0.005"; // 0.0025 min
+    const estimatedAddressAmount = 100;
+    const gasAmountPerAddress = 140_000;
+    const gasLimit = estimatedAddressAmount * gasAmountPerAddress;
+
     if (!chainRegistryResponse) return;
 
-    const grantList = _transformGrantList(denomGranterValoperList);
+    for (let [denom, granterValoperList] of denomGranterValoperList) {
+      if (denom === "ujuno" && chainType === "test") denom = "ujunox";
 
-    for (let grantListItem of grantList) {
-      for (let [denom, granter, valoper] of grantListItem) {
-        const chain = chainRegistryResponse.find(
-          (item) => item.denomNative === denom
-        );
-        if (!chain) continue;
+      const chain = chainRegistryResponse.find(
+        (item) => item.denomNative === denom
+      );
+      if (!chain) continue;
 
-        let rest: string | undefined;
-        let rpc: string | undefined;
-        const gasPriceDefault = 125;
-        let gasPrice: number = gasPriceDefault;
+      let gasPriceAmount: string = "0";
+      let rest: string | undefined;
+      let rpc: string | undefined;
 
-        if (chainType === "main" && chain.main) {
-          rest = chain.main?.apis?.rest?.[0]?.address;
-          rpc = chain.main?.apis?.rpc?.[0]?.address;
-          gasPrice =
-            chain.main.fees.fee_tokens?.[0]?.fixed_min_gas_price ||
-            gasPriceDefault;
-        }
-        if (chainType === "test" && chain.test) {
-          rest = chain.test?.apis?.rest?.[0]?.address;
-          rpc = chain.test?.apis?.rpc?.[0]?.address;
-          gasPrice =
-            chain.test.fees.fee_tokens?.[0]?.fixed_min_gas_price ||
-            gasPriceDefault;
-        }
-        if (!rest || !rpc) continue;
+      if (chainType === "main" && chain.main) {
+        rest = chain.main?.apis?.rest?.[0]?.address;
+        rpc = chain.main?.apis?.rpc?.[0]?.address;
+        const minGasPrice =
+          chain.main.fees.fee_tokens?.[0]?.fixed_min_gas_price?.toString();
+        if (minGasPrice) gasPriceAmount = minGasPrice;
+      }
+      if (chainType === "test" && chain.test) {
+        rest = chain.test?.apis?.rest?.[0]?.address;
+        rpc = chain.test?.apis?.rpc?.[0]?.address;
+        const minGasPrice =
+          chain.test.fees.fee_tokens?.[0]?.fixed_min_gas_price?.toString();
+        if (minGasPrice) gasPriceAmount = minGasPrice;
+      }
+      if (!rest || !rpc) continue;
 
-        const fee: StdFee = {
-          amount: [coin(gasPrice, denom)],
-          gas: "500000",
-        };
+      gasPriceAmount = (
+        Math.min(+gasPriceAmountDefault, +gasPriceAmount) ||
+        +gasPriceAmountDefault
+      ).toString();
 
-        l({ denom, granter });
+      const gasPrice = `${gasPriceAmount}${denom}`;
+
+      const dappClientStruct: ClientStructWithoutKeplr = {
+        prefix: chain.prefix,
+        RPC: rpc,
+        seed: SEED_DAPP,
+      };
+
+      const { sgDelegateFromList: _sgDelegateFromList } = await getSgHelpers(
+        dappClientStruct
+      );
+
+      let delegationStructList: DelegationStruct[] = [];
+
+      for (let [granter, valoper] of granterValoperList) {
+        const urlHolded = `${rest}/cosmos/bank/v1beta1/balances/${granter}`;
 
         try {
-          const urlHolded = `${rest}/cosmos/bank/v1beta1/balances/${granter}`;
           const balHolded: BalancesResponse = await _specifyTimeout(
             req.get(urlHolded),
             10_000
@@ -192,39 +175,32 @@ async function init() {
           );
           const amount = +(balance?.amount || "0");
 
-          l({ amount });
-
           // skip delegation if amount <= threshold
           //if (amount <= threshold) return;
 
-          const dappClientStruct: ClientStructWithoutKeplr = {
-            prefix: chain.prefix,
-            RPC: rpc as string,
-            seed: SEED_DAPP,
+          const delegationStruct: DelegationStruct = {
+            targetAddr: granter,
+            // tokenAmount: amount - threshold,
+            tokenAmount: 1,
+            tokenDenom: denom,
+            validatorAddr: valoper,
           };
 
-          const { sgDelegateFrom: _sgDelegateFrom } = await getSgHelpers(
-            dappClientStruct
-          );
-
-          const tx = await _specifyTimeout(
-            _sgDelegateFrom(
-              {
-                targetAddr: granter,
-                // tokenAmount: amount - threshold,
-                tokenAmount: 100,
-                tokenDenom: denom,
-                validatorAddr: valoper,
-              },
-              fee
-            ),
-            10_000
-          );
-
-          l(tx);
+          delegationStructList.push(delegationStruct);
         } catch (error) {
           l(error);
         }
+      }
+
+      try {
+        const tx = await _specifyTimeout(
+          _sgDelegateFromList(delegationStructList, gasLimit, gasPrice),
+          10_000
+        );
+
+        l(tx);
+      } catch (error) {
+        l(error);
       }
     }
   }
@@ -381,7 +357,6 @@ async function init() {
     sgTransfer,
     sgSend,
     sgDelegateFromAll,
-    sgDelegateFromAll2,
   };
 }
 

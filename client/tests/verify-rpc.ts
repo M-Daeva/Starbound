@@ -255,13 +255,24 @@ async function main() {
   // let res = await getActiveNetworksInfo(chainRegistryStorage.get(), "test");
   // l(res);
 
-  const poolsAndUsers: PoolsAndUsersStorage = { pools: [], users: [] };
-  const res = await updatePoolsAndUsers(
+  // const poolsAndUsers: PoolsAndUsersStorage = { pools: [], users: [] };
+  // const res = await updatePoolsAndUsers(
+  //   chainRegistryStorage.get(),
+  //   poolsAndUsers,
+  //   "test"
+  // );
+  // l(res);
+
+  let grants = await _getAllGrants(
+    "osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt",
     chainRegistryStorage.get(),
-    poolsAndUsers,
     "test"
   );
-  l(res);
+  if (!grants) return;
+
+  for (const grant of grants) {
+    l(grant);
+  }
 }
 
 main();

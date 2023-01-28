@@ -1,6 +1,5 @@
 import { fromBech32, toBech32 } from "@cosmjs/encoding";
 import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
-import { SigningStargateClient, coin, StdFee } from "@cosmjs/stargate";
 import { Keplr, Window as KeplrWindow, ChainInfo } from "@keplr-wallet/types";
 import { l } from "../utils";
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
@@ -11,6 +10,12 @@ import {
   NetworkData,
   ChainResponse,
 } from "../helpers/interfaces";
+import {
+  SigningStargateClient,
+  coin,
+  StdFee,
+  calculateFee,
+} from "@cosmjs/stargate";
 
 const fee: StdFee = {
   amount: [coin(0, "uosmo")],
@@ -206,4 +211,5 @@ export {
   initWalletList,
   getAddrByChainPrefix,
   fee,
+  calculateFee,
 };
