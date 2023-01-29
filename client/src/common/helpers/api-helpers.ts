@@ -40,6 +40,9 @@ const stableDenom =
   "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F";
 const stablePoolId = "481";
 
+const osmoDenom = "uosmo";
+const osmoPoolId = "0";
+
 const req = createRequest({});
 
 function _getChainIdbyDenom(
@@ -964,6 +967,21 @@ function filterChainRegistry(
     });
   }
 
+  // add osmo network
+  const priceList = osmoPools.map(
+    ([id, [assetFirst, assetOsmo]]) => assetOsmo.price
+  );
+  const mean = priceList.reduce((acc, cur) => acc + cur, 0) / priceList.length;
+
+  activeNetworks.push({
+    channel_id: "",
+    denom: "uosmo",
+    id: "0",
+    port_id: "",
+    price: mean.toString(),
+    symbol: "",
+  });
+
   chainRegistryFiltered = chainRegistryFiltered.map((item) => {
     const pool = poolsFiltered.find(
       ([k, [v0, v1]]) => v0.symbol === item.symbol
@@ -1047,9 +1065,22 @@ async function updatePoolsAndUsers(
     port_id: "",
   };
 
+  // add virtual osmo/osmo pool
+  const osmoPool = {
+    id: osmoPoolId,
+    denom: osmoDenom,
+    price: "0.8",
+    symbol: "",
+    channel_id: "",
+    port_id: "",
+  };
+
   pools = [
-    ...pools.filter((pool) => pool.denom !== stablePool.denom),
+    ...pools.filter(
+      ({ denom }) => denom !== stablePool.denom && denom !== osmoPool.denom
+    ),
     stablePool,
+    osmoPool,
   ];
 
   let usersFundsList = await getUserFunds(

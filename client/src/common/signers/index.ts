@@ -19,7 +19,7 @@ import {
 
 const fee: StdFee = {
   amount: [coin(0, "uosmo")],
-  gas: "500000",
+  gas: `${700_000}`,
 };
 
 declare global {

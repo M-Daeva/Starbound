@@ -275,8 +275,20 @@ async function main() {
   //   l(grant);
   // }
 
-  let res = await queryPools(chainRegistryStorage.get());
-  l(res);
+  // let res = await queryPools(chainRegistryStorage.get());
+  // l(res);
+
+  const { activeNetworks, chainRegistry, ibcChannels, pools } =
+    filterChainRegistry(
+      chainRegistryStorage.get(),
+      ibcChannelsStorage.get(),
+      poolsStorage.get(),
+      validatorsStorage.get(),
+      "test"
+    );
+
+  l(activeNetworks);
+  l(pools);
 }
 
 main();

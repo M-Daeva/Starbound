@@ -714,6 +714,224 @@ fn swap() {
     println!("{:#?}", ledger);
 }
 
+#[test]
+fn swap_with_osmo_in_asset_list() {
+    // create new osmosis appchain instance
+    let app = OsmosisTestApp::new();
+
+    const ACC_COIN_AMOUNT: u128 = 1_000_000_000_000_000;
+
+    // create new accounts with initial funds
+    let accs = app
+        .init_accounts(
+            &[
+                coin(ACC_COIN_AMOUNT, DENOM_ATOM),
+                coin(ACC_COIN_AMOUNT, DENOM_JUNO),
+                coin(ACC_COIN_AMOUNT, DENOM_EEUR),
+                coin(ACC_COIN_AMOUNT, DENOM_OSMO),
+            ],
+            2,
+        )
+        .unwrap();
+
+    let admin = &accs[0];
+    let user = &accs[1];
+
+    // create Gamm Module Wrapper
+    let gamm = Gamm::new(&app);
+
+    let asset_prices = Starbound::get_pools()
+        .iter()
+        .map(|x| x.price)
+        .collect::<Vec<Decimal>>();
+
+    const POOL_COIN_AMOUNT: u128 = ACC_COIN_AMOUNT / 1_000_000_000;
+    let osmo_price = str_to_dec("0.8");
+
+    // create balancer pool with basic configuration
+    // ATOM pool_id is 1, 1 ATOM == 12.5 OSMO
+    let pool_liquidity = vec![
+        coin(POOL_COIN_AMOUNT, DENOM_ATOM),
+        coin(
+            dec_to_u128(u128_to_dec(POOL_COIN_AMOUNT) * asset_prices[0] / osmo_price),
+            DENOM_OSMO,
+        ),
+    ];
+    gamm.create_basic_pool(&pool_liquidity, user).unwrap();
+
+    // JUNO pool_id is 2, 1 JUNO == 2.5 OSMO
+    let pool_liquidity = vec![
+        coin(POOL_COIN_AMOUNT, DENOM_JUNO),
+        coin(
+            dec_to_u128(u128_to_dec(POOL_COIN_AMOUNT) * asset_prices[1] / osmo_price),
+            DENOM_OSMO,
+        ),
+    ];
+    gamm.create_basic_pool(&pool_liquidity, user).unwrap();
+
+    // EEUR pool_id is 3, 1 EEUR == 1.25 OSMO
+    const STABLE_POOL_ID: u64 = 3;
+    let pool_liquidity = vec![
+        coin(POOL_COIN_AMOUNT, DENOM_EEUR),
+        coin(
+            dec_to_u128(u128_to_dec(POOL_COIN_AMOUNT) * asset_prices[2] / osmo_price),
+            DENOM_OSMO,
+        ),
+    ];
+    gamm.create_basic_pool(&pool_liquidity, user).unwrap();
+
+    // `Wasm` is the module we use to interact with cosmwasm releated logic on the appchain
+    let wasm = Wasm::new(&app);
+
+    // create Bank Module Wrapper
+    let bank = Bank::new(&app);
+
+    // Load compiled wasm bytecode
+    let wasm_byte_code = std::fs::read("./artifacts/starbound.wasm").unwrap();
+    let code_id = wasm
+        .store_code(&wasm_byte_code, None, admin)
+        .unwrap()
+        .data
+        .code_id;
+
+    // instantiate contract
+    let contract_addr = wasm
+        .instantiate(
+            code_id,
+            &InstantiateMsg {},
+            Some(&admin.address()),
+            None,
+            &[],
+            admin,
+        )
+        .unwrap()
+        .data
+        .address;
+
+    // init pools with old ids
+    wasm.execute::<ExecuteMsg>(
+        &contract_addr,
+        &ExecuteMsg::UpdatePoolsAndUsers {
+            pools: get_initial_pools(),
+            users: vec![],
+        },
+        &[],
+        admin,
+    )
+    .unwrap();
+
+    // query pools
+    let QueryPoolsAndUsersResponse { pools, .. } = wasm
+        .query::<QueryMsg, QueryPoolsAndUsersResponse>(
+            &contract_addr,
+            &QueryMsg::QueryPoolsAndUsers {},
+        )
+        .unwrap();
+
+    // prepare pool ids for gamm wrapper
+    wasm.execute::<ExecuteMsg>(
+        &contract_addr,
+        &ExecuteMsg::UpdatePoolsAndUsers {
+            pools: pools
+                .iter()
+                .enumerate()
+                .map(|(i, x)| PoolExtracted {
+                    id: Uint128::from(i as u128) + Uint128::one(),
+                    ..x.to_owned()
+                })
+                .collect::<Vec<PoolExtracted>>(),
+            users: vec![],
+        },
+        &[],
+        admin,
+    )
+    .unwrap();
+
+    // update stablecoin pool id for gamm wrapper
+    let stablecoin_denom = Some(DENOM_EEUR.to_string());
+    let stablecoin_pool_id = Some(STABLE_POOL_ID);
+    wasm.execute::<ExecuteMsg>(
+        &contract_addr,
+        &ExecuteMsg::UpdateConfig {
+            scheduler: None,
+            stablecoin_denom,
+            stablecoin_pool_id,
+            fee_default: None,
+            fee_osmo: None,
+            dapp_address_and_denom_list: None,
+        },
+        &[],
+        admin,
+    )
+    .unwrap();
+
+    // init user
+    let mut user_alice = Starbound::get_user(UserName::Alice);
+
+    // create asset list with osmo
+    user_alice.asset_list = vec![
+        Asset::new(
+            DENOM_ATOM,
+            &Addr::unchecked(ADDR_ALICE_ATOM),
+            Uint128::zero(),
+            str_to_dec("0.5"),
+            Uint128::zero(),
+        ),
+        Asset::new(
+            DENOM_OSMO,
+            &Addr::unchecked(ADDR_ALICE_OSMO),
+            Uint128::zero(),
+            str_to_dec("0.5"),
+            Uint128::zero(),
+        ),
+    ];
+
+    wasm.execute::<ExecuteMsg>(
+        &contract_addr,
+        &ExecuteMsg::Deposit {
+            user: user_alice.clone(),
+        },
+        &[coin(user_alice.deposited.u128(), DENOM_EEUR)],
+        user,
+    )
+    .unwrap();
+
+    let res = gamm.query_pool(STABLE_POOL_ID).unwrap();
+    println!("{:#?}", res.pool_assets);
+
+    let contract_balances = bank
+        .query_all_balances(&QueryAllBalancesRequest {
+            address: contract_addr.clone(),
+            pagination: None,
+        })
+        .unwrap();
+    println!("{:#?}", contract_balances);
+
+    let ledger = wasm
+        .query::<QueryMsg, QueryLedgerResponse>(&contract_addr, &QueryMsg::QueryLedger {})
+        .unwrap();
+    println!("{:#?}", ledger);
+
+    wasm.execute::<ExecuteMsg>(&contract_addr, &ExecuteMsg::Swap {}, &[], admin)
+        .unwrap();
+
+    let res = gamm.query_pool(STABLE_POOL_ID).unwrap();
+    println!("{:#?}", res.pool_assets);
+
+    let contract_balances = bank
+        .query_all_balances(&QueryAllBalancesRequest {
+            address: contract_addr.clone(),
+            pagination: None,
+        })
+        .unwrap();
+    println!("{:#?}", contract_balances);
+
+    let ledger = wasm
+        .query::<QueryMsg, QueryLedgerResponse>(&contract_addr, &QueryMsg::QueryLedger {})
+        .unwrap();
+    println!("{:#?}", ledger);
+}
+
 // #[test]
 // fn test_execute_swap_with_updated_users() {
 //     let (mut deps, env, mut info, _res) =

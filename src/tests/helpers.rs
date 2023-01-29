@@ -148,6 +148,11 @@ pub fn get_initial_pools() -> Vec<PoolExtracted> {
                 "",
             ),
         ),
+        // virtual OSMO / OSMO pool
+        (
+            DENOM_OSMO,
+            Pool::new(Uint128::zero(), str_to_dec("0.8"), "", "", ""),
+        ),
     ];
 
     let extracted_pools: Vec<PoolExtracted> = init_pools
@@ -467,6 +472,8 @@ impl Starbound {
             ),
             // "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F",
             Pool::new(Uint128::from(481_u128), u128_to_dec(1), "", "", ""),
+            // virtual OSMO / OSMO pool
+            Pool::new(Uint128::zero(), str_to_dec("0.8"), "", "", ""),
         ]
     }
 }

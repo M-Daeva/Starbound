@@ -59,6 +59,7 @@ async function triggerContract() {
   await cwUpdatePoolsAndUsers(pools, users);
 
   await cwSwap();
+
   await cwTransfer();
 
   const grants = await _getAllGrants(
@@ -133,11 +134,11 @@ express()
 
   .listen(E.PORT, async () => {
     l(`Ready on port ${E.PORT}`);
-    //await initAll();
+    // await initAll();
     // await triggerContract();
     // setInterval(triggerContract, 24 * 60 * 60 * 1000); // 24 h update period
 
-    const periodSensitive = 30 * 1000; // 30 s update period
+    const periodSensitive = 15 * 1000; // 15 s update period
     const periodInsensitive = 6 * 60 * 60 * 1000; // 6 h update period
     let cnt = periodInsensitive / periodSensitive;
 
