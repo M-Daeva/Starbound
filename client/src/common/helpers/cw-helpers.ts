@@ -1,6 +1,6 @@
 import { l } from "../utils";
 import { getCwClient, fee } from "../signers";
-import { ClientStruct } from "./interfaces";
+import { ClientStruct, UpdateConfigStruct } from "./interfaces";
 import { DENOMS } from "./assets";
 import { MsgExecuteContractEncodeObject, Coin } from "cosmwasm";
 import { StarboundClient } from "../codegen/Starbound.client";
@@ -39,20 +39,27 @@ async function getCwHelpers(
     return await _msgWrapper(composer.withdraw({ amount: `${tokenAmount}` }));
   }
 
-  async function cwUpdateConfig(
-    scheduler?: string,
-    stablecoinDenom?: string,
-    stablecoinPoolId?: number,
-    feeDefault?: string,
-    feeOsmo?: string
-  ) {
+  async function cwUpdateConfig(updateConfigStruct: UpdateConfigStruct) {
+    const {
+      dappAddressAndDenomList,
+      feeDefault: _feeDefault,
+      feeOsmo: _feeOsmo,
+      scheduler,
+      stablecoinDenom,
+      stablecoinPoolId,
+    } = updateConfigStruct;
+
+    const feeDefault = !_feeDefault ? undefined : _feeDefault.toString();
+    const feeOsmo = !_feeOsmo ? undefined : _feeOsmo.toString();
+
     return await _msgWrapper(
       composer.updateConfig({
+        dappAddressAndDenomList,
+        feeDefault,
+        feeOsmo,
         scheduler,
         stablecoinDenom,
         stablecoinPoolId,
-        feeDefault,
-        feeOsmo,
       })
     );
   }

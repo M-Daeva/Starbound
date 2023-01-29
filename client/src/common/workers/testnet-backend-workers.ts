@@ -18,6 +18,7 @@ import {
   IbcStruct,
   ChainRegistryStorage,
   BalancesResponse,
+  UpdateConfigStruct,
 } from "../helpers/interfaces";
 import {
   CONTRACT_ADDRESS,
@@ -61,6 +62,8 @@ async function init() {
     cwUpdatePoolsAndUsers: _cwUpdatePoolsAndUsers,
     cwQueryUser: _cwQueryUser,
     cwTransfer: _cwTransfer,
+    cwUpdateConfig: _cwUpdateConfig,
+    cwQueryConfig: _cwQueryConfig,
     // cwMultiTransfer: _cwMultiTransfer,
   } = await getCwHelpers(dappClientStruct, CONTRACT_ADDRESS);
 
@@ -343,6 +346,22 @@ async function init() {
     }
   }
 
+  async function cwQueryConfig() {
+    try {
+      return await _cwQueryConfig();
+    } catch (error) {
+      l(error, "\n");
+    }
+  }
+
+  async function cwUpdateConfig(updateConfigStruct: UpdateConfigStruct) {
+    try {
+      return await _cwUpdateConfig(updateConfigStruct);
+    } catch (error) {
+      l(error, "\n");
+    }
+  }
+
   return {
     _queryBalance,
     cwSwap,
@@ -357,6 +376,8 @@ async function init() {
     sgTransfer,
     sgSend,
     sgDelegateFromAll,
+    cwQueryConfig,
+    cwUpdateConfig,
   };
 }
 

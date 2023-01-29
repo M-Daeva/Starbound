@@ -1,6 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::{
-    coin, Addr, BankMsg, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Order, Response, Uint128,
+    coin, Addr, BankMsg, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Order, Response, StdError,
+    Uint128,
 };
 
 use osmosis_std::types::{
@@ -360,6 +361,7 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
 }
 
 pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+    const TIMEOUT_IN_MINS: u64 = 5;
     verify_scheduler(&deps, &info)?;
 
     let pools: Vec<(String, Pool)> = POOLS
@@ -379,9 +381,9 @@ pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
         fee_default,
         fee_osmo,
         dapp_address_and_denom_list,
-        timestamp,
         ..
     } = CONFIG.load(deps.storage)?;
+    let timestamp = env.block.time.plus_seconds(TIMEOUT_IN_MINS * 60);
 
     let contract_balances = deps.querier.query_all_balances(env.contract.address)?;
 
@@ -401,6 +403,11 @@ pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
     for (address, user) in users_updated {
         USERS.save(deps.storage, &address, &user)?;
     }
+
+    CONFIG.update(deps.storage, |mut x| -> Result<Config, StdError> {
+        x.timestamp = timestamp;
+        Ok(x)
+    })?;
 
     Ok(Response::new()
         .add_messages(msg_list)

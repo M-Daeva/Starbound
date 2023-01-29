@@ -1384,6 +1384,41 @@ function _transformGrantList(
   return res;
 }
 
+async function queryPools(chainRegistry: ChainRegistryStorage | undefined) {
+  if (!chainRegistry) return;
+
+  const chain = chainRegistry.find((item) => item.prefix === "osmo");
+  if (!chain) return;
+
+  const rest = chain.test?.apis.rest[0].address;
+  if (!rest) return;
+
+  const url = `${rest}/osmosis/gamm/v1beta1/pools`;
+  const res = await req.get(url, _setPagination(10, 100));
+
+  return res;
+}
+
+function getDappAddressAndDenomList(
+  osmoAddress: string,
+  chainRegistry: ChainRegistryStorage | undefined
+) {
+  if (!chainRegistry) return;
+
+  let dappAddressAndDenomList: [string, string][] = [];
+
+  for (let { denomIbc, prefix } of chainRegistry) {
+    if (prefix === "osmo") denomIbc = "uosmo";
+
+    dappAddressAndDenomList.push([
+      getAddrByPrefix(osmoAddress, prefix),
+      denomIbc,
+    ]);
+  }
+
+  return dappAddressAndDenomList;
+}
+
 export {
   updatePoolsAndUsers,
   mockUpdatePoolsAndUsers,
@@ -1407,4 +1442,6 @@ export {
   _transformGrantList,
   requestRelayers,
   getActiveNetworksInfo,
+  queryPools,
+  getDappAddressAndDenomList,
 };

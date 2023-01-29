@@ -383,6 +383,14 @@ interface IbcAckResponse {
     revision_height: string;
   };
 }
+interface UpdateConfigStruct {
+  dappAddressAndDenomList?: string[][][];
+  feeDefault?: Decimal;
+  feeOsmo?: Decimal;
+  scheduler?: string;
+  stablecoinDenom?: string;
+  stablecoinPoolId?: number;
+}
 
 interface AssetListItem {
   asset: { logo: string; symbol: string };
@@ -509,4 +517,5 @@ export {
   IbcTracesResponse,
   IbcAckResponse,
   GrantsResponse,
+  UpdateConfigStruct,
 };

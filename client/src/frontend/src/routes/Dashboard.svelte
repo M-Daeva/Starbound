@@ -101,16 +101,14 @@
       initialAssetList.push(res);
     }
 
-    const totalCost = new Decimal(
-      initialAssetList
-        .map(({ cost }) => cost)
-        .reduce((acc, cur) => acc.add(cur), zero)
-    );
+    const totalCost = initialAssetList
+      .map(({ cost }) => cost)
+      .reduce((acc, cur) => acc.add(cur), zero);
 
     portfolioNetWorth = totalCost.toDecimalPlaces(2).toNumber();
 
     dashboardAssetList = initialAssetList.map((item) => {
-      const cost = new Decimal(item.cost);
+      const { cost } = item;
       const allocation = totalCost.eq(zero)
         ? zero
         : cost.mul(multiplier).div(totalCost).toDecimalPlaces(2);

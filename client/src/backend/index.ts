@@ -13,6 +13,7 @@ import { api, ROUTES as API_ROUTES } from "./routes/api";
 import {
   updatePoolsAndUsers as _updatePoolsAndUsers,
   _getAllGrants,
+  getDappAddressAndDenomList,
 } from "../common/helpers/api-helpers";
 
 let req = createRequest({ baseURL: E.BASE_URL + "/api" });
@@ -20,6 +21,7 @@ let req = createRequest({ baseURL: E.BASE_URL + "/api" });
 async function updateTimeSensitiveStorages() {
   await Promise.all([
     req.get(API_ROUTES.updatePools),
+    req.get(API_ROUTES.updatePoolsAndUsers),
     req.get(API_ROUTES.updateUserFunds),
   ]);
 }
@@ -45,6 +47,7 @@ async function triggerContract() {
     API_ROUTES.getChainRegistry
   );
   const poolsAndUsers = await cwQueryPoolsAndUsers();
+
   const res = await _updatePoolsAndUsers(
     chainRegistry,
     poolsAndUsers,
@@ -82,6 +85,44 @@ async function initStorages() {
   }
 }
 
+async function initContract() {
+  const { cwQueryPoolsAndUsers, cwUpdatePoolsAndUsers, cwUpdateConfig } =
+    await init();
+
+  // add dapp addresses
+  const chainRegistry: ChainRegistryStorage = await req.get(
+    API_ROUTES.getChainRegistry
+  );
+
+  // @ts-ignore
+  const dappAddressAndDenomList: string[][][] = getDappAddressAndDenomList(
+    E.DAPP_ADDRESS,
+    chainRegistry
+  );
+
+  await cwUpdateConfig({
+    dappAddressAndDenomList,
+  });
+
+  // add pools
+  const poolsAndUsers = await cwQueryPoolsAndUsers();
+
+  const res = await _updatePoolsAndUsers(
+    chainRegistry,
+    poolsAndUsers,
+    E.CHAIN_TYPE
+  );
+  if (!res) return;
+
+  const { pools, users } = res;
+  await cwUpdatePoolsAndUsers(pools, users);
+}
+
+async function initAll() {
+  await initStorages();
+  await initContract();
+}
+
 express()
   .use(cors(), text(), json())
   .use(express.static(rootPath("./dist/frontend")))
@@ -92,7 +133,7 @@ express()
 
   .listen(E.PORT, async () => {
     l(`Ready on port ${E.PORT}`);
-    // await initStorages(); // initial filling storages
+    //await initAll();
     // await triggerContract();
     // setInterval(triggerContract, 24 * 60 * 60 * 1000); // 24 h update period
 

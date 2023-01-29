@@ -16,6 +16,7 @@ import {
   updatePoolsAndUsers,
   requestRelayers,
   getActiveNetworksInfo,
+  queryPools,
 } from "../src/common/helpers/api-helpers";
 import {
   ChainRegistryStorage,
@@ -263,16 +264,19 @@ async function main() {
   // );
   // l(res);
 
-  let grants = await _getAllGrants(
-    "osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt",
-    chainRegistryStorage.get(),
-    "test"
-  );
-  if (!grants) return;
+  // let grants = await _getAllGrants(
+  //   "osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt",
+  //   chainRegistryStorage.get(),
+  //   "test"
+  // );
+  // if (!grants) return;
 
-  for (const grant of grants) {
-    l(grant);
-  }
+  // for (const grant of grants) {
+  //   l(grant);
+  // }
+
+  let res = await queryPools(chainRegistryStorage.get());
+  l(res);
 }
 
 main();
