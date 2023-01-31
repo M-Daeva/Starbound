@@ -1,4 +1,4 @@
-use crate::state::{PoolExtracted, User, UserExtracted};
+use crate::state::{PoolExtracted, TransferParams, User, UserExtracted};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Decimal, Uint128};
 
@@ -24,4 +24,7 @@ pub enum ExecuteMsg {
     },
     Swap {},
     Transfer {},
+    MultiTransfer {
+        params: Vec<TransferParams>,
+    },
 }

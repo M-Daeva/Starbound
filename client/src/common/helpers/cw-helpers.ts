@@ -9,7 +9,7 @@ import {
   User,
   PoolExtracted,
   UserExtracted,
-  // TransferParams,
+  TransferParams,
 } from "../codegen/Starbound.types";
 
 async function getCwHelpers(
@@ -79,9 +79,9 @@ async function getCwHelpers(
     return await _msgWrapper(composer.transfer());
   }
 
-  // async function cwMultiTransfer(params: TransferParams[]) {
-  //   return await _msgWrapper(composer.multiTransfer({ params }));
-  // }
+  async function cwMultiTransfer(params: TransferParams[]) {
+    return await _msgWrapper(composer.multiTransfer({ params }));
+  }
 
   async function cwQueryUser(address: string) {
     const res = await client.queryUser({ address });
@@ -117,7 +117,7 @@ async function getCwHelpers(
     cwUpdatePoolsAndUsers,
     cwSwap,
     cwTransfer,
-    // cwMultiTransfer,
+    cwMultiTransfer,
 
     cwQueryUser,
     cwQueryPoolsAndUsers,

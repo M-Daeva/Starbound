@@ -8,7 +8,7 @@ import { Coin } from "@cosmjs/amino";
 import { MsgExecuteContractEncodeObject } from "cosmwasm";
 import { MsgExecuteContract } from "cosmjs-types/cosmwasm/wasm/v1/tx";
 import { toUtf8 } from "@cosmjs/encoding";
-import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, User, Asset, PoolExtracted, UserExtracted, AssetExtracted, QueryMsg, MigrateMsg, Timestamp, Uint64, QueryConfigResponse, Config, QueryLedgerResponse, Ledger, QueryPoolsAndUsersResponse, QueryUserResponse } from "./Starbound.types";
+import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, Timestamp, Uint64, User, Asset, PoolExtracted, UserExtracted, AssetExtracted, TransferParams, QueryMsg, MigrateMsg, QueryConfigResponse, Config, QueryLedgerResponse, Ledger, QueryPoolsAndUsersResponse, QueryUserResponse } from "./Starbound.types";
 export interface StarboundMessage {
   contractAddress: string;
   sender: string;
@@ -46,6 +46,11 @@ export interface StarboundMessage {
   }, funds?: Coin[]) => MsgExecuteContractEncodeObject;
   swap: (funds?: Coin[]) => MsgExecuteContractEncodeObject;
   transfer: (funds?: Coin[]) => MsgExecuteContractEncodeObject;
+  multiTransfer: ({
+    params
+  }: {
+    params: TransferParams[];
+  }, funds?: Coin[]) => MsgExecuteContractEncodeObject;
 }
 export class StarboundMessageComposer implements StarboundMessage {
   sender: string;
@@ -60,6 +65,7 @@ export class StarboundMessageComposer implements StarboundMessage {
     this.updatePoolsAndUsers = this.updatePoolsAndUsers.bind(this);
     this.swap = this.swap.bind(this);
     this.transfer = this.transfer.bind(this);
+    this.multiTransfer = this.multiTransfer.bind(this);
   }
 
   deposit = ({
@@ -177,6 +183,25 @@ export class StarboundMessageComposer implements StarboundMessage {
         contract: this.contractAddress,
         msg: toUtf8(JSON.stringify({
           transfer: {}
+        })),
+        funds
+      })
+    };
+  };
+  multiTransfer = ({
+    params
+  }: {
+    params: TransferParams[];
+  }, funds?: Coin[]): MsgExecuteContractEncodeObject => {
+    return {
+      typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
+      value: MsgExecuteContract.fromPartial({
+        sender: this.sender,
+        contract: this.contractAddress,
+        msg: toUtf8(JSON.stringify({
+          multi_transfer: {
+            params
+          }
         })),
         funds
       })

@@ -6,7 +6,7 @@
 
 import { CosmWasmClient, SigningCosmWasmClient, ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 import { Coin, StdFee } from "@cosmjs/amino";
-import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, User, Asset, PoolExtracted, UserExtracted, AssetExtracted, QueryMsg, MigrateMsg, Timestamp, Uint64, QueryConfigResponse, Config, QueryLedgerResponse, Ledger, QueryPoolsAndUsersResponse, QueryUserResponse } from "./Starbound.types";
+import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, Timestamp, Uint64, User, Asset, PoolExtracted, UserExtracted, AssetExtracted, TransferParams, QueryMsg, MigrateMsg, QueryConfigResponse, Config, QueryLedgerResponse, Ledger, QueryPoolsAndUsersResponse, QueryUserResponse } from "./Starbound.types";
 export interface StarboundReadOnlyInterface {
   contractAddress: string;
   queryUser: ({
@@ -95,6 +95,11 @@ export interface StarboundInterface extends StarboundReadOnlyInterface {
   }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
   swap: (fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
   transfer: (fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
+  multiTransfer: ({
+    params
+  }: {
+    params: TransferParams[];
+  }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
 }
 export class StarboundClient extends StarboundQueryClient implements StarboundInterface {
   client: SigningCosmWasmClient;
@@ -112,6 +117,7 @@ export class StarboundClient extends StarboundQueryClient implements StarboundIn
     this.updatePoolsAndUsers = this.updatePoolsAndUsers.bind(this);
     this.swap = this.swap.bind(this);
     this.transfer = this.transfer.bind(this);
+    this.multiTransfer = this.multiTransfer.bind(this);
   }
 
   deposit = async ({
@@ -184,6 +190,17 @@ export class StarboundClient extends StarboundQueryClient implements StarboundIn
   transfer = async (fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
     return await this.client.execute(this.sender, this.contractAddress, {
       transfer: {}
+    }, fee, memo, funds);
+  };
+  multiTransfer = async ({
+    params
+  }: {
+    params: TransferParams[];
+  }, fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
+    return await this.client.execute(this.sender, this.contractAddress, {
+      multi_transfer: {
+        params
+      }
     }, fee, memo, funds);
   };
 }
