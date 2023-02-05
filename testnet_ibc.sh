@@ -2,15 +2,31 @@
 
 A_CHAIN="osmo-test-4"
 B_CHAIN="theta-testnet-001"
+C_CHAIN="pulsar-2"
+
 A_PORT="transfer"
 B_PORT="transfer"
-A_CHANNEL="channel-2347"
-B_CHANNEL="channel-1531"
+C_PORT="transfer"
+
+AB_CHANNEL="channel-2347"
+BA_CHANNEL="channel-1531"
+
+AC_CHANNEL="channel-2358"
+CA_CHANNEL="channel-55"
+
+# AB_CHANNEL="channel-0"
+# BA_CHANNEL="channel-141"
+
+# AC_CHANNEL="channel-88"
+# CA_CHANNEL="channel-1"
+
 A_RPC="https://rpc-test.osmosis.zone:443"
 B_RPC="https://rpc.sentry-02.theta-testnet.polypore.xyz:443"
+C_RPC="https://rpc.testnet.secretsaturn.net:443"
 
-RELAYER_ADDRESS_OSMO="osmo1ej0m5yaspmmt73825d32hmjtwyn0lm8nmk9ct6"
-BOB_ADDRESS_COSMOSHUB="cosmos1chgwz55h9kepjq0fkj5supl2ta3nwu63327q35"
+RELAYER_ADDRESS_A="osmo1ej0m5yaspmmt73825d32hmjtwyn0lm8nmk9ct6"
+BOB_ADDRESS_B="cosmos1chgwz55h9kepjq0fkj5supl2ta3nwu63327q35"
+BOB_ADDRESS_C="secret1chgwz55h9kepjq0fkj5supl2ta3nwu63n02fvg"
 
 TXFLAG="--gas-prices 0.1uosmo --gas auto --gas-adjustment 1.3 -y -b block --node $A_RPC --chain-id $A_CHAIN"
 
@@ -19,41 +35,37 @@ TESTNET_DIR="$DIR/../wba-twt-testnet"
 FOLDER="./testnet-osmosis-cosmoshub-secret"
 HERMES="hermes --config $FOLDER/config.toml"
 
-function count_down {
-    local delay=$1
-    while [ $delay -gt 0 ]; do
-        echo -ne "$delay\r"
-        sleep 1
-        ((delay--))
-    done
-    echo
-}
+SEP="------------------------------------------------------------------------------------"
 
-clear
 
 cd $TESTNET_DIR
-# start hermes relayer
-kill $(pgrep hermes)
-echo "starting hermes..."
 
-# $HERMES create channel --a-chain $A_CHAIN --b-chain $B_CHAIN \
-#   --a-port $A_PORT --b-port $B_PORT \
-#   --order unordered --channel-version "ics20-1" \
-#   --new-client-connection --yes
-
-# $FOLDER/start.sh &> /dev/null &
-# count_down 180
-
-# try to transfer directly
-echo "trying to transfer directly..."
+# transfer from osmosis to cosmos hub
+echo $SEP
+echo "transfer from osmosis to cosmos hub..."
 echo "enter password (12345678)"
-osmosisd tx ibc-transfer transfer $A_PORT $A_CHANNEL $BOB_ADDRESS_COSMOSHUB "1uosmo" --from relayer2 $TXFLAG
-# clear packets
-$HERMES clear packets --chain $A_CHAIN --channel $A_CHANNEL --port $A_PORT &> /dev/null
-$HERMES clear packets --chain $B_CHAIN --channel $B_CHANNEL --port $B_PORT &> /dev/null
-echo "checking $BOB_ADDRESS_COSMOSHUB balances..."
-gaiad q bank balances $BOB_ADDRESS_COSMOSHUB --node $B_RPC --chain-id $B_CHAIN
+osmosisd tx ibc-transfer transfer $A_PORT $AB_CHANNEL $BOB_ADDRESS_B "1uosmo" --from relayer2 $TXFLAG
 
-# stop hermes
-echo "stopping hermes..."
-kill $(pgrep hermes)
+# transfer from osmosis to secret network
+echo $SEP
+echo "transfer from osmosis to secret network..."
+echo "enter password (12345678)"
+osmosisd tx ibc-transfer transfer $A_PORT $AC_CHANNEL $BOB_ADDRESS_C "1uosmo" --from relayer2 $TXFLAG
+
+# # clear packets
+# echo $SEP
+# echo "clearing packets..."
+# $HERMES clear packets --chain $A_CHAIN --channel $AB_CHANNEL --port $A_PORT
+# $HERMES clear packets --chain $B_CHAIN --channel $BA_CHANNEL --port $B_PORT
+# $HERMES clear packets --chain $A_CHAIN --channel $AC_CHANNEL --port $A_PORT
+# $HERMES clear packets --chain $C_CHAIN --channel $CA_CHANNEL --port $C_PORT
+
+# checking balances
+# echo $SEP
+# echo "checking $BOB_ADDRESS_B balances..."
+# gaiad q bank balances $BOB_ADDRESS_B --node $B_RPC --chain-id $B_CHAIN
+# echo $SEP
+# echo "checking $BOB_ADDRESS_C balances..."
+# secretcli q bank balances $BOB_ADDRESS_C --node $C_RPC --chain-id $C_CHAIN
+
+cd $DIR
