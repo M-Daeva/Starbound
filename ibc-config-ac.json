@@ -1,0 +1,1 @@
+{ "a_chain_id": "osmo-test-4", "a_client_id": "07-tendermint-3650", "a_channel_id": "channel-2413", "a_port_id": "transfer", "b_chain_id": "pulsar-2", "b_client_id": "07-tendermint-94", "b_channel_id": "channel-69", "b_port_id": "transfer" }

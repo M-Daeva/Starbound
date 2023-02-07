@@ -1,28 +1,19 @@
-# script for running relayer between testnets
+# script for transfering tokens between testnets
 
-A_CHAIN="osmo-test-4"
-B_CHAIN="theta-testnet-001"
-C_CHAIN="pulsar-2"
+# load parameters from files created by 'open_channel.sh'
+res_ab_json="ibc-config-ab.json"
+res_ac_json="ibc-config-ac.json"
 
-A_PORT="transfer"
-B_PORT="transfer"
-C_PORT="transfer"
+A_CHAIN=$(jq -r '.a_chain_id' $res_ab_json)
 
-AB_CHANNEL="channel-2347"
-BA_CHANNEL="channel-1531"
+A_PORT=$(jq -r '.a_port_id' $res_ab_json)
+B_PORT=$(jq -r '.b_port_id' $res_ab_json)
+C_PORT=$(jq -r '.b_port_id' $res_ac_json)
 
-AC_CHANNEL="channel-2358"
-CA_CHANNEL="channel-55"
-
-# AB_CHANNEL="channel-0"
-# BA_CHANNEL="channel-141"
-
-# AC_CHANNEL="channel-88"
-# CA_CHANNEL="channel-1"
+AB_CHANNEL=$(jq -r '.a_channel_id' $res_ab_json)
+AC_CHANNEL=$(jq -r '.a_channel_id' $res_ac_json)
 
 A_RPC="https://rpc-test.osmosis.zone:443"
-B_RPC="https://rpc.sentry-02.theta-testnet.polypore.xyz:443"
-C_RPC="https://rpc.testnet.secretsaturn.net:443"
 
 RELAYER_ADDRESS_A="osmo1ej0m5yaspmmt73825d32hmjtwyn0lm8nmk9ct6"
 BOB_ADDRESS_B="cosmos1chgwz55h9kepjq0fkj5supl2ta3nwu63327q35"

@@ -1,27 +1,25 @@
 # script for updating clients and clearing packets
 
-A_CHAIN="osmo-test-4"
-B_CHAIN="theta-testnet-001"
-C_CHAIN="pulsar-2"
+# load parameters from files created by 'open_channel.sh'
+res_ab_json="ibc-config-ab.json"
+res_ac_json="ibc-config-ac.json"
 
-A_PORT="transfer"
-B_PORT="transfer"
-C_PORT="transfer"
+A_CHAIN=$(jq -r '.a_chain_id' $res_ab_json)
+B_CHAIN=$(jq -r '.b_chain_id' $res_ab_json)
+C_CHAIN=$(jq -r '.b_chain_id' $res_ac_json)
 
-AB_CHANNEL="channel-2347"
-BA_CHANNEL="channel-1531"
+A_PORT=$(jq -r '.a_port_id' $res_ab_json)
+B_PORT=$(jq -r '.b_port_id' $res_ab_json)
+C_PORT=$(jq -r '.b_port_id' $res_ac_json)
 
-AC_CHANNEL="channel-2358"
-CA_CHANNEL="channel-55"
+AB_CHANNEL=$(jq -r '.a_channel_id' $res_ab_json)
+BA_CHANNEL=$(jq -r '.b_channel_id' $res_ab_json)
 
-# AB_CHANNEL="channel-0"
-# BA_CHANNEL="channel-141"
+AC_CHANNEL=$(jq -r '.a_channel_id' $res_ac_json)
+CA_CHANNEL=$(jq -r '.b_channel_id' $res_ac_json)
 
-# AC_CHANNEL="channel-88"
-# CA_CHANNEL="channel-1"
-
-AB_CLIENT="07-tendermint-3612"
-AC_CLIENT="07-tendermint-3629"
+AB_CLIENT=$(jq -r '.a_client_id' $res_ab_json)
+AC_CLIENT=$(jq -r '.a_client_id' $res_ac_json)
 
 DIR=$(pwd)
 TESTNET_DIR="$DIR/../wba-twt-testnet"
@@ -51,10 +49,16 @@ function count_up {
         fi
 
         echo "clearing packets $count..."
+        echo "$A_CHAIN -> $B_CHAIN"
         $HERMES clear packets --chain $A_CHAIN --channel $AB_CHANNEL --port $A_PORT
+        echo "$B_CHAIN -> $A_CHAIN"
         $HERMES clear packets --chain $B_CHAIN --channel $BA_CHANNEL --port $B_PORT
+        echo "$A_CHAIN -> $C_CHAIN"
         $HERMES clear packets --chain $A_CHAIN --channel $AC_CHANNEL --port $A_PORT
+        echo "$C_CHAIN -> $A_CHAIN"
         $HERMES clear packets --chain $C_CHAIN --channel $CA_CHANNEL --port $C_PORT
+        echo "DONE!"
+        echo
         sleep $((CLEAR_PACKETS_PERIOD * 60))
         ((count++))
     done
