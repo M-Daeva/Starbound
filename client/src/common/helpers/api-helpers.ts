@@ -1,6 +1,8 @@
 import { Coin, coin } from "@cosmjs/stargate";
 import { DENOMS } from "../helpers/assets";
 import { getSgClient, getAddrByPrefix } from "../signers";
+import ibcConfigAb from "../../../../ibc-config-ab.json";
+import ibcConfigAc from "../../../../ibc-config-ac.json";
 import {
   PoolExtracted,
   QueryPoolsAndUsersResponse,
@@ -10,6 +12,8 @@ import {
   createRequest,
   getLast,
   specifyTimeout as _specifyTimeout,
+  getChannelId as _getChannelId,
+  getIbcDenom as _getIbcDenom,
 } from "../utils";
 import {
   RelayerStruct,
@@ -716,28 +720,55 @@ async function getIbcChannnels(
 ): Promise<IbcResponse[] | undefined> {
   if (!chainRegistryStorage) return;
 
-  const ibcChannelList = await getIbcChannelList(
-    chainRegistryStorage,
-    chainType
-  );
-  if (!ibcChannelList) return;
+  const pools = await getPools();
 
   let IbcResponseList: IbcResponse[] = [];
 
-  for (let [denom, channelId] of ibcChannelList) {
-    if (!channelId) continue;
+  for (const [key, [v0, v1]] of pools) {
+    if (v1.denom !== "uosmo") continue;
 
-    const destination = _getChainIdbyDenom(
-      chainRegistryStorage,
-      chainType,
-      denom
+    const chain = chainRegistryStorage.find(
+      ({ symbol }) => symbol === v0.symbol
     );
+    if (!chain) continue;
+
+    // if testnet skip unused chains
+    let a_channel_id = "";
+    let a_port_id = "";
+    if (chainType === "test") {
+      if (
+        chain.test?.chain_id !== ibcConfigAb.b_chain_id &&
+        chain.test?.chain_id !== ibcConfigAc.b_chain_id
+      ) {
+        continue;
+      }
+
+      ({ a_channel_id, a_port_id } =
+        chain.test.chain_id === ibcConfigAb.b_chain_id
+          ? ibcConfigAb
+          : ibcConfigAc);
+    }
+
+    const { denomNative, symbol } = chain;
+    const port_id = chainType === "main" ? "transfer" : a_port_id;
+    const denomIbc =
+      chainType === "main"
+        ? v0.denom
+        : _getIbcDenom(a_channel_id, denomNative, port_id);
+    const channel_id =
+      chainType === "main"
+        ? _getChannelId(denomNative, denomIbc)
+        : a_channel_id;
+    if (!channel_id) continue;
+
+    const destination =
+      chainType === "main" ? chain.main?.chain_id : chain.test?.chain_id;
     if (!destination) continue;
 
     IbcResponseList.push({
       source: chainType === "main" ? "osmosis-1" : "osmo-test-4",
       destination,
-      channel_id: channelId || "",
+      channel_id,
       token_symbol: "OSMO",
       token_name: "Osmosis",
       token_liquidity: 0,
@@ -1001,34 +1032,80 @@ function filterChainRegistry(
   };
 }
 
-// TODO: simplify getActiveNetworksInfo -> requestRelayers -> getIbcChannnels -> getIbcChannelList
+function _getChainByChainId(
+  chainRegistryStorage: ChainRegistryStorage | undefined,
+  chainId: string
+): NetworkData | undefined {
+  if (!chainRegistryStorage) return;
+
+  const mainnet = chainRegistryStorage.find(
+    (item) => item.main?.chain_id === chainId
+  );
+  const testnet = chainRegistryStorage.find(
+    (item) => item.test?.chain_id === chainId
+  );
+
+  return testnet || mainnet;
+}
+
+// TODO: remove requestRelayers -> getIbcChannnels -> getIbcChannelList
 // merge requestRelayers with requestPools to validate asset symbols
 // and filter IBC active networks
 async function getActiveNetworksInfo(
   chainRegistryStorage: ChainRegistryStorage | undefined,
   chainType: "main" | "test"
 ): Promise<PoolExtracted[] | undefined> {
-  let relayers = await requestRelayers(chainRegistryStorage, chainType);
-  if (!relayers) return;
-  let pools = await getPools();
+  if (!chainRegistryStorage) return;
+
+  const pools = await getPools();
 
   let temp: PoolExtracted[] = [];
 
-  for (let [key, [v0, v1]] of pools) {
+  for (const [key, [v0, v1]] of pools) {
     if (v1.denom !== "uosmo") continue;
 
-    for (let relayer of relayers) {
-      if (relayer.symbol === v0.symbol) {
-        temp.push({
-          channel_id: relayer.channel_id,
-          denom: v0.denom,
-          id: key,
-          port_id: relayer.port_id,
-          price: v0.price.toString(),
-          symbol: v0.coingecko_id || v0.symbol,
-        });
+    const chain = chainRegistryStorage.find(
+      ({ symbol }) => symbol === v0.symbol
+    );
+    if (!chain) continue;
+
+    // if testnet skip unused chains
+    let a_channel_id = "";
+    let a_port_id = "";
+    if (chainType === "test") {
+      if (
+        chain.test?.chain_id !== ibcConfigAb.b_chain_id &&
+        chain.test?.chain_id !== ibcConfigAc.b_chain_id
+      ) {
+        continue;
       }
+
+      ({ a_channel_id, a_port_id } =
+        chain.test.chain_id === ibcConfigAb.b_chain_id
+          ? ibcConfigAb
+          : ibcConfigAc);
     }
+
+    const { denomNative, symbol } = chain;
+    const port_id = chainType === "main" ? "transfer" : a_port_id;
+    const denomIbc =
+      chainType === "main"
+        ? v0.denom
+        : _getIbcDenom(a_channel_id, denomNative, port_id);
+    const channel_id =
+      chainType === "main"
+        ? _getChannelId(denomNative, denomIbc)
+        : a_channel_id;
+    if (!channel_id) continue;
+
+    temp.push({
+      channel_id,
+      denom: denomIbc,
+      id: key,
+      port_id,
+      price: v0.price.toString(),
+      symbol,
+    });
   }
 
   return temp;
@@ -1475,4 +1552,5 @@ export {
   getActiveNetworksInfo,
   queryPools,
   getDappAddressAndDenomList,
+  _getChainByChainId,
 };

@@ -17,7 +17,6 @@
     "chart.js": "^3.9.1",
     "cosmjs-types": "^0.5.2",
     "decimal.js": "^10.4.2",
-    "node-html-parser": "^6.1.1",
     "osmojs": "^0.35.0",
     "svelte-chartjs": "^3.0.1",
     "svelte-navigator": "^3.2.2"

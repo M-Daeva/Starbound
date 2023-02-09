@@ -136,7 +136,7 @@ express()
   .listen(E.PORT, async () => {
     l(`Ready on port ${E.PORT}`);
     // await initAll();
-    await triggerContract();
+    // await triggerContract();
     // setInterval(triggerContract, 24 * 60 * 60 * 1000); // 24 h update period
 
     const periodSensitive = 15 * 1000; // 15 s update period
