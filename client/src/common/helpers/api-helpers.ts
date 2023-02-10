@@ -749,12 +749,20 @@ async function getIbcChannnels(
           : ibcConfigAc);
     }
 
-    const { denomNative, symbol } = chain;
+    const { denomNative } = chain;
     const port_id = chainType === "main" ? "transfer" : a_port_id;
     const denomIbc =
       chainType === "main"
         ? v0.denom
-        : _getIbcDenom(a_channel_id, denomNative, port_id);
+        : _getIbcDenom(
+            a_channel_id,
+            `${port_id}/${_getChannelId(
+              denomNative,
+              v0.denom,
+              port_id
+            )}/${denomNative}`,
+            port_id
+          );
     const channel_id =
       chainType === "main"
         ? _getChannelId(denomNative, denomIbc)
@@ -1091,7 +1099,15 @@ async function getActiveNetworksInfo(
     const denomIbc =
       chainType === "main"
         ? v0.denom
-        : _getIbcDenom(a_channel_id, denomNative, port_id);
+        : _getIbcDenom(
+            a_channel_id,
+            `${port_id}/${_getChannelId(
+              denomNative,
+              v0.denom,
+              port_id
+            )}/${denomNative}`,
+            port_id
+          );
     const channel_id =
       chainType === "main"
         ? _getChannelId(denomNative, denomIbc)

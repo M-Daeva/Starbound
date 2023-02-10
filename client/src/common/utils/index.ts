@@ -53,41 +53,42 @@ async function specifyTimeout(
 }
 
 /**
- * Returns IBC denom of native asset of chain B transferred from chain B to chain A, where
- * @param channelId - channel id on chain A
- * @param nativeDenom - native denom on chain B
+ * Returns destination denom of coin/token on chain A transferred from chain A to chain B, where
+ * @param channelId - id of IBC channel from chain B to chain A
+ * @param srcDenom - denom of coin/token on chain A
  * @param portId - port id, 'transfer' by default
- * @returns IBC denom in form of 'ibc/{hash}'
+ * @returns destination denom in form of 'ibc/{hash}'
  */
 function getIbcDenom(
   channelId: string,
-  nativeDenom: string,
+  srcDenom: string,
   portId: string = "transfer"
 ): string {
   return (
     "ibc/" +
-    SHA256(`${portId}/${channelId}/${nativeDenom}`).toString().toUpperCase()
+    SHA256(`${portId}/${channelId}/${srcDenom}`).toString().toUpperCase()
   );
 }
 
 /**
- * Returns channel id on chain A for asset transferred from chain B to chain A, where
- * @param nativeDenom - native denom on chain B
- * @param ibcDenom - IBC denom of asset from chain B on chain A in form of 'ibc/{hash}'
+ * Returns id of IBC channel from chain B to chain A for coin/token
+ * transferred from chain A to chain B, where
+ * @param srcDenom - denom of coin/token on chain A
+ * @param dstDenom - destination denom of coin/token from chain A on chain B in form of 'ibc/{hash}'
  * @param portId - port id, 'transfer' by default
- * @returns channel id on chain A
+ * @returns id of IBC channel from chain B to chain A
  */
 function getChannelId(
-  nativeDenom: string,
-  ibcDenom: string,
+  srcDenom: string,
+  dstDenom: string,
   portId: string = "transfer"
 ): string | undefined {
   const maxChannelId = 10_000;
-  const targetHash = ibcDenom.split("/")[1].toLowerCase();
+  const targetHash = dstDenom.split("/")[1].toLowerCase();
 
   for (let i = 0; i < maxChannelId; i++) {
     const channelId = `channel-${i}`;
-    const hash = SHA256(`${portId}/${channelId}/${nativeDenom}`).toString();
+    const hash = SHA256(`${portId}/${channelId}/${srcDenom}`).toString();
 
     if (hash === targetHash) return channelId;
   }

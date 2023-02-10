@@ -5,6 +5,8 @@ res_ab_json="ibc-config-ab.json"
 res_ac_json="ibc-config-ac.json"
 
 A_CHAIN=$(jq -r '.a_chain_id' $res_ab_json)
+B_CHAIN=$(jq -r '.b_chain_id' $res_ab_json)
+C_CHAIN=$(jq -r '.b_chain_id' $res_ac_json)
 
 A_PORT=$(jq -r '.a_port_id' $res_ab_json)
 B_PORT=$(jq -r '.b_port_id' $res_ab_json)
@@ -14,6 +16,8 @@ AB_CHANNEL=$(jq -r '.a_channel_id' $res_ab_json)
 AC_CHANNEL=$(jq -r '.a_channel_id' $res_ac_json)
 
 A_RPC="https://rpc-test.osmosis.zone:443"
+B_RPC="https://rpc.sentry-02.theta-testnet.polypore.xyz:443"
+C_RPC="https://rpc.testnet.secretsaturn.net:443"
 
 RELAYER_ADDRESS_A="osmo1ej0m5yaspmmt73825d32hmjtwyn0lm8nmk9ct6"
 BOB_ADDRESS_B="cosmos1chgwz55h9kepjq0fkj5supl2ta3nwu63327q35"
@@ -51,7 +55,7 @@ osmosisd tx ibc-transfer transfer $A_PORT $AC_CHANNEL $BOB_ADDRESS_C "1uosmo" --
 # $HERMES clear packets --chain $A_CHAIN --channel $AC_CHANNEL --port $A_PORT
 # $HERMES clear packets --chain $C_CHAIN --channel $CA_CHANNEL --port $C_PORT
 
-# checking balances
+# # checking balances
 # echo $SEP
 # echo "checking $BOB_ADDRESS_B balances..."
 # gaiad q bank balances $BOB_ADDRESS_B --node $B_RPC --chain-id $B_CHAIN

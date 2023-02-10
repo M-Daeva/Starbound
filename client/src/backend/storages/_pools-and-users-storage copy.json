@@ -1,0 +1,64 @@
+{
+  "users": [
+    {
+      "osmo_address": "osmo1k6ja23e7t9w2n87m2dn0cc727ag9pjkm2xlmck",
+      "asset_list": [
+        {
+          "asset_denom": "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+          "wallet_address": "cosmos1k6ja23e7t9w2n87m2dn0cc727ag9pjkmzavtwy",
+          "wallet_balance": "8832328"
+        }
+      ]
+    }
+  ],
+  "pools": [
+    {
+      "id": "584",
+      "denom": "ibc/0954E1C28EB7AF5B72D24F3BC2B47BBB2FDF91BDDFD57B74B99E133AED40972A",
+      "price": "0.7998885373229856",
+      "symbol": "secret",
+      "channel_id": "channel-88",
+      "port_id": "transfer"
+    },
+    {
+      "id": "1",
+      "denom": "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+      "price": "14.767950036540661",
+      "symbol": "cosmos",
+      "channel_id": "channel-314",
+      "port_id": "transfer"
+    },
+    {
+      "id": "481",
+      "denom": "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F",
+      "price": "1",
+      "symbol": "",
+      "channel_id": "",
+      "port_id": ""
+    },
+    {
+      "id": "584",
+      "denom": "ibc/79EA5FBE5228804C9941E7D984286B904C9EDBA2DB22726427B775E2ACE5923E",
+      "price": "0.8326247892125905",
+      "symbol": "SCRT",
+      "channel_id": "channel-2413",
+      "port_id": "transfer"
+    },
+    {
+      "id": "1",
+      "denom": "ibc/C43CFC808BAF5CDCF067861879D0A336FF1741AF678199E681D193217A3D6C07",
+      "price": "13.818305404655202",
+      "symbol": "ATOM",
+      "channel_id": "channel-2412",
+      "port_id": "transfer"
+    },
+    {
+      "id": "0",
+      "denom": "uosmo",
+      "price": "0.8",
+      "symbol": "",
+      "channel_id": "",
+      "port_id": ""
+    }
+  ]
+}
