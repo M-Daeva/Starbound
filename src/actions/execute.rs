@@ -422,7 +422,7 @@ pub fn multi_transfer(
     _info: MessageInfo,
     params: Vec<TransferParams>,
 ) -> Result<Response, ContractError> {
-    const TIMEOUT_IN_MINS: u64 = 5;
+    const TIMEOUT_IN_MINS: u64 = 15;
     let timestamp = env.block.time.plus_seconds(TIMEOUT_IN_MINS * 60);
 
     let msg_list = params

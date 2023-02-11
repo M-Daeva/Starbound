@@ -1096,6 +1096,7 @@ async function getActiveNetworksInfo(
 
     const { denomNative, symbol } = chain;
     const port_id = chainType === "main" ? "transfer" : a_port_id;
+    // provided only to get channel_id
     const denomIbc =
       chainType === "main"
         ? v0.denom
@@ -1116,7 +1117,7 @@ async function getActiveNetworksInfo(
 
     temp.push({
       channel_id,
-      denom: denomIbc,
+      denom: v0.denom, // ibc denom from pool is required
       id: key,
       port_id,
       price: v0.price.toString(),
@@ -1130,6 +1131,7 @@ async function getActiveNetworksInfo(
 async function updatePoolsAndUsers(
   chainRegistryResponse: ChainRegistryStorage | undefined,
   queryPoolsAndUsersResponse: QueryPoolsAndUsersResponse | undefined,
+  poolsStorage: PoolsStorage | undefined,
   chainType: "main" | "test"
 ) {
   if (!queryPoolsAndUsersResponse || !chainRegistryResponse)
@@ -1179,6 +1181,7 @@ async function updatePoolsAndUsers(
   let usersFundsList = await getUserFunds(
     chainRegistryResponse,
     queryPoolsAndUsersResponse,
+    poolsStorage,
     chainType
   );
 
@@ -1321,6 +1324,7 @@ function getChainNameAndRestList(
 async function getUserFunds(
   chainRegistryResponse: ChainRegistryStorage | undefined,
   queryPoolsAndUsersResponse: QueryPoolsAndUsersResponse | undefined,
+  poolsStorage: PoolsStorage | undefined,
   chainType: "main" | "test"
 ): Promise<
   {
@@ -1331,7 +1335,19 @@ async function getUserFunds(
     staked: Coin;
   }[]
 > {
-  if (!chainRegistryResponse || !queryPoolsAndUsersResponse) return [];
+  if (!chainRegistryResponse || !queryPoolsAndUsersResponse || !poolsStorage) {
+    return [];
+  }
+
+  // assign ibc denoms
+  chainRegistryResponse = chainRegistryResponse.map((item) => {
+    const { symbol } = item;
+    const pool = poolsStorage.find(([key, [v0, v1]]) => v0.symbol === symbol);
+    if (!pool) return item;
+
+    const [key, [v0, v1]] = pool;
+    return { ...item, denomIbc: v0.denom };
+  });
 
   let resList: {
     chain: string;
@@ -1392,6 +1408,27 @@ async function getUserFunds(
           const urlHolded = `${rest}/cosmos/bank/v1beta1/balances/${asset.wallet_address}`;
           const urlStaked = `${rest}/cosmos/staking/v1beta1/delegations/${asset.wallet_address}`;
 
+          const ibcConfigList: string[] = [
+            _getIbcDenom(
+              ibcConfigAb.b_channel_id,
+              `${ibcConfigAb.a_port_id}/${_getChannelId(
+                denomNative,
+                chain.denomIbc,
+                ibcConfigAb.a_port_id
+              )}/${denomNative}`,
+              ibcConfigAb.a_port_id
+            ),
+            _getIbcDenom(
+              ibcConfigAc.b_channel_id,
+              `${ibcConfigAc.a_port_id}/${_getChannelId(
+                denomNative,
+                chain.denomIbc,
+                ibcConfigAc.a_port_id
+              )}/${denomNative}`,
+              ibcConfigAc.a_port_id
+            ),
+          ];
+
           const fn = async () => {
             try {
               const balHolded: BalancesResponse = await req.get(urlHolded);
@@ -1400,9 +1437,22 @@ async function getUserFunds(
               const amountHolded =
                 balHolded.balances.find(({ denom }) => {
                   if (denom === "ujunox") {
-                    return chain.denomNative === "ujuno";
+                    return (
+                      chain.denomNative ===
+                        _getIbcDenom(
+                          ibcConfigAb.a_channel_id,
+                          "transfer/channel-42/ujuno",
+                          ibcConfigAb.a_port_id
+                        ) ||
+                      chain.denomNative ===
+                        _getIbcDenom(
+                          ibcConfigAc.a_channel_id,
+                          "transfer/channel-42/ujuno",
+                          ibcConfigAc.a_port_id
+                        )
+                    );
                   } else {
-                    return denom === chain.denomNative;
+                    return ibcConfigList.includes(denom);
                   }
                 })?.amount || "0";
               const amountStaked =

@@ -24,8 +24,6 @@
     CategoryScale,
   } from "chart.js";
 
-  // TODO: solve the problem when chart and table doesn't appears immidiately on the page
-  // after updating data in contract via deposit
   let paymentBalance = 0;
   let portfolioNetWorth = 0;
 

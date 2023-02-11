@@ -164,6 +164,7 @@ async function updateUserFunds() {
       await _getUserFunds(
         chainRegistryStorage.get(),
         poolsAndUsersStorage.get(),
+        poolsStorage.get(),
         chainType
       )
     ).map(({ address, holded, staked }) => [address, { holded, staked }]);

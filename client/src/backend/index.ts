@@ -4,7 +4,10 @@ import { text, json } from "body-parser";
 import cors from "cors";
 import E from "./config";
 import { rootPath } from "../common/utils";
-import { ChainRegistryStorage } from "../common/helpers/interfaces";
+import {
+  ChainRegistryStorage,
+  PoolsStorage,
+} from "../common/helpers/interfaces";
 import { init } from "../common/workers/testnet-backend-workers";
 import dashboard from "./routes/dashboard";
 import assets from "./routes/assets";
@@ -46,11 +49,23 @@ async function triggerContract() {
   const chainRegistry: ChainRegistryStorage = await req.get(
     API_ROUTES.getChainRegistry
   );
+  const poolsStorage: PoolsStorage = await req.get(API_ROUTES.getPools);
   const poolsAndUsers = await cwQueryPoolsAndUsers();
+
+  // const grants = await _getAllGrants(
+  //   E.DAPP_ADDRESS,
+  //   chainRegistry,
+  //   E.CHAIN_TYPE
+  // );
+  // if (!grants) return;
+
+  // await sgDelegateFromAll(grants, chainRegistry, E.CHAIN_TYPE);
+  // return;
 
   const res = await _updatePoolsAndUsers(
     chainRegistry,
     poolsAndUsers,
+    poolsStorage,
     E.CHAIN_TYPE
   );
   if (!res) return;
@@ -63,14 +78,18 @@ async function triggerContract() {
   // consider execution in a loop
   await cwTransfer();
 
-  const grants = await _getAllGrants(
-    E.DAPP_ADDRESS,
-    chainRegistry,
-    E.CHAIN_TYPE
-  );
-  if (!grants) return;
+  // TODO: solve 'account sequence mismatch' problem - check secret
+  setTimeout(async () => {
+    const grants = await _getAllGrants(
+      E.DAPP_ADDRESS,
+      chainRegistry,
+      E.CHAIN_TYPE
+    );
+    if (!grants) return;
+    l(grants);
 
-  await sgDelegateFromAll(grants, chainRegistry, E.CHAIN_TYPE);
+    await sgDelegateFromAll(grants, chainRegistry, E.CHAIN_TYPE);
+  }, 15 * 60 * 1000);
 }
 
 async function initStorages() {
@@ -92,6 +111,7 @@ async function initContract() {
     await init();
 
   // add dapp addresses
+  const poolsStorage: PoolsStorage = await req.get(API_ROUTES.getPools);
   const chainRegistry: ChainRegistryStorage = await req.get(
     API_ROUTES.getChainRegistry
   );
@@ -112,6 +132,7 @@ async function initContract() {
   const res = await _updatePoolsAndUsers(
     chainRegistry,
     poolsAndUsers,
+    poolsStorage,
     E.CHAIN_TYPE
   );
   if (!res) return;
@@ -136,6 +157,7 @@ express()
   .listen(E.PORT, async () => {
     l(`Ready on port ${E.PORT}`);
     // await initAll();
+    // await initContract();
     // await triggerContract();
     // setInterval(triggerContract, 24 * 60 * 60 * 1000); // 24 h update period
 
