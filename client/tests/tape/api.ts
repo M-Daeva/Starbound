@@ -62,39 +62,23 @@ test("Testing API helpers", async (t) => {
   const netsExpected = [
     {
       channel_id: ibcConfigAb.a_channel_id,
-      denom: getIbcDenom(
-        ibcConfigAb.a_channel_id,
-        `${ibcConfigAb.a_port_id}/${getChannelId(
-          chainB?.denomNative as string,
-          (
-            ps?.find(([key, [v0, v1]]) => v0.symbol === chainB?.symbol) as [
-              string,
-              AssetDescription[]
-            ]
-          )[1][0].denom,
-          ibcConfigAb.a_port_id
-        )}/${chainB?.denomNative as string}`,
-        ibcConfigAb.a_port_id
-      ),
+      denom: (
+        ps?.find(([key, [v0, v1]]) => v0.symbol === chainB?.symbol) as [
+          string,
+          AssetDescription[]
+        ]
+      )[1][0].denom,
       port_id: ibcConfigAb.a_port_id,
       symbol: chainB?.symbol,
     },
     {
       channel_id: ibcConfigAc.a_channel_id,
-      denom: getIbcDenom(
-        ibcConfigAc.a_channel_id,
-        `${ibcConfigAc.a_port_id}/${getChannelId(
-          chainC?.denomNative as string,
-          (
-            ps?.find(([key, [v0, v1]]) => v0.symbol === chainC?.symbol) as [
-              string,
-              AssetDescription[]
-            ]
-          )[1][0].denom,
-          ibcConfigAc.a_port_id
-        )}/${chainC?.denomNative as string}`,
-        ibcConfigAc.a_port_id
-      ),
+      denom: (
+        ps?.find(([key, [v0, v1]]) => v0.symbol === chainC?.symbol) as [
+          string,
+          AssetDescription[]
+        ]
+      )[1][0].denom,
       port_id: ibcConfigAc.a_port_id,
       symbol: chainC?.symbol,
     },
