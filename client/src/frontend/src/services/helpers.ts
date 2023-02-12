@@ -32,25 +32,6 @@ function getAssetInfoByAddress(address: string) {
   return { asset, price: pool[1][0].price.toString() };
 }
 
-// removes additional digits on display
-const trimPrice = (price: string, err: string = "0.001") => {
-  if (!price.includes(".")) return price;
-
-  const one = new Decimal("1");
-  const target = one.sub(new Decimal(err));
-
-  let priceNew = price;
-  let ratio = one;
-
-  while (ratio.greaterThan(target)) {
-    price = price.slice(0, price.length - 1);
-    priceNew = price.slice(0, price.length - 1);
-    ratio = new Decimal(priceNew).div(new Decimal(price));
-  }
-
-  return price;
-};
-
 // transforms (3, ["a","b"]) -> ["a","b","a"]
 function generateColorList(quantity: number, baseColorList: string[]) {
   let temp: string[] = [];
@@ -167,7 +148,6 @@ function getOsmoPrice() {
 
 export {
   getAssetInfoByAddress,
-  trimPrice,
   generateColorList,
   calcTimeDiff,
   timeDiffToDate,

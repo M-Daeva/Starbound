@@ -3,9 +3,9 @@
   import Decimal from "decimal.js";
   import { l } from "../../../common/utils";
   import { type DashboardAsset } from "../../../common/helpers/interfaces";
+  import { trimDecimal } from "../../../common/helpers/general";
   import {
     getAssetInfoByAddress,
-    trimPrice,
     generateColorList,
     getOsmoPrice,
   } from "../services/helpers";
@@ -75,7 +75,7 @@
         _price = getOsmoPrice().toString();
       }
 
-      const price = new Decimal(trimPrice(_price));
+      const price = new Decimal(trimDecimal(_price));
       const divider = new Decimal(10 ** exponent);
 
       const holded = new Decimal(_holded.amount)
@@ -85,7 +85,7 @@
         .div(divider)
         .toDecimalPlaces(exponent);
 
-      const cost = price.mul(holded.add(staked)).toDecimalPlaces(2);
+      const cost = new Decimal(trimDecimal(price.mul(holded.add(staked))));
 
       let res: DashboardAsset = {
         asset: symbol,
@@ -103,7 +103,7 @@
       .map(({ cost }) => cost)
       .reduce((acc, cur) => acc.add(cur), zero);
 
-    portfolioNetWorth = totalCost.toDecimalPlaces(2).toNumber();
+    portfolioNetWorth = +trimDecimal(totalCost);
 
     dashboardAssetList = initialAssetList.map((item) => {
       const { cost } = item;
