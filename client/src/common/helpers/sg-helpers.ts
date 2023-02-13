@@ -7,7 +7,12 @@ import { Grant } from "cosmjs-types/cosmos/authz/v1beta1/authz";
 import { Timestamp } from "cosmjs-types/google/protobuf/timestamp";
 import { EncodeObject } from "@cosmjs/proto-signing/build";
 import { l, createRequest } from "../utils";
-import { getSgClient, getAddrByPrefix, fee, calculateFee } from "../signers";
+import {
+  getSgClient,
+  getAddrByPrefix,
+  fee,
+  signAndBroadcastWrapper,
+} from "../signers";
 import Decimal from "decimal.js";
 import { PoolInfo, PoolDatabase } from "./interfaces";
 import { MsgSwapExactAmountIn } from "osmojs/types/codegen/osmosis/gamm/v1beta1/tx";
@@ -28,6 +33,7 @@ const req = createRequest({});
 
 async function getSgHelpers(clientStruct: ClientStruct) {
   const { client, owner } = await getSgClient(clientStruct);
+  const signAndBroadcast = signAndBroadcastWrapper(client, owner);
 
   async function sgTransfer(ibcStruct: IbcStruct) {
     const { amount, dstPrefix, sourceChannel, sourcePort } = ibcStruct;
@@ -173,7 +179,6 @@ async function getSgHelpers(clientStruct: ClientStruct) {
 
   async function sgDelegateFromList(
     delegationStructList: DelegationStruct[],
-    gasLimit: number,
     gasPrice: string
   ) {
     const msgList = delegationStructList.map(
@@ -194,16 +199,12 @@ async function getSgHelpers(clientStruct: ClientStruct) {
       msgs: msgList,
     };
 
-    const msg: EncodeObject = {
+    const obj: EncodeObject = {
       typeUrl: "/cosmos.authz.v1beta1.MsgExec",
       value: msgExec,
     };
 
-    const specifiedFee: StdFee = calculateFee(gasLimit, gasPrice);
-
-    const tx = await client.signAndBroadcast(owner, [msg], specifiedFee);
-
-    return tx;
+    return await signAndBroadcast([obj], gasPrice);
   }
 
   async function sgGetTokenBalances(addr: string = owner) {

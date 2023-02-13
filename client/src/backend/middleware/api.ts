@@ -29,6 +29,7 @@ const chainType: "main" | "test" = E.CHAIN_TYPE;
 
 const allowList: [string, string, string[]][] = [
   ["osmo", "test", ["https://rpc-test.osmosis.zone/"]],
+  ["secret", "test", ["https://rpc.pulsar.scrttestnet.com/"]],
 ];
 const ignoreList: [string, string, string[]][] = [];
 

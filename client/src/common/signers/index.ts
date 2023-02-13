@@ -1,10 +1,10 @@
+import { l } from "../utils";
 import { fromBech32, toBech32 } from "@cosmjs/encoding";
 import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
 import { Keplr, Window as KeplrWindow, ChainInfo } from "@keplr-wallet/types";
-import { l } from "../utils";
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 import { OfflineSigner } from "@cosmjs/launchpad";
-import { OfflineDirectSigner } from "@cosmjs/proto-signing";
+import { OfflineDirectSigner, EncodeObject } from "@cosmjs/proto-signing";
 import {
   ClientStruct,
   NetworkData,
@@ -14,9 +14,12 @@ import {
   SigningStargateClient,
   coin,
   StdFee,
-  calculateFee,
+  calculateFee as _calculateFee,
+  GasPrice,
+  DeliverTxResponse,
 } from "@cosmjs/stargate";
 
+// TODO: replace
 const fee: StdFee = {
   amount: [coin(0, "uosmo")],
   gas: `${700_000}`,
@@ -204,6 +207,23 @@ async function getAddrByChainPrefix(
   return (await wallet.getKey(chainId)).bech32Address;
 }
 
+function signAndBroadcastWrapper(
+  client: SigningStargateClient | SigningCosmWasmClient,
+  owner: string
+) {
+  return async (
+    obj: readonly EncodeObject[],
+    gasPrice: string | GasPrice,
+    memo?: string
+  ): Promise<DeliverTxResponse> => {
+    const margin = 1.05;
+    const gasSimulated = await client.simulate(owner, obj, memo);
+    const gasWanted = Math.ceil(margin * gasSimulated);
+    const fee = _calculateFee(gasWanted, gasPrice);
+    return await client.signAndBroadcast(owner, obj, fee, memo);
+  };
+}
+
 export {
   getSgClient,
   getCwClient,
@@ -211,5 +231,5 @@ export {
   initWalletList,
   getAddrByChainPrefix,
   fee,
-  calculateFee,
+  signAndBroadcastWrapper,
 };

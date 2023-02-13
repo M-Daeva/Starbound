@@ -112,9 +112,6 @@ async function init() {
     threshold: number = 100_000
   ) {
     const gasPriceAmountDefault = "0.005"; // 0.0025 min
-    const estimatedAddressAmount = 100;
-    const gasAmountPerAddress = 140_000;
-    const gasLimit = estimatedAddressAmount * gasAmountPerAddress;
 
     if (!chainRegistryResponse) return;
 
@@ -197,7 +194,7 @@ async function init() {
 
       try {
         const tx = await _specifyTimeout(
-          _sgDelegateFromList(delegationStructList, gasLimit, gasPrice),
+          _sgDelegateFromList(delegationStructList, gasPrice),
           10_000
         );
 

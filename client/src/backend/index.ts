@@ -52,15 +52,16 @@ async function triggerContract() {
   const poolsStorage: PoolsStorage = await req.get(API_ROUTES.getPools);
   const poolsAndUsers = await cwQueryPoolsAndUsers();
 
-  // const grants = await _getAllGrants(
-  //   E.DAPP_ADDRESS,
-  //   chainRegistry,
-  //   E.CHAIN_TYPE
-  // );
-  // if (!grants) return;
+  const grants = await _getAllGrants(
+    E.DAPP_ADDRESS,
+    chainRegistry,
+    E.CHAIN_TYPE
+  );
+  if (!grants) return;
+  l(grants[0]);
 
-  // await sgDelegateFromAll(grants, chainRegistry, E.CHAIN_TYPE);
-  // return;
+  await sgDelegateFromAll(grants, chainRegistry, E.CHAIN_TYPE);
+  return;
 
   const res = await _updatePoolsAndUsers(
     chainRegistry,
@@ -158,7 +159,8 @@ express()
     l(`Ready on port ${E.PORT}`);
     // await initAll();
     // await initContract();
-    // await triggerContract();
+    // await initStorages();
+    await triggerContract();
     // setInterval(triggerContract, 24 * 60 * 60 * 1000); // 24 h update period
 
     const periodSensitive = 15 * 1000; // 15 s update period
