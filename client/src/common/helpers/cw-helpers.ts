@@ -1,5 +1,5 @@
 import { l } from "../utils";
-import { getCwClient, fee } from "../signers";
+import { getCwClient, fee, signAndBroadcastWrapper } from "../signers";
 import { ClientStruct, UpdateConfigStruct } from "./interfaces";
 import { DENOMS } from "./assets";
 import { MsgExecuteContractEncodeObject, Coin } from "cosmwasm";
@@ -19,9 +19,19 @@ async function getCwHelpers(
   const { client: _client, owner } = await getCwClient(clientStruct);
   const composer = new StarboundMessageComposer(owner, contractAddress);
   const client = new StarboundClient(_client, owner, contractAddress);
+  const _signAndBroadcast = signAndBroadcastWrapper(_client, owner, 1.1);
 
   async function _msgWrapper(msg: MsgExecuteContractEncodeObject) {
     const tx = await _client.signAndBroadcast(owner, [msg], fee);
+    l("\n", tx, "\n");
+    return tx;
+  }
+
+  async function _msgWrapperWithGasPrice(
+    msg: MsgExecuteContractEncodeObject,
+    gasPrice: string
+  ) {
+    const tx = await _signAndBroadcast([msg], gasPrice);
     l("\n", tx, "\n");
     return tx;
   }
@@ -39,7 +49,10 @@ async function getCwHelpers(
     return await _msgWrapper(composer.withdraw({ amount: `${tokenAmount}` }));
   }
 
-  async function cwUpdateConfig(updateConfigStruct: UpdateConfigStruct) {
+  async function cwUpdateConfig(
+    updateConfigStruct: UpdateConfigStruct,
+    gasPrice: string
+  ) {
     const {
       dappAddressAndDenomList,
       feeDefault: _feeDefault,
@@ -52,7 +65,7 @@ async function getCwHelpers(
     const feeDefault = !_feeDefault ? undefined : _feeDefault.toString();
     const feeOsmo = !_feeOsmo ? undefined : _feeOsmo.toString();
 
-    return await _msgWrapper(
+    return await _msgWrapperWithGasPrice(
       composer.updateConfig({
         dappAddressAndDenomList,
         feeDefault,
@@ -60,23 +73,28 @@ async function getCwHelpers(
         scheduler,
         stablecoinDenom,
         stablecoinPoolId,
-      })
+      }),
+      gasPrice
     );
   }
 
   async function cwUpdatePoolsAndUsers(
     pools: PoolExtracted[],
-    users: UserExtracted[]
+    users: UserExtracted[],
+    gasPrice: string
   ) {
-    return await _msgWrapper(composer.updatePoolsAndUsers({ pools, users }));
+    return await _msgWrapperWithGasPrice(
+      composer.updatePoolsAndUsers({ pools, users }),
+      gasPrice
+    );
   }
 
-  async function cwSwap() {
-    return await _msgWrapper(composer.swap());
+  async function cwSwap(gasPrice: string) {
+    return await _msgWrapperWithGasPrice(composer.swap(), gasPrice);
   }
 
-  async function cwTransfer() {
-    return await _msgWrapper(composer.transfer());
+  async function cwTransfer(gasPrice: string) {
+    return await _msgWrapperWithGasPrice(composer.transfer(), gasPrice);
   }
 
   async function cwMultiTransfer(params: TransferParams[]) {

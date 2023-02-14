@@ -8,6 +8,7 @@ import {
   ChainRegistryStorage,
   PoolsStorage,
 } from "../common/helpers/interfaces";
+import { getGasPriceFromChainRegistryItem } from "../../src/common/signers";
 import { init } from "../common/workers/testnet-backend-workers";
 import dashboard from "./routes/dashboard";
 import assets from "./routes/assets";
@@ -49,19 +50,25 @@ async function triggerContract() {
   const chainRegistry: ChainRegistryStorage = await req.get(
     API_ROUTES.getChainRegistry
   );
+
+  const chain = chainRegistry.find((item) => item.denomNative === "uosmo");
+  if (!chain) return;
+
+  const gasPrice = getGasPriceFromChainRegistryItem(chain, E.CHAIN_TYPE);
+
   const poolsStorage: PoolsStorage = await req.get(API_ROUTES.getPools);
   const poolsAndUsers = await cwQueryPoolsAndUsers();
 
-  const grants = await _getAllGrants(
-    E.DAPP_ADDRESS,
-    chainRegistry,
-    E.CHAIN_TYPE
-  );
-  if (!grants) return;
-  l(grants[0]);
+  // const grants = await _getAllGrants(
+  //   E.DAPP_ADDRESS,
+  //   chainRegistry,
+  //   E.CHAIN_TYPE
+  // );
+  // if (!grants) return;
+  // l(grants[0]);
 
-  await sgDelegateFromAll(grants, chainRegistry, E.CHAIN_TYPE);
-  return;
+  // await sgDelegateFromAll(grants, chainRegistry, E.CHAIN_TYPE);
+  //return;
 
   const res = await _updatePoolsAndUsers(
     chainRegistry,
@@ -72,14 +79,13 @@ async function triggerContract() {
   if (!res) return;
 
   const { pools, users } = res;
-  await cwUpdatePoolsAndUsers(pools, users);
+  await cwUpdatePoolsAndUsers(pools, users, gasPrice);
 
-  await cwSwap();
+  await cwSwap(gasPrice);
   // TODO: check if failing of ibc transfer doesn't affect on next distribution
   // consider execution in a loop
-  await cwTransfer();
+  await cwTransfer(gasPrice);
 
-  // TODO: solve 'account sequence mismatch' problem - check secret
   setTimeout(async () => {
     const grants = await _getAllGrants(
       E.DAPP_ADDRESS,
@@ -117,15 +123,23 @@ async function initContract() {
     API_ROUTES.getChainRegistry
   );
 
+  const chain = chainRegistry.find((item) => item.denomNative === "uosmo");
+  if (!chain) return;
+
+  const gasPrice = getGasPriceFromChainRegistryItem(chain, E.CHAIN_TYPE);
+
   // @ts-ignore
   const dappAddressAndDenomList: string[][][] = getDappAddressAndDenomList(
     E.DAPP_ADDRESS,
     chainRegistry
   );
 
-  await cwUpdateConfig({
-    dappAddressAndDenomList,
-  });
+  await cwUpdateConfig(
+    {
+      dappAddressAndDenomList,
+    },
+    gasPrice
+  );
 
   // add pools
   const poolsAndUsers = await cwQueryPoolsAndUsers();
@@ -139,7 +153,7 @@ async function initContract() {
   if (!res) return;
 
   const { pools, users } = res;
-  await cwUpdatePoolsAndUsers(pools, users);
+  await cwUpdatePoolsAndUsers(pools, users, gasPrice);
 }
 
 async function initAll() {
@@ -160,7 +174,7 @@ express()
     // await initAll();
     // await initContract();
     // await initStorages();
-    await triggerContract();
+    // await triggerContract();
     // setInterval(triggerContract, 24 * 60 * 60 * 1000); // 24 h update period
 
     const periodSensitive = 15 * 1000; // 15 s update period

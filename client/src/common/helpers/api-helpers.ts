@@ -1145,7 +1145,7 @@ async function updatePoolsAndUsers(
   for (let poolsDataItem of poolsData) {
     // replace item if it's found in storage or add a new
     pools = [
-      ...pools.filter((pool) => pool.channel_id !== poolsDataItem.channel_id),
+      ...pools.filter((pool) => pool.symbol !== poolsDataItem.symbol),
       poolsDataItem,
     ];
   }

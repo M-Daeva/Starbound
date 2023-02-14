@@ -209,19 +209,37 @@ async function getAddrByChainPrefix(
 
 function signAndBroadcastWrapper(
   client: SigningStargateClient | SigningCosmWasmClient,
-  owner: string
+  signerAddress: string,
+  margin: number = 1.05
 ) {
   return async (
-    obj: readonly EncodeObject[],
+    messages: readonly EncodeObject[],
     gasPrice: string | GasPrice,
     memo?: string
   ): Promise<DeliverTxResponse> => {
-    const margin = 1.05;
-    const gasSimulated = await client.simulate(owner, obj, memo);
+    const gasSimulated = await client.simulate(signerAddress, messages, memo);
     const gasWanted = Math.ceil(margin * gasSimulated);
     const fee = _calculateFee(gasWanted, gasPrice);
-    return await client.signAndBroadcast(owner, obj, fee, memo);
+    return await client.signAndBroadcast(signerAddress, messages, fee, memo);
   };
+}
+
+function getGasPriceFromChainRegistryItem(
+  chain: NetworkData,
+  chainType: "main" | "test"
+): string {
+  const response = chainType === "main" ? chain.main : chain.test;
+
+  const gasPriceAmountDefault = 0.005;
+  let gasPriceAmount = 0;
+
+  const minGasPrice = response?.fees.fee_tokens?.[0]?.fixed_min_gas_price;
+  if (minGasPrice) gasPriceAmount = minGasPrice;
+
+  gasPriceAmount = Math.max(gasPriceAmountDefault, gasPriceAmount);
+  const gasPrice = `${gasPriceAmount}${chain.denomNative}`;
+
+  return gasPrice;
 }
 
 export {
@@ -232,4 +250,5 @@ export {
   getAddrByChainPrefix,
   fee,
   signAndBroadcastWrapper,
+  getGasPriceFromChainRegistryItem,
 };

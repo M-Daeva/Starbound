@@ -1,5 +1,6 @@
 import { l, createRequest, specifyTimeout as _specifyTimeout } from "../utils";
 import { coin } from "@cosmjs/stargate";
+import { getGasPriceFromChainRegistryItem } from "../signers";
 import { getCwHelpers } from "../helpers/cw-helpers";
 import { getSgHelpers } from "../helpers/sg-helpers";
 import {
@@ -111,8 +112,6 @@ async function init() {
     chainType: "main" | "test",
     threshold: number = 100_000
   ) {
-    const gasPriceAmountDefault = "0.005"; // 0.0025 min
-
     if (!chainRegistryResponse) return;
 
     for (let [denom, granterValoperList] of denomGranterValoperList) {
@@ -123,32 +122,20 @@ async function init() {
       );
       if (!chain) continue;
 
-      let gasPriceAmount: string = "0";
       let rest: string | undefined;
       let rpc: string | undefined;
 
       if (chainType === "main" && chain.main) {
         rest = chain.main?.apis?.rest?.[0]?.address;
         rpc = chain.main?.apis?.rpc?.[0]?.address;
-        const minGasPrice =
-          chain.main.fees.fee_tokens?.[0]?.fixed_min_gas_price?.toString();
-        if (minGasPrice) gasPriceAmount = minGasPrice;
       }
       if (chainType === "test" && chain.test) {
         rest = chain.test?.apis?.rest?.[0]?.address;
         rpc = chain.test?.apis?.rpc?.[0]?.address;
-        const minGasPrice =
-          chain.test.fees.fee_tokens?.[0]?.fixed_min_gas_price?.toString();
-        if (minGasPrice) gasPriceAmount = minGasPrice;
       }
       if (!rest || !rpc) continue;
 
-      gasPriceAmount = Math.max(
-        +gasPriceAmountDefault,
-        +gasPriceAmount
-      ).toString();
-
-      const gasPrice = `${gasPriceAmount}${denom}`;
+      const gasPrice = getGasPriceFromChainRegistryItem(chain, chainType);
 
       const dappClientStruct: ClientStructWithoutKeplr = {
         prefix: chain.prefix,
@@ -217,11 +204,12 @@ async function init() {
 
   async function cwUpdatePoolsAndUsers(
     pools: PoolExtracted[],
-    users: UserExtracted[]
+    users: UserExtracted[],
+    gasPrice: string
   ) {
     l("cwUpdatePoolsAndUsers");
     try {
-      const res = await _cwUpdatePoolsAndUsers(pools, users);
+      const res = await _cwUpdatePoolsAndUsers(pools, users, gasPrice);
       l(res.rawLog);
     } catch (error) {
       l(error);
@@ -229,7 +217,8 @@ async function init() {
   }
 
   async function cwMockUpdatePoolsAndUsers(
-    poolsAndUsers: QueryPoolsAndUsersResponse
+    poolsAndUsers: QueryPoolsAndUsersResponse,
+    gasPrice: string
   ) {
     l("cwMockUpdatePoolsAndUsers");
 
@@ -248,7 +237,7 @@ async function init() {
     });
 
     try {
-      await _cwUpdatePoolsAndUsers(pools, users);
+      await _cwUpdatePoolsAndUsers(pools, users, gasPrice);
     } catch (error) {
       l(error, "\n");
     }
@@ -268,19 +257,19 @@ async function init() {
     }
   }
 
-  async function cwSwap() {
+  async function cwSwap(gasPrice: string) {
     l("cwSwap");
     try {
-      await _cwSwap();
+      await _cwSwap(gasPrice);
     } catch (error) {
       l(error, "\n");
     }
   }
 
-  async function cwTransfer() {
+  async function cwTransfer(gasPrice: string) {
     l("cwTransfer");
     try {
-      await _cwTransfer();
+      await _cwTransfer(gasPrice);
     } catch (error) {
       l(error, "\n");
     }
@@ -351,9 +340,12 @@ async function init() {
     }
   }
 
-  async function cwUpdateConfig(updateConfigStruct: UpdateConfigStruct) {
+  async function cwUpdateConfig(
+    updateConfigStruct: UpdateConfigStruct,
+    gasPrice: string
+  ) {
     try {
-      return await _cwUpdateConfig(updateConfigStruct);
+      return await _cwUpdateConfig(updateConfigStruct, gasPrice);
     } catch (error) {
       l(error, "\n");
     }
