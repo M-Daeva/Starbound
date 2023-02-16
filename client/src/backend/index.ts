@@ -4,16 +4,13 @@ import { text, json } from "body-parser";
 import cors from "cors";
 import E from "./config";
 import { rootPath } from "../common/utils";
+import { getGasPriceFromChainRegistryItem } from "../common/signers";
+import { init } from "../common/workers/testnet-backend-workers";
+import { api, ROUTES as API_ROUTES } from "./routes/api";
 import {
   ChainRegistryStorage,
   PoolsStorage,
 } from "../common/helpers/interfaces";
-import { getGasPriceFromChainRegistryItem } from "../common/signers";
-import { init } from "../common/workers/testnet-backend-workers";
-import dashboard from "./routes/dashboard";
-import assets from "./routes/assets";
-import bank from "./routes/bank";
-import { api, ROUTES as API_ROUTES } from "./routes/api";
 import {
   updatePoolsAndUsers as _updatePoolsAndUsers,
   _getAllGrants,
@@ -161,12 +158,14 @@ async function initAll() {
   await initContract();
 }
 
+const staticHandler = express.static(rootPath("./dist/frontend"));
+
 express()
   .use(cors(), text(), json())
-  .use(express.static(rootPath("./dist/frontend")))
-  .use("/dashboard", dashboard)
-  .use("/assets", assets)
-  .use("/bank", bank)
+  .use(staticHandler)
+  .use("/dashboard", staticHandler)
+  .use("/assets", staticHandler)
+  .use("/bank", staticHandler)
   .use("/api", api)
 
   .listen(E.PORT, async () => {

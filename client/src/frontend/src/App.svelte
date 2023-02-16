@@ -3,6 +3,7 @@
   import Dashboard from "./routes/Dashboard.svelte";
   import Assets from "./routes/Assets.svelte";
   import Bank from "./routes/Bank.svelte";
+  import NotFound from "./routes/NotFound.svelte";
   import { init } from "./services/wallet";
   import Modal from "./components/Modal.svelte";
   import { displayAddress } from "./services/helpers";
@@ -19,6 +20,7 @@
     dashboard: "/dashboard",
     assets: "/assets",
     bank: "/bank",
+    other: "*",
   };
 
   let checked = false;
@@ -131,6 +133,7 @@
       <Route primary={false} path={paths.bank}><Bank /></Route>
       <Route primary={false} path={paths.assets}><Assets /></Route>
       <Route primary={false} path={paths.dashboard}><Dashboard /></Route>
+      <Route primary={false} path={paths.other}><NotFound /></Route>
     </div>
 
     {#if isModalActive}

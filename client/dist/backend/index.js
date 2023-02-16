@@ -20,9 +20,6 @@ const config_1 = __importDefault(require("./config"));
 const utils_2 = require("../common/utils");
 const signers_1 = require("../common/signers");
 const testnet_backend_workers_1 = require("../common/workers/testnet-backend-workers");
-const dashboard_1 = __importDefault(require("./routes/dashboard"));
-const assets_1 = __importDefault(require("./routes/assets"));
-const bank_1 = __importDefault(require("./routes/bank"));
 const api_1 = require("./routes/api");
 const api_helpers_1 = require("../common/helpers/api-helpers");
 let req = (0, utils_1.createRequest)({ baseURL: config_1.default.BASE_URL + "/api" });
@@ -127,12 +124,32 @@ function initAll() {
         yield initContract();
     });
 }
+const app = express_1.default.static((0, utils_2.rootPath)("./dist/frontend"));
+// express()
+//   .use(cors(), text(), json())
+//   .use("/api", api)
+//   .use(/^((?!\/api).)*$/, app)
+// const app = express();
+// // Serve static assets from the "dist/frontend" directory
+// const publicPath = rootPath("./dist/frontend");
+// const staticMiddleware = express.static(publicPath);
+// app.use(staticMiddleware);
+// // Serve the "index.html" file for all routes except "/api"
+// app.get(/^((?!\/api).)*$/, (req, res) => {
+//   res.sendFile(publicPath);
+// });
+// // Handle 404 errors with a "Not Found" route
+// app.use((req, res) => {
+//   res.status(404).sendFile(publicPath);
+// });
+// // Use middleware to handle CORS, parsing text and JSON data, and "/api" routes
+// app.use("/api", cors(), text(), json(), api);
 (0, express_1.default)()
     .use((0, cors_1.default)(), (0, body_parser_1.text)(), (0, body_parser_1.json)())
-    .use(express_1.default.static((0, utils_2.rootPath)("./dist/frontend")))
-    .use("/dashboard", dashboard_1.default)
-    .use("/assets", assets_1.default)
-    .use("/bank", bank_1.default)
+    .use(app)
+    .use("/dashboard", app)
+    .use("/assets", app)
+    .use("/bank", app)
     .use("/api", api_1.api)
     .listen(config_1.default.PORT, () => __awaiter(void 0, void 0, void 0, function* () {
     (0, utils_1.l)(`Ready on port ${config_1.default.PORT}`);
