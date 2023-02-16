@@ -12,44 +12,39 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.init = void 0;
 const utils_1 = require("../utils");
 const cw_helpers_1 = require("../helpers/cw-helpers");
-const sg_helpers_1 = require("../helpers/sg-helpers");
 const signers_1 = require("../signers");
 const testnet_config_json_1 = require("../config/testnet-config.json");
-function init() {
+function init(chains, chainType) {
     return __awaiter(this, void 0, void 0, function* () {
-        const wallet = yield (0, signers_1.initWallet)();
+        let response;
+        let chainId;
+        const chain = chains === null || chains === void 0 ? void 0 : chains.find((item) => item.denomNative === "uosmo");
+        if (!chain)
+            return;
+        if (chainType === "main" && chain.main) {
+            response = chain.main;
+            chainId = response.chain_id;
+        }
+        if (chainType === "test" && chain.test) {
+            response = chain.test;
+            chainId = response.chain_id;
+        }
+        if (!response || !chainId)
+            return;
+        const wallet = yield (0, signers_1.initWalletList)([chain], chainType);
+        if (!wallet)
+            return;
         const userClientStruct = {
-            isKeplrType: true,
             RPC: testnet_config_json_1.RPC,
             wallet,
-            chainId: "osmo-test-4",
-        };
-        const userClientStructJuno = {
-            isKeplrType: true,
-            RPC: "https://rpc.uni.juno.deuslabs.fi",
-            wallet,
-            chainId: "uni-5",
+            chainId,
         };
         // user cosmwasm helpers
-        const { _cwDepositNew, _cwWithdrawNew, _cwQueryPoolsAndUsers, _cwDebugQueryBank, _cwDebugQueryPoolsAndUsers, _cwQueryAssets, owner, } = yield (0, cw_helpers_1.getCwHelpers)(userClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
-        // user stargate helpers
-        const { _sgGrantStakeAuth } = yield (0, sg_helpers_1.getSgHelpers)(userClientStructJuno);
-        function sgGrantStakeAuth(grantStakeStruct) {
-            return __awaiter(this, void 0, void 0, function* () {
-                try {
-                    const tx = yield _sgGrantStakeAuth(grantStakeStruct);
-                    (0, utils_1.l)(tx, "\n");
-                    return tx;
-                }
-                catch (error) {
-                    (0, utils_1.l)(error, "\n");
-                }
-            });
-        }
+        const { cwDeposit: _cwDeposit, cwWithdraw: _cwWithdraw, cwQueryPoolsAndUsers: _cwQueryPoolsAndUsers, cwQueryUser: _cwQueryUser, owner, } = yield (0, cw_helpers_1.getCwHelpers)(userClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
         function cwDeposit(userAlice) {
             return __awaiter(this, void 0, void 0, function* () {
                 try {
-                    const tx = yield _cwDepositNew(userAlice);
+                    const tx = yield _cwDeposit(userAlice);
                     return tx;
                 }
                 catch (error) {
@@ -60,18 +55,7 @@ function init() {
         function cwWithdraw(amount) {
             return __awaiter(this, void 0, void 0, function* () {
                 try {
-                    const tx = yield _cwWithdrawNew(amount);
-                    return tx;
-                }
-                catch (error) {
-                    (0, utils_1.l)(error, "\n");
-                }
-            });
-        }
-        function cwDebugQueryBank() {
-            return __awaiter(this, void 0, void 0, function* () {
-                try {
-                    const tx = yield _cwDebugQueryBank();
+                    const tx = yield _cwWithdraw(amount);
                     return tx;
                 }
                 catch (error) {
@@ -89,20 +73,10 @@ function init() {
                 }
             });
         }
-        function cwDebugQueryPoolsAndUsers() {
+        function cwQueryUser(address) {
             return __awaiter(this, void 0, void 0, function* () {
                 try {
-                    return yield _cwDebugQueryPoolsAndUsers();
-                }
-                catch (error) {
-                    (0, utils_1.l)(error, "\n");
-                }
-            });
-        }
-        function cwQueryAssets(address) {
-            return __awaiter(this, void 0, void 0, function* () {
-                try {
-                    return yield _cwQueryAssets(address);
+                    return yield _cwQueryUser(address);
                 }
                 catch (error) {
                     (0, utils_1.l)(error, "\n");
@@ -110,13 +84,10 @@ function init() {
             });
         }
         return {
-            sgGrantStakeAuth,
             cwDeposit,
             cwWithdraw,
-            cwDebugQueryBank,
             cwQueryPoolsAndUsers,
-            cwDebugQueryPoolsAndUsers,
-            cwQueryAssets,
+            cwQueryUser,
             owner,
         };
     });

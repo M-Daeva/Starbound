@@ -1,17 +1,10 @@
-import { DelegationStruct, User } from "../helpers/interfaces";
-declare function init(): Promise<{
-    sgGrantStakeAuth: (grantStakeStruct: DelegationStruct) => Promise<import("@cosmjs/stargate").DeliverTxResponse | undefined>;
-    cwDeposit: (userAlice: User) => Promise<readonly import("@cosmjs/stargate").Attribute[] | undefined>;
-    cwWithdraw: (amount: number) => Promise<readonly import("@cosmjs/stargate").Attribute[] | undefined>;
-    cwDebugQueryBank: () => Promise<void>;
-    cwQueryPoolsAndUsers: () => Promise<import("../helpers/interfaces").QueryPoolsAndUsersResponse | undefined>;
-    cwDebugQueryPoolsAndUsers: () => Promise<{
-        pools: import("../helpers/interfaces").PoolExtracted[];
-        users: User[];
-    } | undefined>;
-    cwQueryAssets: (address: string) => Promise<{
-        asset_list: import("../helpers/interfaces").Asset[];
-    } | undefined>;
+import { type User } from "../codegen/Starbound.types";
+import { type ChainRegistryStorage } from "../helpers/interfaces";
+declare function init(chains: ChainRegistryStorage, chainType: "main" | "test"): Promise<{
+    cwDeposit: (userAlice: User) => Promise<import("@cosmjs/stargate").DeliverTxResponse | undefined>;
+    cwWithdraw: (amount: number) => Promise<import("@cosmjs/stargate").DeliverTxResponse | undefined>;
+    cwQueryPoolsAndUsers: () => Promise<import("../codegen/Starbound.types").QueryPoolsAndUsersResponse | undefined>;
+    cwQueryUser: (address: string) => Promise<import("../codegen/Starbound.types").QueryUserResponse | undefined>;
     owner: string;
-}>;
+} | undefined>;
 export { init };

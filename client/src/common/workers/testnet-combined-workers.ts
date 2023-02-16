@@ -296,7 +296,7 @@ async function init() {
         ],
       };
 
-      await _cwUpdatePoolsAndUsers(data.pools, data.users);
+      await _cwUpdatePoolsAndUsers(data.pools, data.users, "0uosmo");
     } catch (error) {
       l(error, "\n");
     }
@@ -320,7 +320,7 @@ async function init() {
   async function cwSwap() {
     l(SEP, "swapping...");
     try {
-      await _cwSwap();
+      await _cwSwap("0uosmo");
       // await _queryBalance();
     } catch (error) {
       l(error, "\n");
@@ -330,7 +330,7 @@ async function init() {
   async function cwTransfer() {
     l(SEP, "transfering...");
     try {
-      await _cwTransfer();
+      await _cwTransfer("0uosmo");
       // await _queryBalance();
     } catch (error) {
       l(error, "\n");

@@ -12,42 +12,41 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.init = void 0;
 const utils_1 = require("../utils");
 const stargate_1 = require("@cosmjs/stargate");
-const cw_helpers_1 = require("../helpers/cw-helpers");
-const assets_1 = require("../helpers/assets");
-const sg_helpers_1 = require("../helpers/sg-helpers");
 const signers_1 = require("../signers");
+const cw_helpers_1 = require("../helpers/cw-helpers");
+const sg_helpers_1 = require("../helpers/sg-helpers");
 const testnet_config_json_1 = require("../config/testnet-config.json");
 const aliceClientStruct = {
-    isKeplrType: false,
     prefix: testnet_config_json_1.PREFIX,
     RPC: testnet_config_json_1.RPC,
     seed: testnet_config_json_1.SEED_ALICE,
 };
 const bobClientStruct = {
-    isKeplrType: false,
     prefix: testnet_config_json_1.PREFIX,
     RPC: testnet_config_json_1.RPC,
     seed: testnet_config_json_1.SEED_BOB,
 };
 const dappClientStruct = {
-    isKeplrType: false,
     prefix: testnet_config_json_1.PREFIX,
     RPC: testnet_config_json_1.RPC,
     seed: testnet_config_json_1.SEED_DAPP,
 };
 const dappClientStructJuno = {
-    isKeplrType: false,
     prefix: "juno",
-    RPC: "https://rpc.uni.juno.deuslabs.fi:443",
+    //RPC: "https://rpc.uni.juno.deuslabs.fi:443",
+    RPC: "https://rpc.uni.junonetwork.io:443",
     seed: testnet_config_json_1.SEED_DAPP,
 };
+const req = (0, utils_1.createRequest)({});
 function init() {
     return __awaiter(this, void 0, void 0, function* () {
         // dapp cosmwasm helpers
-        const { owner: dappAddr, _cwSwap, _cwGetPools, _cwGetPrices, _cwQueryPoolsAndUsers, _cwDebugQueryPoolsAndUsers, _cwUpdatePoolsAndUsers, _cwQueryAssets, _cwDebugQueryBank, _cwTransfer, _cwMultiTransfer, _cwSgSend, } = yield (0, cw_helpers_1.getCwHelpers)(dappClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
+        const { owner: dappAddr, cwSwap: _cwSwap, cwQueryPoolsAndUsers: _cwQueryPoolsAndUsers, cwUpdatePoolsAndUsers: _cwUpdatePoolsAndUsers, cwQueryUser: _cwQueryUser, cwTransfer: _cwTransfer, cwUpdateConfig: _cwUpdateConfig, cwQueryConfig: _cwQueryConfig,
+        // cwMultiTransfer: _cwMultiTransfer,
+         } = yield (0, cw_helpers_1.getCwHelpers)(dappClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
         // dapp stargate helpers
-        const { _sgUpdatePoolList, _sgTransfer, _sgSend } = yield (0, sg_helpers_1.getSgHelpers)(dappClientStruct);
-        const { _sgDelegateFrom, _sgGetTokenBalances } = yield (0, sg_helpers_1.getSgHelpers)(dappClientStructJuno);
+        const { sgUpdatePoolList: _sgUpdatePoolList, sgTransfer: _sgTransfer, sgSend: _sgSend, } = yield (0, sg_helpers_1.getSgHelpers)(dappClientStruct);
+        const { sgDelegateFrom: _sgDelegateFrom, sgGetTokenBalances: _sgGetTokenBalances, } = yield (0, sg_helpers_1.getSgHelpers)(dappClientStructJuno);
         function sgUpdatePoolList() {
             return __awaiter(this, void 0, void 0, function* () {
                 let pools = yield _sgUpdatePoolList();
@@ -77,63 +76,65 @@ function init() {
                 }
             });
         }
-        function sgDelegateFromAll(users) {
+        function sgDelegateFromAll(denomGranterValoperList, chainRegistryResponse, chainType, threshold = 100000) {
+            var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r;
             return __awaiter(this, void 0, void 0, function* () {
-                const denom = "ujunox";
-                function delegate(user) {
-                    return __awaiter(this, void 0, void 0, function* () {
+                if (!chainRegistryResponse)
+                    return;
+                for (let [denom, granterValoperList] of denomGranterValoperList) {
+                    if (denom === "ujuno" && chainType === "test")
+                        denom = "ujunox";
+                    const chain = chainRegistryResponse.find((item) => item.denomNative === denom);
+                    if (!chain)
+                        continue;
+                    let rest;
+                    let rpc;
+                    if (chainType === "main" && chain.main) {
+                        rest = (_d = (_c = (_b = (_a = chain.main) === null || _a === void 0 ? void 0 : _a.apis) === null || _b === void 0 ? void 0 : _b.rest) === null || _c === void 0 ? void 0 : _c[0]) === null || _d === void 0 ? void 0 : _d.address;
+                        rpc = (_h = (_g = (_f = (_e = chain.main) === null || _e === void 0 ? void 0 : _e.apis) === null || _f === void 0 ? void 0 : _f.rpc) === null || _g === void 0 ? void 0 : _g[0]) === null || _h === void 0 ? void 0 : _h.address;
+                    }
+                    if (chainType === "test" && chain.test) {
+                        rest = (_m = (_l = (_k = (_j = chain.test) === null || _j === void 0 ? void 0 : _j.apis) === null || _k === void 0 ? void 0 : _k.rest) === null || _l === void 0 ? void 0 : _l[0]) === null || _m === void 0 ? void 0 : _m.address;
+                        rpc = (_r = (_q = (_p = (_o = chain.test) === null || _o === void 0 ? void 0 : _o.apis) === null || _p === void 0 ? void 0 : _p.rpc) === null || _q === void 0 ? void 0 : _q[0]) === null || _r === void 0 ? void 0 : _r.address;
+                    }
+                    if (!rest || !rpc)
+                        continue;
+                    const gasPrice = (0, signers_1.getGasPriceFromChainRegistryItem)(chain, chainType);
+                    const dappClientStruct = {
+                        prefix: chain.prefix,
+                        RPC: rpc,
+                        seed: testnet_config_json_1.SEED_DAPP,
+                    };
+                    const { sgDelegateFromList: _sgDelegateFromList } = yield (0, sg_helpers_1.getSgHelpers)(dappClientStruct);
+                    let delegationStructList = [];
+                    for (let [granter, valoper] of granterValoperList) {
+                        const urlHolded = `${rest}/cosmos/bank/v1beta1/balances/${granter}`;
                         try {
-                            let addr = (0, signers_1.getAddrByPrefix)(user.osmo_address, "juno");
-                            let balance = (yield _sgGetTokenBalances(addr)).find((item) => item.symbol === denom);
-                            let delegation = balance !== undefined ? +balance.amount - 1000 : 0;
-                            (0, utils_1.l)(addr, balance, delegation);
-                            if (delegation >= 1000) {
-                                let tx = yield _sgDelegateFrom({
-                                    targetAddr: addr,
-                                    tokenAmount: delegation,
-                                    tokenDenom: denom,
-                                    validatorAddr: "junovaloper1w8cpaaljwrytquj86kvp9s72lvmddcc208ghun",
-                                });
-                                (0, utils_1.l)(tx);
-                            }
+                            const balHolded = yield (0, utils_1.specifyTimeout)(req.get(urlHolded), 10000);
+                            const balance = balHolded.balances.find((item) => item.denom === denom);
+                            const amount = +((balance === null || balance === void 0 ? void 0 : balance.amount) || "0");
+                            // skip delegation if amount <= threshold
+                            //if (amount <= threshold) return;
+                            const delegationStruct = {
+                                targetAddr: granter,
+                                // tokenAmount: amount - threshold,
+                                tokenAmount: 1,
+                                tokenDenom: denom,
+                                validatorAddr: valoper,
+                            };
+                            delegationStructList.push(delegationStruct);
                         }
                         catch (error) {
                             (0, utils_1.l)(error);
                         }
-                    });
-                }
-                for (let user of users) {
-                    yield delegate(user);
-                }
-            });
-        }
-        function cwGetPools() {
-            return __awaiter(this, void 0, void 0, function* () {
-                try {
-                    yield _cwGetPools();
-                }
-                catch (error) {
-                    (0, utils_1.l)(error, "\n");
-                }
-            });
-        }
-        function cwGetPrices() {
-            return __awaiter(this, void 0, void 0, function* () {
-                try {
-                    yield _cwGetPrices();
-                }
-                catch (error) {
-                    (0, utils_1.l)(error, "\n");
-                }
-            });
-        }
-        function cwDebugQueryPoolsAndUsers() {
-            return __awaiter(this, void 0, void 0, function* () {
-                try {
-                    yield _cwDebugQueryPoolsAndUsers();
-                }
-                catch (error) {
-                    (0, utils_1.l)(error, "\n");
+                    }
+                    try {
+                        const tx = yield (0, utils_1.specifyTimeout)(_sgDelegateFromList(delegationStructList, gasPrice), 10000);
+                        (0, utils_1.l)(tx);
+                    }
+                    catch (error) {
+                        (0, utils_1.l)(error);
+                    }
                 }
             });
         }
@@ -149,7 +150,19 @@ function init() {
                 }
             });
         }
-        function cwMockUpdatePoolsAndUsers(poolsAndUsers) {
+        function cwUpdatePoolsAndUsers(pools, users, gasPrice) {
+            return __awaiter(this, void 0, void 0, function* () {
+                (0, utils_1.l)("cwUpdatePoolsAndUsers");
+                try {
+                    const res = yield _cwUpdatePoolsAndUsers(pools, users, gasPrice);
+                    (0, utils_1.l)(res.rawLog);
+                }
+                catch (error) {
+                    (0, utils_1.l)(error);
+                }
+            });
+        }
+        function cwMockUpdatePoolsAndUsers(poolsAndUsers, gasPrice) {
             return __awaiter(this, void 0, void 0, function* () {
                 (0, utils_1.l)("cwMockUpdatePoolsAndUsers");
                 let { pools, users } = poolsAndUsers;
@@ -163,21 +176,21 @@ function init() {
                     return Object.assign(Object.assign({}, user), { asset_list });
                 });
                 try {
-                    yield _cwUpdatePoolsAndUsers(pools, users);
+                    yield _cwUpdatePoolsAndUsers(pools, users, gasPrice);
                 }
                 catch (error) {
                     (0, utils_1.l)(error, "\n");
                 }
             });
         }
-        function cwQueryAssets() {
+        function cwQueryUser() {
             return __awaiter(this, void 0, void 0, function* () {
                 let aliceAddr = "osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx";
                 let bobAddr = "osmo1chgwz55h9kepjq0fkj5supl2ta3nwu63e3ds8x";
                 let addresses = [aliceAddr, bobAddr];
                 for (let addr of addresses) {
                     try {
-                        yield _cwQueryAssets(addr);
+                        yield _cwQueryUser(addr);
                     }
                     catch (error) {
                         (0, utils_1.l)(error, "\n");
@@ -185,32 +198,22 @@ function init() {
                 }
             });
         }
-        function cwSwap() {
+        function cwSwap(gasPrice) {
             return __awaiter(this, void 0, void 0, function* () {
                 (0, utils_1.l)("cwSwap");
                 try {
-                    yield _cwSwap();
+                    yield _cwSwap(gasPrice);
                 }
                 catch (error) {
                     (0, utils_1.l)(error, "\n");
                 }
             });
         }
-        function cwDebugQueryBank() {
-            return __awaiter(this, void 0, void 0, function* () {
-                try {
-                    yield _cwDebugQueryBank();
-                }
-                catch (error) {
-                    (0, utils_1.l)(error, "\n");
-                }
-            });
-        }
-        function cwTransfer() {
+        function cwTransfer(gasPrice) {
             return __awaiter(this, void 0, void 0, function* () {
                 (0, utils_1.l)("cwTransfer");
                 try {
-                    yield _cwTransfer();
+                    yield _cwTransfer(gasPrice);
                 }
                 catch (error) {
                     (0, utils_1.l)(error, "\n");
@@ -222,29 +225,29 @@ function init() {
         const junoRevision = "5";
         const junoHeight = "500000";
         let junoAmount = "1";
-        let junoParams = {
-            channel_id: junoChannel,
-            to: junoAddr,
-            amount: junoAmount,
-            denom: assets_1.DENOMS.JUNO,
-            block_revision: junoRevision,
-            block_height: junoHeight,
-        };
-        let params = [
-            junoParams,
-            //	junoParams
-        ];
-        function cwMultiTransfer() {
-            return __awaiter(this, void 0, void 0, function* () {
-                (0, utils_1.l)("cwMultiTransfer");
-                try {
-                    yield _cwMultiTransfer(params);
-                }
-                catch (error) {
-                    (0, utils_1.l)(error, "\n");
-                }
-            });
-        }
+        let timeout_in_mins = 5;
+        let timestamp = `${Date.now() + timeout_in_mins * 60 * 1000}000000`;
+        // let junoParams: TransferParams = {
+        //   channel_id: junoChannel,
+        //   to: junoAddr,
+        //   amount: junoAmount,
+        //   denom: DENOMS.JUNO,
+        //   block_revision: junoRevision,
+        //   block_height: junoHeight,
+        //   timestamp,
+        // };
+        // let params: TransferParams[] = [
+        //   junoParams,
+        //   //	junoParams
+        // ];
+        // async function cwMultiTransfer() {
+        //   l("cwMultiTransfer");
+        //   try {
+        //     await _cwMultiTransfer(params);
+        //   } catch (error) {
+        //     l(error, "\n");
+        //   }
+        // }
         let ibcStruct = {
             amount: 1,
             dstPrefix: "juno",
@@ -255,17 +258,6 @@ function init() {
             return __awaiter(this, void 0, void 0, function* () {
                 try {
                     const tx = yield _sgTransfer(ibcStruct);
-                    (0, utils_1.l)(tx, "\n");
-                }
-                catch (error) {
-                    (0, utils_1.l)(error, "\n");
-                }
-            });
-        }
-        function cwSgSend() {
-            return __awaiter(this, void 0, void 0, function* () {
-                try {
-                    const tx = yield _cwSgSend();
                     (0, utils_1.l)(tx, "\n");
                 }
                 catch (error) {
@@ -284,24 +276,42 @@ function init() {
                 }
             });
         }
+        function cwQueryConfig() {
+            return __awaiter(this, void 0, void 0, function* () {
+                try {
+                    return yield _cwQueryConfig();
+                }
+                catch (error) {
+                    (0, utils_1.l)(error, "\n");
+                }
+            });
+        }
+        function cwUpdateConfig(updateConfigStruct, gasPrice) {
+            return __awaiter(this, void 0, void 0, function* () {
+                try {
+                    return yield _cwUpdateConfig(updateConfigStruct, gasPrice);
+                }
+                catch (error) {
+                    (0, utils_1.l)(error, "\n");
+                }
+            });
+        }
         return {
             _queryBalance,
             cwSwap,
             sgDelegateFrom,
             sgUpdatePoolList,
-            cwGetPools,
-            cwGetPrices,
-            cwDebugQueryPoolsAndUsers,
             cwQueryPoolsAndUsers,
             cwMockUpdatePoolsAndUsers,
-            cwQueryAssets,
-            cwDebugQueryBank,
+            cwQueryUser,
             cwTransfer,
-            cwMultiTransfer,
+            // cwMultiTransfer,
+            cwUpdatePoolsAndUsers,
             sgTransfer,
-            cwSgSend,
             sgSend,
             sgDelegateFromAll,
+            cwQueryConfig,
+            cwUpdateConfig,
         };
     });
 }

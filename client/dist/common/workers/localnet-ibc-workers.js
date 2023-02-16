@@ -15,8 +15,7 @@ const cw_helpers_1 = require("../helpers/cw-helpers");
 const sg_helpers_1 = require("../helpers/sg-helpers");
 const assets_1 = require("../helpers/assets");
 const localnet_ibc_config_json_1 = require("../config/localnet-ibc-config.json");
-const clientStruct = {
-    isKeplrType: false,
+const aliceClientStruct = {
     prefix: localnet_ibc_config_json_1.PREFIX,
     RPC: localnet_ibc_config_json_1.RPC,
     seed: localnet_ibc_config_json_1.SEED_ALICE,
@@ -34,8 +33,10 @@ const fromOsmoToAtom = {
 };
 function init() {
     return __awaiter(this, void 0, void 0, function* () {
-        const { _sgDelegateFrom, _sgGetTokenBalances, _sgGrantStakeAuth, _sgSwap, _sgTransfer, } = yield (0, sg_helpers_1.getSgHelpers)(clientStruct);
-        const { _cwDeposit, _cwGetBankBalance, _cwSwap, _cwTransfer, _cwMultiTransfer, } = yield (0, cw_helpers_1.getCwHelpers)(clientStruct, localnet_ibc_config_json_1.CONTRACT_ADDRESS);
+        // alice cosmwasm helpers
+        const { cwDeposit: _cwDeposit, cwMultiTransfer: _cwMultiTransfer } = yield (0, cw_helpers_1.getCwHelpers)(aliceClientStruct, localnet_ibc_config_json_1.CONTRACT_ADDRESS);
+        // alice stargate helpers
+        const { sgGetTokenBalances: _sgGetTokenBalances, sgSwap: _sgSwap, sgTransfer: _sgTransfer, } = yield (0, sg_helpers_1.getSgHelpers)(aliceClientStruct);
         function sgTransfer() {
             return __awaiter(this, void 0, void 0, function* () {
                 (0, utils_1.l)(utils_1.SEP, "sending ibc transfer...");
@@ -66,11 +67,35 @@ function init() {
                 (0, utils_1.l)({ contract: balances });
             });
         }
+        let assetListAlice = [
+            // ATOM
+            {
+                asset_denom: assets_1.DENOMS.ATOM,
+                wallet_address: "cosmos1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyklkm75",
+                wallet_balance: "0",
+                weight: "0.5",
+                amount_to_send_until_next_epoch: "0",
+            },
+            // JUNO
+            {
+                asset_denom: assets_1.DENOMS.JUNO,
+                wallet_address: "juno1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyqd4qeg",
+                wallet_balance: "0",
+                weight: "0.5",
+                amount_to_send_until_next_epoch: "0",
+            },
+        ];
+        let userAlice = {
+            asset_list: assetListAlice,
+            day_counter: "3",
+            deposited: `${100}`,
+            is_controlled_rebalancing: false,
+        };
         function cwDeposit() {
             return __awaiter(this, void 0, void 0, function* () {
                 (0, utils_1.l)(utils_1.SEP, "depositing...");
                 try {
-                    yield _cwDeposit(10000);
+                    yield _cwDeposit(userAlice);
                     yield _queryBalance();
                 }
                 catch (error) {
@@ -106,6 +131,9 @@ function init() {
         const wasmRevision = "5";
         const wasmHeight = "500000";
         let osmoAmount = "1";
+        // let timeout_in_mins = 5;
+        // let timestamp = `${Date.now() + timeout_in_mins * 60 * 1000}000000`;
+        let timestamp = "0";
         let tokenParams = {
             channel_id: wasmChannel,
             to: wasmAddr,
@@ -113,6 +141,7 @@ function init() {
             denom: assets_1.DENOMS.OSMO,
             block_revision: wasmRevision,
             block_height: wasmHeight,
+            timestamp,
         };
         let tokenParams2 = {
             channel_id: wasmChannel,
@@ -121,6 +150,7 @@ function init() {
             denom: assets_1.DENOMS.OSMO,
             block_revision: wasmRevision,
             block_height: wasmHeight,
+            timestamp,
         };
         let params = [tokenParams, tokenParams2];
         function cwMultiTransfer() {
@@ -137,9 +167,7 @@ function init() {
         return {
             sgTransfer,
             sgSwap,
-            _queryBalance,
             cwDeposit,
-            //  cwTransfer, cwSwap
             cwMultiTransfer,
         };
     });

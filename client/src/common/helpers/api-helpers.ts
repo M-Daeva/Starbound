@@ -1,8 +1,8 @@
 import { Coin, coin } from "@cosmjs/stargate";
 import { DENOMS } from "../helpers/assets";
 import { getSgClient, getAddrByPrefix } from "../signers";
-import ibcConfigAb from "../../../../ibc-config-ab.json";
-import ibcConfigAc from "../../../../ibc-config-ac.json";
+import ibcConfigAb from "../../../src/common/config/ibc-config-ab.json";
+import ibcConfigAc from "../../../src/common/config/ibc-config-ac.json";
 import {
   PoolExtracted,
   QueryPoolsAndUsersResponse,

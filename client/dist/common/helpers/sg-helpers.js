@@ -25,7 +25,8 @@ const req = (0, utils_1.createRequest)({});
 function getSgHelpers(clientStruct) {
     return __awaiter(this, void 0, void 0, function* () {
         const { client, owner } = yield (0, signers_1.getSgClient)(clientStruct);
-        function _sgTransfer(ibcStruct) {
+        const signAndBroadcast = (0, signers_1.signAndBroadcastWrapper)(client, owner);
+        function sgTransfer(ibcStruct) {
             return __awaiter(this, void 0, void 0, function* () {
                 const { amount, dstPrefix, sourceChannel, sourcePort } = ibcStruct;
                 const receiver = (0, signers_1.getAddrByPrefix)(owner, dstPrefix);
@@ -51,7 +52,7 @@ function getSgHelpers(clientStruct) {
                 return tx;
             });
         }
-        function _sgSwap(swapStruct) {
+        function sgSwap(swapStruct) {
             return __awaiter(this, void 0, void 0, function* () {
                 const { amount, from, to } = swapStruct;
                 const msgSwapExactAmountIn = {
@@ -68,7 +69,7 @@ function getSgHelpers(clientStruct) {
                 return tx;
             });
         }
-        function _sgGrantStakeAuth(delegationStruct) {
+        function sgGrantStakeAuth(delegationStruct) {
             return __awaiter(this, void 0, void 0, function* () {
                 const { targetAddr, tokenAmount, tokenDenom, validatorAddr } = delegationStruct;
                 const timestamp = {
@@ -99,7 +100,24 @@ function getSgHelpers(clientStruct) {
                 return tx;
             });
         }
-        function _sgDelegateFrom(delegationStruct) {
+        function sgRevokeStakeAuth(delegationStruct) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const { targetAddr } = delegationStruct;
+                (0, utils_1.l)({ targetAddr });
+                const msgRevoke = {
+                    granter: owner,
+                    grantee: targetAddr,
+                    msgTypeUrl: "/cosmos.staking.v1beta1.MsgDelegate",
+                };
+                const msg = {
+                    typeUrl: "/cosmos.authz.v1beta1.MsgRevoke",
+                    value: msgRevoke,
+                };
+                const tx = yield client.signAndBroadcast(owner, [msg], signers_1.fee);
+                return tx;
+            });
+        }
+        function sgDelegateFrom(delegationStruct, specifiedFee = signers_1.fee) {
             return __awaiter(this, void 0, void 0, function* () {
                 const { targetAddr, tokenAmount, tokenDenom, validatorAddr } = delegationStruct;
                 const msg1 = {
@@ -118,11 +136,32 @@ function getSgHelpers(clientStruct) {
                     typeUrl: "/cosmos.authz.v1beta1.MsgExec",
                     value: msgExec,
                 };
-                const tx = yield client.signAndBroadcast(owner, [msg], signers_1.fee);
+                const tx = yield client.signAndBroadcast(owner, [msg], specifiedFee);
                 return tx;
             });
         }
-        function _sgGetTokenBalances(addr = owner) {
+        function sgDelegateFromList(delegationStructList, gasPrice) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const msgList = delegationStructList.map(({ targetAddr, tokenAmount, tokenDenom, validatorAddr }) => ({
+                    typeUrl: "/cosmos.staking.v1beta1.MsgDelegate",
+                    value: tx_1.MsgDelegate.encode(tx_1.MsgDelegate.fromPartial({
+                        delegatorAddress: targetAddr,
+                        validatorAddress: validatorAddr,
+                        amount: (0, stargate_1.coin)(tokenAmount, tokenDenom),
+                    })).finish(),
+                }));
+                const msgExec = {
+                    grantee: owner,
+                    msgs: msgList,
+                };
+                const obj = {
+                    typeUrl: "/cosmos.authz.v1beta1.MsgExec",
+                    value: msgExec,
+                };
+                return yield signAndBroadcast([obj], gasPrice);
+            });
+        }
+        function sgGetTokenBalances(addr = owner) {
             return __awaiter(this, void 0, void 0, function* () {
                 let balances = yield client.getAllBalances(addr);
                 return balances.map(({ amount, denom }) => ({
@@ -131,7 +170,7 @@ function getSgHelpers(clientStruct) {
                 }));
             });
         }
-        function _sgUpdatePoolList() {
+        function sgUpdatePoolList() {
             return __awaiter(this, void 0, void 0, function* () {
                 let url = "https://api-osmosis.imperator.co/pools/v2/all?low_liquidity=false";
                 // download pools info
@@ -152,7 +191,7 @@ function getSgHelpers(clientStruct) {
                 return valid_pools;
             });
         }
-        function _sgSend(recipient, amount) {
+        function sgSend(recipient, amount) {
             return __awaiter(this, void 0, void 0, function* () {
                 const msg = {
                     typeUrl: "/cosmos.bank.v1beta1.MsgSend",
@@ -168,13 +207,15 @@ function getSgHelpers(clientStruct) {
         }
         return {
             owner,
-            _sgSwap,
-            _sgTransfer,
-            _sgGrantStakeAuth,
-            _sgDelegateFrom,
-            _sgGetTokenBalances,
-            _sgUpdatePoolList,
-            _sgSend,
+            sgSwap,
+            sgTransfer,
+            sgGrantStakeAuth,
+            sgRevokeStakeAuth,
+            sgDelegateFrom,
+            sgGetTokenBalances,
+            sgUpdatePoolList,
+            sgSend,
+            sgDelegateFromList,
         };
     });
 }

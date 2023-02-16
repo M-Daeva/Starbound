@@ -9,5 +9,7 @@ declare let envs: {
         TO_STATIC: string;
     };
     BASE_URL: string;
+    CHAIN_TYPE: "main" | "test";
+    DAPP_ADDRESS: string;
 };
 export default envs;

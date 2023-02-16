@@ -81,6 +81,7 @@ async function updatePoolsAndUsers() {
     let res = await _updatePoolsAndUsers(
       chainRegistryStorage.get(),
       poolsAndUsers,
+      poolsStorage.get(),
       "main"
     );
     l(res);

@@ -1,8 +1,40 @@
-import { PoolExtracted, QueryPoolsAndUsersResponse } from "./interfaces";
-declare function _updatePoolsAndUsers(response: QueryPoolsAndUsersResponse): Promise<{
-    pools: PoolExtracted[];
-    users: import("./interfaces").UserExtracted[];
-}>;
-declare function _mockUpdatePoolsAndUsers(): Promise<QueryPoolsAndUsersResponse>;
-declare function _requestValidators(): Promise<[string, string[]][]>;
-export { _updatePoolsAndUsers, _mockUpdatePoolsAndUsers, _requestValidators };
+import { Coin } from "@cosmjs/stargate";
+import { PoolExtracted, QueryPoolsAndUsersResponse } from "../codegen/Starbound.types";
+import { RelayerStruct, ValidatorResponseReduced, IbcResponse, NetworkData, AssetDescription, ChainRegistryStorage, IbcChannelsStorage, PoolsStorage } from "./interfaces";
+declare function getIbcChannelList(chainRegistryStorage: ChainRegistryStorage | undefined, chainType: "main" | "test"): Promise<[string, string | undefined][] | undefined>;
+declare function _verifyRest(restList: string[]): Promise<string>;
+declare function _verifyRestList(prefixAndRestList: [string, string, string[]][]): Promise<[string, string, string | undefined][]>;
+declare function _verifyRpc(rpcList: string[], prefix: string, seed: string): Promise<string | undefined>;
+declare function _verifyRpcList(prefixAndRpcList: [string, string, string[]][], seed: string): Promise<[string, string, string | undefined][]>;
+declare function _modifyRpcList(prefixAndRpcList: [string, string, string[]][], allowList: [string, string, string[]][], ignoreList: [string, string, string[]][]): [string, string, string[]][];
+declare function getChainRegistry(seed: string, allowList: [string, string, string[]][], ignoreList: [string, string, string[]][]): Promise<NetworkData[]>;
+declare function mergeChainRegistry(chainRegistryStorage: ChainRegistryStorage | undefined, chainRegistryResponse: NetworkData[]): ChainRegistryStorage;
+declare function mergeIbcChannels(ibcChannelsStorage: IbcChannelsStorage | undefined, ibcChannelsResponse: IbcResponse[] | undefined): IbcChannelsStorage | undefined;
+declare function mergePools(poolsStorage: PoolsStorage | undefined, poolsResponse: [string, AssetDescription[]][]): PoolsStorage;
+declare function getIbcChannnels(chainRegistryStorage: ChainRegistryStorage | undefined, chainType: "main" | "test"): Promise<IbcResponse[] | undefined>;
+declare function requestRelayers(chainRegistryStorage: ChainRegistryStorage | undefined, chainType: "main" | "test"): Promise<RelayerStruct[] | undefined>;
+declare function getPools(): Promise<[string, AssetDescription[]][]>;
+declare function filterChainRegistry(chainRegistry: NetworkData[] | undefined, ibcChannels: IbcResponse[] | undefined, pools: [string, AssetDescription[]][] | undefined, validators: [string, ValidatorResponseReduced[]][] | undefined, chainType: "main" | "test"): {
+    chainRegistry: NetworkData[];
+    ibcChannels: IbcResponse[];
+    pools: [string, AssetDescription[]][];
+    activeNetworks: PoolExtracted[];
+};
+declare function _getChainByChainId(chainRegistryStorage: ChainRegistryStorage | undefined, chainId: string): NetworkData | undefined;
+declare function getActiveNetworksInfo(chainRegistryStorage: ChainRegistryStorage | undefined, chainType: "main" | "test"): Promise<PoolExtracted[] | undefined>;
+declare function updatePoolsAndUsers(chainRegistryResponse: ChainRegistryStorage | undefined, queryPoolsAndUsersResponse: QueryPoolsAndUsersResponse | undefined, poolsStorage: PoolsStorage | undefined, chainType: "main" | "test"): Promise<QueryPoolsAndUsersResponse | undefined>;
+declare function mockUpdatePoolsAndUsers(): Promise<QueryPoolsAndUsersResponse>;
+declare function getValidators(cnainNameAndRestList: [string, string][]): Promise<[string, ValidatorResponseReduced[]][]>;
+declare function getChainNameAndRestList(chainRegistryStorage: ChainRegistryStorage | undefined, chainType: "main" | "test"): [string, string][];
+declare function getUserFunds(chainRegistryResponse: ChainRegistryStorage | undefined, queryPoolsAndUsersResponse: QueryPoolsAndUsersResponse | undefined, poolsStorage: PoolsStorage | undefined, chainType: "main" | "test"): Promise<{
+    chain: string;
+    osmoAddr: string;
+    address: string;
+    holded: Coin;
+    staked: Coin;
+}[]>;
+declare function _getAllGrants(grantee: string, chainRegistryResponse: ChainRegistryStorage | undefined, chainType: "main" | "test"): Promise<[string, [string, string][]][] | undefined>;
+declare function _transformGrantList(denomGranterValoperList: [string, [string, string][]][]): [string, string, string][][];
+declare function queryPools(chainRegistry: ChainRegistryStorage | undefined): Promise<any>;
+declare function getDappAddressAndDenomList(osmoAddress: string, chainRegistry: ChainRegistryStorage | undefined): [string, string][] | undefined;
+export { updatePoolsAndUsers, mockUpdatePoolsAndUsers, getChainRegistry, getIbcChannnels, getPools, getValidators, getUserFunds, filterChainRegistry, mergeChainRegistry, mergeIbcChannels, mergePools, _verifyRpc, _verifyRpcList, _verifyRest, _verifyRestList, getChainNameAndRestList, getIbcChannelList, _modifyRpcList, _getAllGrants, _transformGrantList, requestRelayers, getActiveNetworksInfo, queryPools, getDappAddressAndDenomList, _getChainByChainId, };

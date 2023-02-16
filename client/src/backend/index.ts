@@ -8,7 +8,7 @@ import {
   ChainRegistryStorage,
   PoolsStorage,
 } from "../common/helpers/interfaces";
-import { getGasPriceFromChainRegistryItem } from "../../src/common/signers";
+import { getGasPriceFromChainRegistryItem } from "../common/signers";
 import { init } from "../common/workers/testnet-backend-workers";
 import dashboard from "./routes/dashboard";
 import assets from "./routes/assets";

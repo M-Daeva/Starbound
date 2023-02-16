@@ -1,14 +1,18 @@
-import { Coin } from "@cosmjs/stargate";
+import { Coin, DeliverTxResponse } from "@cosmjs/stargate";
 import { Keplr } from "@keplr-wallet/types";
 import Decimal from "decimal.js";
-interface ClientStruct {
-    isKeplrType: boolean;
+import { QueryPoolsAndUsersResponse } from "../../common/codegen/Starbound.types";
+interface ClientStructWithKeplr {
     RPC: string;
-    wallet?: Keplr;
-    chainId?: string;
-    seed?: string;
-    prefix?: string;
+    wallet: Keplr;
+    chainId: string;
 }
+interface ClientStructWithoutKeplr {
+    RPC: string;
+    seed: string;
+    prefix: string;
+}
+declare type ClientStruct = ClientStructWithKeplr | ClientStructWithoutKeplr;
 interface IbcStruct {
     dstPrefix: string;
     sourceChannel: string;
@@ -20,41 +24,6 @@ interface DelegationStruct {
     tokenAmount: number;
     tokenDenom: string;
     validatorAddr: string;
-}
-interface Asset {
-    asset_denom: string;
-    wallet_address: string;
-    wallet_balance: string;
-    weight: string;
-    amount_to_send_until_next_epoch: string;
-}
-interface User {
-    asset_list: Asset[];
-    is_controlled_rebalancing: boolean;
-    day_counter: string;
-    deposited_on_current_period: string;
-    deposited_on_next_period: string;
-}
-interface PoolExtracted {
-    id: string;
-    denom: string;
-    price: string;
-    symbol: string;
-    channel_id: string;
-    port_id: string;
-}
-interface UserExtracted {
-    osmo_address: string;
-    asset_list: AssetExtracted[];
-}
-interface AssetExtracted {
-    asset_denom: string;
-    wallet_address: string;
-    wallet_balance: string;
-}
-interface QueryPoolsAndUsersResponse {
-    users: UserExtracted[];
-    pools: PoolExtracted[];
 }
 interface RelayerList {
     sendable: Relayer[];
@@ -151,6 +120,10 @@ interface ChainResponse {
     fees: {
         fee_tokens: {
             denom: string;
+            fixed_min_gas_price?: number;
+            low_gas_price?: number;
+            average_gas_price?: number;
+            high_gas_price?: number;
         }[];
     };
     codebase: {
@@ -215,6 +188,22 @@ interface DelegationsResponse {
     }[];
     pagination: Pagination;
 }
+interface GrantsResponse {
+    grants: {
+        granter: string;
+        grantee: string;
+        authorization: {
+            "@type": string;
+            max_tokens: Coin;
+            allow_list: {
+                address: string[];
+            };
+            authorization_type: string;
+        };
+        expiration: string;
+    }[];
+    pagination: Pagination;
+}
 interface ValidatorListResponse {
     validators: ValidatorResponse[];
 }
@@ -247,21 +236,148 @@ interface ValidatorResponse {
     };
     min_self_delegation: string;
 }
+interface ValidatorResponseReduced {
+    operator_address: string;
+    moniker: string;
+}
+interface IbcResponse {
+    source: string;
+    destination: string;
+    channel_id: string;
+    token_symbol: string;
+    token_name: string;
+    token_liquidity: number;
+    last_tx: string;
+    size_queue: number;
+    duration_minutes: number;
+}
 interface SwapStruct {
     from: AssetSymbol;
     to: AssetSymbol;
     amount: number;
 }
-interface TransferParams {
-    channel_id: string;
-    to: string;
-    amount: string;
-    denom: string;
-    block_revision: string;
-    block_height: string;
+interface NetworkData {
+    prefix: string;
+    main?: ChainResponse;
+    test?: ChainResponse;
+    img: string;
+    symbol: string;
+    exponent: number;
+    denomNative: string;
+    denomIbc: string;
+    coinGeckoId?: string;
+}
+interface AuthzHandler {
+    symbol: string;
+    grant: () => Promise<DeliverTxResponse>;
+    revoke: () => Promise<DeliverTxResponse>;
+}
+interface UserBalance {
+    holded: Coin;
+    staked: Coin;
+}
+interface UserAdressesWithBalances {
+    osmoAddr: string;
+    assetList: {
+        address: string;
+        holded: Coin;
+        staked: Coin;
+    }[];
+}
+interface DashboardAsset {
+    asset: string;
+    price: Decimal;
+    holded: Decimal;
+    staked: Decimal;
+    cost: Decimal;
+    allocation: Decimal;
+}
+interface AssetList {
+    $schema: string;
+    chain_name: string;
+    assets: {
+        description: string;
+        denom_units: {
+            denom: string;
+            exponent: number;
+            aliases: string[];
+        }[];
+        base: string;
+        name: string;
+        display: string;
+        symbol: string;
+        logo_URIs: {
+            png: string;
+            svg?: string;
+        };
+        coingecko_id: string;
+        keywords: string[];
+    }[];
+}
+interface NetworkContentResponse {
+    name: string;
+    path: string;
+    sha: string;
+    size: number;
+    url: string;
+    html_url: string;
+    git_url: string;
+    download_url: null;
+    type: string;
+    _links: {
+        self: string;
+        git: string;
+        html: string;
+    };
+}
+interface IbcTracesResponse {
+    denom_traces: {
+        path: string;
+        base_denom: string;
+    }[];
+    pagination: Pagination;
+}
+interface IbcAckResponse {
+    acknowledgements: {
+        port_id: string;
+        channel_id: string;
+        sequence: string;
+        data: string;
+    }[];
+    pagination: Pagination;
+    height: {
+        revision_number: string;
+        revision_height: string;
+    };
+}
+interface UpdateConfigStruct {
+    dappAddressAndDenomList?: string[][][];
+    feeDefault?: Decimal;
+    feeOsmo?: Decimal;
+    scheduler?: string;
+    stablecoinDenom?: string;
+    stablecoinPoolId?: number;
+}
+interface AssetListItem {
+    asset: {
+        logo: string;
+        symbol: string;
+    };
+    address: string;
+    ratio: number;
+    validator: string;
 }
 declare type AssetDenom = {
     [assetSymbol in AssetSymbol]: string;
 };
 declare type AssetSymbol = "ATOM" | "OSMO" | "ION" | "AKT" | "DVPN" | "IRIS" | "CRO" | "XPRT" | "REGEN" | "NGM" | "EEUR" | "JUNO" | "LIKE" | "USTC" | "BCNA" | "BTSG" | "XKI" | "SCRT" | "MED" | "BOOT" | "CMDX" | "CHEQ" | "STARS" | "HUAHUA" | "LUM" | "DSM" | "GRAV" | "SOMM" | "ROWAN" | "NETA" | "UMEE" | "DEC" | "PSTAKE" | "DAI" | "USDC" | "MNTL" | "WETH" | "WBTC" | "EVMOS" | "TGD" | "DOT" | "ODIN" | "GLTO" | "GEO" | "BLD" | "CUDOS";
-export { ClientStruct, DelegationStruct, IbcStruct, Asset, User, PoolExtracted, UserExtracted, AssetExtracted, QueryPoolsAndUsersResponse, RelayerList, Relayer, RelayerStruct, AssetDescription, PoolDatabase, PoolInfoRaw, PoolInfo, PoolPair, ChainsResponse, ChainResponse, BalancesResponse, DelegationsResponse, ValidatorListResponse, ValidatorResponse, AssetSymbol, AssetDenom, SwapStruct, TransferParams, };
+declare type StorageNames = "chain-registry-storage" | "ibc-channels-storage" | "pools-storage" | "validators-storage" | "user-funds-storage" | "pools-and-users-storage";
+declare type ChainRegistryStorage = NetworkData[];
+declare type IbcChannelsStorage = IbcResponse[];
+declare type PoolsStorage = [string, AssetDescription[]][];
+declare type ValidatorsStorage = [string, ValidatorResponseReduced[]][];
+declare type UserFundsStorage = [string, UserBalance][];
+declare type PoolsAndUsersStorage = QueryPoolsAndUsersResponse;
+declare type StorageTypes = ChainRegistryStorage | IbcChannelsStorage | PoolsStorage | ValidatorsStorage | UserFundsStorage | PoolsAndUsersStorage;
+export type { NetworkData, ClientStructWithKeplr, ClientStructWithoutKeplr };
+export { AssetListItem, AssetList, ClientStruct, DelegationStruct, IbcStruct, RelayerList, Relayer, RelayerStruct, AssetDescription, PoolDatabase, PoolInfoRaw, PoolInfo, PoolPair, ChainsResponse, ChainResponse, BalancesResponse, DelegationsResponse, ValidatorListResponse, ValidatorResponse, ValidatorResponseReduced, IbcResponse, AssetSymbol, AssetDenom, SwapStruct, AuthzHandler, UserBalance, UserAdressesWithBalances, DashboardAsset, NetworkContentResponse, StorageNames, ChainRegistryStorage, IbcChannelsStorage, PoolsStorage, ValidatorsStorage, UserFundsStorage, PoolsAndUsersStorage, StorageTypes, IbcTracesResponse, IbcAckResponse, GrantsResponse, UpdateConfigStruct, };

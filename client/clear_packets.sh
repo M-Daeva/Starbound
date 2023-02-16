@@ -1,8 +1,8 @@
 # script for updating clients and clearing packets
 
 # load parameters from files created by 'open_channel.sh'
-res_ab_json="ibc-config-ab.json"
-res_ac_json="ibc-config-ac.json"
+res_ab_json="dist/common/config/ibc-config-ab.json"
+res_ac_json="dist/common/config/ibc-config-ac.json"
 
 A_CHAIN=$(jq -r '.a_chain_id' $res_ab_json)
 B_CHAIN=$(jq -r '.b_chain_id' $res_ab_json)
@@ -22,9 +22,7 @@ AB_CLIENT=$(jq -r '.a_client_id' $res_ab_json)
 AC_CLIENT=$(jq -r '.a_client_id' $res_ac_json)
 
 DIR=$(pwd)
-TESTNET_DIR="$DIR/../wba-twt-testnet"
-FOLDER="./testnet-osmosis-cosmoshub-secret"
-HERMES="hermes --config $FOLDER/config.toml"
+HERMES="hermes --config config.toml"
 
 SEP="------------------------------------------------------------------------------------"
 
@@ -65,6 +63,4 @@ function count_up {
 }
 
 
-cd $TESTNET_DIR
 count_up
-cd $DIR

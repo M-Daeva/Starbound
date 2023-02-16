@@ -1,0 +1,17 @@
+import { Request, Response } from "express";
+declare function updateChainRegistry(_req: Request, res: Response): Promise<void>;
+declare function getChainRegistry(_req: Request, res: Response): Promise<void>;
+declare function updateIbcChannels(_req: Request, res: Response): Promise<void>;
+declare function getIbcChannnels(_req: Request, res: Response): Promise<void>;
+declare function updatePools(_req: Request, res: Response): Promise<void>;
+declare function getPools(_req: Request, res: Response): Promise<void>;
+declare function updateValidators(_req: Request, res: Response): Promise<void>;
+declare function getValidators(_req: Request, res: Response): Promise<void>;
+declare function updateUserFunds(_req: Request, res: Response): Promise<void>;
+declare function getUserFunds(req: Request, res: Response): Promise<void>;
+declare function updatePoolsAndUsers(_req: Request, res: Response): Promise<void>;
+declare function getPoolsAndUsers(_req: Request, res: Response): Promise<void>;
+declare function filterChainRegistry(_req: Request, res: Response): Promise<void>;
+declare function updateAll(_req: Request, res: Response): Promise<void>;
+declare function getAll(req: Request, res: Response): Promise<void>;
+export { updateChainRegistry, getChainRegistry, updateIbcChannels, getIbcChannnels, updatePools, getPools, updateValidators, getValidators, updateUserFunds, getUserFunds, updatePoolsAndUsers, getPoolsAndUsers, filterChainRegistry, updateAll, getAll, };

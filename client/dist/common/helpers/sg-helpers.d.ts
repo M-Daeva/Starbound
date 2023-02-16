@@ -1,17 +1,19 @@
-import { Coin } from "@cosmjs/stargate";
-import { DelegationStruct, IbcStruct, ClientStruct, SwapStruct } from "./interfaces";
+import { Coin, StdFee } from "@cosmjs/stargate";
 import { PoolInfo } from "./interfaces";
+import { DelegationStruct, IbcStruct, ClientStruct, SwapStruct } from "./interfaces";
 declare function getSgHelpers(clientStruct: ClientStruct): Promise<{
     owner: string;
-    _sgSwap: (swapStruct: SwapStruct) => Promise<import("@cosmjs/stargate").DeliverTxResponse>;
-    _sgTransfer: (ibcStruct: IbcStruct) => Promise<import("@cosmjs/stargate").DeliverTxResponse>;
-    _sgGrantStakeAuth: (delegationStruct: DelegationStruct) => Promise<import("@cosmjs/stargate").DeliverTxResponse>;
-    _sgDelegateFrom: (delegationStruct: DelegationStruct) => Promise<import("@cosmjs/stargate").DeliverTxResponse>;
-    _sgGetTokenBalances: (addr?: string) => Promise<{
+    sgSwap: (swapStruct: SwapStruct) => Promise<import("@cosmjs/stargate").DeliverTxResponse>;
+    sgTransfer: (ibcStruct: IbcStruct) => Promise<import("@cosmjs/stargate").DeliverTxResponse>;
+    sgGrantStakeAuth: (delegationStruct: DelegationStruct) => Promise<import("@cosmjs/stargate").DeliverTxResponse>;
+    sgRevokeStakeAuth: (delegationStruct: DelegationStruct) => Promise<import("@cosmjs/stargate").DeliverTxResponse>;
+    sgDelegateFrom: (delegationStruct: DelegationStruct, specifiedFee?: StdFee) => Promise<import("@cosmjs/stargate").DeliverTxResponse>;
+    sgGetTokenBalances: (addr?: string) => Promise<{
         amount: string;
         symbol: string;
     }[]>;
-    _sgUpdatePoolList: () => Promise<PoolInfo[]>;
-    _sgSend: (recipient: string, amount: Coin) => Promise<import("@cosmjs/stargate").DeliverTxResponse>;
+    sgUpdatePoolList: () => Promise<PoolInfo[]>;
+    sgSend: (recipient: string, amount: Coin) => Promise<import("@cosmjs/stargate").DeliverTxResponse>;
+    sgDelegateFromList: (delegationStructList: DelegationStruct[], gasPrice: string) => Promise<import("@cosmjs/stargate").DeliverTxResponse>;
 }>;
 export { getSgHelpers };

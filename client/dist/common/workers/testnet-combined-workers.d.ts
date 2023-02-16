@@ -1,21 +1,16 @@
-import { QueryPoolsAndUsersResponse } from "../helpers/interfaces";
+import { QueryPoolsAndUsersResponse } from "../codegen/Starbound.types";
 declare function init(): Promise<{
-    _queryBalance: () => Promise<void>;
-    cwDeposit: () => Promise<void>;
+    queryBalance: () => Promise<void>;
     sgGrantStakeAuth: () => Promise<void>;
     cwSwap: () => Promise<void>;
     sgDelegateFrom: () => Promise<void>;
     sgUpdatePoolList: () => Promise<void>;
-    cwGetPools: () => Promise<void>;
-    cwGetPrices: () => Promise<void>;
-    cwDebugQueryPoolsAndUsers: () => Promise<void>;
     cwQueryPoolsAndUsers: () => Promise<QueryPoolsAndUsersResponse>;
     cwDepositAlice: () => Promise<void>;
     cwDepositBob: () => Promise<void>;
     cwWithdrawAlice: () => Promise<void>;
     cwMockUpdatePoolsAndUsers: () => Promise<void>;
-    cwQueryAssets: () => Promise<void>;
-    cwDebugQueryBank: () => Promise<void>;
+    cwQueryUser: () => Promise<void>;
     cwTransfer: () => Promise<void>;
     sgTransfer: () => Promise<void>;
 }>;

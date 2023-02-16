@@ -16,19 +16,16 @@ const assets_1 = require("../helpers/assets");
 const sg_helpers_1 = require("../helpers/sg-helpers");
 const testnet_config_json_1 = require("../config/testnet-config.json");
 const aliceClientStruct = {
-    isKeplrType: false,
     prefix: testnet_config_json_1.PREFIX,
     RPC: testnet_config_json_1.RPC,
     seed: testnet_config_json_1.SEED_ALICE,
 };
 const bobClientStruct = {
-    isKeplrType: false,
     prefix: testnet_config_json_1.PREFIX,
     RPC: testnet_config_json_1.RPC,
     seed: testnet_config_json_1.SEED_BOB,
 };
 const dappClientStruct = {
-    isKeplrType: false,
     prefix: testnet_config_json_1.PREFIX,
     RPC: testnet_config_json_1.RPC,
     seed: testnet_config_json_1.SEED_DAPP,
@@ -36,37 +33,25 @@ const dappClientStruct = {
 function init() {
     return __awaiter(this, void 0, void 0, function* () {
         // alice cosmwasm helpers
-        const { owner: aliceAddr, _cwDeposit, _cwDepositNew: _cwDepositAlice, _cwWithdrawNew: _cwWithdrawAlice, } = yield (0, cw_helpers_1.getCwHelpers)(aliceClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
+        const { owner: aliceAddr, cwDeposit: _cwDepositAlice, cwWithdraw: _cwWithdrawAlice, } = yield (0, cw_helpers_1.getCwHelpers)(aliceClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
         // bob cosmwasm helpers
-        const { owner: bobAddr, _cwDepositNew: _cwDepositBob } = yield (0, cw_helpers_1.getCwHelpers)(bobClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
+        const { owner: bobAddr, cwDeposit: _cwDepositBob } = yield (0, cw_helpers_1.getCwHelpers)(bobClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
         // dapp cosmwasm helpers
-        const { owner: dappAddr, _cwSwap, _cwGetPools, _cwGetPrices, _cwQueryPoolsAndUsers, _cwDebugQueryPoolsAndUsers, _cwUpdatePoolsAndUsers, _cwQueryAssets, _cwDebugQueryBank, _cwTransfer, } = yield (0, cw_helpers_1.getCwHelpers)(dappClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
+        const { owner: dappAddr, cwSwap: _cwSwap, cwQueryPoolsAndUsers: _cwQueryPoolsAndUsers, cwUpdatePoolsAndUsers: _cwUpdatePoolsAndUsers, cwQueryUser: _cwQueryUser, cwTransfer: _cwTransfer, } = yield (0, cw_helpers_1.getCwHelpers)(dappClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
         // alice stargate helpers
-        const { _sgGrantStakeAuth, _sgTransfer } = yield (0, sg_helpers_1.getSgHelpers)(aliceClientStruct);
+        const { sgGrantStakeAuth: _sgGrantStakeAuth, sgTransfer: _sgTransfer } = yield (0, sg_helpers_1.getSgHelpers)(aliceClientStruct);
         // dapp stargate helpers
-        const { _sgDelegateFrom, _sgGetTokenBalances, _sgUpdatePoolList } = yield (0, sg_helpers_1.getSgHelpers)(dappClientStruct);
+        const { sgDelegateFrom: _sgDelegateFrom, sgGetTokenBalances: _sgGetTokenBalances, sgUpdatePoolList: _sgUpdatePoolList, } = yield (0, sg_helpers_1.getSgHelpers)(dappClientStruct);
         function sgUpdatePoolList() {
             return __awaiter(this, void 0, void 0, function* () {
                 let pools = yield _sgUpdatePoolList();
                 (0, utils_1.l)({ pools });
             });
         }
-        function _queryBalance() {
+        function queryBalance() {
             return __awaiter(this, void 0, void 0, function* () {
                 let balances = yield _sgGetTokenBalances(testnet_config_json_1.CONTRACT_ADDRESS);
                 (0, utils_1.l)({ contract: balances });
-            });
-        }
-        function cwDeposit() {
-            return __awaiter(this, void 0, void 0, function* () {
-                (0, utils_1.l)(utils_1.SEP, "depositing...");
-                try {
-                    yield _cwDeposit(10000);
-                    // await _queryBalance();
-                }
-                catch (error) {
-                    (0, utils_1.l)(error, "\n");
-                }
             });
         }
         const grantStakeStruct = {
@@ -119,39 +104,6 @@ function init() {
                 }
             });
         }
-        function cwGetPools() {
-            return __awaiter(this, void 0, void 0, function* () {
-                (0, utils_1.l)(utils_1.SEP, "querying pools...");
-                try {
-                    yield _cwGetPools();
-                }
-                catch (error) {
-                    (0, utils_1.l)(error, "\n");
-                }
-            });
-        }
-        function cwGetPrices() {
-            return __awaiter(this, void 0, void 0, function* () {
-                (0, utils_1.l)(utils_1.SEP, "querying prices...");
-                try {
-                    yield _cwGetPrices();
-                }
-                catch (error) {
-                    (0, utils_1.l)(error, "\n");
-                }
-            });
-        }
-        function cwDebugQueryPoolsAndUsers() {
-            return __awaiter(this, void 0, void 0, function* () {
-                (0, utils_1.l)(utils_1.SEP, "debug querying pools and users...");
-                try {
-                    yield _cwDebugQueryPoolsAndUsers();
-                }
-                catch (error) {
-                    (0, utils_1.l)(error, "\n");
-                }
-            });
-        }
         function cwQueryPoolsAndUsers() {
             return __awaiter(this, void 0, void 0, function* () {
                 (0, utils_1.l)(utils_1.SEP, "querying pools and users...");
@@ -186,8 +138,7 @@ function init() {
         let userAlice = {
             asset_list: assetListAlice,
             day_counter: "3",
-            deposited_on_current_period: `${1000000}`,
-            deposited_on_next_period: "0",
+            deposited: `${100}`,
             is_controlled_rebalancing: false,
         };
         function cwDepositAlice() {
@@ -223,9 +174,8 @@ function init() {
         let userBob = {
             asset_list: assetListBob,
             day_counter: "3",
-            deposited_on_current_period: `${600000}`,
-            deposited_on_next_period: "0",
-            is_controlled_rebalancing: false, // TODO: try true
+            deposited: `${600000}`,
+            is_controlled_rebalancing: false,
         };
         function cwDepositBob() {
             return __awaiter(this, void 0, void 0, function* () {
@@ -315,14 +265,14 @@ function init() {
                             },
                         ],
                     };
-                    yield _cwUpdatePoolsAndUsers(data.pools, data.users);
+                    yield _cwUpdatePoolsAndUsers(data.pools, data.users, "0uosmo");
                 }
                 catch (error) {
                     (0, utils_1.l)(error, "\n");
                 }
             });
         }
-        function cwQueryAssets() {
+        function cwQueryUser() {
             return __awaiter(this, void 0, void 0, function* () {
                 let aliceAddr = "osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx";
                 let bobAddr = "osmo1chgwz55h9kepjq0fkj5supl2ta3nwu63e3ds8x";
@@ -330,7 +280,7 @@ function init() {
                 for (let addr of addresses) {
                     (0, utils_1.l)(utils_1.SEP, "query assets...");
                     try {
-                        yield _cwQueryAssets(addr);
+                        yield _cwQueryUser(addr);
                     }
                     catch (error) {
                         (0, utils_1.l)(error, "\n");
@@ -342,19 +292,8 @@ function init() {
             return __awaiter(this, void 0, void 0, function* () {
                 (0, utils_1.l)(utils_1.SEP, "swapping...");
                 try {
-                    yield _cwSwap();
+                    yield _cwSwap("0uosmo");
                     // await _queryBalance();
-                }
-                catch (error) {
-                    (0, utils_1.l)(error, "\n");
-                }
-            });
-        }
-        function cwDebugQueryBank() {
-            return __awaiter(this, void 0, void 0, function* () {
-                (0, utils_1.l)(utils_1.SEP, "debug querying bank...");
-                try {
-                    yield _cwDebugQueryBank();
                 }
                 catch (error) {
                     (0, utils_1.l)(error, "\n");
@@ -365,7 +304,7 @@ function init() {
             return __awaiter(this, void 0, void 0, function* () {
                 (0, utils_1.l)(utils_1.SEP, "transfering...");
                 try {
-                    yield _cwTransfer();
+                    yield _cwTransfer("0uosmo");
                     // await _queryBalance();
                 }
                 catch (error) {
@@ -391,22 +330,17 @@ function init() {
             });
         }
         return {
-            _queryBalance,
-            cwDeposit,
+            queryBalance,
             sgGrantStakeAuth,
             cwSwap,
             sgDelegateFrom,
             sgUpdatePoolList,
-            cwGetPools,
-            cwGetPrices,
-            cwDebugQueryPoolsAndUsers,
             cwQueryPoolsAndUsers,
             cwDepositAlice,
             cwDepositBob,
             cwWithdrawAlice,
             cwMockUpdatePoolsAndUsers,
-            cwQueryAssets,
-            cwDebugQueryBank,
+            cwQueryUser,
             cwTransfer,
             sgTransfer,
         };

@@ -9,10 +9,7 @@ A_PORT="transfer"
 B_PORT="transfer"
 C_PORT="transfer"
 
-DIR=$(pwd)
-TESTNET_DIR="$DIR/../wba-twt-testnet"
-FOLDER="./testnet-osmosis-cosmoshub-secret"
-HERMES="hermes --config $FOLDER/config.toml"
+HERMES="hermes --config config.toml"
 
 
 function string_to_json() {
@@ -41,8 +38,6 @@ function string_to_json() {
 }
 
 
-cd $TESTNET_DIR
-
 # addresses must contain some funds!
 
 # open channel A-B
@@ -52,11 +47,12 @@ res_ab=$($HERMES create channel --a-chain $A_CHAIN --b-chain $B_CHAIN \
   --new-client-connection --yes)
 
 # it doesn't work without w/r .txt
-echo $res_ab > "$DIR/ibc-config-ab.txt"
-res_ab=$(< "$DIR/ibc-config-ab.txt")
+echo $res_ab > "ibc-config-ab.txt"
+res_ab=$(< "ibc-config-ab.txt")
 res_ab_json=$(string_to_json "$res_ab")
-echo $res_ab_json > "$DIR/ibc-config-ab.json"
-rm -rf "$DIR/ibc-config-ab.txt"
+echo $res_ab_json > "src/common/config/ibc-config-ab.json"
+echo $res_ab_json > "dist/common/config/ibc-config-ab.json"
+rm -rf "ibc-config-ab.txt"
 
 # open channel A-C
 res_ac=$($HERMES create channel --a-chain $A_CHAIN --b-chain $C_CHAIN \
@@ -64,11 +60,12 @@ res_ac=$($HERMES create channel --a-chain $A_CHAIN --b-chain $C_CHAIN \
   --order unordered --channel-version "ics20-1" \
   --new-client-connection --yes)
 
-echo $res_ac > "$DIR/ibc-config-ac.txt"
-res_ac=$(< "$DIR/ibc-config-ac.txt")
+echo $res_ac > "ibc-config-ac.txt"
+res_ac=$(< "ibc-config-ac.txt")
 res_ac_json=$(string_to_json "$res_ac")
-echo $res_ac_json > "$DIR/ibc-config-ac.json"
-rm -rf "$DIR/ibc-config-ac.txt"
+echo $res_ac_json > "src/common/config/ibc-config-ac.json"
+echo $res_ac_json > "dist/common/config/ibc-config-ac.json"
+rm -rf "ibc-config-ac.txt"
 
-cd $DIR
+
 

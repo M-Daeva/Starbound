@@ -9,14 +9,21 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updatePoolsAndUsers = exports.requestValidators = void 0;
+exports.updatePoolsAndUsers = exports.getValidators = void 0;
 const utils_1 = require("../utils");
+const storages_1 = require("../../backend/storages");
 const api_helpers_1 = require("../helpers/api-helpers");
-function requestValidators() {
+let chainRegistryStorage = (0, storages_1.initStorage)("chain-registry-storage");
+let ibcChannelsStorage = (0, storages_1.initStorage)("ibc-channels-storage");
+let poolsStorage = (0, storages_1.initStorage)("pools-storage");
+let validatorsStorage = (0, storages_1.initStorage)("validators-storage");
+function getValidators() {
     return __awaiter(this, void 0, void 0, function* () {
-        (0, utils_1.l)("requestValidators");
+        (0, utils_1.l)("getValidators");
         try {
-            let res = yield (0, api_helpers_1._requestValidators)();
+            let res = yield (0, api_helpers_1.getValidators)([
+                ["osmosis", "https://osmosis-api.polkachu.com"],
+            ]);
             (0, utils_1.l)(res);
         }
         catch (error) {
@@ -24,7 +31,7 @@ function requestValidators() {
         }
     });
 }
-exports.requestValidators = requestValidators;
+exports.getValidators = getValidators;
 let poolsAndUsers = {
     pools: [
         {
@@ -66,7 +73,8 @@ function updatePoolsAndUsers() {
     return __awaiter(this, void 0, void 0, function* () {
         (0, utils_1.l)("updatePoolsAndUsers");
         try {
-            let _res = yield (0, api_helpers_1._updatePoolsAndUsers)(poolsAndUsers);
+            let res = yield (0, api_helpers_1.updatePoolsAndUsers)(chainRegistryStorage.get(), poolsAndUsers, poolsStorage.get(), "main");
+            (0, utils_1.l)(res);
         }
         catch (error) {
             (0, utils_1.l)(error, "\n");

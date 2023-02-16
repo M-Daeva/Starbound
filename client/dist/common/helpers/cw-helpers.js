@@ -10,147 +10,120 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getCwHelpers = void 0;
-const stargate_1 = require("@cosmjs/stargate");
 const utils_1 = require("../utils");
 const signers_1 = require("../signers");
 const assets_1 = require("./assets");
+const Starbound_client_1 = require("../codegen/Starbound.client");
+const Starbound_message_composer_1 = require("../codegen/Starbound.message-composer");
 function getCwHelpers(clientStruct, contractAddress) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { client, owner } = yield (0, signers_1.getCwClient)(clientStruct);
-        function _cwGetPools() {
+        const { client: _client, owner } = yield (0, signers_1.getCwClient)(clientStruct);
+        const composer = new Starbound_message_composer_1.StarboundMessageComposer(owner, contractAddress);
+        const client = new Starbound_client_1.StarboundClient(_client, owner, contractAddress);
+        const _signAndBroadcast = (0, signers_1.signAndBroadcastWrapper)(_client, owner, 1.1);
+        function _msgWrapper(msg) {
             return __awaiter(this, void 0, void 0, function* () {
-                let res = yield client.queryContractSmart(contractAddress, {
-                    get_pools: {},
-                });
-                (0, utils_1.l)("\n", res, "\n");
+                const tx = yield _client.signAndBroadcast(owner, [msg], signers_1.fee);
+                (0, utils_1.l)("\n", tx, "\n");
+                return tx;
             });
         }
-        function _cwGetPrices() {
+        function _msgWrapperWithGasPrice(msg, gasPrice) {
             return __awaiter(this, void 0, void 0, function* () {
-                let res = yield client.queryContractSmart(contractAddress, {
-                    get_prices: {},
-                });
-                (0, utils_1.l)("\n", res, "\n");
+                const tx = yield _signAndBroadcast([msg], gasPrice);
+                (0, utils_1.l)("\n", tx, "\n");
+                return tx;
             });
         }
-        function _cwGetBankBalance() {
+        function cwDeposit(user) {
             return __awaiter(this, void 0, void 0, function* () {
-                let res = yield client.queryContractSmart(contractAddress, {
-                    get_bank_balance: {},
-                });
-                (0, utils_1.l)("\n", res, "\n");
+                const { deposited } = user;
+                const tokenAmount = +deposited;
+                const funds = { amount: `${tokenAmount}`, denom: assets_1.DENOMS.EEUR };
+                return yield _msgWrapper(composer.deposit({ user }, tokenAmount ? [funds] : []));
             });
         }
-        function _cwDeposit(tokenAmount) {
+        function cwWithdraw(tokenAmount) {
             return __awaiter(this, void 0, void 0, function* () {
-                const res = yield client.execute(owner, contractAddress, { deposit: {} }, signers_1.fee, "", [(0, stargate_1.coin)(tokenAmount, assets_1.DENOMS.OSMO)]);
-                (0, utils_1.l)({ attributes: res.logs[0].events[2].attributes }, "\n");
+                return yield _msgWrapper(composer.withdraw({ amount: `${tokenAmount}` }));
             });
         }
-        function _cwDebugQueryPoolsAndUsers() {
+        function cwUpdateConfig(updateConfigStruct, gasPrice) {
             return __awaiter(this, void 0, void 0, function* () {
-                let res = yield client.queryContractSmart(contractAddress, {
-                    debug_query_pools_and_users: {},
-                });
-                (0, utils_1.l)("\n", res, "\n");
-                return res;
+                const { dappAddressAndDenomList, feeDefault: _feeDefault, feeOsmo: _feeOsmo, scheduler, stablecoinDenom, stablecoinPoolId, } = updateConfigStruct;
+                const feeDefault = !_feeDefault ? undefined : _feeDefault.toString();
+                const feeOsmo = !_feeOsmo ? undefined : _feeOsmo.toString();
+                return yield _msgWrapperWithGasPrice(composer.updateConfig({
+                    dappAddressAndDenomList,
+                    feeDefault,
+                    feeOsmo,
+                    scheduler,
+                    stablecoinDenom,
+                    stablecoinPoolId,
+                }), gasPrice);
             });
         }
-        function _cwQueryPoolsAndUsers() {
+        function cwUpdatePoolsAndUsers(pools, users, gasPrice) {
             return __awaiter(this, void 0, void 0, function* () {
-                let res = yield client.queryContractSmart(contractAddress, {
-                    query_pools_and_users: {},
-                });
-                (0, utils_1.l)("\n", res, "\n");
-                return res;
+                return yield _msgWrapperWithGasPrice(composer.updatePoolsAndUsers({ pools, users }), gasPrice);
             });
         }
-        function _cwDepositNew(user) {
+        function cwSwap(gasPrice) {
             return __awaiter(this, void 0, void 0, function* () {
-                const { deposited_on_current_period, deposited_on_next_period } = user;
-                let tokenAmount = +deposited_on_current_period + +deposited_on_next_period;
-                const res = yield client.execute(owner, contractAddress, { deposit: { user } }, signers_1.fee, "", [(0, stargate_1.coin)(tokenAmount, assets_1.DENOMS.EEUR)]);
-                const { attributes } = res.logs[0].events[2];
-                (0, utils_1.l)({ attributes }, "\n");
-                return attributes;
+                return yield _msgWrapperWithGasPrice(composer.swap(), gasPrice);
             });
         }
-        function _cwWithdrawNew(tokenAmount) {
+        function cwTransfer(gasPrice) {
             return __awaiter(this, void 0, void 0, function* () {
-                const res = yield client.execute(owner, contractAddress, { withdraw: { amount: tokenAmount.toString() } }, signers_1.fee, "");
-                const { attributes } = res.logs[0].events[2];
-                (0, utils_1.l)({ attributes }, "\n");
-                return attributes;
+                return yield _msgWrapperWithGasPrice(composer.transfer(), gasPrice);
             });
         }
-        function _cwUpdatePoolsAndUsers(pools, users) {
+        function cwMultiTransfer(params) {
             return __awaiter(this, void 0, void 0, function* () {
-                const res = yield client.execute(owner, contractAddress, { update_pools_and_users: { pools, users } }, signers_1.fee, "");
-                (0, utils_1.l)({ attributes: res.logs[0].events[2].attributes }, "\n");
+                return yield _msgWrapper(composer.multiTransfer({ params }));
             });
         }
-        function _cwQueryAssets(address) {
+        function cwQueryUser(address) {
             return __awaiter(this, void 0, void 0, function* () {
-                const res = yield client.queryContractSmart(contractAddress, {
-                    query_assets: { address },
-                });
+                const res = yield client.queryUser({ address });
                 (0, utils_1.l)("\n", res, "\n");
                 return res;
             });
         }
-        function _cwSwap() {
+        function cwQueryPoolsAndUsers() {
             return __awaiter(this, void 0, void 0, function* () {
-                const res = yield client.execute(owner, contractAddress, { swap: {} }, signers_1.fee, "");
-                (0, utils_1.l)({ attributes: res.logs[0].events[2].attributes }, "\n");
+                const res = yield client.queryPoolsAndUsers();
+                // l("\n", res, "\n");
+                return res;
             });
         }
-        function _cwDebugQueryBank() {
+        function cwQueryLedger() {
             return __awaiter(this, void 0, void 0, function* () {
-                const res = yield client.queryContractSmart(contractAddress, {
-                    debug_query_bank: {},
-                });
+                const res = yield client.queryLedger();
                 (0, utils_1.l)("\n", res, "\n");
+                return res;
             });
         }
-        function _cwTransfer() {
-            var _a;
+        function cwQueryConfig() {
             return __awaiter(this, void 0, void 0, function* () {
-                const res = yield client.execute(owner, contractAddress, { transfer: {} }, signers_1.fee, "");
-                // l({ attributes: res.logs[0].events[2].attributes }, "\n");
-                (0, utils_1.l)(res, "\n");
-                (0, utils_1.l)(((_a = res.logs[0].events[5]) === null || _a === void 0 ? void 0 : _a.attributes.filter((item) => item.key === "packet_data")) || "", "\n");
-            });
-        }
-        function _cwMultiTransfer(transferParams) {
-            return __awaiter(this, void 0, void 0, function* () {
-                const res = yield client.execute(owner, contractAddress, { multi_transfer: { params: transferParams } }, signers_1.fee, "");
-                (0, utils_1.l)(res);
-                (0, utils_1.l)(res.logs[0].events[5].attributes, "\n");
-            });
-        }
-        function _cwSgSend() {
-            return __awaiter(this, void 0, void 0, function* () {
-                const res = yield client.execute(owner, contractAddress, { sg_send: {} }, signers_1.fee, "");
-                (0, utils_1.l)({ attributes: res.logs[0].events[2].attributes }, "\n");
+                const res = yield client.queryConfig();
+                (0, utils_1.l)("\n", res, "\n");
+                return res;
             });
         }
         return {
             owner,
-            _cwGetBankBalance,
-            _cwDeposit,
-            _cwTransfer,
-            _cwSwap,
-            _cwGetPools,
-            _cwGetPrices,
-            _cwDebugQueryPoolsAndUsers,
-            _cwQueryPoolsAndUsers,
-            _cwDepositNew,
-            _cwWithdrawNew,
-            _cwUpdatePoolsAndUsers,
-            _cwQueryAssets,
-            _cwDebugQueryBank,
-            _cwMultiTransfer,
-            _cwSgSend,
+            cwDeposit,
+            cwWithdraw,
+            cwUpdateConfig,
+            cwUpdatePoolsAndUsers,
+            cwSwap,
+            cwTransfer,
+            cwMultiTransfer,
+            cwQueryUser,
+            cwQueryPoolsAndUsers,
+            cwQueryLedger,
+            cwQueryConfig,
         };
     });
 }

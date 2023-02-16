@@ -12,9 +12,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SEP = exports.rootPath = exports.createRequest = exports.r = exports.l = void 0;
+exports.decode = exports.encode = exports.getChannelId = exports.getIbcDenom = exports.specifyTimeout = exports.getLast = exports.SEP = exports.rootPath = exports.createRequest = exports.r = exports.l = void 0;
 const axios_1 = __importDefault(require("axios"));
 const path_1 = __importDefault(require("path"));
+const crypto_js_1 = require("crypto-js");
 const l = console.log.bind(console);
 exports.l = l;
 const r = (num, digits = 0) => {
@@ -22,6 +23,10 @@ const r = (num, digits = 0) => {
     return Math.round(k * num) / k;
 };
 exports.r = r;
+function getLast(arr) {
+    return arr[arr.length - 1];
+}
+exports.getLast = getLast;
 const rootPath = (dir) => path_1.default.resolve(__dirname, "../../../", dir);
 exports.rootPath = rootPath;
 const SEP = "////////////////////////////////////////////////////////////////////////////////////\n";
@@ -44,3 +49,55 @@ const createRequest = (config) => {
     };
 };
 exports.createRequest = createRequest;
+function specifyTimeout(promise, timeout = 5000, exception = () => {
+    throw new Error("Timeout!");
+}) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let timer;
+        return Promise.race([
+            promise,
+            new Promise((_r, rej) => (timer = setTimeout(rej, timeout, exception))),
+        ]).finally(() => clearTimeout(timer));
+    });
+}
+exports.specifyTimeout = specifyTimeout;
+/**
+ * Returns destination denom of coin/token on chain A transferred from chain A to chain B, where
+ * @param channelId - id of IBC channel from chain B to chain A
+ * @param srcDenom - denom of coin/token on chain A
+ * @param portId - port id, 'transfer' by default
+ * @returns destination denom in form of 'ibc/{hash}'
+ */
+function getIbcDenom(channelId, srcDenom, portId = "transfer") {
+    return ("ibc/" +
+        (0, crypto_js_1.SHA256)(`${portId}/${channelId}/${srcDenom}`).toString().toUpperCase());
+}
+exports.getIbcDenom = getIbcDenom;
+/**
+ * Returns id of IBC channel from chain B to chain A for coin/token
+ * transferred from chain A to chain B, where
+ * @param srcDenom - denom of coin/token on chain A
+ * @param dstDenom - destination denom of coin/token from chain A on chain B in form of 'ibc/{hash}'
+ * @param portId - port id, 'transfer' by default
+ * @returns id of IBC channel from chain B to chain A
+ */
+function getChannelId(srcDenom, dstDenom, portId = "transfer") {
+    const maxChannelId = 10000;
+    const targetHash = dstDenom.split("/")[1].toLowerCase();
+    for (let i = 0; i < maxChannelId; i++) {
+        const channelId = `channel-${i}`;
+        const hash = (0, crypto_js_1.SHA256)(`${portId}/${channelId}/${srcDenom}`).toString();
+        if (hash === targetHash)
+            return channelId;
+    }
+}
+exports.getChannelId = getChannelId;
+function encode(data, key) {
+    return crypto_js_1.AES.encrypt(data, key).toString();
+}
+exports.encode = encode;
+function decode(encodedData, key) {
+    const bytes = crypto_js_1.AES.decrypt(encodedData, key);
+    return bytes.toString(crypto_js_1.enc.Utf8);
+}
+exports.decode = decode;
