@@ -1,7 +1,7 @@
 <script lang="ts">
   import { fade, scale } from "svelte/transition";
   import { txResStorage } from "../services/storage";
-  import { closeModal } from "../services/helpers";
+  import { closeModal, getImageUrl } from "../services/helpers";
   import { get } from "svelte/store";
   import { l } from "../../../common/utils";
 
@@ -31,7 +31,7 @@
   >
     <img
       class="hover:cursor-pointer w-10 mr-1"
-      src="src/public/copy.png"
+      src={getImageUrl("copy.png")}
       alt="copy"
     />
   </button>

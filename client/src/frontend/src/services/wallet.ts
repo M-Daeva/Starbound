@@ -1,13 +1,12 @@
 import { init as _init } from "../../../common/workers/testnet-frontend-workers";
 import type { User } from "../../../common/codegen/Starbound.types";
-import { getAddrByChainPrefix } from "../../../common/signers";
+import { getAddrByChainPrefix, initWalletList } from "../../../common/signers";
 import { get } from "svelte/store";
 import { l } from "../../../common/utils";
 import { displayModal } from "./helpers";
 import { type ChainRegistryStorage } from "../../../common/helpers/interfaces";
 import {
   addressStorage,
-  initAll,
   LOCAL_STORAGE_KEY,
   chainRegistryStorage,
   CHAIN_TYPE,
@@ -38,12 +37,20 @@ async function init(chains: ChainRegistryStorage, chainType: "main" | "test") {
 
   // init wallet, add osmo chain, save address to localSorage
   async function initCwHandler() {
+    let address: string;
+
     try {
-      const address = await getAddrByChainPrefix(
-        get(chainRegistryStorage),
-        CHAIN_TYPE,
-        "osmo"
-      );
+      if (!get(chainRegistryStorage).length) {
+        const defaultWallet = await initWalletList([], "main");
+        address = (await defaultWallet.getKey("osmosis-1")).bech32Address;
+      } else {
+        address = await getAddrByChainPrefix(
+          get(chainRegistryStorage),
+          CHAIN_TYPE,
+          "osmo"
+        );
+      }
+
       addressStorage.set(address);
       // TODO: encode address
       localStorage.setItem(LOCAL_STORAGE_KEY, address);

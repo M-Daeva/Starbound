@@ -96,7 +96,7 @@ function closeModal() {
 
 function displayAddress() {
   const address = localStorage.getItem(LOCAL_STORAGE_KEY);
-  if (!address) {
+  if (!address || !address.includes("1")) {
     // displayModal("Connect wallet first!");
     return "";
   }
@@ -146,6 +146,11 @@ function getOsmoPrice() {
   return mean;
 }
 
+// https://vitejs.dev/guide/assets.html#new-url-url-import-meta-url
+function getImageUrl(name: string): string {
+  return new URL(`/src/public/${name}`, import.meta.url).href;
+}
+
 export {
   getAssetInfoByAddress,
   generateColorList,
@@ -159,4 +164,5 @@ export {
   getValidatorListBySymbol,
   sortAssets,
   getOsmoPrice,
+  getImageUrl,
 };

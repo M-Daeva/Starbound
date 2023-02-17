@@ -163,10 +163,8 @@ const staticHandler = express.static(rootPath("./dist/frontend"));
 express()
   .use(cors(), text(), json())
   .use(staticHandler)
-  .use("/dashboard", staticHandler)
-  .use("/assets", staticHandler)
-  .use("/bank", staticHandler)
   .use("/api", api)
+  .use("/*", staticHandler)
 
   .listen(E.PORT, async () => {
     l(`Ready on port ${E.PORT}`);

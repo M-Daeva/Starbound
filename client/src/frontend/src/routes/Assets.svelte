@@ -11,6 +11,7 @@
     displayModal,
     getValidatorListBySymbol,
     sortAssets,
+    getImageUrl,
   } from "../services/helpers";
   import {
     chainRegistryStorage,
@@ -223,7 +224,7 @@
             >
               <img
                 class="hover:cursor-pointer"
-                src="src/public/up-down-arrow.svg"
+                src={getImageUrl("up-down-arrow.svg")}
                 alt="arrow"
               />
             </button>
@@ -238,7 +239,7 @@
             >
               <img
                 class="hover:cursor-pointer"
-                src="src/public/up-down-arrow.svg"
+                src={getImageUrl("up-down-arrow.svg")}
                 alt="arrow"
               />
             </button>
@@ -253,7 +254,7 @@
             >
               <img
                 class="hover:cursor-pointer"
-                src="src/public/up-down-arrow.svg"
+                src={getImageUrl("up-down-arrow.svg")}
                 alt="arrow"
               />
             </button>

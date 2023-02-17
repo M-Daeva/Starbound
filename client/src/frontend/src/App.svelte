@@ -6,7 +6,7 @@
   import NotFound from "./routes/NotFound.svelte";
   import { init } from "./services/wallet";
   import Modal from "./components/Modal.svelte";
-  import { displayAddress } from "./services/helpers";
+  import { displayAddress, getImageUrl } from "./services/helpers";
   import { get } from "svelte/store";
   import {
     isModalActiveStorage,
@@ -20,7 +20,7 @@
     dashboard: "/dashboard",
     assets: "/assets",
     bank: "/bank",
-    other: "*",
+    other: "/*",
   };
 
   let checked = false;
@@ -114,7 +114,7 @@
         </ul>
       </nav>
       <div class="w-36 flex flex-row">
-        <img class="w-5 mr-1" src="src/public/wallet.png" alt="wallet" />
+        <img class="w-5 mr-1" src={getImageUrl("wallet.png")} alt="wallet" />
         <div class="font-normal">{displayAddress()}</div>
       </div>
       <button

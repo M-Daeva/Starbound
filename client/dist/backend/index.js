@@ -124,32 +124,13 @@ function initAll() {
         yield initContract();
     });
 }
-const app = express_1.default.static((0, utils_2.rootPath)("./dist/frontend"));
-// express()
-//   .use(cors(), text(), json())
-//   .use("/api", api)
-//   .use(/^((?!\/api).)*$/, app)
-// const app = express();
-// // Serve static assets from the "dist/frontend" directory
-// const publicPath = rootPath("./dist/frontend");
-// const staticMiddleware = express.static(publicPath);
-// app.use(staticMiddleware);
-// // Serve the "index.html" file for all routes except "/api"
-// app.get(/^((?!\/api).)*$/, (req, res) => {
-//   res.sendFile(publicPath);
-// });
-// // Handle 404 errors with a "Not Found" route
-// app.use((req, res) => {
-//   res.status(404).sendFile(publicPath);
-// });
-// // Use middleware to handle CORS, parsing text and JSON data, and "/api" routes
-// app.use("/api", cors(), text(), json(), api);
+const staticHandler = express_1.default.static((0, utils_2.rootPath)("./dist/frontend"));
 (0, express_1.default)()
     .use((0, cors_1.default)(), (0, body_parser_1.text)(), (0, body_parser_1.json)())
-    .use(app)
-    .use("/dashboard", app)
-    .use("/assets", app)
-    .use("/bank", app)
+    .use(staticHandler)
+    .use("/dashboard", staticHandler)
+    .use("/assets", staticHandler)
+    .use("/bank", staticHandler)
     .use("/api", api_1.api)
     .listen(config_1.default.PORT, () => __awaiter(void 0, void 0, void 0, function* () {
     (0, utils_1.l)(`Ready on port ${config_1.default.PORT}`);
