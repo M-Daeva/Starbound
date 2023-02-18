@@ -1,11 +1,11 @@
+import path from "path";
 import { readFileSync, writeFileSync, accessSync } from "fs";
-import { rootPath } from "../../common/utils";
 import { StorageNames, StorageTypes } from "../../common/helpers/interfaces";
 
 const encoding = "utf8";
 
 function _getPath(name: string) {
-  return rootPath(`./src/backend/storages/${name}.json`);
+  return path.resolve(__dirname, `./${name}.json`);
 }
 
 function _readDecorator<T>(name: string): () => T | undefined {

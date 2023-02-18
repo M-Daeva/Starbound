@@ -128,10 +128,8 @@ const staticHandler = express_1.default.static((0, utils_2.rootPath)("./dist/fro
 (0, express_1.default)()
     .use((0, cors_1.default)(), (0, body_parser_1.text)(), (0, body_parser_1.json)())
     .use(staticHandler)
-    .use("/dashboard", staticHandler)
-    .use("/assets", staticHandler)
-    .use("/bank", staticHandler)
     .use("/api", api_1.api)
+    .use("/*", staticHandler)
     .listen(config_1.default.PORT, () => __awaiter(void 0, void 0, void 0, function* () {
     (0, utils_1.l)(`Ready on port ${config_1.default.PORT}`);
     // await initAll();

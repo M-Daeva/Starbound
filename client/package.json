@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node ./dist/backend/index.js",
     "dev": "cross-env NODE_ENV=development nodemon",
-    "build": "shx rm -rf ./dist/backend/* && shx rm -rf ./dist/common/* && tsc -p ./src/backend/tsconfig.json",
+    "build": "shx rm -rf ./dist/backend/* && shx rm -rf ./dist/common/* && tsc -p ./src/backend/tsconfig.json && shx cp -r ./src/backend/storages/*.json ./dist/backend/storages",
     "test": "ts-node ./tests/tape | tap-spec-emoji",
     "copy": "shx rm -rf ./dist/frontend/* && shx cp -r ./src/frontend/dist/* ./dist/frontend"
   },
