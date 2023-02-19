@@ -16,8 +16,8 @@ exports._getChainByChainId = exports.getDappAddressAndDenomList = exports.queryP
 const stargate_1 = require("@cosmjs/stargate");
 const assets_1 = require("../helpers/assets");
 const signers_1 = require("../signers");
-const ibc_config_ab_json_1 = __importDefault(require("../../../src/common/config/ibc-config-ab.json"));
-const ibc_config_ac_json_1 = __importDefault(require("../../../src/common/config/ibc-config-ac.json"));
+const ibc_config_ab_json_1 = __importDefault(require("../config/ibc-config-ab.json"));
+const ibc_config_ac_json_1 = __importDefault(require("../config/ibc-config-ac.json"));
 const utils_1 = require("../utils");
 const stableDenom = "ibc/5973C068568365FFF40DEDCF1A1CB7582B6116B731CD31A12231AE25E20B871F";
 const stablePoolId = "481";

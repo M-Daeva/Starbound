@@ -1,4 +1,16 @@
 import test from "tape";
+import { initStorage } from "../../src/backend/storages";
+import { l, getIbcDenom, getChannelId } from "../../src/common/utils";
+import ibcConfigAb from "../../src/common/config/ibc-config-ab.json";
+import ibcConfigAc from "../../src/common/config/ibc-config-ac.json";
+import {
+  ChainRegistryStorage,
+  IbcChannelsStorage,
+  PoolsStorage,
+  ValidatorsStorage,
+  PoolsAndUsersStorage,
+  AssetDescription,
+} from "../../src/common/helpers/interfaces";
 import {
   _verifyRpc,
   _verifyRpcList,
@@ -21,18 +33,6 @@ import {
   getPools,
   _getChainByChainId,
 } from "../../src/common/helpers/api-helpers";
-import {
-  ChainRegistryStorage,
-  IbcChannelsStorage,
-  PoolsStorage,
-  ValidatorsStorage,
-  PoolsAndUsersStorage,
-  AssetDescription,
-} from "../../src/common/helpers/interfaces";
-import { initStorage } from "../../src/backend/storages";
-import { l, getIbcDenom, getChannelId } from "../../src/common/utils";
-import ibcConfigAb from "../../../ibc-config-ab.json";
-import ibcConfigAc from "../../../ibc-config-ac.json";
 
 let chainRegistryStorage = initStorage<ChainRegistryStorage>(
   "chain-registry-storage"

@@ -5,6 +5,7 @@ declare let envs: {
         MY: string;
     };
     PORT: string;
+    HOST: string;
     PATH: {
         TO_STATIC: string;
     };

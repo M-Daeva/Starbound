@@ -4,11 +4,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.initStorage = void 0;
-const fs_1 = require("fs");
 const path_1 = __importDefault(require("path"));
+const fs_1 = require("fs");
 const encoding = "utf8";
 function _getPath(name) {
-    // return rootPath(`./src/backend/storages/${name}.json`);
     return path_1.default.resolve(__dirname, `./${name}.json`);
 }
 function _readDecorator(name) {

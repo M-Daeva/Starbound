@@ -18,6 +18,7 @@ let envs = {
         MY: e.MY_SEED,
     },
     PORT: e.PORT,
+    HOST: e.HOST,
     PATH: {
         TO_STATIC: e.PATH_TO_STATIC_FROM_ROOT_DIR,
     },
