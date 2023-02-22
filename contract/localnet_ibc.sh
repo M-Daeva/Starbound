@@ -10,19 +10,19 @@ SEED_ALICE="harsh adult scrub stadium solution impulse company agree tomorrow po
 ALICE_ADDRESS_WASM="wasm1ll3s59aawh0qydpz2q3xmqf6pwzmj24t8l43cp"
 ALICE_ADDRESS_OSMO="osmo1ll3s59aawh0qydpz2q3xmqf6pwzmj24t9ch58c"
 
-SEED_BOB=$(jq -r '.BOB_SEED' ../.test-wallets/test_wallets.json)
+SEED_BOB=$(jq -r '.BOB_SEED' ../../.test-wallets/test_wallets.json)
 BOB_ADDRESS_WASM="wasm1chgwz55h9kepjq0fkj5supl2ta3nwu63mk04cl"
 BOB_ADDRESS_OSMO="osmo1chgwz55h9kepjq0fkj5supl2ta3nwu63e3ds8x"
 
-SEED_DAPP=$(jq -r '.JOHN_SEED' ../.test-wallets/test_wallets.json)
+SEED_DAPP=$(jq -r '.JOHN_SEED' ../../.test-wallets/test_wallets.json)
 DAPP_ADDRESS="osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt"
 
 TXFLAG="--gas-prices 0.1uosmo --gas auto --gas-adjustment 1.3 -y -b block --node $RPC --chain-id $CHAIN_ID"
 BINARY="docker exec -i osmosis osmosisd"
 BINARY2="docker exec -i wasmd wasmd"
 DIR=$(pwd)
-TESTNET_DIR="$DIR/../wba-twt-testnet"
-DIR_NAME=$(basename "$PWD")
+TESTNET_DIR="$DIR/../../wba-twt-testnet"
+DIR_NAME=$(basename `dirname $PWD`)
 DIR_NAME_SNAKE=$(echo $DIR_NAME | tr '-' '_')
 WASM="artifacts/$DIR_NAME_SNAKE.wasm"
 IMAGE_NAME="osmosis"
@@ -115,7 +115,7 @@ R="{
 \"SEED_BOB\":\"$SEED_BOB\",
 \"SEED_DAPP\":\"$SEED_DAPP\"
 }"
-echo $R > client/src/common/config/localnet-ibc-config.json
+echo $R > ../client/src/common/config/localnet-ibc-config.json
 
 # # try to transfer directly
 # echo $SEP
@@ -130,7 +130,7 @@ echo $R > client/src/common/config/localnet-ibc-config.json
 echo $SEP
 echo "testing contract..."
 cd $DIR
-ts-node ./client/tests/localnet-ibc-multitransfer-tests.ts
+ts-node ../client/tests/localnet-ibc-multitransfer-tests.ts
 echo $SEP
 # clear packets
 cd $TESTNET_DIR

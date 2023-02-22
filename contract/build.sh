@@ -1,7 +1,7 @@
 # script for building wasm
 
 DIR=$(pwd)
-DIR_NAME=$(basename "$PWD")
+DIR_NAME=$(basename `dirname $PWD`)
 DIR_NAME_SNAKE=$(echo $DIR_NAME | tr '-' '_')
 WASM="artifacts/$DIR_NAME_SNAKE.wasm"
 

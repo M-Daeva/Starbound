@@ -2,19 +2,18 @@
 
 PREFIX="osmo"
 CHAIN_ID="osmo-test-4"
-# RPC="https://testnet-rpc.osmosis.zone:443"
 RPC="https://osmosis-testnet-rpc.allthatnode.com:26657"
 # osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx
-SEED_ALICE=$(jq -r '.ALICE_SEED' ../.test-wallets/test_wallets.json)
+SEED_ALICE=$(jq -r '.ALICE_SEED' ../../.test-wallets/test_wallets.json)
 # osmo1chgwz55h9kepjq0fkj5supl2ta3nwu63e3ds8x
-SEED_BOB=$(jq -r '.BOB_SEED' ../.test-wallets/test_wallets.json)
+SEED_BOB=$(jq -r '.BOB_SEED' ../../.test-wallets/test_wallets.json)
 # osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt
-SEED_DAPP=$(jq -r '.JOHN_SEED' ../.test-wallets/test_wallets.json)
+SEED_DAPP=$(jq -r '.JOHN_SEED' ../../.test-wallets/test_wallets.json)
 DAPP_ADDRESS="osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt"
 
 TXFLAG="--gas-prices 0.1uosmo --gas auto --gas-adjustment 1.3 -y -b block --node $RPC --chain-id $CHAIN_ID"
 DIR=$(pwd)
-DIR_NAME=$(basename "$PWD")
+DIR_NAME=$(basename `dirname $PWD`)
 DIR_NAME_SNAKE=$(echo $DIR_NAME | tr '-' '_')
 WASM="artifacts/$DIR_NAME_SNAKE.wasm"
 
@@ -44,4 +43,4 @@ R="{
 \"SEED_BOB\":\"$SEED_BOB\",
 \"SEED_DAPP\":\"$SEED_DAPP\"
 }"
-echo $R > client/src/common/config/testnet-config.json
+echo $R > ../client/src/common/config/testnet-config.json

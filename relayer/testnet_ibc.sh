@@ -1,8 +1,8 @@
 # script for transfering tokens between testnets
 
 # load parameters from files created by 'open_channel.sh'
-res_ab_json="dist/common/config/ibc-config-ab.json"
-res_ac_json="dist/common/config/ibc-config-ac.json"
+res_ab_json="ibc-config-ab.json"
+res_ac_json="ibc-config-ac.json"
 
 A_CHAIN=$(jq -r '.a_chain_id' $res_ab_json)
 B_CHAIN=$(jq -r '.b_chain_id' $res_ab_json)
@@ -25,15 +25,10 @@ BOB_ADDRESS_C="secret1chgwz55h9kepjq0fkj5supl2ta3nwu63n02fvg"
 
 TXFLAG="--gas-prices 0.1uosmo --gas auto --gas-adjustment 1.3 -y -b block --node $A_RPC --chain-id $A_CHAIN"
 
-DIR=$(pwd)
-TESTNET_DIR="$DIR/../../wba-twt-testnet"
-FOLDER="./testnet-osmosis-cosmoshub-secret"
 HERMES="hermes --config config.toml"
 
 SEP="------------------------------------------------------------------------------------"
 
-
-cd $TESTNET_DIR
 
 # transfer from osmosis to cosmos hub
 echo $SEP
@@ -63,4 +58,3 @@ osmosisd tx ibc-transfer transfer $A_PORT $AC_CHANNEL $BOB_ADDRESS_C "1uosmo" --
 # echo "checking $BOB_ADDRESS_C balances..."
 # secretcli q bank balances $BOB_ADDRESS_C --node $C_RPC --chain-id $C_CHAIN
 
-cd $DIR

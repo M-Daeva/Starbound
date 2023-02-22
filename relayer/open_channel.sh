@@ -50,8 +50,9 @@ res_ab=$($HERMES create channel --a-chain $A_CHAIN --b-chain $B_CHAIN \
 echo $res_ab > "ibc-config-ab.txt"
 res_ab=$(< "ibc-config-ab.txt")
 res_ab_json=$(string_to_json "$res_ab")
-echo $res_ab_json > "src/common/config/ibc-config-ab.json"
-echo $res_ab_json > "dist/common/config/ibc-config-ab.json"
+echo $res_ab_json > "ibc-config-ab.json"
+echo $res_ab_json > "../client/src/common/config/ibc-config-ab.json"
+echo $res_ab_json > "../client/dist/common/config/ibc-config-ab.json"
 rm -rf "ibc-config-ab.txt"
 
 # open channel A-C
@@ -63,9 +64,7 @@ res_ac=$($HERMES create channel --a-chain $A_CHAIN --b-chain $C_CHAIN \
 echo $res_ac > "ibc-config-ac.txt"
 res_ac=$(< "ibc-config-ac.txt")
 res_ac_json=$(string_to_json "$res_ac")
-echo $res_ac_json > "src/common/config/ibc-config-ac.json"
-echo $res_ac_json > "dist/common/config/ibc-config-ac.json"
+echo $res_ac_json > "ibc-config-ac.json"
+echo $res_ac_json > "../client/src/common/config/ibc-config-ac.json"
+echo $res_ac_json > "../client/dist/common/config/ibc-config-ac.json"
 rm -rf "ibc-config-ac.txt"
-
-
-
