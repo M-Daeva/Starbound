@@ -1,1 +1,1 @@
-{ "a_chain_id": "osmo-test-4", "a_client_id": "07-tendermint-3798", "a_channel_id": "channel-2634", "a_port_id": "transfer", "b_chain_id": "theta-testnet-001", "b_client_id": "07-tendermint-1633", "b_channel_id": "channel-1590", "b_port_id": "transfer" }
+{ "a_chain_id": "osmo-test-4", "a_client_id": "07-tendermint-3802", "a_channel_id": "channel-2638", "a_port_id": "transfer", "b_chain_id": "theta-testnet-001", "b_client_id": "07-tendermint-1638", "b_channel_id": "channel-1597", "b_port_id": "transfer" }

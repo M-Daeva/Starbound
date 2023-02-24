@@ -28,6 +28,9 @@ HERMES="hermes --config $FOLDER/$config"
 # Then we need to create the keys for our chains, please note that the key-names ARE IMPORTANT!
 # Because in hermes config, we set who is the payer wallet by the name of the key.
 
+# Create key in hermes for pulsar-2 chain with the name relayer1
+$HERMES keys add --chain pulsar-2 --key-name relayer1 --mnemonic-file $FOLDER/relayer-mnemonic || true
+
 # Create key in hermes for theta-testnet-001 chain with the name relayer1
 $HERMES keys add --chain theta-testnet-001 --key-name relayer1 --mnemonic-file $FOLDER/relayer-mnemonic || true
 

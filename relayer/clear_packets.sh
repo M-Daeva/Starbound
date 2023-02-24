@@ -56,5 +56,5 @@ while true; do
     echo "DONE!"
     echo
     sleep $((CLEAR_PACKETS_PERIOD * 60))
-    ((count++)) # TODO: replace increment
+    count=$(($count + 1))
 done

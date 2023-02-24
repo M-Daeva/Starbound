@@ -12,7 +12,7 @@ C_PORT="transfer"
 HERMES="hermes --config config.toml"
 
 
-function string_to_json() {
+string_to_json() {
   local a_chain_id=$(echo "$1" | grep -oP 'a_side.*?id: "\K[^"]+')
   local a_client_id=$(echo "$1" | grep -oP 'a_side.*?ClientId\( "\K[^"]+')
   local a_channel_id=$(echo "$1" | grep -oP 'a_side.*?ChannelId\( "\K[^"]+')
@@ -51,7 +51,9 @@ echo $res_ab > "ibc-config-ab.txt"
 res_ab=$(< "ibc-config-ab.txt")
 res_ab_json=$(string_to_json "$res_ab")
 echo $res_ab_json > "ibc-config-ab.json"
-echo $res_ab_json > "../client/src/common/config/ibc-config-ab.json"
+if [ -d "../client/src/common/config" ]; then
+  echo $res_ab_json > "../client/src/common/config/ibc-config-ab.json"
+fi
 echo $res_ab_json > "../client/dist/common/config/ibc-config-ab.json"
 rm -rf "ibc-config-ab.txt"
 
@@ -65,6 +67,8 @@ echo $res_ac > "ibc-config-ac.txt"
 res_ac=$(< "ibc-config-ac.txt")
 res_ac_json=$(string_to_json "$res_ac")
 echo $res_ac_json > "ibc-config-ac.json"
-echo $res_ac_json > "../client/src/common/config/ibc-config-ac.json"
+if [ -d "../client/src/common/config" ]; then
+  echo $res_ac_json > "../client/src/common/config/ibc-config-ac.json"
+fi
 echo $res_ac_json > "../client/dist/common/config/ibc-config-ac.json"
 rm -rf "ibc-config-ac.txt"
