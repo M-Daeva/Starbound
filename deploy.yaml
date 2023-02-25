@@ -1,0 +1,41 @@
+---
+version: "2.0"
+
+services:
+  dapp:
+    image: mdaeva/starbound-client-testnet:1.0.0
+    expose:
+      - port: 4000
+        as: 80
+        accept:
+          - starbound.fun
+        to:
+          - global: true
+
+profiles:
+  compute:
+    dapp:
+      resources:
+        cpu:
+          units: 1
+        memory:
+          size: 512M
+        storage:
+          size: 3G
+  placement:
+    dcloud:
+      attributes:
+        host: akash
+      signedBy:
+        anyOf:
+          - akash18tnvnwkklyv4dyuj8x357n7vray4v4zuyjy3ar
+      pricing:
+        dapp:
+          denom: uakt
+          amount: 2000
+
+deployment:
+  dapp:
+    dcloud:
+      profile: dapp
+      count: 1

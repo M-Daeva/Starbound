@@ -1,13 +1,13 @@
-APP_NAME="starbound-client"
-ENV_FILE="config.env"
+APP_NAME="starbound-client-mainnet"
+VERSION="1.0.0"
+ACCOUNT_NAME="mdaeva"
+
 INTERNAL_PORT=4000
 EXTERNAL_PORT=4000
 
-APP_LABEL="$APP_NAME-app"
-IMAGE_NAME="$APP_NAME-image"
-CONTAINER_NAME="$APP_NAME-container"
-APP_COMMAND="npm run start"
-EXECUTE="docker exec $CONTAINER_NAME"
+IMAGE_NAME=$APP_NAME
+CONTAINER_NAME=$APP_NAME
+
 
 print() {
     echo "------------------------------------------------------------------------------------"
@@ -19,13 +19,18 @@ print() {
 clear
 
 print "Creating image from file..."
-docker build -t $IMAGE_NAME . --label=$APP_LABEL
+docker build -t "$IMAGE_NAME:$VERSION" .
 
-print "Creating container from image..."
-docker run -d --name $CONTAINER_NAME -p $EXTERNAL_PORT:$INTERNAL_PORT --env-file=$ENV_FILE \
-  --label=$APP_LABEL $IMAGE_NAME 
+docker images
 
-print "Running app in container..."
-$EXECUTE $APP_COMMAND &> /dev/null &
+docker tag $IMAGE_NAME "$ACCOUNT_NAME/$IMAGE_NAME:$VERSION"
+docker push "$ACCOUNT_NAME/$IMAGE_NAME:$VERSION"
 
-print "The app is running..."
+# print "Creating container from image..."
+# docker run -d --name $CONTAINER_NAME -p $EXTERNAL_PORT:$INTERNAL_PORT $IMAGE_NAME 
+
+# print "The app is running..."
+
+
+
+

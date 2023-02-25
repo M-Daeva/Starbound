@@ -1,8 +1,9 @@
-APP_NAME="starbound-client"
+APP_NAME="starbound-client-testnet"
+VERSION="1.0.0"
 
-APP_LABEL="$APP_NAME-app"
-IMAGE_NAME="$APP_NAME-image"
-CONTAINER_NAME="$APP_NAME-container"
+IMAGE_NAME=$APP_NAME
+CONTAINER_NAME=$APP_NAME
+
 
 print() {
     echo "------------------------------------------------------------------------------------"
@@ -20,7 +21,7 @@ print "Removing container..."
 docker rm $CONTAINER_NAME
 
 print "Removing image..."
-docker rmi $IMAGE_NAME
+docker rmi "$IMAGE_NAME:$VERSION"
 
 print "Removing all images and containers..."
 docker system prune -f
