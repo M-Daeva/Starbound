@@ -26,9 +26,6 @@ profiles:
     dcloud:
       attributes:
         host: akash
-      signedBy:
-        anyOf:
-          - akash18tnvnwkklyv4dyuj8x357n7vray4v4zuyjy3ar
       pricing:
         dapp:
           denom: uakt
