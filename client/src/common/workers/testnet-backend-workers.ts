@@ -40,21 +40,22 @@ const bobClientStruct: ClientStructWithoutKeplr = {
   RPC,
   seed: SEED_BOB,
 };
-const dappClientStruct: ClientStructWithoutKeplr = {
-  prefix: PREFIX,
-  RPC,
-  seed: SEED_DAPP,
-};
-const dappClientStructJuno: ClientStructWithoutKeplr = {
-  prefix: "juno",
-  //RPC: "https://rpc.uni.juno.deuslabs.fi:443",
-  RPC: "https://rpc.uni.junonetwork.io:443",
-  seed: SEED_DAPP,
-};
 
 const req = createRequest({});
 
-async function init() {
+async function init(seed: string) {
+  const dappClientStruct: ClientStructWithoutKeplr = {
+    prefix: PREFIX,
+    RPC,
+    seed,
+  };
+  const dappClientStructJuno: ClientStructWithoutKeplr = {
+    prefix: "juno",
+    //RPC: "https://rpc.uni.juno.deuslabs.fi:443",
+    RPC: "https://rpc.uni.junonetwork.io:443",
+    seed,
+  };
+
   // dapp cosmwasm helpers
   const {
     owner: dappAddr,

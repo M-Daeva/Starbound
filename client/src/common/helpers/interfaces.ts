@@ -457,7 +457,8 @@ type StorageNames =
   | "pools-storage"
   | "validators-storage"
   | "user-funds-storage"
-  | "pools-and-users-storage";
+  | "pools-and-users-storage"
+  | "encryption-key-storage";
 
 type ChainRegistryStorage = NetworkData[];
 type IbcChannelsStorage = IbcResponse[];
@@ -465,6 +466,7 @@ type PoolsStorage = [string, AssetDescription[]][];
 type ValidatorsStorage = [string, ValidatorResponseReduced[]][];
 type UserFundsStorage = [string, UserBalance][];
 type PoolsAndUsersStorage = QueryPoolsAndUsersResponse;
+type EncryptionKeyStorage = string;
 
 type StorageTypes =
   | ChainRegistryStorage
@@ -472,7 +474,8 @@ type StorageTypes =
   | PoolsStorage
   | ValidatorsStorage
   | UserFundsStorage
-  | PoolsAndUsersStorage;
+  | PoolsAndUsersStorage
+  | EncryptionKeyStorage;
 
 export type { NetworkData, ClientStructWithKeplr, ClientStructWithoutKeplr };
 
@@ -513,6 +516,7 @@ export {
   ValidatorsStorage,
   UserFundsStorage,
   PoolsAndUsersStorage,
+  EncryptionKeyStorage,
   StorageTypes,
   IbcTracesResponse,
   IbcAckResponse,

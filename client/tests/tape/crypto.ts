@@ -2,8 +2,8 @@ import test from "tape";
 import {
   getIbcDenom,
   getChannelId,
-  encode,
-  decode,
+  encrypt,
+  decrypt,
 } from "../../src/common/utils";
 
 test("Testing 'getIbcDenom' and 'getChannelId' (uscrt)", (a) => {
@@ -33,14 +33,25 @@ test("Testing 'getIbcDenom' and 'getChannelId' (transfer/channel-0/uatom)", (a) 
   a.end();
 });
 
-test("Testing 'encode' and 'decode'", (a) => {
+test("Testing 'encrypt' and 'decrypt'", (a) => {
   const data = "secret message";
   const key = "secret key";
-  const encoded = encode(data, key);
-  const decoded = decode(encoded, key);
+  const encoded = encrypt(data, key);
+  const decrypted = decrypt(encoded, key);
 
-  a.doesNotEqual(data, encoded, "encode");
-  a.equal(data, decoded, "decode");
+  a.doesNotEqual(data, encoded, "encrypt");
+  a.equal(data, decrypted, "decrypt");
+
+  a.end();
+});
+
+test("Testing 'decrypt' ('Malformed UTF-8 data' workaround)", (a) => {
+  const key = "tlbrenrb linghgvv524y5o";
+  const encoded =
+    "U2FsdGVkX19YwCcMAjhdn7Mgj/7BHo1gJTS32OoiNeLyrg8hNSOxssXBz7NYyjHBIFR7ZLUHVCyIuu8KZlFKTbHloQZ0Cyol83qbV8vOYXsqwG/bAHrgsFpd0ygiUihHgq7THOdpfHPCHQTVpShm9DPP8oPdEZ/uCpyTFDHOiaPoxRglKcMnNgH85ZcZ00cbJnPMKVIL7yhOwSktNz6g4dpQCBj/dFsNpwCL3GmSr/k=";
+  const decrypted = decrypt(encoded, key);
+
+  a.equal(typeof decrypted, "undefined", "decrypt");
 
   a.end();
 });

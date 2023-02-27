@@ -94,13 +94,18 @@ function getChannelId(
   }
 }
 
-function encode(data: string, key: string): string {
+function encrypt(data: string, key: string): string {
   return AES.encrypt(data, key).toString();
 }
 
-function decode(encodedData: string, key: string): string {
-  const bytes = AES.decrypt(encodedData, key);
-  return bytes.toString(enc.Utf8);
+function decrypt(encryptedData: string, key: string): string | undefined {
+  // "Malformed UTF-8 data" workaround
+  try {
+    const bytes = AES.decrypt(encryptedData, key);
+    return bytes.toString(enc.Utf8);
+  } catch (error) {
+    return;
+  }
 }
 
 export {
@@ -113,6 +118,6 @@ export {
   specifyTimeout,
   getIbcDenom,
   getChannelId,
-  encode,
-  decode,
+  encrypt,
+  decrypt,
 };

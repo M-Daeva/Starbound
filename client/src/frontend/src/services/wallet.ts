@@ -52,7 +52,6 @@ async function init(chains: ChainRegistryStorage, chainType: "main" | "test") {
       }
 
       addressStorage.set(address);
-      // TODO: encode address
       localStorage.setItem(LOCAL_STORAGE_KEY, address);
       window.location.reload();
     } catch (error) {

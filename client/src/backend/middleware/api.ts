@@ -1,6 +1,7 @@
 import { init } from "../../common/workers/testnet-backend-workers";
 import { SEED_DAPP } from "../../common/config/testnet-config.json";
-import { l } from "../../common/utils";
+import { l, decrypt } from "../../common/utils";
+import { getEncryptionKey } from "./key";
 import { initStorage } from "../storages";
 import E from "../config";
 import {
@@ -200,9 +201,15 @@ async function getUserFunds(userOsmoAddress: string) {
 }
 
 async function updatePoolsAndUsers() {
-  const { cwQueryPoolsAndUsers } = await init();
-
   try {
+    const encryptionKey = getEncryptionKey();
+    if (!encryptionKey) throw new Error("Key is not found!");
+
+    const seed = decrypt(SEED_DAPP, encryptionKey);
+    if (!seed) throw new Error("Key is wrong!");
+
+    const { cwQueryPoolsAndUsers } = await init(seed);
+
     const res = await cwQueryPoolsAndUsers();
     poolsAndUsersStorage.set(res);
     poolsAndUsersStorage.write(res);

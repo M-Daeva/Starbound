@@ -3,10 +3,13 @@ import { l, createRequest } from "../common/utils";
 import { text, json } from "body-parser";
 import cors from "cors";
 import E from "./config";
-import { rootPath } from "../common/utils";
+import { rootPath, decrypt } from "../common/utils";
 import { getGasPriceFromChainRegistryItem } from "../common/signers";
 import { init } from "../common/workers/testnet-backend-workers";
 import { api, ROUTES as API_ROUTES } from "./routes/api";
+import { key } from "./routes/key";
+import { getEncryptionKey } from "./middleware/key";
+import { SEED_DAPP } from "../common/config/testnet-config.json";
 import {
   ChainRegistryStorage,
   PoolsStorage,
@@ -14,10 +17,9 @@ import {
 import {
   updatePoolsAndUsers as _updatePoolsAndUsers,
   _getAllGrants,
-  getDappAddressAndDenomList,
 } from "../common/helpers/api-helpers";
 
-let req = createRequest({ baseURL: E.BASE_URL + "/api" });
+const req = createRequest({ baseURL: E.BASE_URL + "/api" });
 
 async function updateTimeSensitiveStorages() {
   await Promise.all([
@@ -36,13 +38,19 @@ async function updateTimeInsensitiveStorages() {
 }
 
 async function triggerContract() {
+  const encryptionKey = getEncryptionKey();
+  if (!encryptionKey) return;
+
+  const seed = decrypt(SEED_DAPP, encryptionKey);
+  if (!seed) return;
+
   const {
     cwSwap,
     cwTransfer,
     cwQueryPoolsAndUsers,
     sgDelegateFromAll,
     cwUpdatePoolsAndUsers,
-  } = await init();
+  } = await init(seed);
 
   const chainRegistry: ChainRegistryStorage = await req.get(
     API_ROUTES.getChainRegistry
@@ -96,81 +104,17 @@ async function triggerContract() {
   }, 15 * 60 * 1000);
 }
 
-async function initStorages() {
-  try {
-    const t = Date.now();
-    const res = await req.get(API_ROUTES.updateAll);
-    const delta = (Date.now() - t) / 1e3;
-    const minutes = Math.floor(delta / 60);
-    const seconds = Math.floor(delta % 60);
-    l("\n", res, "\n");
-    l("\n", `${minutes} minutes ${seconds} seconds`, "\n");
-  } catch (error) {
-    l(error);
-  }
-}
-
-async function initContract() {
-  const { cwQueryPoolsAndUsers, cwUpdatePoolsAndUsers, cwUpdateConfig } =
-    await init();
-
-  // add dapp addresses
-  const poolsStorage: PoolsStorage = await req.get(API_ROUTES.getPools);
-  const chainRegistry: ChainRegistryStorage = await req.get(
-    API_ROUTES.getChainRegistry
-  );
-
-  const chain = chainRegistry.find((item) => item.denomNative === "uosmo");
-  if (!chain) return;
-
-  const gasPrice = getGasPriceFromChainRegistryItem(chain, E.CHAIN_TYPE);
-
-  // @ts-ignore
-  const dappAddressAndDenomList: string[][][] = getDappAddressAndDenomList(
-    E.DAPP_ADDRESS,
-    chainRegistry
-  );
-
-  await cwUpdateConfig(
-    {
-      dappAddressAndDenomList,
-    },
-    gasPrice
-  );
-
-  // add pools
-  const poolsAndUsers = await cwQueryPoolsAndUsers();
-
-  const res = await _updatePoolsAndUsers(
-    chainRegistry,
-    poolsAndUsers,
-    poolsStorage,
-    E.CHAIN_TYPE
-  );
-  if (!res) return;
-
-  const { pools, users } = res;
-  await cwUpdatePoolsAndUsers(pools, users, gasPrice);
-}
-
-async function initAll() {
-  await initStorages();
-  await initContract();
-}
-
 const staticHandler = express.static(rootPath("./dist/frontend"));
 
 express()
   .use(cors(), text(), json())
   .use(staticHandler)
   .use("/api", api)
+  .use("/key", key)
   .use("/*", staticHandler)
 
   .listen(E.PORT, async () => {
     l(`Ready on port ${E.PORT}`);
-    // await initAll();
-    // await initContract();
-    // await initStorages();
     // await triggerContract();
     // setInterval(triggerContract, 24 * 60 * 60 * 1000); // 24 h update period
 
