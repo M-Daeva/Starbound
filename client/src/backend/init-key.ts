@@ -2,6 +2,7 @@ import { l, createRequest } from "../common/utils";
 import E from "./config";
 import { readFile, access } from "fs/promises";
 import readline from "readline/promises";
+import "./services/ssl-fix";
 
 const req = createRequest({ baseURL: E.BASE_URL + "/key" });
 

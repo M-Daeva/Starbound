@@ -4,6 +4,7 @@ WORKDIR /app
 COPY run.sh ./
 COPY client/dist ./client/dist
 COPY client/package*.json client/config.env ./client/
+RUN sed -i "s/IS_PRODUCTION=false/IS_PRODUCTION=true/" ./client/config.env
 COPY relayer/*.toml relayer/*.json relayer/relayer-mnemonic relayer/add_keys.sh \
      relayer/open_channel.sh relayer/clear_packets.sh ./relayer/
 

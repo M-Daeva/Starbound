@@ -6,7 +6,7 @@ services:
     image: mdaeva/starbound-client-testnet:1.0.0
     expose:
       - port: 4000
-        as: 80
+        as: 443
         accept:
           - starbound.fun
         to:

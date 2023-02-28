@@ -1,4 +1,5 @@
 import express from "express";
+import https from "https";
 import { l, createRequest } from "../common/utils";
 import { text, json } from "body-parser";
 import cors from "cors";
@@ -10,6 +11,8 @@ import { api, ROUTES as API_ROUTES } from "./routes/api";
 import { key } from "./routes/key";
 import { getEncryptionKey } from "./middleware/key";
 import { SEED_DAPP } from "../common/config/testnet-config.json";
+import fs from "fs";
+import "./services/ssl-fix";
 import {
   ChainRegistryStorage,
   PoolsStorage,
@@ -106,13 +109,22 @@ async function triggerContract() {
 
 const staticHandler = express.static(rootPath("./dist/frontend"));
 
-express()
+const app = express();
+app
   .use(cors(), text(), json())
   .use(staticHandler)
   .use("/api", api)
   .use("/key", key)
-  .use("/*", staticHandler)
+  .use("/*", staticHandler);
 
+https
+  .createServer(
+    {
+      key: fs.readFileSync("server.key"),
+      cert: fs.readFileSync("server.cert"),
+    },
+    app
+  )
   .listen(E.PORT, async () => {
     l(`Ready on port ${E.PORT}`);
     // await triggerContract();

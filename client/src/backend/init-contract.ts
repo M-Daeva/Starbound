@@ -7,6 +7,7 @@ import { ROUTES as API_ROUTES } from "./routes/api";
 import { getEncryptionKey } from "./middleware/key";
 import { SEED_DAPP } from "../common/config/testnet-config.json";
 import { updatePoolsAndUsers as _updatePoolsAndUsers } from "../common/helpers/api-helpers";
+import "./services/ssl-fix";
 import {
   ChainRegistryStorage,
   PoolsStorage,

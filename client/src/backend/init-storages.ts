@@ -1,6 +1,7 @@
 import { l, createRequest } from "../common/utils";
 import E from "./config";
 import { ROUTES as API_ROUTES } from "./routes/api";
+import "./services/ssl-fix";
 
 const req = createRequest({ baseURL: E.BASE_URL + "/api" });
 

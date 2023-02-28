@@ -1,7 +1,7 @@
-const isDevelopment = import.meta.env.MODE === "development";
+const devUrl = "https://localhost:4000";
+const prodUrl = devUrl;
+const isProduction = import.meta.env.MODE !== "development";
 
-const baseURL = isDevelopment
-  ? "http://localhost:4000"
-  : "http://localhost:4000";
+const baseURL = isProduction ? prodUrl : devUrl;
 
 export { baseURL };
