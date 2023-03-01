@@ -13,6 +13,7 @@ import { getEncryptionKey } from "./middleware/key";
 import { SEED_DAPP } from "../common/config/testnet-config.json";
 import fs from "fs";
 import "./services/ssl-fix";
+import rateLimit from "express-rate-limit";
 import {
   ChainRegistryStorage,
   PoolsStorage,
@@ -107,10 +108,19 @@ async function triggerContract() {
   }, 15 * 60 * 1000);
 }
 
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20, // Limit each IP to 20 requests per `window`
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  handler: (req, res) => res.send("Request rate is limited"),
+});
+
 const staticHandler = express.static(rootPath("./dist/frontend"));
 
 const app = express();
 app
+  .use(limiter)
   .use(cors(), text(), json())
   .use(staticHandler)
   .use("/api", api)
