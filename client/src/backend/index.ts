@@ -14,6 +14,7 @@ import { SEED_DAPP } from "../common/config/testnet-config.json";
 import fs from "fs";
 import "./services/ssl-fix";
 import rateLimit from "express-rate-limit";
+import * as h from "helmet";
 import {
   ChainRegistryStorage,
   PoolsStorage,
@@ -120,8 +121,28 @@ const staticHandler = express.static(rootPath("./dist/frontend"));
 
 const app = express();
 app
-  .use(limiter)
-  .use(cors(), text(), json())
+  .disable("x-powered-by")
+  .use(
+    // h.contentSecurityPolicy(),
+    h.crossOriginEmbedderPolicy({ policy: "credentialless" }),
+    h.crossOriginOpenerPolicy(),
+    h.crossOriginResourcePolicy(),
+    h.dnsPrefetchControl(),
+    h.expectCt(),
+    h.frameguard(),
+    h.hidePoweredBy(),
+    h.hsts(),
+    h.ieNoOpen(),
+    h.noSniff(),
+    // h.originAgentCluster(),
+    h.permittedCrossDomainPolicies(),
+    h.referrerPolicy(),
+    h.xssFilter(),
+    limiter,
+    cors(),
+    text(),
+    json()
+  )
   .use(staticHandler)
   .use("/api", api)
   .use("/key", key)
