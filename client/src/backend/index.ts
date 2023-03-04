@@ -11,7 +11,7 @@ import { api, ROUTES as API_ROUTES } from "./routes/api";
 import { key } from "./routes/key";
 import { getEncryptionKey } from "./middleware/key";
 import { SEED_DAPP } from "../common/config/testnet-config.json";
-import fs from "fs";
+import { readFileSync } from "fs";
 import "./services/ssl-fix";
 import rateLimit from "express-rate-limit";
 import * as h from "helmet";
@@ -151,8 +151,8 @@ app
 https
   .createServer(
     {
-      key: fs.readFileSync("server.key"),
-      cert: fs.readFileSync("server.cert"),
+      key: readFileSync(E.SSL_KEY_PATH),
+      cert: readFileSync(E.SSL_CERT_PATH),
     },
     app
   )

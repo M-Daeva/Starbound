@@ -1,5 +1,5 @@
 APP_NAME="starbound-client-testnet"
-VERSION="1.0.0"
+VERSION="1.0.4"
 ACCOUNT_NAME="mdaeva"
 
 INTERNAL_PORT=4000
@@ -18,12 +18,12 @@ print() {
 
 clear
 
+docker login -u $ACCOUNT_NAME docker.io
+
 print "Creating image from file..."
 docker build -t "$IMAGE_NAME:$VERSION" .
 
-docker images
-
-docker tag $IMAGE_NAME "$ACCOUNT_NAME/$IMAGE_NAME:$VERSION"
+docker tag "$IMAGE_NAME:$VERSION" "$ACCOUNT_NAME/$IMAGE_NAME:$VERSION"
 docker push "$ACCOUNT_NAME/$IMAGE_NAME:$VERSION"
 
 # print "Creating container from image..."

@@ -371,13 +371,14 @@ declare type AssetDenom = {
     [assetSymbol in AssetSymbol]: string;
 };
 declare type AssetSymbol = "ATOM" | "OSMO" | "ION" | "AKT" | "DVPN" | "IRIS" | "CRO" | "XPRT" | "REGEN" | "NGM" | "EEUR" | "JUNO" | "LIKE" | "USTC" | "BCNA" | "BTSG" | "XKI" | "SCRT" | "MED" | "BOOT" | "CMDX" | "CHEQ" | "STARS" | "HUAHUA" | "LUM" | "DSM" | "GRAV" | "SOMM" | "ROWAN" | "NETA" | "UMEE" | "DEC" | "PSTAKE" | "DAI" | "USDC" | "MNTL" | "WETH" | "WBTC" | "EVMOS" | "TGD" | "DOT" | "ODIN" | "GLTO" | "GEO" | "BLD" | "CUDOS";
-declare type StorageNames = "chain-registry-storage" | "ibc-channels-storage" | "pools-storage" | "validators-storage" | "user-funds-storage" | "pools-and-users-storage";
+declare type StorageNames = "chain-registry-storage" | "ibc-channels-storage" | "pools-storage" | "validators-storage" | "user-funds-storage" | "pools-and-users-storage" | "encryption-key-storage";
 declare type ChainRegistryStorage = NetworkData[];
 declare type IbcChannelsStorage = IbcResponse[];
 declare type PoolsStorage = [string, AssetDescription[]][];
 declare type ValidatorsStorage = [string, ValidatorResponseReduced[]][];
 declare type UserFundsStorage = [string, UserBalance][];
 declare type PoolsAndUsersStorage = QueryPoolsAndUsersResponse;
-declare type StorageTypes = ChainRegistryStorage | IbcChannelsStorage | PoolsStorage | ValidatorsStorage | UserFundsStorage | PoolsAndUsersStorage;
+declare type EncryptionKeyStorage = string;
+declare type StorageTypes = ChainRegistryStorage | IbcChannelsStorage | PoolsStorage | ValidatorsStorage | UserFundsStorage | PoolsAndUsersStorage | EncryptionKeyStorage;
 export type { NetworkData, ClientStructWithKeplr, ClientStructWithoutKeplr };
-export { AssetListItem, AssetList, ClientStruct, DelegationStruct, IbcStruct, RelayerList, Relayer, RelayerStruct, AssetDescription, PoolDatabase, PoolInfoRaw, PoolInfo, PoolPair, ChainsResponse, ChainResponse, BalancesResponse, DelegationsResponse, ValidatorListResponse, ValidatorResponse, ValidatorResponseReduced, IbcResponse, AssetSymbol, AssetDenom, SwapStruct, AuthzHandler, UserBalance, UserAdressesWithBalances, DashboardAsset, NetworkContentResponse, StorageNames, ChainRegistryStorage, IbcChannelsStorage, PoolsStorage, ValidatorsStorage, UserFundsStorage, PoolsAndUsersStorage, StorageTypes, IbcTracesResponse, IbcAckResponse, GrantsResponse, UpdateConfigStruct, };
+export { AssetListItem, AssetList, ClientStruct, DelegationStruct, IbcStruct, RelayerList, Relayer, RelayerStruct, AssetDescription, PoolDatabase, PoolInfoRaw, PoolInfo, PoolPair, ChainsResponse, ChainResponse, BalancesResponse, DelegationsResponse, ValidatorListResponse, ValidatorResponse, ValidatorResponseReduced, IbcResponse, AssetSymbol, AssetDenom, SwapStruct, AuthzHandler, UserBalance, UserAdressesWithBalances, DashboardAsset, NetworkContentResponse, StorageNames, ChainRegistryStorage, IbcChannelsStorage, PoolsStorage, ValidatorsStorage, UserFundsStorage, PoolsAndUsersStorage, EncryptionKeyStorage, StorageTypes, IbcTracesResponse, IbcAckResponse, GrantsResponse, UpdateConfigStruct, };

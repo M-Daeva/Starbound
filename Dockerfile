@@ -3,7 +3,7 @@ FROM rust:1.67.1-slim
 WORKDIR /app
 COPY run.sh ./
 COPY client/dist ./client/dist
-COPY client/package*.json client/config.env ./client/
+COPY client/package*.json client/config.env client/*.cert client/*.key ./client/
 RUN sed -i "s/IS_PRODUCTION=false/IS_PRODUCTION=true/" ./client/config.env
 COPY relayer/*.toml relayer/*.json relayer/relayer-mnemonic relayer/add_keys.sh \
      relayer/open_channel.sh relayer/clear_packets.sh ./relayer/
@@ -21,4 +21,5 @@ RUN cd ./relayer && ./add_keys.sh && cd ../
 
 EXPOSE 4000
 
-CMD ./run.sh
+# CMD ./run.sh
+ENTRYPOINT ["./run.sh"]

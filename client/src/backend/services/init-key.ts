@@ -1,13 +1,13 @@
-import { l, createRequest } from "../common/utils";
-import E from "./config";
+import { l, createRequest, rootPath } from "../../common/utils";
+import E from "../config";
 import { readFile, access } from "fs/promises";
 import readline from "readline/promises";
-import "./services/ssl-fix";
+import "./ssl-fix";
 
 const req = createRequest({ baseURL: E.BASE_URL + "/key" });
 
 async function initKey() {
-  const keyPath = "../../../../.test-wallets/key";
+  const keyPath = rootPath("../../.test-wallets/key");
   let encryptionKey = "";
 
   try {

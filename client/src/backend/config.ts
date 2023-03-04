@@ -9,24 +9,19 @@ if (fs.existsSync(envPath)) {
 }
 const e = process.env as { [key: string]: string };
 
-let envs = {
-  SEED: {
-    MAIN: e.MAIN_SEED,
-    USER: e.USER_SEED,
-    MY: e.MY_SEED,
-  },
+const IS_PRODUCTION = e.IS_PRODUCTION === "true";
+
+export default {
+  IS_PRODUCTION,
   PORT: e.PORT,
   PATH: {
     TO_STATIC: e.PATH_TO_STATIC_FROM_ROOT_DIR,
   },
-  BASE_URL: e.BASE_URL_PROD,
+  BASE_URL: IS_PRODUCTION ? e.BASE_URL_PROD : e.BASE_URL_DEV,
   CHAIN_TYPE: e.CHAIN_TYPE as "main" | "test",
   DAPP_ADDRESS: e.DAPP_ADDRESS,
-  IS_PRODUCTION: e.IS_PRODUCTION === "true",
+  SSL_KEY_PATH: IS_PRODUCTION ? "server.key" : "../../.test-wallets/server.key",
+  SSL_CERT_PATH: IS_PRODUCTION
+    ? "server.cert"
+    : "../../.test-wallets/server.cert",
 };
-
-if (!envs.IS_PRODUCTION) {
-  envs.BASE_URL = e.BASE_URL_DEV;
-}
-
-export default envs;

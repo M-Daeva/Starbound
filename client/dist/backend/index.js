@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -13,6 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const https_1 = __importDefault(require("https"));
 const utils_1 = require("../common/utils");
 const body_parser_1 = require("body-parser");
 const cors_1 = __importDefault(require("cors"));
@@ -21,8 +45,15 @@ const utils_2 = require("../common/utils");
 const signers_1 = require("../common/signers");
 const testnet_backend_workers_1 = require("../common/workers/testnet-backend-workers");
 const api_1 = require("./routes/api");
+const key_1 = require("./routes/key");
+const key_2 = require("./middleware/key");
+const testnet_config_json_1 = require("../common/config/testnet-config.json");
+const fs_1 = require("fs");
+require("./services/ssl-fix");
+const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
+const h = __importStar(require("helmet"));
 const api_helpers_1 = require("../common/helpers/api-helpers");
-let req = (0, utils_1.createRequest)({ baseURL: config_1.default.BASE_URL + "/api" });
+const req = (0, utils_1.createRequest)({ baseURL: config_1.default.BASE_URL + "/api" });
 function updateTimeSensitiveStorages() {
     return __awaiter(this, void 0, void 0, function* () {
         yield Promise.all([
@@ -43,7 +74,13 @@ function updateTimeInsensitiveStorages() {
 }
 function triggerContract() {
     return __awaiter(this, void 0, void 0, function* () {
-        const { cwSwap, cwTransfer, cwQueryPoolsAndUsers, sgDelegateFromAll, cwUpdatePoolsAndUsers, } = yield (0, testnet_backend_workers_1.init)();
+        const encryptionKey = (0, key_2.getEncryptionKey)();
+        if (!encryptionKey)
+            return;
+        const seed = (0, utils_2.decrypt)(testnet_config_json_1.SEED_DAPP, encryptionKey);
+        if (!seed)
+            return;
+        const { cwSwap, cwTransfer, cwQueryPoolsAndUsers, sgDelegateFromAll, cwUpdatePoolsAndUsers, } = yield (0, testnet_backend_workers_1.init)(seed);
         const chainRegistry = yield req.get(api_1.ROUTES.getChainRegistry);
         const chain = chainRegistry.find((item) => item.denomNative === "uosmo");
         if (!chain)
@@ -78,63 +115,33 @@ function triggerContract() {
         }), 15 * 60 * 1000);
     });
 }
-function initStorages() {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const t = Date.now();
-            const res = yield req.get(api_1.ROUTES.updateAll);
-            const delta = (Date.now() - t) / 1e3;
-            const minutes = Math.floor(delta / 60);
-            const seconds = Math.floor(delta % 60);
-            (0, utils_1.l)("\n", res, "\n");
-            (0, utils_1.l)("\n", `${minutes} minutes ${seconds} seconds`, "\n");
-        }
-        catch (error) {
-            (0, utils_1.l)(error);
-        }
-    });
-}
-function initContract() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const { cwQueryPoolsAndUsers, cwUpdatePoolsAndUsers, cwUpdateConfig } = yield (0, testnet_backend_workers_1.init)();
-        // add dapp addresses
-        const poolsStorage = yield req.get(api_1.ROUTES.getPools);
-        const chainRegistry = yield req.get(api_1.ROUTES.getChainRegistry);
-        const chain = chainRegistry.find((item) => item.denomNative === "uosmo");
-        if (!chain)
-            return;
-        const gasPrice = (0, signers_1.getGasPriceFromChainRegistryItem)(chain, config_1.default.CHAIN_TYPE);
-        // @ts-ignore
-        const dappAddressAndDenomList = (0, api_helpers_1.getDappAddressAndDenomList)(config_1.default.DAPP_ADDRESS, chainRegistry);
-        yield cwUpdateConfig({
-            dappAddressAndDenomList,
-        }, gasPrice);
-        // add pools
-        const poolsAndUsers = yield cwQueryPoolsAndUsers();
-        const res = yield (0, api_helpers_1.updatePoolsAndUsers)(chainRegistry, poolsAndUsers, poolsStorage, config_1.default.CHAIN_TYPE);
-        if (!res)
-            return;
-        const { pools, users } = res;
-        yield cwUpdatePoolsAndUsers(pools, users, gasPrice);
-    });
-}
-function initAll() {
-    return __awaiter(this, void 0, void 0, function* () {
-        yield initStorages();
-        yield initContract();
-    });
-}
+const limiter = (0, express_rate_limit_1.default)({
+    windowMs: 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => res.send("Request rate is limited"),
+});
 const staticHandler = express_1.default.static((0, utils_2.rootPath)("./dist/frontend"));
-(0, express_1.default)()
-    .use((0, cors_1.default)(), (0, body_parser_1.text)(), (0, body_parser_1.json)())
+const app = (0, express_1.default)();
+app
+    .disable("x-powered-by")
+    .use(
+// h.contentSecurityPolicy(),
+h.crossOriginEmbedderPolicy({ policy: "credentialless" }), h.crossOriginOpenerPolicy(), h.crossOriginResourcePolicy(), h.dnsPrefetchControl(), h.expectCt(), h.frameguard(), h.hidePoweredBy(), h.hsts(), h.ieNoOpen(), h.noSniff(), 
+// h.originAgentCluster(),
+h.permittedCrossDomainPolicies(), h.referrerPolicy(), h.xssFilter(), limiter, (0, cors_1.default)(), (0, body_parser_1.text)(), (0, body_parser_1.json)())
     .use(staticHandler)
     .use("/api", api_1.api)
-    .use("/*", staticHandler)
+    .use("/key", key_1.key)
+    .use("/*", staticHandler);
+https_1.default
+    .createServer({
+    key: (0, fs_1.readFileSync)(config_1.default.SSL_KEY_PATH),
+    cert: (0, fs_1.readFileSync)(config_1.default.SSL_CERT_PATH),
+}, app)
     .listen(config_1.default.PORT, () => __awaiter(void 0, void 0, void 0, function* () {
     (0, utils_1.l)(`Ready on port ${config_1.default.PORT}`);
-    // await initAll();
-    // await initContract();
-    // await initStorages();
     // await triggerContract();
     // setInterval(triggerContract, 24 * 60 * 60 * 1000); // 24 h update period
     const periodSensitive = 15 * 1000; // 15 s update period

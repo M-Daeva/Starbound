@@ -12,42 +12,44 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.decode = exports.encode = exports.getChannelId = exports.getIbcDenom = exports.specifyTimeout = exports.getLast = exports.SEP = exports.rootPath = exports.createRequest = exports.r = exports.l = void 0;
+exports.decrypt = exports.encrypt = exports.getChannelId = exports.getIbcDenom = exports.specifyTimeout = exports.getLast = exports.SEP = exports.rootPath = exports.createRequest = exports.r = exports.l = void 0;
 const axios_1 = __importDefault(require("axios"));
 const path_1 = __importDefault(require("path"));
 const crypto_js_1 = require("crypto-js");
 const l = console.log.bind(console);
 exports.l = l;
-const r = (num, digits = 0) => {
+function r(num, digits = 0) {
     let k = Math.pow(10, digits);
     return Math.round(k * num) / k;
-};
+}
 exports.r = r;
 function getLast(arr) {
     return arr[arr.length - 1];
 }
 exports.getLast = getLast;
-const rootPath = (dir) => path_1.default.resolve(__dirname, "../../../", dir);
+function rootPath(dir) {
+    return path_1.default.resolve(__dirname, "../../../", dir);
+}
 exports.rootPath = rootPath;
 const SEP = "////////////////////////////////////////////////////////////////////////////////////\n";
 exports.SEP = SEP;
-const createRequest = (config) => {
+function createRequest(config) {
     const req = axios_1.default.create(config);
     return {
-        get: (url, config) => __awaiter(void 0, void 0, void 0, function* () {
+        get: (url, config) => __awaiter(this, void 0, void 0, function* () {
             return (yield req.get(url, config)).data;
         }),
-        post: (url, params, config) => __awaiter(void 0, void 0, void 0, function* () {
+        post: (url, params, config) => __awaiter(this, void 0, void 0, function* () {
             return (yield req.post(url, params, config)).data;
         }),
-        put: (url, params, config) => __awaiter(void 0, void 0, void 0, function* () {
+        put: (url, params, config) => __awaiter(this, void 0, void 0, function* () {
             return (yield req.put(url, params, config)).data;
         }),
-        patch: (url, params, config) => __awaiter(void 0, void 0, void 0, function* () {
+        patch: (url, params, config) => __awaiter(this, void 0, void 0, function* () {
             return (yield req.patch(url, params, config)).data;
         }),
     };
-};
+}
 exports.createRequest = createRequest;
 function specifyTimeout(promise, timeout = 5000, exception = () => {
     throw new Error("Timeout!");
@@ -92,12 +94,18 @@ function getChannelId(srcDenom, dstDenom, portId = "transfer") {
     }
 }
 exports.getChannelId = getChannelId;
-function encode(data, key) {
+function encrypt(data, key) {
     return crypto_js_1.AES.encrypt(data, key).toString();
 }
-exports.encode = encode;
-function decode(encodedData, key) {
-    const bytes = crypto_js_1.AES.decrypt(encodedData, key);
-    return bytes.toString(crypto_js_1.enc.Utf8);
+exports.encrypt = encrypt;
+function decrypt(encryptedData, key) {
+    // "Malformed UTF-8 data" workaround
+    try {
+        const bytes = crypto_js_1.AES.decrypt(encryptedData, key);
+        return bytes.toString(crypto_js_1.enc.Utf8);
+    }
+    catch (error) {
+        return;
+    }
 }
-exports.decode = decode;
+exports.decrypt = decrypt;

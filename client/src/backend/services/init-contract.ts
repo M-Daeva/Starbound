@@ -1,17 +1,17 @@
-import { createRequest } from "../common/utils";
-import E from "./config";
-import { decrypt } from "../common/utils";
-import { getGasPriceFromChainRegistryItem } from "../common/signers";
-import { init } from "../common/workers/testnet-backend-workers";
-import { ROUTES as API_ROUTES } from "./routes/api";
-import { getEncryptionKey } from "./middleware/key";
-import { SEED_DAPP } from "../common/config/testnet-config.json";
-import { updatePoolsAndUsers as _updatePoolsAndUsers } from "../common/helpers/api-helpers";
-import "./services/ssl-fix";
+import { createRequest } from "../../common/utils";
+import E from "../config";
+import { decrypt } from "../../common/utils";
+import { getGasPriceFromChainRegistryItem } from "../../common/signers";
+import { init } from "../../common/workers/testnet-backend-workers";
+import { ROUTES as API_ROUTES } from "../routes/api";
+import { getEncryptionKey } from "../middleware/key";
+import { SEED_DAPP } from "../../common/config/testnet-config.json";
+import { updatePoolsAndUsers as _updatePoolsAndUsers } from "../../common/helpers/api-helpers";
+import "./ssl-fix";
 import {
   ChainRegistryStorage,
   PoolsStorage,
-} from "../common/helpers/interfaces";
+} from "../../common/helpers/interfaces";
 
 const req = createRequest({ baseURL: E.BASE_URL + "/api" });
 

@@ -4,21 +4,23 @@ import { SHA256, AES, enc } from "crypto-js";
 
 const l = console.log.bind(console);
 
-const r = (num: number, digits: number = 0): number => {
+function r(num: number, digits: number = 0): number {
   let k = 10 ** digits;
   return Math.round(k * num) / k;
-};
+}
 
 function getLast<T>(arr: T[]) {
   return arr[arr.length - 1];
 }
 
-const rootPath = (dir: string) => path.resolve(__dirname, "../../../", dir);
+function rootPath(dir: string) {
+  return path.resolve(__dirname, "../../../", dir);
+}
 
 const SEP =
   "////////////////////////////////////////////////////////////////////////////////////\n";
 
-const createRequest = (config: Object) => {
+function createRequest(config: Object) {
   const req = axios.create(config);
 
   return {
@@ -35,7 +37,7 @@ const createRequest = (config: Object) => {
       return (await req.patch(url, params, config)).data;
     },
   };
-};
+}
 
 async function specifyTimeout(
   promise: Promise<any>,

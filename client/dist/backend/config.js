@@ -11,22 +11,18 @@ if (fs_1.default.existsSync(envPath)) {
     dotenv_1.default.config({ path: envPath });
 }
 const e = process.env;
-let envs = {
-    SEED: {
-        MAIN: e.MAIN_SEED,
-        USER: e.USER_SEED,
-        MY: e.MY_SEED,
-    },
+const IS_PRODUCTION = e.IS_PRODUCTION === "true";
+exports.default = {
+    IS_PRODUCTION,
     PORT: e.PORT,
-    HOST: e.HOST,
     PATH: {
         TO_STATIC: e.PATH_TO_STATIC_FROM_ROOT_DIR,
     },
-    BASE_URL: e.BASE_URL_PROD,
+    BASE_URL: IS_PRODUCTION ? e.BASE_URL_PROD : e.BASE_URL_DEV,
     CHAIN_TYPE: e.CHAIN_TYPE,
     DAPP_ADDRESS: e.DAPP_ADDRESS,
+    SSL_KEY_PATH: IS_PRODUCTION ? "server.key" : "../../.test-wallets/server.key",
+    SSL_CERT_PATH: IS_PRODUCTION
+        ? "server.cert"
+        : "../../.test-wallets/server.cert",
 };
-if (e.NODE_ENV === "development") {
-    envs.BASE_URL = e.BASE_URL_DEV;
-}
-exports.default = envs;

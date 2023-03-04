@@ -3,11 +3,11 @@ declare const l: {
     (...data: any[]): void;
     (message?: any, ...optionalParams: any[]): void;
 };
-declare const r: (num: number, digits?: number) => number;
+declare function r(num: number, digits?: number): number;
 declare function getLast<T>(arr: T[]): T;
-declare const rootPath: (dir: string) => string;
+declare function rootPath(dir: string): string;
 declare const SEP = "////////////////////////////////////////////////////////////////////////////////////\n";
-declare const createRequest: (config: Object) => {
+declare function createRequest(config: Object): {
     get: (url: string, config?: Object) => Promise<any>;
     post: (url: string, params: Object, config?: AxiosRequestConfig) => Promise<any>;
     put: (url: string, params: Object, config?: AxiosRequestConfig) => Promise<any>;
@@ -31,6 +31,6 @@ declare function getIbcDenom(channelId: string, srcDenom: string, portId?: strin
  * @returns id of IBC channel from chain B to chain A
  */
 declare function getChannelId(srcDenom: string, dstDenom: string, portId?: string): string | undefined;
-declare function encode(data: string, key: string): string;
-declare function decode(encodedData: string, key: string): string;
-export { l, r, createRequest, rootPath, SEP, getLast, specifyTimeout, getIbcDenom, getChannelId, encode, decode, };
+declare function encrypt(data: string, key: string): string;
+declare function decrypt(encryptedData: string, key: string): string | undefined;
+export { l, r, createRequest, rootPath, SEP, getLast, specifyTimeout, getIbcDenom, getChannelId, encrypt, decrypt, };

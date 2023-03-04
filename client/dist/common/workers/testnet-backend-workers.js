@@ -26,20 +26,20 @@ const bobClientStruct = {
     RPC: testnet_config_json_1.RPC,
     seed: testnet_config_json_1.SEED_BOB,
 };
-const dappClientStruct = {
-    prefix: testnet_config_json_1.PREFIX,
-    RPC: testnet_config_json_1.RPC,
-    seed: testnet_config_json_1.SEED_DAPP,
-};
-const dappClientStructJuno = {
-    prefix: "juno",
-    //RPC: "https://rpc.uni.juno.deuslabs.fi:443",
-    RPC: "https://rpc.uni.junonetwork.io:443",
-    seed: testnet_config_json_1.SEED_DAPP,
-};
 const req = (0, utils_1.createRequest)({});
-function init() {
+function init(seed) {
     return __awaiter(this, void 0, void 0, function* () {
+        const dappClientStruct = {
+            prefix: testnet_config_json_1.PREFIX,
+            RPC: testnet_config_json_1.RPC,
+            seed,
+        };
+        const dappClientStructJuno = {
+            prefix: "juno",
+            //RPC: "https://rpc.uni.juno.deuslabs.fi:443",
+            RPC: "https://rpc.uni.junonetwork.io:443",
+            seed,
+        };
         // dapp cosmwasm helpers
         const { owner: dappAddr, cwSwap: _cwSwap, cwQueryPoolsAndUsers: _cwQueryPoolsAndUsers, cwUpdatePoolsAndUsers: _cwUpdatePoolsAndUsers, cwQueryUser: _cwQueryUser, cwTransfer: _cwTransfer, cwUpdateConfig: _cwUpdateConfig, cwQueryConfig: _cwQueryConfig,
         // cwMultiTransfer: _cwMultiTransfer,
