@@ -3,8 +3,12 @@ version: "2.0"
 
 services:
   dapp:
-    image: mdaeva/starbound-client-testnet:1.0.4
-    command: docker run -p 4000:4000 mdaeva/starbound-client-testnet:1.0.4 <enc_key>
+    image: mdaeva/starbound-client-testnet:1.0.7
+    command:
+      - "sh"
+      - "-c"
+    args:
+      - './run.sh <enc_key>'
     expose:
       - port: 4000
         as: 443

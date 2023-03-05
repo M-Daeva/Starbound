@@ -1,10 +1,15 @@
-import { l, createRequest, rootPath } from "../../common/utils";
+import { l, createRequest, rootPath, getLast } from "../../common/utils";
 import E from "../config";
 import { readFile, access } from "fs/promises";
 import readline from "readline/promises";
 import "./ssl-fix";
 
-const req = createRequest({ baseURL: E.BASE_URL + "/key" });
+const isProduction = getLast(process.argv).trim() === "production";
+const baseURL = isProduction ? E.BASE_URL_PROD : E.BASE_URL_DEV;
+
+const req = createRequest({
+  baseURL: baseURL + "/key",
+});
 
 async function initKey() {
   const keyPath = rootPath("../../.test-wallets/key");
