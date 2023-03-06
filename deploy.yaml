@@ -4,16 +4,18 @@ version: "2.0"
 services:
   dapp:
     image: mdaeva/starbound-client-testnet:1.0.7
+    env:
+      - "url=https://starbound.fun"
     command:
       - "sh"
       - "-c"
     args:
-      - './run.sh <enc_key>'
+      - "./run.sh <enc_key>"
     expose:
       - port: 4000
         as: 443
         accept:
-          - starbound.fun
+          - "starbound.fun"
         to:
           - global: true
 
