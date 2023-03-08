@@ -42,7 +42,9 @@
 </script>
 
 <Router>
-  <div class="bg-indigo-900 text-amber-200">
+  <div
+    class="bg-indigo-900 text-amber-200 min-h-screen relative pb-40 sm:pb-14"
+  >
     <header
       class="flex justify-between items-center px-4 mb-5 border-white border-b-2"
     >
@@ -129,12 +131,60 @@
       >
     </header>
 
-    <div>
+    <section>
       <Route primary={false} path={paths.bank}><Bank /></Route>
       <Route primary={false} path={paths.assets}><Assets /></Route>
       <Route primary={false} path={paths.dashboard}><Dashboard /></Route>
       <Route primary={false} path={paths.other}><NotFound /></Route>
-    </div>
+    </section>
+
+    <footer
+      class="absolute bottom-0 flex flex-wrap justify-between items-center w-full p-4 border-white border-t-2"
+    >
+      <a
+        href="https://akash.network"
+        class="w-full sm:w-4/12 mb-4 sm:mb-0 flex justify-center sm:justify-start"
+      >
+        <p class="font-medium">Powered by</p>
+        <img
+          src={getImageUrl("akash.svg")}
+          alt="Powered by Akash"
+          class="w-20 fill-lime-500 ml-2"
+        />
+      </a>
+
+      <div
+        class="w-full sm:w-4/12 mb-4 sm:mb-0 flex items-center justify-center"
+      >
+        <a href="https://github.com/M-Daeva/starbound" class="flex ml-2">
+          <p class="font-medium">Built by M. Daeva</p>
+          <img
+            src={getImageUrl("github.png")}
+            alt="Github link"
+            class="w-6 ml-2"
+          />
+        </a>
+      </div>
+
+      <!-- TODO: add links -->
+      <div class="w-full sm:w-4/12 flex justify-center sm:justify-end">
+        <p class="font-medium">Socials:</p>
+        <a href="/" class="flex ml-2">
+          <img
+            src={getImageUrl("twitter.svg")}
+            alt="Twitter link"
+            class="w-6 ml-1"
+          />
+        </a>
+        <a href="/" class="flex ml-2">
+          <img
+            src={getImageUrl("discord.svg")}
+            alt="Discord link"
+            class="w-6 ml-1"
+          />
+        </a>
+      </div>
+    </footer>
 
     {#if isModalActive}
       <Modal />
