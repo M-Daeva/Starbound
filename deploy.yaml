@@ -3,7 +3,7 @@ version: "2.0"
 
 services:
   dapp:
-    image: mdaeva/starbound-client-testnet:1.0.7
+    image: mdaeva/starbound-client-testnet:1.0.14
     env:
       - "url=https://starbound.fun"
     command:

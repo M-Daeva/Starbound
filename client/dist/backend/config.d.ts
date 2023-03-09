@@ -4,6 +4,8 @@ declare const _default: {
     PATH: {
         TO_STATIC: string;
     };
+    BASE_URL_PROD: string;
+    BASE_URL_DEV: string;
     BASE_URL: string;
     CHAIN_TYPE: "main" | "test";
     DAPP_ADDRESS: string;

@@ -17,7 +17,11 @@ const config_1 = __importDefault(require("../config"));
 const promises_1 = require("fs/promises");
 const promises_2 = __importDefault(require("readline/promises"));
 require("./ssl-fix");
-const req = (0, utils_1.createRequest)({ baseURL: config_1.default.BASE_URL + "/key" });
+const isProduction = (0, utils_1.getLast)(process.argv).trim() === "production";
+const baseURL = isProduction ? config_1.default.BASE_URL_PROD : config_1.default.BASE_URL_DEV;
+const req = (0, utils_1.createRequest)({
+    baseURL: baseURL + "/key",
+});
 function initKey() {
     return __awaiter(this, void 0, void 0, function* () {
         const keyPath = (0, utils_1.rootPath)("../../.test-wallets/key");
