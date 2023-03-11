@@ -1,9 +1,8 @@
 import { l, createRequest } from "../../common/utils";
-import E from "../config";
+import { BASE_URL } from "../envs";
 import { ROUTES as API_ROUTES } from "../routes/api";
-import "./ssl-fix";
 
-const req = createRequest({ baseURL: E.BASE_URL + "/api" });
+const req = createRequest({ baseURL: BASE_URL + "/api" });
 
 async function initStorages() {
   try {

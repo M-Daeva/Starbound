@@ -8,12 +8,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const utils_1 = require("../../common/utils");
-const config_1 = __importDefault(require("../config"));
+const envs_1 = require("../envs");
 const utils_2 = require("../../common/utils");
 const signers_1 = require("../../common/signers");
 const testnet_backend_workers_1 = require("../../common/workers/testnet-backend-workers");
@@ -21,8 +18,7 @@ const api_1 = require("../routes/api");
 const key_1 = require("../middleware/key");
 const testnet_config_json_1 = require("../../common/config/testnet-config.json");
 const api_helpers_1 = require("../../common/helpers/api-helpers");
-require("./ssl-fix");
-const req = (0, utils_1.createRequest)({ baseURL: config_1.default.BASE_URL + "/api" });
+const req = (0, utils_1.createRequest)({ baseURL: envs_1.BASE_URL + "/api" });
 function initContract() {
     return __awaiter(this, void 0, void 0, function* () {
         const encryptionKey = (0, key_1.getEncryptionKey)();
@@ -38,15 +34,15 @@ function initContract() {
         const chain = chainRegistry.find((item) => item.denomNative === "uosmo");
         if (!chain)
             return;
-        const gasPrice = (0, signers_1.getGasPriceFromChainRegistryItem)(chain, config_1.default.CHAIN_TYPE);
+        const gasPrice = (0, signers_1.getGasPriceFromChainRegistryItem)(chain, envs_1.CHAIN_TYPE);
         // @ts-ignore
-        const dappAddressAndDenomList = getDappAddressAndDenomList(config_1.default.DAPP_ADDRESS, chainRegistry);
+        const dappAddressAndDenomList = getDappAddressAndDenomList(envs_1.DAPP_ADDRESS, chainRegistry);
         yield cwUpdateConfig({
             dappAddressAndDenomList,
         }, gasPrice);
         // add pools
         const poolsAndUsers = yield cwQueryPoolsAndUsers();
-        const res = yield (0, api_helpers_1.updatePoolsAndUsers)(chainRegistry, poolsAndUsers, poolsStorage, config_1.default.CHAIN_TYPE);
+        const res = yield (0, api_helpers_1.updatePoolsAndUsers)(chainRegistry, poolsAndUsers, poolsStorage, envs_1.CHAIN_TYPE);
         if (!res)
             return;
         const { pools, users } = res;

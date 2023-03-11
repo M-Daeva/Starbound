@@ -36,11 +36,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const https_1 = __importDefault(require("https"));
 const utils_1 = require("../common/utils");
 const body_parser_1 = require("body-parser");
 const cors_1 = __importDefault(require("cors"));
-const config_1 = __importDefault(require("./config"));
 const utils_2 = require("../common/utils");
 const signers_1 = require("../common/signers");
 const testnet_backend_workers_1 = require("../common/workers/testnet-backend-workers");
@@ -48,12 +46,12 @@ const api_1 = require("./routes/api");
 const key_1 = require("./routes/key");
 const key_2 = require("./middleware/key");
 const testnet_config_json_1 = require("../common/config/testnet-config.json");
-const fs_1 = require("fs");
-require("./services/ssl-fix");
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const h = __importStar(require("helmet"));
 const api_helpers_1 = require("../common/helpers/api-helpers");
-const req = (0, utils_1.createRequest)({ baseURL: config_1.default.BASE_URL + "/api" });
+const envs_1 = require("./envs");
+const baseURL = envs_1.IS_PRODUCTION ? envs_1.BASE_URL.PROD : envs_1.BASE_URL.DEV;
+const req = (0, utils_1.createRequest)({ baseURL: baseURL + "/api" });
 function updateTimeSensitiveStorages() {
     return __awaiter(this, void 0, void 0, function* () {
         yield Promise.all([
@@ -85,19 +83,19 @@ function triggerContract() {
         const chain = chainRegistry.find((item) => item.denomNative === "uosmo");
         if (!chain)
             return;
-        const gasPrice = (0, signers_1.getGasPriceFromChainRegistryItem)(chain, config_1.default.CHAIN_TYPE);
+        const gasPrice = (0, signers_1.getGasPriceFromChainRegistryItem)(chain, envs_1.CHAIN_TYPE);
         const poolsStorage = yield req.get(api_1.ROUTES.getPools);
         const poolsAndUsers = yield cwQueryPoolsAndUsers();
         // const grants = await _getAllGrants(
-        //   E.DAPP_ADDRESS,
+        //   DAPP_ADDRESS,
         //   chainRegistry,
-        //   E.CHAIN_TYPE
+        //   CHAIN_TYPE
         // );
         // if (!grants) return;
         // l(grants[0]);
-        // await sgDelegateFromAll(grants, chainRegistry, E.CHAIN_TYPE);
+        // await sgDelegateFromAll(grants, chainRegistry, CHAIN_TYPE);
         //return;
-        const res = yield (0, api_helpers_1.updatePoolsAndUsers)(chainRegistry, poolsAndUsers, poolsStorage, config_1.default.CHAIN_TYPE);
+        const res = yield (0, api_helpers_1.updatePoolsAndUsers)(chainRegistry, poolsAndUsers, poolsStorage, envs_1.CHAIN_TYPE);
         if (!res)
             return;
         const { pools, users } = res;
@@ -107,11 +105,11 @@ function triggerContract() {
         // consider execution in a loop
         yield cwTransfer(gasPrice);
         setTimeout(() => __awaiter(this, void 0, void 0, function* () {
-            const grants = yield (0, api_helpers_1._getAllGrants)(config_1.default.DAPP_ADDRESS, chainRegistry, config_1.default.CHAIN_TYPE);
+            const grants = yield (0, api_helpers_1._getAllGrants)(envs_1.DAPP_ADDRESS, chainRegistry, envs_1.CHAIN_TYPE);
             if (!grants)
                 return;
             (0, utils_1.l)(grants);
-            yield sgDelegateFromAll(grants, chainRegistry, config_1.default.CHAIN_TYPE);
+            yield sgDelegateFromAll(grants, chainRegistry, envs_1.CHAIN_TYPE);
         }), 15 * 60 * 1000);
     });
 }
@@ -123,8 +121,7 @@ const limiter = (0, express_rate_limit_1.default)({
     handler: (req, res) => res.send("Request rate is limited"),
 });
 const staticHandler = express_1.default.static((0, utils_2.rootPath)("./dist/frontend"));
-const app = (0, express_1.default)();
-app
+(0, express_1.default)()
     .disable("x-powered-by")
     .use(
 // h.contentSecurityPolicy(),
@@ -134,14 +131,9 @@ h.permittedCrossDomainPolicies(), h.referrerPolicy(), h.xssFilter(), limiter, (0
     .use(staticHandler)
     .use("/api", api_1.api)
     .use("/key", key_1.key)
-    .use("/*", staticHandler);
-https_1.default
-    .createServer({
-    key: (0, fs_1.readFileSync)(config_1.default.SSL_KEY_PATH),
-    cert: (0, fs_1.readFileSync)(config_1.default.SSL_CERT_PATH),
-}, app)
-    .listen(config_1.default.PORT, () => __awaiter(void 0, void 0, void 0, function* () {
-    (0, utils_1.l)(`Ready on port ${config_1.default.PORT}`);
+    .use("/*", staticHandler)
+    .listen(envs_1.PORT, () => __awaiter(void 0, void 0, void 0, function* () {
+    (0, utils_1.l)(`Ready on port ${envs_1.PORT}`);
     // await triggerContract();
     // setInterval(triggerContract, 24 * 60 * 60 * 1000); // 24 h update period
     const periodSensitive = 15 * 1000; // 15 s update period

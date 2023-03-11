@@ -1,5 +1,5 @@
 import { createRequest } from "../../common/utils";
-import E from "../config";
+import { BASE_URL, CHAIN_TYPE, DAPP_ADDRESS } from "../envs";
 import { decrypt } from "../../common/utils";
 import { getGasPriceFromChainRegistryItem } from "../../common/signers";
 import { init } from "../../common/workers/testnet-backend-workers";
@@ -7,13 +7,12 @@ import { ROUTES as API_ROUTES } from "../routes/api";
 import { getEncryptionKey } from "../middleware/key";
 import { SEED_DAPP } from "../../common/config/testnet-config.json";
 import { updatePoolsAndUsers as _updatePoolsAndUsers } from "../../common/helpers/api-helpers";
-import "./ssl-fix";
 import {
   ChainRegistryStorage,
   PoolsStorage,
 } from "../../common/helpers/interfaces";
 
-const req = createRequest({ baseURL: E.BASE_URL + "/api" });
+const req = createRequest({ baseURL: BASE_URL + "/api" });
 
 async function initContract() {
   const encryptionKey = getEncryptionKey();
@@ -34,11 +33,11 @@ async function initContract() {
   const chain = chainRegistry.find((item) => item.denomNative === "uosmo");
   if (!chain) return;
 
-  const gasPrice = getGasPriceFromChainRegistryItem(chain, E.CHAIN_TYPE);
+  const gasPrice = getGasPriceFromChainRegistryItem(chain, CHAIN_TYPE);
 
   // @ts-ignore
   const dappAddressAndDenomList: string[][][] = getDappAddressAndDenomList(
-    E.DAPP_ADDRESS,
+    DAPP_ADDRESS,
     chainRegistry
   );
 
@@ -56,7 +55,7 @@ async function initContract() {
     chainRegistry,
     poolsAndUsers,
     poolsStorage,
-    E.CHAIN_TYPE
+    CHAIN_TYPE
   );
   if (!res) return;
 

@@ -3,7 +3,7 @@ import { SEED_DAPP } from "../../common/config/testnet-config.json";
 import { l, decrypt } from "../../common/utils";
 import { getEncryptionKey } from "./key";
 import { initStorage } from "../storages";
-import E from "../config";
+import { CHAIN_TYPE } from "../envs"; // TODO: change on maiinet
 import {
   ChainRegistryStorage,
   IbcChannelsStorage,
@@ -24,9 +24,6 @@ import {
   mergePools,
   getChainNameAndRestList as _getChainNameAndRestList,
 } from "../../common/helpers/api-helpers";
-
-// TODO: change on maiinet
-const chainType: "main" | "test" = E.CHAIN_TYPE;
 
 const allowList: [string, string, string[]][] = [
   ["osmo", "test", ["https://rpc-test.osmosis.zone/"]],
@@ -74,7 +71,7 @@ async function getChainRegistry() {
       ibcChannelsStorage.get(),
       poolsStorage.get(),
       validatorsStorage.get(),
-      chainType
+      CHAIN_TYPE
     );
   return chainRegistry;
 }
@@ -83,7 +80,7 @@ async function updateIbcChannels() {
   try {
     const res = mergeIbcChannels(
       ibcChannelsStorage.get(),
-      await _getIbcChannnels(chainRegistryStorage.get(), chainType)
+      await _getIbcChannnels(chainRegistryStorage.get(), CHAIN_TYPE)
     );
     if (!res) throw new Error("mergeIbcChannels returned undefined!");
 
@@ -105,7 +102,7 @@ async function getIbcChannnels() {
       ibcChannelsStorage.get(),
       poolsStorage.get(),
       validatorsStorage.get(),
-      chainType
+      CHAIN_TYPE
     );
   return ibcChannels;
 }
@@ -132,7 +129,7 @@ async function getPools() {
       ibcChannelsStorage.get(),
       poolsStorage.get(),
       validatorsStorage.get(),
-      chainType
+      CHAIN_TYPE
     );
   return pools;
 }
@@ -140,7 +137,7 @@ async function getPools() {
 async function updateValidators() {
   try {
     const res = await _getValidators(
-      _getChainNameAndRestList(chainRegistryStorage.get(), chainType)
+      _getChainNameAndRestList(chainRegistryStorage.get(), CHAIN_TYPE)
     );
     if (!res.length) throw new Error("_getValidators returned empty list");
 
@@ -167,7 +164,7 @@ async function updateUserFunds() {
         chainRegistryStorage.get(),
         poolsAndUsersStorage.get(),
         poolsStorage.get(),
-        chainType
+        CHAIN_TYPE
       )
     ).map(({ address, holded, staked }) => [address, { holded, staked }]);
     userFundsStorage.set(res);
@@ -232,7 +229,7 @@ async function filterChainRegistry() {
     ibcChannelsStorage.get(),
     poolsStorage.get(),
     validatorsStorage.get(),
-    chainType
+    CHAIN_TYPE
   );
 }
 
@@ -259,7 +256,7 @@ async function getAll(userOsmoAddress: string) {
       ibcChannelsStorage.get(),
       poolsStorage.get(),
       validatorsStorage.get(),
-      chainType
+      CHAIN_TYPE
     );
 
   let userFunds = await getUserFunds(userOsmoAddress);

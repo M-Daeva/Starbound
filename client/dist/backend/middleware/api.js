@@ -8,9 +8,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAll = exports.updateAll = exports.filterChainRegistry = exports.getPoolsAndUsers = exports.updatePoolsAndUsers = exports.getUserFunds = exports.updateUserFunds = exports.getValidators = exports.updateValidators = exports.getPools = exports.updatePools = exports.getIbcChannnels = exports.updateIbcChannels = exports.getChainRegistry = exports.updateChainRegistry = void 0;
 const testnet_backend_workers_1 = require("../../common/workers/testnet-backend-workers");
@@ -18,10 +15,8 @@ const testnet_config_json_1 = require("../../common/config/testnet-config.json")
 const utils_1 = require("../../common/utils");
 const key_1 = require("./key");
 const storages_1 = require("../storages");
-const config_1 = __importDefault(require("../config"));
+const envs_1 = require("../envs"); // TODO: change on maiinet
 const api_helpers_1 = require("../../common/helpers/api-helpers");
-// TODO: change on maiinet
-const chainType = config_1.default.CHAIN_TYPE;
 const allowList = [
     ["osmo", "test", ["https://rpc-test.osmosis.zone/"]],
     ["secret", "test", ["https://rpc.pulsar.scrttestnet.com/"]],
@@ -52,7 +47,7 @@ function updateChainRegistry() {
 exports.updateChainRegistry = updateChainRegistry;
 function getChainRegistry() {
     return __awaiter(this, void 0, void 0, function* () {
-        const { activeNetworks, chainRegistry, ibcChannels, pools } = (0, api_helpers_1.filterChainRegistry)(chainRegistryStorage.get(), ibcChannelsStorage.get(), poolsStorage.get(), validatorsStorage.get(), chainType);
+        const { activeNetworks, chainRegistry, ibcChannels, pools } = (0, api_helpers_1.filterChainRegistry)(chainRegistryStorage.get(), ibcChannelsStorage.get(), poolsStorage.get(), validatorsStorage.get(), envs_1.CHAIN_TYPE);
         return chainRegistry;
     });
 }
@@ -60,7 +55,7 @@ exports.getChainRegistry = getChainRegistry;
 function updateIbcChannels() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const res = (0, api_helpers_1.mergeIbcChannels)(ibcChannelsStorage.get(), yield (0, api_helpers_1.getIbcChannnels)(chainRegistryStorage.get(), chainType));
+            const res = (0, api_helpers_1.mergeIbcChannels)(ibcChannelsStorage.get(), yield (0, api_helpers_1.getIbcChannnels)(chainRegistryStorage.get(), envs_1.CHAIN_TYPE));
             if (!res)
                 throw new Error("mergeIbcChannels returned undefined!");
             ibcChannelsStorage.set(res);
@@ -76,7 +71,7 @@ function updateIbcChannels() {
 exports.updateIbcChannels = updateIbcChannels;
 function getIbcChannnels() {
     return __awaiter(this, void 0, void 0, function* () {
-        const { activeNetworks, chainRegistry, ibcChannels, pools } = (0, api_helpers_1.filterChainRegistry)(chainRegistryStorage.get(), ibcChannelsStorage.get(), poolsStorage.get(), validatorsStorage.get(), chainType);
+        const { activeNetworks, chainRegistry, ibcChannels, pools } = (0, api_helpers_1.filterChainRegistry)(chainRegistryStorage.get(), ibcChannelsStorage.get(), poolsStorage.get(), validatorsStorage.get(), envs_1.CHAIN_TYPE);
         return ibcChannels;
     });
 }
@@ -98,7 +93,7 @@ function updatePools() {
 exports.updatePools = updatePools;
 function getPools() {
     return __awaiter(this, void 0, void 0, function* () {
-        const { activeNetworks, chainRegistry, ibcChannels, pools } = (0, api_helpers_1.filterChainRegistry)(chainRegistryStorage.get(), ibcChannelsStorage.get(), poolsStorage.get(), validatorsStorage.get(), chainType);
+        const { activeNetworks, chainRegistry, ibcChannels, pools } = (0, api_helpers_1.filterChainRegistry)(chainRegistryStorage.get(), ibcChannelsStorage.get(), poolsStorage.get(), validatorsStorage.get(), envs_1.CHAIN_TYPE);
         return pools;
     });
 }
@@ -106,7 +101,7 @@ exports.getPools = getPools;
 function updateValidators() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const res = yield (0, api_helpers_1.getValidators)((0, api_helpers_1.getChainNameAndRestList)(chainRegistryStorage.get(), chainType));
+            const res = yield (0, api_helpers_1.getValidators)((0, api_helpers_1.getChainNameAndRestList)(chainRegistryStorage.get(), envs_1.CHAIN_TYPE));
             if (!res.length)
                 throw new Error("_getValidators returned empty list");
             validatorsStorage.set(res);
@@ -130,7 +125,7 @@ exports.getValidators = getValidators;
 function updateUserFunds() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const res = (yield (0, api_helpers_1.getUserFunds)(chainRegistryStorage.get(), poolsAndUsersStorage.get(), poolsStorage.get(), chainType)).map(({ address, holded, staked }) => [address, { holded, staked }]);
+            const res = (yield (0, api_helpers_1.getUserFunds)(chainRegistryStorage.get(), poolsAndUsersStorage.get(), poolsStorage.get(), envs_1.CHAIN_TYPE)).map(({ address, holded, staked }) => [address, { holded, staked }]);
             userFundsStorage.set(res);
             userFundsStorage.write(res);
             return { fn: "updateUserFunds", isStorageUpdated: true };
@@ -189,7 +184,7 @@ function getPoolsAndUsers() {
 exports.getPoolsAndUsers = getPoolsAndUsers;
 function filterChainRegistry() {
     return __awaiter(this, void 0, void 0, function* () {
-        return (0, api_helpers_1.filterChainRegistry)(chainRegistryStorage.get(), ibcChannelsStorage.get(), poolsStorage.get(), validatorsStorage.get(), chainType);
+        return (0, api_helpers_1.filterChainRegistry)(chainRegistryStorage.get(), ibcChannelsStorage.get(), poolsStorage.get(), validatorsStorage.get(), envs_1.CHAIN_TYPE);
     });
 }
 exports.filterChainRegistry = filterChainRegistry;
@@ -211,7 +206,7 @@ function updateAll() {
 exports.updateAll = updateAll;
 function getAll(userOsmoAddress) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { activeNetworks, chainRegistry, ibcChannels, pools } = (0, api_helpers_1.filterChainRegistry)(chainRegistryStorage.get(), ibcChannelsStorage.get(), poolsStorage.get(), validatorsStorage.get(), chainType);
+        const { activeNetworks, chainRegistry, ibcChannels, pools } = (0, api_helpers_1.filterChainRegistry)(chainRegistryStorage.get(), ibcChannelsStorage.get(), poolsStorage.get(), validatorsStorage.get(), envs_1.CHAIN_TYPE);
         let userFunds = yield getUserFunds(userOsmoAddress);
         return {
             activeNetworks,

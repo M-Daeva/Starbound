@@ -13,15 +13,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const utils_1 = require("../../common/utils");
-const config_1 = __importDefault(require("../config"));
 const promises_1 = require("fs/promises");
 const promises_2 = __importDefault(require("readline/promises"));
-require("./ssl-fix");
+const envs_1 = require("../envs");
 const isProduction = (0, utils_1.getLast)(process.argv).trim() === "production";
-const baseURL = isProduction ? config_1.default.BASE_URL_PROD : config_1.default.BASE_URL_DEV;
-const req = (0, utils_1.createRequest)({
-    baseURL: baseURL + "/key",
-});
+const baseURL = isProduction ? envs_1.BASE_URL.PROXY : envs_1.BASE_URL.DEV;
+const req = (0, utils_1.createRequest)({ baseURL: baseURL + "/key" });
 function initKey() {
     return __awaiter(this, void 0, void 0, function* () {
         const keyPath = (0, utils_1.rootPath)("../../.test-wallets/key");

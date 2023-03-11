@@ -1,5 +1,6 @@
-const devUrl = "https://localhost:4000";
-const prodUrl = "https://praetor.ingress.provider.moonbys.cloud:31125";
+// const names must be unchanged as its values are updating by "npm run set-urls"
+const devUrl = "http://localhost:4000";
+const prodUrl = "https://starbound.fun";
 const isProduction = import.meta.env.MODE !== "development";
 
 const baseURL = isProduction ? prodUrl : devUrl;

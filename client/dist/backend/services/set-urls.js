@@ -9,20 +9,18 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const utils_1 = require("../../common/utils");
 const promises_1 = require("fs/promises");
-function readDecryptWrite(path, key) {
+const envs_1 = require("../envs");
+const utils_1 = require("../../common/utils");
+function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        const src = yield (0, promises_1.readFile)((0, utils_1.rootPath)(path), { encoding: "utf-8" });
-        const decrypted = (0, utils_1.decrypt)(src, key);
-        if (!decrypted)
-            return;
-        const [prefix, postfix] = path.split(".");
-        const [name] = prefix.split("_");
-        yield (0, promises_1.writeFile)((0, utils_1.rootPath)(`${name}.${postfix}`), decrypted);
+        const configFilePath = (0, utils_1.rootPath)("./src/frontend/src/config/index.ts");
+        yield (0, promises_1.access)(configFilePath);
+        let configFile = yield (0, promises_1.readFile)(configFilePath, { encoding: "utf-8" });
+        configFile = configFile
+            .replace(/const devUrl = "[^"]*";/, `const devUrl = "${envs_1.BASE_URL.DEV}";`)
+            .replace(/const prodUrl = "[^"]*";/, `const prodUrl = "${envs_1.BASE_URL.PROXY}";`);
+        yield (0, promises_1.writeFile)(configFilePath, configFile);
     });
 }
-(() => __awaiter(void 0, void 0, void 0, function* () {
-    const key = (0, utils_1.getLast)(process.argv).trim();
-    yield Promise.all(["server_enc.cert", "server_enc.key"].map((item) => readDecryptWrite(item, key)));
-}))();
+main();

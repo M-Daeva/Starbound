@@ -8,15 +8,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const utils_1 = require("../../common/utils");
-const config_1 = __importDefault(require("../config"));
+const envs_1 = require("../envs");
 const api_1 = require("../routes/api");
-require("./ssl-fix");
-const req = (0, utils_1.createRequest)({ baseURL: config_1.default.BASE_URL + "/api" });
+const req = (0, utils_1.createRequest)({ baseURL: envs_1.BASE_URL + "/api" });
 function initStorages() {
     return __awaiter(this, void 0, void 0, function* () {
         try {

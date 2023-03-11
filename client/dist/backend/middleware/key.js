@@ -8,16 +8,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.setEncryptionKey = exports.getEncryptionKey = void 0;
 const storages_1 = require("../storages");
 const utils_1 = require("../../common/utils");
 const signers_1 = require("../../common/signers");
 const testnet_config_json_1 = require("../../common/config/testnet-config.json");
-const config_1 = __importDefault(require("../config"));
+const envs_1 = require("../envs");
 let _encryptionKeyStorage = (0, storages_1.initStorage)("encryption-key-storage");
 function getEncryptionKey() {
     return _encryptionKeyStorage.get();
@@ -39,7 +36,7 @@ function setEncryptionKey(value) {
                 RPC: "https://rpc.osmosis.zone:443",
                 seed,
             });
-            if (owner !== config_1.default.DAPP_ADDRESS)
+            if (owner !== envs_1.DAPP_ADDRESS)
                 throw new Error(`Key '${value}' is wrong!`);
             _encryptionKeyStorage.set(value);
             return "Success!";
