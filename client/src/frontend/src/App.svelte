@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Router, Link, Route } from "svelte-navigator";
+  import Home from "./routes/Home.svelte";
   import Dashboard from "./routes/Dashboard.svelte";
   import Assets from "./routes/Assets.svelte";
   import Bank from "./routes/Bank.svelte";
@@ -43,7 +44,14 @@
 
 <Router>
   <div
-    class="bg-indigo-900 text-amber-200 min-h-screen relative pb-40 sm:pb-14"
+    class="text-amber-200 min-h-screen relative pb-40 sm:pb-14"
+    style="background: #090017
+  linear-gradient(
+    135deg,
+    rgba(217, 51, 137, 0.3) 0%,
+    rgba(59, 195, 243, 0.3) 50%,
+    rgba(49, 46, 129, 0.2) 100%
+  );"
   >
     <header
       class="flex justify-between items-center px-4 mb-5 border-white border-b-2"
@@ -53,7 +61,10 @@
       >
         <!-- <img class="w-1/12" src="src/public/s.png" alt="logo" /> -->
         <h1 class="font-medium md:font-bold text-2xl md:text-3xl -ml-2 -mb-1">
-          Starbound
+          <Link
+            class="text-center hover:no-underline visited:text-amber-200"
+            to={paths.home}>Starbound</Link
+          >
         </h1>
       </div>
       <!-- hamburger -->
@@ -91,10 +102,16 @@
       <nav
         class={"font-normal md:font-medium text-xl " +
           (checked
-            ? "fixed z-40 w-full h-full bg-indigo-900 text-center top-0 left-0"
+            ? "fixed z-40 w-full h-full bg-gradient-to-br from-fuchsia-800 to-blue-900 text-center top-0 left-0"
             : "hidden sm:block sm:w-6/12")}
       >
         <ul class={"my-5 flex justify-around " + (checked ? "flex-col" : "")}>
+          <li on:mousedown={removeOverlay} class={checked ? "mb-14" : "hidden"}>
+            <Link
+              class="text-center hover:no-underline visited:text-amber-200"
+              to={paths.home}>Home</Link
+            >
+          </li>
           <li on:mousedown={removeOverlay} class={checked ? "mb-14" : ""}>
             <Link
               class="text-center hover:no-underline visited:text-amber-200"
@@ -132,6 +149,7 @@
     </header>
 
     <section>
+      <Route primary={false} path={paths.home}><Home /></Route>
       <Route primary={false} path={paths.bank}><Bank /></Route>
       <Route primary={false} path={paths.assets}><Assets /></Route>
       <Route primary={false} path={paths.dashboard}><Dashboard /></Route>
