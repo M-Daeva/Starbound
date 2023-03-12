@@ -11,6 +11,9 @@ C_PORT="transfer"
 
 HERMES="hermes --config config.toml"
 
+res_ab_json_path="ibc-config-ab.json"
+res_ac_json_path="ibc-config-ac.json"
+
 
 string_to_json() {
   local a_chain_id=$(echo "$1" | grep -oP 'a_side.*?id: "\K[^"]+')
@@ -37,38 +40,78 @@ string_to_json() {
   echo $res
 }
 
+ab() {
+  # open channel A-B
+  res_ab=$($HERMES create channel --a-chain $A_CHAIN --b-chain $B_CHAIN \
+    --a-port $A_PORT --b-port $B_PORT \
+    --order unordered --channel-version "ics20-1" \
+    --new-client-connection --yes)
+
+  # it doesn't work without w/r .txt
+  echo $res_ab > "ibc-config-ab.txt"
+  res_ab=$(< "ibc-config-ab.txt")
+  res_ab_json=$(string_to_json "$res_ab")
+  echo $res_ab_json > $res_ab_json_path
+
+  if [ -d "../client/src/common/config" ]; then
+    echo $res_ab_json > "../client/src/common/config/ibc-config-ab.json"
+  fi
+  echo $res_ab_json > "../client/dist/common/config/ibc-config-ab.json"
+  rm -rf "ibc-config-ab.txt"
+}
+
+ac() {
+  # open channel A-C
+  res_ac=$($HERMES create channel --a-chain $A_CHAIN --b-chain $C_CHAIN \
+    --a-port $A_PORT --b-port $C_PORT \
+    --order unordered --channel-version "ics20-1" \
+    --new-client-connection --yes)
+
+  echo $res_ac > "ibc-config-ac.txt"
+  res_ac=$(< "ibc-config-ac.txt")
+  res_ac_json=$(string_to_json "$res_ac")
+  echo $res_ac_json > $res_ac_json_path
+
+  if [ -d "../client/src/common/config" ]; then
+    echo $res_ac_json > "../client/src/common/config/ibc-config-ac.json"
+  fi
+  echo $res_ac_json > "../client/dist/common/config/ibc-config-ac.json"
+  rm -rf "ibc-config-ac.txt"
+}
+
 
 # addresses must contain some funds!
 
-# open channel A-B
-res_ab=$($HERMES create channel --a-chain $A_CHAIN --b-chain $B_CHAIN \
-  --a-port $A_PORT --b-port $B_PORT \
-  --order unordered --channel-version "ics20-1" \
-  --new-client-connection --yes)
+ab
+A_CHAIN_TEMP=$(jq -r '.a_chain_id' $res_ab_json_path)
+B_CHAIN_TEMP=$(jq -r '.b_chain_id' $res_ab_json_path)
+A_CHAIN_TEMP="$(sed -e 's/^[ \t]*//' -e 's/\ *$//g'<<<"${A_CHAIN_TEMP}")"
+B_CHAIN_TEMP="$(sed -e 's/^[ \t]*//' -e 's/\ *$//g'<<<"${B_CHAIN_TEMP}")"
+echo "A_CHAIN is '$A_CHAIN_TEMP' and B_CHAIN is '$B_CHAIN_TEMP'"
 
-# it doesn't work without w/r .txt
-echo $res_ab > "ibc-config-ab.txt"
-res_ab=$(< "ibc-config-ab.txt")
-res_ab_json=$(string_to_json "$res_ab")
-echo $res_ab_json > "ibc-config-ab.json"
-if [ -d "../client/src/common/config" ]; then
-  echo $res_ab_json > "../client/src/common/config/ibc-config-ab.json"
-fi
-echo $res_ab_json > "../client/dist/common/config/ibc-config-ab.json"
-rm -rf "ibc-config-ab.txt"
+while [[ -z $A_CHAIN_TEMP || -z $B_CHAIN_TEMP ]]; do
+  echo "A or B is empty. Opening channels again..."
+  ab
+  A_CHAIN_TEMP=$(jq -r '.a_chain_id' $res_ab_json_path)
+  B_CHAIN_TEMP=$(jq -r '.b_chain_id' $res_ab_json_path)
+  A_CHAIN_TEMP="$(sed -e 's/^[ \t]*//' -e 's/\ *$//g'<<<"${A_CHAIN_TEMP}")"
+  B_CHAIN_TEMP="$(sed -e 's/^[ \t]*//' -e 's/\ *$//g'<<<"${B_CHAIN_TEMP}")"
+  echo "A_CHAIN is '$A_CHAIN_TEMP' and B_CHAIN is '$B_CHAIN_TEMP'"
+done
 
-# open channel A-C
-res_ac=$($HERMES create channel --a-chain $A_CHAIN --b-chain $C_CHAIN \
-  --a-port $A_PORT --b-port $C_PORT \
-  --order unordered --channel-version "ics20-1" \
-  --new-client-connection --yes)
+ac
+A_CHAIN_TEMP=$(jq -r '.a_chain_id' $res_ac_json_path)
+C_CHAIN_TEMP=$(jq -r '.b_chain_id' $res_ac_json_path)
+A_CHAIN_TEMP="$(sed -e 's/^[ \t]*//' -e 's/\ *$//g'<<<"${A_CHAIN_TEMP}")"
+C_CHAIN_TEMP="$(sed -e 's/^[ \t]*//' -e 's/\ *$//g'<<<"${C_CHAIN_TEMP}")"
+echo "A_CHAIN is '$A_CHAIN_TEMP' and C_CHAIN is '$C_CHAIN_TEMP'"
 
-echo $res_ac > "ibc-config-ac.txt"
-res_ac=$(< "ibc-config-ac.txt")
-res_ac_json=$(string_to_json "$res_ac")
-echo $res_ac_json > "ibc-config-ac.json"
-if [ -d "../client/src/common/config" ]; then
-  echo $res_ac_json > "../client/src/common/config/ibc-config-ac.json"
-fi
-echo $res_ac_json > "../client/dist/common/config/ibc-config-ac.json"
-rm -rf "ibc-config-ac.txt"
+while [[ -z $A_CHAIN_TEMP || -z $C_CHAIN_TEMP ]]; do
+  echo "A or C is empty. Opening channels again..."
+  ac
+  A_CHAIN_TEMP=$(jq -r '.a_chain_id' $res_ac_json_path)
+  C_CHAIN_TEMP=$(jq -r '.b_chain_id' $res_ac_json_path)
+  A_CHAIN_TEMP="$(sed -e 's/^[ \t]*//' -e 's/\ *$//g'<<<"${A_CHAIN_TEMP}")"
+  C_CHAIN_TEMP="$(sed -e 's/^[ \t]*//' -e 's/\ *$//g'<<<"${C_CHAIN_TEMP}")"
+  echo "A_CHAIN is '$A_CHAIN_TEMP' and C_CHAIN is '$C_CHAIN_TEMP'"
+done

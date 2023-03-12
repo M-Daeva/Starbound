@@ -111,7 +111,7 @@ async function triggerContract() {
 
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 20, // Limit each IP to 20 requests per `window`
+  max: 30, // Limit each IP to 20 requests per `window`
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   handler: (req, res) => res.send("Request rate is limited"),
@@ -152,7 +152,7 @@ express()
     // setInterval(triggerContract, 24 * 60 * 60 * 1000); // 24 h update period
 
     const periodSensitive = 15 * 1000; // 15 s update period
-    const periodInsensitive = 1 * 60 * 60 * 1000; // TODO: set 6 h update period
+    const periodInsensitive = 30 * 60 * 1000; // TODO: set 6 h update period
     let cnt = periodInsensitive / periodSensitive;
 
     setInterval(async () => {

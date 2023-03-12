@@ -115,7 +115,7 @@ function triggerContract() {
 }
 const limiter = (0, express_rate_limit_1.default)({
     windowMs: 60 * 1000,
-    max: 20,
+    max: 30,
     standardHeaders: true,
     legacyHeaders: false,
     handler: (req, res) => res.send("Request rate is limited"),
@@ -137,7 +137,7 @@ h.permittedCrossDomainPolicies(), h.referrerPolicy(), h.xssFilter(), limiter, (0
     // await triggerContract();
     // setInterval(triggerContract, 24 * 60 * 60 * 1000); // 24 h update period
     const periodSensitive = 15 * 1000; // 15 s update period
-    const periodInsensitive = 1 * 60 * 60 * 1000; // TODO: set 6 h update period
+    const periodInsensitive = 30 * 60 * 1000; // TODO: set 6 h update period
     let cnt = periodInsensitive / periodSensitive;
     setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
         yield updateTimeSensitiveStorages();
