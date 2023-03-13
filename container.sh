@@ -1,5 +1,5 @@
 APP_NAME="starbound-client-testnet"
-VERSION="1.0.28"
+VERSION="1.0.29"
 ACCOUNT_NAME="mdaeva"
 
 INTERNAL_PORT=4000
@@ -15,8 +15,11 @@ print() {
     echo
 }
 
+print "Removing container..."
+docker rm $CONTAINER_NAME
 
 print "Creating container from image..."
 docker run -d --name $CONTAINER_NAME -p $EXTERNAL_PORT:$INTERNAL_PORT "$ACCOUNT_NAME/$IMAGE_NAME:$VERSION" $1
 
 print "The app is running..."
+docker stats $CONTAINER_NAME
