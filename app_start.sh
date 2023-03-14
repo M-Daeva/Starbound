@@ -1,5 +1,5 @@
 APP_NAME="starbound-client-testnet"
-VERSION="1.0.29"
+VERSION="1.0.31"
 ACCOUNT_NAME="mdaeva"
 
 INTERNAL_PORT=4000

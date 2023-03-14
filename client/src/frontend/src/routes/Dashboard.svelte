@@ -175,7 +175,9 @@
               style="background-color: rgb(42 48 60);"
             >
               {#each Object.values(dashboardAsset) as rowValue}
-                <td class="py-2.5 w-24 text-center">{rowValue}</td>
+                <td class="py-2.5 w-24 text-center bg-inherit border-b-0"
+                  >{rowValue}</td
+                >
               {/each}
             </tr>
           {/each}

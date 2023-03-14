@@ -181,7 +181,11 @@
       class="flex flex-row justify-between sm:justify-center items-center w-64 sm:w-52 mb-5 sm:mb-0"
     >
       <label for="symbol-selector" class="mr-2">Select Asset</label>
-      <select id="symbol-selector" class="w-28 m-0" bind:value={currentSymbol}>
+      <select
+        id="symbol-selector"
+        class="w-28 m-0 bg-stone-700"
+        bind:value={currentSymbol}
+      >
         {#each denoms as denom}
           <option value={denom}>
             {denom}
@@ -198,7 +202,7 @@
         type="number"
         min="1"
         max="100"
-        class="w-24 m-0 text-center"
+        class="w-24 m-0 text-center bg-stone-700"
         bind:value={ratio}
       />
     </div>
@@ -282,32 +286,38 @@
             class="flex justify-around w-full mt-4 first:mt-0"
             style="background-color: rgb(42 48 60);"
           >
-            <td class="flex flex-row justify-start items-center w-[116px]">
+            <td
+              class="flex flex-row justify-start items-center w-[116px] bg-inherit border-b-0"
+            >
               <img class="w-7" src={asset.logo} alt="logo" />
               <span class="ml-1">{asset.symbol}</span></td
             >
-            <td class="flex justify-center items-center w-[370px]"
+            <td
+              class="flex justify-center items-center w-[370px] bg-inherit border-b-0"
               ><input
                 type="text"
-                class="m-0 text-center w-full"
+                class="m-0 text-center w-full bg-stone-700"
                 bind:value={address}
               /></td
             >
-            <td class="flex justify-center items-center w-36"
+            <td
+              class="flex justify-center items-center w-36 bg-inherit border-b-0"
               ><input
                 type="number"
                 min="1"
                 max="100"
-                class="w-full m-0 text-center"
+                class="w-full m-0 text-center bg-stone-700"
                 bind:value={ratio}
               /></td
             >
 
-            <td class="flex justify-center items-center w-36">
+            <td
+              class="flex justify-center items-center w-36 bg-inherit border-b-0"
+            >
               <select
                 on:change={(e) =>
                   updateValidator(asset.symbol, e.currentTarget.value)}
-                class="w-full m-0"
+                class="w-full m-0 bg-stone-700"
               >
                 {#each getValidatorListBySymbol(asset.symbol) as { operator_address, moniker }}
                   <option selected={validator === operator_address}>
@@ -318,7 +328,7 @@
             </td>
 
             <td
-              class="flex justify-around items-center w-44 bg-opacity-90 bg-slate-800"
+              class="flex justify-around items-center w-44 bg-opacity-90 bg-slate-800 border-b-0"
             >
               <button
                 class="btn btn-secondary m-0 w-5/12"
@@ -336,7 +346,8 @@
               >
             </td>
 
-            <td class="flex justify-center items-center w-12"
+            <td
+              class="flex justify-center items-center w-12 bg-inherit border-b-0"
               ><button
                 class="btn btn-circle m-0"
                 on:click={() => removeAsset(address)}>❌</button

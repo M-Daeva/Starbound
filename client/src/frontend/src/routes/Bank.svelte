@@ -289,7 +289,7 @@
                   bind:checked={userToDisplay.is_controlled_rebalancing}
                 />
                 <div
-                  class="w-11 h-6 peer-focus:outline-none peer-focus:ring-0 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"
+                  class="w-11 h-6 peer-focus:outline-none peer-focus:ring-0 rounded-full peer bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"
                 />
                 <span class="ml-3 tex">Rebalancing</span>
               </label>
@@ -299,7 +299,7 @@
                 >Payment in {STABLECOIN_SYMBOL}</label
               >
               <input
-                class="w-40 text-center mx-0 mb-5"
+                class="w-40 text-center mx-0 mb-5 bg-stone-700"
                 type="number"
                 min="0"
                 max="1000000"
@@ -312,7 +312,7 @@
           <div>
             <label class="mb-1" for="period">Investment Period End</label>
             <input
-              class="w-full text-center mx-0 mb-5"
+              class="w-full text-center mx-0 mb-5 bg-stone-700"
               type="date"
               id="period"
               bind:value={userToDisplay.day_counter}
@@ -330,7 +330,7 @@
               >Withdrawal Amount in {STABLECOIN_SYMBOL}</label
             >
             <input
-              class="w-40 text-center mx-0 mb-3"
+              class="w-40 text-center mx-0 mb-3 bg-stone-700"
               type="number"
               min="0"
               max="1000000"
