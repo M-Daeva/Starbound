@@ -48,26 +48,20 @@ const key_2 = require("./middleware/key");
 const testnet_config_json_1 = require("../common/config/testnet-config.json");
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const h = __importStar(require("helmet"));
-const api_helpers_1 = require("../common/helpers/api-helpers");
 const envs_1 = require("./envs");
-const baseURL = envs_1.IS_PRODUCTION ? envs_1.BASE_URL.PROD : envs_1.BASE_URL.DEV;
-const req = (0, utils_1.createRequest)({ baseURL: baseURL + "/api" });
+const api_helpers_1 = require("../common/helpers/api-helpers");
+const api_2 = require("./middleware/api");
 function updateTimeSensitiveStorages() {
     return __awaiter(this, void 0, void 0, function* () {
-        yield Promise.all([
-            req.get(api_1.ROUTES.updatePools),
-            req.get(api_1.ROUTES.updatePoolsAndUsers),
-            req.get(api_1.ROUTES.updateUserFunds),
-        ]);
+        yield Promise.all([(0, api_2.updatePools)(), (0, api_2.updatePoolsAndUsers)()]);
+        yield (0, api_2.updateUserFunds)();
     });
 }
 function updateTimeInsensitiveStorages() {
     return __awaiter(this, void 0, void 0, function* () {
-        yield Promise.all([
-            req.get(api_1.ROUTES.updateChainRegistry),
-            req.get(api_1.ROUTES.updateIbcChannels),
-            req.get(api_1.ROUTES.updateValidators),
-        ]);
+        (0, utils_1.l)(yield (0, api_2.updateChainRegistry)());
+        (0, utils_1.l)(yield (0, api_2.updateIbcChannels)());
+        (0, utils_1.l)(yield (0, api_2.updateValidators)());
     });
 }
 function triggerContract() {
@@ -79,12 +73,12 @@ function triggerContract() {
         if (!seed)
             return;
         const { cwSwap, cwTransfer, cwQueryPoolsAndUsers, sgDelegateFromAll, cwUpdatePoolsAndUsers, } = yield (0, testnet_backend_workers_1.init)(seed);
-        const chainRegistry = yield req.get(api_1.ROUTES.getChainRegistry);
+        const chainRegistry = yield (0, api_2.getChainRegistry)();
         const chain = chainRegistry.find((item) => item.denomNative === "uosmo");
         if (!chain)
             return;
         const gasPrice = (0, signers_1.getGasPriceFromChainRegistryItem)(chain, envs_1.CHAIN_TYPE);
-        const poolsStorage = yield req.get(api_1.ROUTES.getPools);
+        const poolsStorage = yield (0, api_2.getPools)();
         const poolsAndUsers = yield cwQueryPoolsAndUsers();
         // const grants = await _getAllGrants(
         //   DAPP_ADDRESS,

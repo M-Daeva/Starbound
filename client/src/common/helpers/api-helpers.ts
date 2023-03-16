@@ -263,7 +263,9 @@ async function _verifyRpc(rpcList: string[], prefix: string, seed: string) {
       await _specifyTimeout(client.getAllBalances(owner));
       urlChecked = url;
       break;
-    } catch (error) {}
+    } catch (error) {
+      l({ fn: "_verifyRpc", error });
+    }
   }
 
   l({ urlChecked });
@@ -283,7 +285,9 @@ async function _verifyRpcList(
     try {
       const rpcChecked = await _verifyRpc(rpcList, prefix, seed);
       resultList.push([prefix, chainType, rpcChecked]);
-    } catch (error) {}
+    } catch (error) {
+      l({ fn: "_verifyRpcList", error });
+    }
   }
 
   return resultList;

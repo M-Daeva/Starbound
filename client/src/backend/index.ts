@@ -1,49 +1,41 @@
 import express from "express";
-import { l, createRequest } from "../common/utils";
+import { l } from "../common/utils";
 import { text, json } from "body-parser";
 import cors from "cors";
 import { rootPath, decrypt } from "../common/utils";
 import { getGasPriceFromChainRegistryItem } from "../common/signers";
 import { init } from "../common/workers/testnet-backend-workers";
-import { api, ROUTES as API_ROUTES } from "./routes/api";
+import { api } from "./routes/api";
 import { key } from "./routes/key";
 import { getEncryptionKey } from "./middleware/key";
 import { SEED_DAPP } from "../common/config/testnet-config.json";
 import rateLimit from "express-rate-limit";
 import * as h from "helmet";
-import {
-  ChainRegistryStorage,
-  PoolsStorage,
-} from "../common/helpers/interfaces";
+import { CHAIN_TYPE, DAPP_ADDRESS, PORT } from "./envs";
 import {
   updatePoolsAndUsers as _updatePoolsAndUsers,
   _getAllGrants,
 } from "../common/helpers/api-helpers";
 import {
-  BASE_URL,
-  CHAIN_TYPE,
-  DAPP_ADDRESS,
-  IS_PRODUCTION,
-  PORT,
-} from "./envs";
-
-const baseURL = IS_PRODUCTION ? BASE_URL.PROD : BASE_URL.DEV;
-const req = createRequest({ baseURL: baseURL + "/api" });
+  updatePools,
+  updatePoolsAndUsers,
+  updateUserFunds,
+  updateChainRegistry,
+  updateIbcChannels,
+  updateValidators,
+  getChainRegistry,
+  getPools,
+} from "./middleware/api";
 
 async function updateTimeSensitiveStorages() {
-  await Promise.all([
-    req.get(API_ROUTES.updatePools),
-    req.get(API_ROUTES.updatePoolsAndUsers),
-    req.get(API_ROUTES.updateUserFunds),
-  ]);
+  await Promise.all([updatePools(), updatePoolsAndUsers()]);
+  await updateUserFunds();
 }
 
 async function updateTimeInsensitiveStorages() {
-  await Promise.all([
-    req.get(API_ROUTES.updateChainRegistry),
-    req.get(API_ROUTES.updateIbcChannels),
-    req.get(API_ROUTES.updateValidators),
-  ]);
+  l(await updateChainRegistry());
+  l(await updateIbcChannels());
+  l(await updateValidators());
 }
 
 async function triggerContract() {
@@ -61,16 +53,14 @@ async function triggerContract() {
     cwUpdatePoolsAndUsers,
   } = await init(seed);
 
-  const chainRegistry: ChainRegistryStorage = await req.get(
-    API_ROUTES.getChainRegistry
-  );
+  const chainRegistry = await getChainRegistry();
 
   const chain = chainRegistry.find((item) => item.denomNative === "uosmo");
   if (!chain) return;
 
   const gasPrice = getGasPriceFromChainRegistryItem(chain, CHAIN_TYPE);
 
-  const poolsStorage: PoolsStorage = await req.get(API_ROUTES.getPools);
+  const poolsStorage = await getPools();
   const poolsAndUsers = await cwQueryPoolsAndUsers();
 
   // const grants = await _getAllGrants(

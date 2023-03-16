@@ -10,14 +10,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const utils_1 = require("../../common/utils");
-const envs_1 = require("../envs");
-const api_1 = require("../routes/api");
-const req = (0, utils_1.createRequest)({ baseURL: envs_1.BASE_URL + "/api" });
+const api_1 = require("../middleware/api");
 function initStorages() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const t = Date.now();
-            const res = yield req.get(api_1.ROUTES.updateAll);
+            const res = yield (0, api_1.updateAll)();
             const delta = (Date.now() - t) / 1e3;
             const minutes = Math.floor(delta / 60);
             const seconds = Math.floor(delta % 60);

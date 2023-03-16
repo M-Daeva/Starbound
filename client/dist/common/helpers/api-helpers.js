@@ -198,7 +198,9 @@ function _verifyRpc(rpcList, prefix, seed) {
                 urlChecked = url;
                 break;
             }
-            catch (error) { }
+            catch (error) {
+                (0, utils_1.l)({ fn: "_verifyRpc", error });
+            }
         }
         (0, utils_1.l)({ urlChecked });
         return urlChecked;
@@ -216,7 +218,9 @@ function _verifyRpcList(prefixAndRpcList, seed) {
                 const rpcChecked = yield _verifyRpc(rpcList, prefix, seed);
                 resultList.push([prefix, chainType, rpcChecked]);
             }
-            catch (error) { }
+            catch (error) {
+                (0, utils_1.l)({ fn: "_verifyRpcList", error });
+            }
         }
         return resultList;
     });

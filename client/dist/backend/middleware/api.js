@@ -47,7 +47,7 @@ function updateChainRegistry() {
 exports.updateChainRegistry = updateChainRegistry;
 function getChainRegistry() {
     return __awaiter(this, void 0, void 0, function* () {
-        const { activeNetworks, chainRegistry, ibcChannels, pools } = (0, api_helpers_1.filterChainRegistry)(chainRegistryStorage.get(), ibcChannelsStorage.get(), poolsStorage.get(), validatorsStorage.get(), envs_1.CHAIN_TYPE);
+        const { chainRegistry } = (0, api_helpers_1.filterChainRegistry)(chainRegistryStorage.get(), ibcChannelsStorage.get(), poolsStorage.get(), validatorsStorage.get(), envs_1.CHAIN_TYPE);
         return chainRegistry;
     });
 }
@@ -71,7 +71,7 @@ function updateIbcChannels() {
 exports.updateIbcChannels = updateIbcChannels;
 function getIbcChannnels() {
     return __awaiter(this, void 0, void 0, function* () {
-        const { activeNetworks, chainRegistry, ibcChannels, pools } = (0, api_helpers_1.filterChainRegistry)(chainRegistryStorage.get(), ibcChannelsStorage.get(), poolsStorage.get(), validatorsStorage.get(), envs_1.CHAIN_TYPE);
+        const { ibcChannels } = (0, api_helpers_1.filterChainRegistry)(chainRegistryStorage.get(), ibcChannelsStorage.get(), poolsStorage.get(), validatorsStorage.get(), envs_1.CHAIN_TYPE);
         return ibcChannels;
     });
 }
@@ -93,7 +93,7 @@ function updatePools() {
 exports.updatePools = updatePools;
 function getPools() {
     return __awaiter(this, void 0, void 0, function* () {
-        const { activeNetworks, chainRegistry, ibcChannels, pools } = (0, api_helpers_1.filterChainRegistry)(chainRegistryStorage.get(), ibcChannelsStorage.get(), poolsStorage.get(), validatorsStorage.get(), envs_1.CHAIN_TYPE);
+        const { pools } = (0, api_helpers_1.filterChainRegistry)(chainRegistryStorage.get(), ibcChannelsStorage.get(), poolsStorage.get(), validatorsStorage.get(), envs_1.CHAIN_TYPE);
         return pools;
     });
 }

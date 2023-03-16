@@ -1,5 +1,5 @@
 APP_NAME="starbound-client-testnet"
-VERSION="1.0.31"
+VERSION="1.0.37"
 ACCOUNT_NAME="mdaeva"
 
 IMAGE_NAME=$APP_NAME

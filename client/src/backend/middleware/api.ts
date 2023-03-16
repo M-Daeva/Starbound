@@ -65,14 +65,13 @@ async function updateChainRegistry() {
 }
 
 async function getChainRegistry() {
-  const { activeNetworks, chainRegistry, ibcChannels, pools } =
-    _filterChainRegistry(
-      chainRegistryStorage.get(),
-      ibcChannelsStorage.get(),
-      poolsStorage.get(),
-      validatorsStorage.get(),
-      CHAIN_TYPE
-    );
+  const { chainRegistry } = _filterChainRegistry(
+    chainRegistryStorage.get(),
+    ibcChannelsStorage.get(),
+    poolsStorage.get(),
+    validatorsStorage.get(),
+    CHAIN_TYPE
+  );
   return chainRegistry;
 }
 
@@ -96,14 +95,13 @@ async function updateIbcChannels() {
 }
 
 async function getIbcChannnels() {
-  const { activeNetworks, chainRegistry, ibcChannels, pools } =
-    _filterChainRegistry(
-      chainRegistryStorage.get(),
-      ibcChannelsStorage.get(),
-      poolsStorage.get(),
-      validatorsStorage.get(),
-      CHAIN_TYPE
-    );
+  const { ibcChannels } = _filterChainRegistry(
+    chainRegistryStorage.get(),
+    ibcChannelsStorage.get(),
+    poolsStorage.get(),
+    validatorsStorage.get(),
+    CHAIN_TYPE
+  );
   return ibcChannels;
 }
 
@@ -123,14 +121,13 @@ async function updatePools() {
 }
 
 async function getPools() {
-  const { activeNetworks, chainRegistry, ibcChannels, pools } =
-    _filterChainRegistry(
-      chainRegistryStorage.get(),
-      ibcChannelsStorage.get(),
-      poolsStorage.get(),
-      validatorsStorage.get(),
-      CHAIN_TYPE
-    );
+  const { pools } = _filterChainRegistry(
+    chainRegistryStorage.get(),
+    ibcChannelsStorage.get(),
+    poolsStorage.get(),
+    validatorsStorage.get(),
+    CHAIN_TYPE
+  );
   return pools;
 }
 

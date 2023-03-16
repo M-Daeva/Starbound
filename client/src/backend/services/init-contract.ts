@@ -1,18 +1,11 @@
-import { createRequest } from "../../common/utils";
-import { BASE_URL, CHAIN_TYPE, DAPP_ADDRESS } from "../envs";
+import { CHAIN_TYPE, DAPP_ADDRESS } from "../envs";
 import { decrypt } from "../../common/utils";
 import { getGasPriceFromChainRegistryItem } from "../../common/signers";
 import { init } from "../../common/workers/testnet-backend-workers";
-import { ROUTES as API_ROUTES } from "../routes/api";
 import { getEncryptionKey } from "../middleware/key";
 import { SEED_DAPP } from "../../common/config/testnet-config.json";
 import { updatePoolsAndUsers as _updatePoolsAndUsers } from "../../common/helpers/api-helpers";
-import {
-  ChainRegistryStorage,
-  PoolsStorage,
-} from "../../common/helpers/interfaces";
-
-const req = createRequest({ baseURL: BASE_URL + "/api" });
+import { getChainRegistry, getPools } from "../middleware/api";
 
 async function initContract() {
   const encryptionKey = getEncryptionKey();
@@ -25,10 +18,8 @@ async function initContract() {
     await init(seed);
 
   // add dapp addresses
-  const poolsStorage: PoolsStorage = await req.get(API_ROUTES.getPools);
-  const chainRegistry: ChainRegistryStorage = await req.get(
-    API_ROUTES.getChainRegistry
-  );
+  const poolsStorage = await getPools();
+  const chainRegistry = await getChainRegistry();
 
   const chain = chainRegistry.find((item) => item.denomNative === "uosmo");
   if (!chain) return;

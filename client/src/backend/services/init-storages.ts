@@ -1,13 +1,10 @@
-import { l, createRequest } from "../../common/utils";
-import { BASE_URL } from "../envs";
-import { ROUTES as API_ROUTES } from "../routes/api";
-
-const req = createRequest({ baseURL: BASE_URL + "/api" });
+import { l } from "../../common/utils";
+import { updateAll } from "../middleware/api";
 
 async function initStorages() {
   try {
     const t = Date.now();
-    const res = await req.get(API_ROUTES.updateAll);
+    const res = await updateAll();
     const delta = (Date.now() - t) / 1e3;
     const minutes = Math.floor(delta / 60);
     const seconds = Math.floor(delta % 60);
