@@ -199,7 +199,7 @@ function _verifyRpc(rpcList, prefix, seed) {
                 break;
             }
             catch (error) {
-                (0, utils_1.l)({ fn: "_verifyRpc", error });
+                // l({ fn: "_verifyRpc", error });
             }
         }
         (0, utils_1.l)({ urlChecked });
@@ -219,7 +219,7 @@ function _verifyRpcList(prefixAndRpcList, seed) {
                 resultList.push([prefix, chainType, rpcChecked]);
             }
             catch (error) {
-                (0, utils_1.l)({ fn: "_verifyRpcList", error });
+                // l({ fn: "_verifyRpcList", error });
             }
         }
         return resultList;

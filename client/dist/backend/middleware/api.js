@@ -33,7 +33,13 @@ let poolsAndUsersStorage = (0, storages_1.initStorage)("pools-and-users-storage"
 function updateChainRegistry() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const res = (0, api_helpers_1.mergeChainRegistry)(chainRegistryStorage.get(), yield (0, api_helpers_1.getChainRegistry)(testnet_config_json_1.SEED_DAPP, allowList, ignoreList));
+            const encryptionKey = (0, key_1.getEncryptionKey)();
+            if (!encryptionKey)
+                throw new Error("Key is not found!");
+            const seed = (0, utils_1.decrypt)(testnet_config_json_1.SEED_DAPP, encryptionKey);
+            if (!seed)
+                throw new Error("Key is wrong!");
+            const res = (0, api_helpers_1.mergeChainRegistry)(chainRegistryStorage.get(), yield (0, api_helpers_1.getChainRegistry)(seed, allowList, ignoreList));
             chainRegistryStorage.set(res);
             chainRegistryStorage.write(res);
             return { fn: "updateChainRegistry", isStorageUpdated: true };

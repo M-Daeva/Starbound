@@ -48,9 +48,15 @@ let poolsAndUsersStorage = initStorage<PoolsAndUsersStorage>(
 
 async function updateChainRegistry() {
   try {
+    const encryptionKey = getEncryptionKey();
+    if (!encryptionKey) throw new Error("Key is not found!");
+
+    const seed = decrypt(SEED_DAPP, encryptionKey);
+    if (!seed) throw new Error("Key is wrong!");
+
     const res = mergeChainRegistry(
       chainRegistryStorage.get(),
-      await _getChainRegistry(SEED_DAPP, allowList, ignoreList)
+      await _getChainRegistry(seed, allowList, ignoreList)
     );
 
     chainRegistryStorage.set(res);

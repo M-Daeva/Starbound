@@ -264,7 +264,7 @@ async function _verifyRpc(rpcList: string[], prefix: string, seed: string) {
       urlChecked = url;
       break;
     } catch (error) {
-      l({ fn: "_verifyRpc", error });
+      // l({ fn: "_verifyRpc", error });
     }
   }
 
@@ -286,7 +286,7 @@ async function _verifyRpcList(
       const rpcChecked = await _verifyRpc(rpcList, prefix, seed);
       resultList.push([prefix, chainType, rpcChecked]);
     } catch (error) {
-      l({ fn: "_verifyRpcList", error });
+      // l({ fn: "_verifyRpcList", error });
     }
   }
 
