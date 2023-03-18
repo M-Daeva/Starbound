@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.decrypt = exports.encrypt = exports.getChannelId = exports.getIbcDenom = exports.specifyTimeout = exports.getLast = exports.SEP = exports.rootPath = exports.createRequest = exports.r = exports.l = void 0;
+exports.calcTimeDelta = exports.decrypt = exports.encrypt = exports.getChannelId = exports.getIbcDenom = exports.specifyTimeout = exports.getLast = exports.SEP = exports.rootPath = exports.createRequest = exports.r = exports.l = void 0;
 const axios_1 = __importDefault(require("axios"));
 const path_1 = __importDefault(require("path"));
 const crypto_js_1 = require("crypto-js");
@@ -109,3 +109,36 @@ function decrypt(encryptedData, key) {
     }
 }
 exports.decrypt = decrypt;
+function _timeToMins(time) {
+    const { hours, minutes } = time;
+    return 60 * hours + minutes;
+}
+function _minsToTime(mins) {
+    const hours = Math.floor(mins / 60);
+    const minutes = mins % 60;
+    return { hours, minutes };
+}
+function calcTimeDelta(targetTime, period, ignoreRange = []) {
+    const targetTimeInMins = _timeToMins(targetTime);
+    const currentTime = new Date();
+    const currentTimeInMins = _timeToMins({
+        hours: currentTime.getHours(),
+        minutes: currentTime.getMinutes(),
+    });
+    const periodInMins = _timeToMins(period);
+    let delta = currentTimeInMins - targetTimeInMins;
+    if (delta < 0)
+        delta += 24 * 60;
+    let res = Math.ceil(delta / periodInMins) * periodInMins - delta;
+    if (ignoreRange.length) {
+        const [ignoreStartInMins, ignoreEndInMins] = ignoreRange.map(_timeToMins);
+        if (currentTimeInMins + res >= ignoreStartInMins &&
+            currentTimeInMins + res <= ignoreEndInMins) {
+            while (currentTimeInMins + res <= ignoreEndInMins) {
+                res += periodInMins;
+            }
+        }
+    }
+    return _minsToTime(res);
+}
+exports.calcTimeDelta = calcTimeDelta;

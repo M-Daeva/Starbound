@@ -16,11 +16,13 @@
     chainRegistryStorage,
   } from "./services/storage";
 
+  const basePath = CHAIN_TYPE === "test" ? "/testnet" : "";
+
   const paths = {
     home: "/",
-    dashboard: "/dashboard",
-    assets: "/assets",
-    bank: "/bank",
+    dashboard: `${basePath}/dashboard`,
+    assets: `${basePath}/assets`,
+    bank: `${basePath}/bank`,
     other: "/*",
   };
 
@@ -59,13 +61,16 @@
       <div
         class="hidden sm:flex justify-center align-middle items-center w-3/12 -mt-2"
       >
-        <!-- <img class="w-1/12" src="src/public/s.png" alt="logo" /> -->
-        <h1 class="font-medium md:font-bold text-2xl md:text-3xl -ml-2 -mb-1">
-          <Link
-            class="text-center hover:no-underline visited:text-amber-200"
-            to={paths.home}>Starbound</Link
-          >
-        </h1>
+        <Link
+          class="text-center hover:no-underline visited:text-amber-200"
+          to={paths.home}
+        >
+          <img
+            class="w-36 -mb-2.5"
+            src={getImageUrl("header-logo.png")}
+            alt="Starbound-logo"
+          />
+        </Link>
       </div>
       <!-- hamburger -->
       <div
@@ -184,9 +189,16 @@
         </a>
       </div>
 
-      <!-- TODO: add links -->
       <div class="w-full sm:w-4/12 flex justify-center sm:justify-end">
         <p class="font-medium">Socials:</p>
+        <a href="https://discord.gg/BaravtgKfa" class="flex ml-2">
+          <img
+            src={getImageUrl("discord.svg")}
+            alt="Discord link"
+            class="w-6 ml-1"
+          />
+        </a>
+        <!-- TODO: add twitter link -->
         <a href="/" class="flex ml-2">
           <img
             src={getImageUrl("twitter.svg")}
@@ -194,18 +206,13 @@
             class="w-6 ml-1"
           />
         </a>
-        <a href="/" class="flex ml-2">
-          <img
-            src={getImageUrl("discord.svg")}
-            alt="Discord link"
-            class="w-6 ml-1"
-          />
-        </a>
       </div>
     </footer>
 
     {#if isModalActive}
-      <Modal />
+      <div class="fixed right-4 sm:right-5 bottom-5 z-20">
+        <Modal />
+      </div>
     {/if}
   </div>
 </Router>

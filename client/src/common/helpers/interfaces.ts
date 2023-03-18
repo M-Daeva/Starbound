@@ -399,6 +399,11 @@ interface AssetListItem {
   validator: string;
 }
 
+interface TimeInHoursAndMins {
+  hours: number;
+  minutes: number;
+}
+
 type AssetDenom = {
   [assetSymbol in AssetSymbol]: string;
 };
@@ -522,4 +527,5 @@ export {
   IbcAckResponse,
   GrantsResponse,
   UpdateConfigStruct,
+  TimeInHoursAndMins,
 };

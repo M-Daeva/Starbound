@@ -1,6 +1,7 @@
 import axios, { AxiosRequestConfig } from "axios";
 import path from "path";
 import { SHA256, AES, enc } from "crypto-js";
+import { TimeInHoursAndMins } from "../helpers/interfaces";
 
 const l = console.log.bind(console);
 
@@ -110,6 +111,51 @@ function decrypt(encryptedData: string, key: string): string | undefined {
   }
 }
 
+function _timeToMins(time: TimeInHoursAndMins): number {
+  const { hours, minutes } = time;
+  return 60 * hours + minutes;
+}
+
+function _minsToTime(mins: number): TimeInHoursAndMins {
+  const hours = Math.floor(mins / 60);
+  const minutes = mins % 60;
+  return { hours, minutes };
+}
+
+function calcTimeDelta(
+  targetTime: TimeInHoursAndMins,
+  period: TimeInHoursAndMins,
+  ignoreRange: [TimeInHoursAndMins, TimeInHoursAndMins] | [] = []
+): TimeInHoursAndMins {
+  const targetTimeInMins = _timeToMins(targetTime);
+  const currentTime = new Date();
+  const currentTimeInMins = _timeToMins({
+    hours: currentTime.getHours(),
+    minutes: currentTime.getMinutes(),
+  });
+  const periodInMins = _timeToMins(period);
+
+  let delta = currentTimeInMins - targetTimeInMins;
+  if (delta < 0) delta += 24 * 60;
+
+  let res = Math.ceil(delta / periodInMins) * periodInMins - delta;
+
+  if (ignoreRange.length) {
+    const [ignoreStartInMins, ignoreEndInMins] = ignoreRange.map(_timeToMins);
+
+    if (
+      currentTimeInMins + res >= ignoreStartInMins &&
+      currentTimeInMins + res <= ignoreEndInMins
+    ) {
+      while (currentTimeInMins + res <= ignoreEndInMins) {
+        res += periodInMins;
+      }
+    }
+  }
+
+  return _minsToTime(res);
+}
+
 export {
   l,
   r,
@@ -122,4 +168,5 @@ export {
   getChannelId,
   encrypt,
   decrypt,
+  calcTimeDelta,
 };

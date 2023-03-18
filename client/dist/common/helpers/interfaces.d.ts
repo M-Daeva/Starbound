@@ -367,6 +367,10 @@ interface AssetListItem {
     ratio: number;
     validator: string;
 }
+interface TimeInHoursAndMins {
+    hours: number;
+    minutes: number;
+}
 declare type AssetDenom = {
     [assetSymbol in AssetSymbol]: string;
 };
@@ -381,4 +385,4 @@ declare type PoolsAndUsersStorage = QueryPoolsAndUsersResponse;
 declare type EncryptionKeyStorage = string;
 declare type StorageTypes = ChainRegistryStorage | IbcChannelsStorage | PoolsStorage | ValidatorsStorage | UserFundsStorage | PoolsAndUsersStorage | EncryptionKeyStorage;
 export type { NetworkData, ClientStructWithKeplr, ClientStructWithoutKeplr };
-export { AssetListItem, AssetList, ClientStruct, DelegationStruct, IbcStruct, RelayerList, Relayer, RelayerStruct, AssetDescription, PoolDatabase, PoolInfoRaw, PoolInfo, PoolPair, ChainsResponse, ChainResponse, BalancesResponse, DelegationsResponse, ValidatorListResponse, ValidatorResponse, ValidatorResponseReduced, IbcResponse, AssetSymbol, AssetDenom, SwapStruct, AuthzHandler, UserBalance, UserAdressesWithBalances, DashboardAsset, NetworkContentResponse, StorageNames, ChainRegistryStorage, IbcChannelsStorage, PoolsStorage, ValidatorsStorage, UserFundsStorage, PoolsAndUsersStorage, EncryptionKeyStorage, StorageTypes, IbcTracesResponse, IbcAckResponse, GrantsResponse, UpdateConfigStruct, };
+export { AssetListItem, AssetList, ClientStruct, DelegationStruct, IbcStruct, RelayerList, Relayer, RelayerStruct, AssetDescription, PoolDatabase, PoolInfoRaw, PoolInfo, PoolPair, ChainsResponse, ChainResponse, BalancesResponse, DelegationsResponse, ValidatorListResponse, ValidatorResponse, ValidatorResponseReduced, IbcResponse, AssetSymbol, AssetDenom, SwapStruct, AuthzHandler, UserBalance, UserAdressesWithBalances, DashboardAsset, NetworkContentResponse, StorageNames, ChainRegistryStorage, IbcChannelsStorage, PoolsStorage, ValidatorsStorage, UserFundsStorage, PoolsAndUsersStorage, EncryptionKeyStorage, StorageTypes, IbcTracesResponse, IbcAckResponse, GrantsResponse, UpdateConfigStruct, TimeInHoursAndMins, };

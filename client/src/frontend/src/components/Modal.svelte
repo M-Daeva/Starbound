@@ -22,7 +22,7 @@
 <div
   in:scale
   out:fade
-  class="flex flex-row justify-between w-72 absolute right-10 bottom-10 p-5 rounded-lg text-center"
+  class="flex flex-row justify-between w-72 p-2 rounded-lg text-center"
   style="background-color: rgb(42 48 60);"
 >
   <button

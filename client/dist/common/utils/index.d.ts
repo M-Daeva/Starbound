@@ -1,4 +1,5 @@
 import { AxiosRequestConfig } from "axios";
+import { TimeInHoursAndMins } from "../helpers/interfaces";
 declare const l: {
     (...data: any[]): void;
     (message?: any, ...optionalParams: any[]): void;
@@ -33,4 +34,5 @@ declare function getIbcDenom(channelId: string, srcDenom: string, portId?: strin
 declare function getChannelId(srcDenom: string, dstDenom: string, portId?: string): string | undefined;
 declare function encrypt(data: string, key: string): string;
 declare function decrypt(encryptedData: string, key: string): string | undefined;
-export { l, r, createRequest, rootPath, SEP, getLast, specifyTimeout, getIbcDenom, getChannelId, encrypt, decrypt, };
+declare function calcTimeDelta(targetTime: TimeInHoursAndMins, period: TimeInHoursAndMins, ignoreRange?: [TimeInHoursAndMins, TimeInHoursAndMins] | []): TimeInHoursAndMins;
+export { l, r, createRequest, rootPath, SEP, getLast, specifyTimeout, getIbcDenom, getChannelId, encrypt, decrypt, calcTimeDelta, };

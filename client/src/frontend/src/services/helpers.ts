@@ -1,11 +1,7 @@
 import { get } from "svelte/store";
-import { l } from "../../../common/utils";
-import { Decimal } from "decimal.js";
+import { l, calcTimeDelta } from "../../../common/utils";
 import type { DeliverTxResponse } from "@cosmjs/cosmwasm-stargate";
-import type {
-  AssetListItem,
-  ChainResponse,
-} from "../../../common/helpers/interfaces";
+import type { AssetListItem } from "../../../common/helpers/interfaces";
 import {
   chainRegistryStorage,
   poolsStorage,
@@ -13,7 +9,8 @@ import {
   isModalActiveStorage,
   CHAIN_TYPE,
   LOCAL_STORAGE_KEY,
-  TARGET_HOUR,
+  START_TIME_CONTRACT,
+  PERIOD_CONTRACT,
   validatorsStorage,
   sortingConfigStorage,
 } from "../services/storage";
@@ -46,7 +43,10 @@ function generateColorList(quantity: number, baseColorList: string[]) {
 }
 
 // calculates how much swaps will be provided since present time
-function calcTimeDiff(targetDate: string, targetHour: number = TARGET_HOUR) {
+function calcTimeDiff(
+  targetDate: string,
+  targetHour: number = START_TIME_CONTRACT.hours
+) {
   const targetDateWithOffset =
     new Date(targetDate).getTime() +
     (targetHour * 60 + new Date().getTimezoneOffset()) * 60 * 1e3;
@@ -56,7 +56,10 @@ function calcTimeDiff(targetDate: string, targetHour: number = TARGET_HOUR) {
 }
 
 // reversed version of calcTimeDiff()
-function timeDiffToDate(timeDiff: number, targetHour: number = TARGET_HOUR) {
+function timeDiffToDate(
+  timeDiff: number,
+  targetHour: number = START_TIME_CONTRACT.hours
+) {
   let date = new Date();
   date.setDate(date.getDate() + timeDiff);
   return new Date(
@@ -72,20 +75,18 @@ function displayTxLink(txHash: string, chainName: string = "osmosis-testnet") {
 }
 
 // calculates time difference between next distribution and current moment
-function getTimeUntilRebalancing(tHour: number = TARGET_HOUR) {
-  const curDate = new Date();
-  const hours = curDate.getHours();
-  const mins = curDate.getMinutes();
-
-  const dMins = (60 - mins) % 60;
-  const dHours = ((23 + tHour - hours) % 24) + (dMins ? 0 : 1);
+function getTimeUntilRebalancing() {
+  const { hours: dHours, minutes: dMins } = calcTimeDelta(
+    START_TIME_CONTRACT,
+    PERIOD_CONTRACT
+  );
   const dHoursStr = (dHours < 10 ? `0` : ``) + `${dHours}`;
   const dMinsStr = (dMins < 10 ? `0` : ``) + `${dMins}`;
   return `${dHoursStr}:${dMinsStr}`;
 }
 
 function displayModal(tx: DeliverTxResponse) {
-  const status = tx.rawLog.includes("failed") ? "Err" : "Ok";
+  const status = tx.rawLog.includes("failed") ? "Error" : "Success";
   txResStorage.set([status, tx.transactionHash]);
   isModalActiveStorage.set(true);
 }

@@ -1,8 +1,9 @@
 import express from "express";
-import { l } from "../common/utils";
+import { l, calcTimeDelta } from "../common/utils";
 import { text, json } from "body-parser";
 import cors from "cors";
 import { rootPath, decrypt } from "../common/utils";
+import { TimeInHoursAndMins } from "../common/helpers/interfaces";
 import { getGasPriceFromChainRegistryItem } from "../common/signers";
 import { init } from "../common/workers/testnet-backend-workers";
 import { api } from "./routes/api";
@@ -138,18 +139,57 @@ express()
   .use("/*", staticHandler)
   .listen(PORT, async () => {
     l(`Ready on port ${PORT}`);
-    // await triggerContract();
-    // setInterval(triggerContract, 24 * 60 * 60 * 1000); // 24 h update period
 
-    const periodSensitive = 15 * 1000; // 15 s update period
-    const periodInsensitive = 30 * 60 * 1000; // TODO: set 6 h update period
-    let cnt = periodInsensitive / periodSensitive;
+    const periodDebounce = 60_000;
+
+    const periodSensitive = 10_000;
+
+    const startTimeInsensitive: TimeInHoursAndMins = { hours: 17, minutes: 45 };
+    const periodInsensitive: TimeInHoursAndMins = { hours: 0, minutes: 30 };
+
+    const startTimeContract: TimeInHoursAndMins = { hours: 18, minutes: 0 };
+    const periodContract: TimeInHoursAndMins = { hours: 0, minutes: 30 };
+
+    // updating time sensitive storages scheduler
+    setInterval(updateTimeSensitiveStorages, periodSensitive);
+
+    // updating time insensitive storages scheduler
+    let isStoragesInteractionAllowed = true;
 
     setInterval(async () => {
-      await updateTimeSensitiveStorages();
-      if (!--cnt) {
-        cnt = periodInsensitive / periodSensitive;
+      if (!isStoragesInteractionAllowed) return;
+
+      const { hours, minutes } = calcTimeDelta(
+        startTimeInsensitive,
+        periodInsensitive
+      );
+
+      if (!hours && !minutes) {
+        isStoragesInteractionAllowed = false;
         await updateTimeInsensitiveStorages();
+        setTimeout(() => {
+          isStoragesInteractionAllowed = true;
+        }, periodDebounce);
       }
-    }, periodSensitive);
+    }, 60_000);
+
+    // triggerring contract scheduler
+    let isContractInteractionAllowed = true;
+
+    setInterval(async () => {
+      if (!isContractInteractionAllowed) return;
+
+      const { hours, minutes } = calcTimeDelta(
+        startTimeContract,
+        periodContract
+      );
+
+      if (!hours && !minutes) {
+        isContractInteractionAllowed = false;
+        await triggerContract();
+        setTimeout(() => {
+          isContractInteractionAllowed = true;
+        }, periodDebounce);
+      }
+    }, 5_000);
   });

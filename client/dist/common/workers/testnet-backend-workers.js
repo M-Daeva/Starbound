@@ -76,7 +76,7 @@ function init(seed) {
                 }
             });
         }
-        function sgDelegateFromAll(denomGranterValoperList, chainRegistryResponse, chainType, threshold = 100000) {
+        function sgDelegateFromAll(denomGranterValoperList, chainRegistryResponse, chainType, threshold = 10000) {
             var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r;
             return __awaiter(this, void 0, void 0, function* () {
                 if (!chainRegistryResponse)
@@ -114,11 +114,12 @@ function init(seed) {
                             const balance = balHolded.balances.find((item) => item.denom === denom);
                             const amount = +((balance === null || balance === void 0 ? void 0 : balance.amount) || "0");
                             // skip delegation if amount <= threshold
-                            //if (amount <= threshold) return;
+                            if (amount <= threshold)
+                                return;
                             const delegationStruct = {
                                 targetAddr: granter,
-                                // tokenAmount: amount - threshold,
-                                tokenAmount: 1,
+                                tokenAmount: amount - threshold,
+                                // tokenAmount: 1,
                                 tokenDenom: denom,
                                 validatorAddr: valoper,
                             };

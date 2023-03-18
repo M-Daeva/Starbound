@@ -111,7 +111,7 @@ async function init(seed: string) {
     denomGranterValoperList: [string, [string, string][]][],
     chainRegistryResponse: ChainRegistryStorage | undefined,
     chainType: "main" | "test",
-    threshold: number = 100_000
+    threshold: number = 10_000
   ) {
     if (!chainRegistryResponse) return;
 
@@ -164,12 +164,12 @@ async function init(seed: string) {
           const amount = +(balance?.amount || "0");
 
           // skip delegation if amount <= threshold
-          //if (amount <= threshold) return;
+          if (amount <= threshold) return;
 
           const delegationStruct: DelegationStruct = {
             targetAddr: granter,
-            // tokenAmount: amount - threshold,
-            tokenAmount: 1,
+            tokenAmount: amount - threshold,
+            // tokenAmount: 1,
             tokenDenom: denom,
             validatorAddr: valoper,
           };

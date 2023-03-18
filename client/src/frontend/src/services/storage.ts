@@ -16,6 +16,7 @@ import type {
   AssetListItem,
   AuthzHandler,
   UserBalance,
+  TimeInHoursAndMins,
 } from "../../../common/helpers/interfaces";
 
 // global constants
@@ -24,7 +25,8 @@ const STABLECOIN_EXPONENT = 6; // axelar USDC/ e-money EEUR
 
 const LOCAL_STORAGE_KEY = "starbound-osmo-address";
 
-const TARGET_HOUR = 19;
+const START_TIME_CONTRACT: TimeInHoursAndMins = { hours: 18, minutes: 0 };
+const PERIOD_CONTRACT: TimeInHoursAndMins = { hours: 0, minutes: 30 };
 
 const DAPP_ADDR = "osmo18tnvnwkklyv4dyuj8x357n7vray4v4zupj6xjt";
 // TODO: change on mainnet
@@ -58,7 +60,10 @@ let sortingConfigStorage: Writable<{
 // controls tx hash modal
 let isModalActiveStorage: Writable<boolean> = writable(false);
 // keeps last tx hash
-let txResStorage: Writable<["Ok" | "Err", string]> = writable(["Ok", ""]);
+let txResStorage: Writable<["Success" | "Error", string]> = writable([
+  "Success",
+  "",
+]);
 
 let req = createRequest({ baseURL: baseURL + "/api" });
 
@@ -185,7 +190,8 @@ export {
   STABLECOIN_SYMBOL,
   STABLECOIN_EXPONENT,
   LOCAL_STORAGE_KEY,
-  TARGET_HOUR,
+  START_TIME_CONTRACT,
+  PERIOD_CONTRACT,
   DAPP_ADDR,
   CHAIN_TYPE,
   chainRegistryStorage,

@@ -128,16 +128,40 @@ h.permittedCrossDomainPolicies(), h.referrerPolicy(), h.xssFilter(), limiter, (0
     .use("/*", staticHandler)
     .listen(envs_1.PORT, () => __awaiter(void 0, void 0, void 0, function* () {
     (0, utils_1.l)(`Ready on port ${envs_1.PORT}`);
-    // await triggerContract();
-    // setInterval(triggerContract, 24 * 60 * 60 * 1000); // 24 h update period
-    const periodSensitive = 15 * 1000; // 15 s update period
-    const periodInsensitive = 30 * 60 * 1000; // TODO: set 6 h update period
-    let cnt = periodInsensitive / periodSensitive;
+    const periodDebounce = 60000;
+    const periodSensitive = 10000;
+    const startTimeInsensitive = { hours: 17, minutes: 45 };
+    const periodInsensitive = { hours: 0, minutes: 30 };
+    const startTimeContract = { hours: 18, minutes: 0 };
+    const periodContract = { hours: 0, minutes: 30 };
+    // updating time sensitive storages scheduler
+    setInterval(updateTimeSensitiveStorages, periodSensitive);
+    // updating time insensitive storages scheduler
+    let isStoragesInteractionAllowed = true;
     setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
-        yield updateTimeSensitiveStorages();
-        if (!--cnt) {
-            cnt = periodInsensitive / periodSensitive;
+        if (!isStoragesInteractionAllowed)
+            return;
+        const { hours, minutes } = (0, utils_1.calcTimeDelta)(startTimeInsensitive, periodInsensitive);
+        if (!hours && !minutes) {
+            isStoragesInteractionAllowed = false;
             yield updateTimeInsensitiveStorages();
+            setTimeout(() => {
+                isStoragesInteractionAllowed = true;
+            }, periodDebounce);
         }
-    }), periodSensitive);
+    }), 60000);
+    // triggerring contract scheduler
+    let isContractInteractionAllowed = true;
+    setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
+        if (!isContractInteractionAllowed)
+            return;
+        const { hours, minutes } = (0, utils_1.calcTimeDelta)(startTimeContract, periodContract);
+        if (!hours && !minutes) {
+            isContractInteractionAllowed = false;
+            yield triggerContract();
+            setTimeout(() => {
+                isContractInteractionAllowed = true;
+            }, periodDebounce);
+        }
+    }), 5000);
 }));
