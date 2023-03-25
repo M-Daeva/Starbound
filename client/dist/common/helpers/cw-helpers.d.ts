@@ -13,5 +13,5 @@ declare function getCwHelpers(clientStruct: ClientStruct, contractAddress: strin
     cwQueryPoolsAndUsers: () => Promise<import("../codegen/Starbound.types").QueryPoolsAndUsersResponse>;
     cwQueryLedger: () => Promise<import("../codegen/Starbound.types").QueryLedgerResponse>;
     cwQueryConfig: () => Promise<import("../codegen/Starbound.types").QueryConfigResponse>;
-}>;
+} | undefined>;
 export { getCwHelpers };

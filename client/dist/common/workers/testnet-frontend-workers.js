@@ -40,7 +40,10 @@ function init(chains, chainType) {
             chainId,
         };
         // user cosmwasm helpers
-        const { cwDeposit: _cwDeposit, cwWithdraw: _cwWithdraw, cwQueryPoolsAndUsers: _cwQueryPoolsAndUsers, cwQueryUser: _cwQueryUser, owner, } = yield (0, cw_helpers_1.getCwHelpers)(userClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
+        const userCwHelpers = yield (0, cw_helpers_1.getCwHelpers)(userClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
+        if (!userCwHelpers)
+            return;
+        const { cwDeposit: _cwDeposit, cwWithdraw: _cwWithdraw, cwQueryPoolsAndUsers: _cwQueryPoolsAndUsers, cwQueryUser: _cwQueryUser, owner, } = userCwHelpers;
         function cwDeposit(userAlice) {
             return __awaiter(this, void 0, void 0, function* () {
                 try {

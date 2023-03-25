@@ -208,7 +208,10 @@ async function updatePoolsAndUsers() {
     const seed = decrypt(SEED_DAPP, encryptionKey);
     if (!seed) throw new Error("Key is wrong!");
 
-    const { cwQueryPoolsAndUsers } = await init(seed);
+    const helpers = await init(seed);
+    if (!helpers) throw new Error("Init is failed!");
+
+    const { cwQueryPoolsAndUsers } = helpers;
 
     const res = await cwQueryPoolsAndUsers();
     poolsAndUsersStorage.set(res);

@@ -13,5 +13,5 @@ declare function init(): Promise<{
     cwQueryUser: () => Promise<void>;
     cwTransfer: () => Promise<void>;
     sgTransfer: () => Promise<void>;
-}>;
+} | undefined>;
 export { init };

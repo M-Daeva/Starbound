@@ -14,8 +14,11 @@ async function initContract() {
   const seed = decrypt(SEED_DAPP, encryptionKey);
   if (!seed) return;
 
+  const helpers = await init(seed);
+  if (!helpers) return;
+
   const { cwQueryPoolsAndUsers, cwUpdatePoolsAndUsers, cwUpdateConfig } =
-    await init(seed);
+    helpers;
 
   // add dapp addresses
   const poolsStorage = await getPools();

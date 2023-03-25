@@ -24,7 +24,10 @@ const assets_1 = require("./assets");
 const req = (0, utils_1.createRequest)({});
 function getSgHelpers(clientStruct) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { client, owner } = yield (0, signers_1.getSgClient)(clientStruct);
+        const sgClient = yield (0, signers_1.getSgClient)(clientStruct);
+        if (!sgClient)
+            return;
+        const { client, owner } = sgClient;
         const signAndBroadcast = (0, signers_1.signAndBroadcastWrapper)(client, owner);
         function sgTransfer(ibcStruct) {
             return __awaiter(this, void 0, void 0, function* () {

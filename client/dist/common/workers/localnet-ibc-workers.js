@@ -34,9 +34,15 @@ const fromOsmoToAtom = {
 function init() {
     return __awaiter(this, void 0, void 0, function* () {
         // alice cosmwasm helpers
-        const { cwDeposit: _cwDeposit, cwMultiTransfer: _cwMultiTransfer } = yield (0, cw_helpers_1.getCwHelpers)(aliceClientStruct, localnet_ibc_config_json_1.CONTRACT_ADDRESS);
+        const aliceCwHelpers = yield (0, cw_helpers_1.getCwHelpers)(aliceClientStruct, localnet_ibc_config_json_1.CONTRACT_ADDRESS);
+        if (!aliceCwHelpers)
+            return;
+        const { cwDeposit: _cwDeposit, cwMultiTransfer: _cwMultiTransfer } = aliceCwHelpers;
         // alice stargate helpers
-        const { sgGetTokenBalances: _sgGetTokenBalances, sgSwap: _sgSwap, sgTransfer: _sgTransfer, } = yield (0, sg_helpers_1.getSgHelpers)(aliceClientStruct);
+        const aliceSgHelpers = yield (0, sg_helpers_1.getSgHelpers)(aliceClientStruct);
+        if (!aliceSgHelpers)
+            return;
+        const { sgGetTokenBalances: _sgGetTokenBalances, sgSwap: _sgSwap, sgTransfer: _sgTransfer, } = aliceSgHelpers;
         function sgTransfer() {
             return __awaiter(this, void 0, void 0, function* () {
                 (0, utils_1.l)(utils_1.SEP, "sending ibc transfer...");

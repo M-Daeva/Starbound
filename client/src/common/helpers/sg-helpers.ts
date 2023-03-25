@@ -32,7 +32,10 @@ import {
 const req = createRequest({});
 
 async function getSgHelpers(clientStruct: ClientStruct) {
-  const { client, owner } = await getSgClient(clientStruct);
+  const sgClient = await getSgClient(clientStruct);
+  if (!sgClient) return;
+
+  const { client, owner } = sgClient;
   const signAndBroadcast = signAndBroadcastWrapper(client, owner);
 
   async function sgTransfer(ibcStruct: IbcStruct) {

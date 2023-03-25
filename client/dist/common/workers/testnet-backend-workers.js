@@ -36,17 +36,25 @@ function init(seed) {
         };
         const dappClientStructJuno = {
             prefix: "juno",
-            //RPC: "https://rpc.uni.juno.deuslabs.fi:443",
-            RPC: "https://rpc.uni.junonetwork.io:443",
+            RPC: "https://juno-testnet-rpc.polkachu.com:443",
             seed,
         };
         // dapp cosmwasm helpers
+        const dappCwHelpers = yield (0, cw_helpers_1.getCwHelpers)(dappClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
+        if (!dappCwHelpers)
+            return;
         const { owner: dappAddr, cwSwap: _cwSwap, cwQueryPoolsAndUsers: _cwQueryPoolsAndUsers, cwUpdatePoolsAndUsers: _cwUpdatePoolsAndUsers, cwQueryUser: _cwQueryUser, cwTransfer: _cwTransfer, cwUpdateConfig: _cwUpdateConfig, cwQueryConfig: _cwQueryConfig,
         // cwMultiTransfer: _cwMultiTransfer,
-         } = yield (0, cw_helpers_1.getCwHelpers)(dappClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
+         } = dappCwHelpers;
         // dapp stargate helpers
-        const { sgUpdatePoolList: _sgUpdatePoolList, sgTransfer: _sgTransfer, sgSend: _sgSend, } = yield (0, sg_helpers_1.getSgHelpers)(dappClientStruct);
-        const { sgDelegateFrom: _sgDelegateFrom, sgGetTokenBalances: _sgGetTokenBalances, } = yield (0, sg_helpers_1.getSgHelpers)(dappClientStructJuno);
+        const dappSgHelpers = yield (0, sg_helpers_1.getSgHelpers)(dappClientStruct);
+        if (!dappSgHelpers)
+            return;
+        const { sgUpdatePoolList: _sgUpdatePoolList, sgTransfer: _sgTransfer, sgSend: _sgSend, } = dappSgHelpers;
+        const junoSgHelpers = yield (0, sg_helpers_1.getSgHelpers)(dappClientStructJuno);
+        if (!junoSgHelpers)
+            return;
+        const { sgDelegateFrom: _sgDelegateFrom, sgGetTokenBalances: _sgGetTokenBalances, } = junoSgHelpers;
         function sgUpdatePoolList() {
             return __awaiter(this, void 0, void 0, function* () {
                 let pools = yield _sgUpdatePoolList();
@@ -103,9 +111,12 @@ function init(seed) {
                     const dappClientStruct = {
                         prefix: chain.prefix,
                         RPC: rpc,
-                        seed: testnet_config_json_1.SEED_DAPP,
+                        seed,
                     };
-                    const { sgDelegateFromList: _sgDelegateFromList } = yield (0, sg_helpers_1.getSgHelpers)(dappClientStruct);
+                    const dappSgHelpers = yield (0, sg_helpers_1.getSgHelpers)(dappClientStruct);
+                    if (!dappSgHelpers)
+                        return;
+                    const { sgDelegateFromList: _sgDelegateFromList } = dappSgHelpers;
                     let delegationStructList = [];
                     for (let [granter, valoper] of granterValoperList) {
                         const urlHolded = `${rest}/cosmos/bank/v1beta1/balances/${granter}`;
@@ -114,12 +125,11 @@ function init(seed) {
                             const balance = balHolded.balances.find((item) => item.denom === denom);
                             const amount = +((balance === null || balance === void 0 ? void 0 : balance.amount) || "0");
                             // skip delegation if amount <= threshold
-                            if (amount <= threshold)
-                                return;
+                            //if (amount <= threshold) return;
                             const delegationStruct = {
                                 targetAddr: granter,
-                                tokenAmount: amount - threshold,
-                                // tokenAmount: 1,
+                                //tokenAmount: amount - threshold,
+                                tokenAmount: 1,
                                 tokenDenom: denom,
                                 validatorAddr: valoper,
                             };

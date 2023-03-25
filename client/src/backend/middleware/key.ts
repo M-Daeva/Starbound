@@ -24,11 +24,14 @@ async function setEncryptionKey(value: string): Promise<string> {
     const seed = decrypt(SEED_DAPP, value);
     if (!seed) throw new Error(`Key '${value}' is wrong!`);
 
-    const { owner } = await getSgClient({
+    const sgClient = await getSgClient({
       prefix: "osmo",
       RPC: "https://rpc.osmosis.zone:443",
       seed,
     });
+    if (!sgClient) throw new Error("sgClient is failde!");
+
+    const { owner } = sgClient;
 
     if (owner !== DAPP_ADDRESS) throw new Error(`Key '${value}' is wrong!`);
 

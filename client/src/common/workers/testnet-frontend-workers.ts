@@ -38,13 +38,16 @@ async function init(chains: ChainRegistryStorage, chainType: "main" | "test") {
   };
 
   // user cosmwasm helpers
+  const userCwHelpers = await getCwHelpers(userClientStruct, CONTRACT_ADDRESS);
+  if (!userCwHelpers) return;
+
   const {
     cwDeposit: _cwDeposit,
     cwWithdraw: _cwWithdraw,
     cwQueryPoolsAndUsers: _cwQueryPoolsAndUsers,
     cwQueryUser: _cwQueryUser,
     owner,
-  } = await getCwHelpers(userClientStruct, CONTRACT_ADDRESS);
+  } = userCwHelpers;
 
   async function cwDeposit(userAlice: User) {
     try {

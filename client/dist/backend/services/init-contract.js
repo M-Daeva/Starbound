@@ -25,7 +25,10 @@ function initContract() {
         const seed = (0, utils_1.decrypt)(testnet_config_json_1.SEED_DAPP, encryptionKey);
         if (!seed)
             return;
-        const { cwQueryPoolsAndUsers, cwUpdatePoolsAndUsers, cwUpdateConfig } = yield (0, testnet_backend_workers_1.init)(seed);
+        const helpers = yield (0, testnet_backend_workers_1.init)(seed);
+        if (!helpers)
+            return;
+        const { cwQueryPoolsAndUsers, cwUpdatePoolsAndUsers, cwUpdateConfig } = helpers;
         // add dapp addresses
         const poolsStorage = yield (0, api_1.getPools)();
         const chainRegistry = yield (0, api_1.getChainRegistry)();

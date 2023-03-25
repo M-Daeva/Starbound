@@ -259,7 +259,10 @@ async function _verifyRpc(rpcList: string[], prefix: string, seed: string) {
 
     // query balances to check if url is fine
     try {
-      const { client, owner } = await getSgClient(clientStruct);
+      const sgClient = await getSgClient(clientStruct);
+      if (!sgClient) return;
+
+      const { client, owner } = sgClient;
       await _specifyTimeout(client.getAllBalances(owner));
       urlChecked = url;
       break;

@@ -38,15 +38,24 @@ const fromOsmoToAtom: SwapStruct = {
 
 async function init() {
   // alice cosmwasm helpers
+  const aliceCwHelpers = await getCwHelpers(
+    aliceClientStruct,
+    CONTRACT_ADDRESS
+  );
+  if (!aliceCwHelpers) return;
+
   const { cwDeposit: _cwDeposit, cwMultiTransfer: _cwMultiTransfer } =
-    await getCwHelpers(aliceClientStruct, CONTRACT_ADDRESS);
+    aliceCwHelpers;
 
   // alice stargate helpers
+  const aliceSgHelpers = await getSgHelpers(aliceClientStruct);
+  if (!aliceSgHelpers) return;
+
   const {
     sgGetTokenBalances: _sgGetTokenBalances,
     sgSwap: _sgSwap,
     sgTransfer: _sgTransfer,
-  } = await getSgHelpers(aliceClientStruct);
+  } = aliceSgHelpers;
 
   async function sgTransfer() {
     l(SEP, "sending ibc transfer...");

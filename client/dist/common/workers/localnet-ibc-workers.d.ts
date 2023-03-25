@@ -3,5 +3,5 @@ declare function init(): Promise<{
     sgSwap: () => Promise<void>;
     cwDeposit: () => Promise<void>;
     cwMultiTransfer: () => Promise<void>;
-}>;
+} | undefined>;
 export { init };

@@ -16,10 +16,13 @@ async function getCwHelpers(
   clientStruct: ClientStruct,
   contractAddress: string
 ) {
-  const { client: _client, owner } = await getCwClient(clientStruct);
+  const cwClient = await getCwClient(clientStruct);
+  if (!cwClient) return;
+
+  const { client: _client, owner } = cwClient;
   const composer = new StarboundMessageComposer(owner, contractAddress);
   const client = new StarboundClient(_client, owner, contractAddress);
-  const _signAndBroadcast = signAndBroadcastWrapper(_client, owner, 1.1);
+  const _signAndBroadcast = signAndBroadcastWrapper(_client, owner);
 
   async function _msgWrapper(msg: MsgExecuteContractEncodeObject) {
     const tx = await _client.signAndBroadcast(owner, [msg], fee);

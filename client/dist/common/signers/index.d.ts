@@ -12,11 +12,11 @@ declare function initWalletList(chainRegistry: NetworkData[] | undefined, chainT
 declare function getSgClient(clientStruct: ClientStruct): Promise<{
     client: SigningStargateClient;
     owner: string;
-}>;
+} | undefined>;
 declare function getCwClient(clientStruct: ClientStruct): Promise<{
     client: SigningCosmWasmClient;
     owner: string;
-}>;
+} | undefined>;
 declare function getAddrByPrefix(address: string, prefix: string): string;
 declare function getAddrByChainPrefix(chainRegistry: NetworkData[], chainType: "main" | "test", prefix: string): Promise<string | undefined>;
 declare function signAndBroadcastWrapper(client: SigningStargateClient | SigningCosmWasmClient, signerAddress: string, margin?: number): (messages: readonly EncodeObject[], gasPrice: string | GasPrice, memo?: string) => Promise<DeliverTxResponse>;

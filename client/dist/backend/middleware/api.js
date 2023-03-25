@@ -169,7 +169,10 @@ function updatePoolsAndUsers() {
             const seed = (0, utils_1.decrypt)(testnet_config_json_1.SEED_DAPP, encryptionKey);
             if (!seed)
                 throw new Error("Key is wrong!");
-            const { cwQueryPoolsAndUsers } = yield (0, testnet_backend_workers_1.init)(seed);
+            const helpers = yield (0, testnet_backend_workers_1.init)(seed);
+            if (!helpers)
+                throw new Error("Init is failed!");
+            const { cwQueryPoolsAndUsers } = helpers;
             const res = yield cwQueryPoolsAndUsers();
             poolsAndUsersStorage.set(res);
             poolsAndUsersStorage.write(res);

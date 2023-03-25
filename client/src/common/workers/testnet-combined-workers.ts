@@ -42,19 +42,28 @@ const dappClientStruct: ClientStructWithoutKeplr = {
 
 async function init() {
   // alice cosmwasm helpers
+  const aliceCwHelpers = await getCwHelpers(
+    aliceClientStruct,
+    CONTRACT_ADDRESS
+  );
+  if (!aliceCwHelpers) return;
+
   const {
     owner: aliceAddr,
     cwDeposit: _cwDepositAlice,
     cwWithdraw: _cwWithdrawAlice,
-  } = await getCwHelpers(aliceClientStruct, CONTRACT_ADDRESS);
+  } = aliceCwHelpers;
 
   // bob cosmwasm helpers
-  const { owner: bobAddr, cwDeposit: _cwDepositBob } = await getCwHelpers(
-    bobClientStruct,
-    CONTRACT_ADDRESS
-  );
+  const bobCwHelpers = await getCwHelpers(bobClientStruct, CONTRACT_ADDRESS);
+  if (!bobCwHelpers) return;
+
+  const { owner: bobAddr, cwDeposit: _cwDepositBob } = bobCwHelpers;
 
   // dapp cosmwasm helpers
+  const dappCwHelpers = await getCwHelpers(dappClientStruct, CONTRACT_ADDRESS);
+  if (!dappCwHelpers) return;
+
   const {
     owner: dappAddr,
     cwSwap: _cwSwap,
@@ -62,18 +71,24 @@ async function init() {
     cwUpdatePoolsAndUsers: _cwUpdatePoolsAndUsers,
     cwQueryUser: _cwQueryUser,
     cwTransfer: _cwTransfer,
-  } = await getCwHelpers(dappClientStruct, CONTRACT_ADDRESS);
+  } = dappCwHelpers;
 
   // alice stargate helpers
+  const aliceSgHelpers = await getSgHelpers(aliceClientStruct);
+  if (!aliceSgHelpers) return;
+
   const { sgGrantStakeAuth: _sgGrantStakeAuth, sgTransfer: _sgTransfer } =
-    await getSgHelpers(aliceClientStruct);
+    aliceSgHelpers;
 
   // dapp stargate helpers
+  const dappSgHelpers = await getSgHelpers(dappClientStruct);
+  if (!dappSgHelpers) return;
+
   const {
     sgDelegateFrom: _sgDelegateFrom,
     sgGetTokenBalances: _sgGetTokenBalances,
     sgUpdatePoolList: _sgUpdatePoolList,
-  } = await getSgHelpers(dappClientStruct);
+  } = dappSgHelpers;
 
   async function sgUpdatePoolList() {
     let pools = await _sgUpdatePoolList();

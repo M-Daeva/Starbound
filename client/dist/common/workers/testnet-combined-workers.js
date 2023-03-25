@@ -33,15 +33,30 @@ const dappClientStruct = {
 function init() {
     return __awaiter(this, void 0, void 0, function* () {
         // alice cosmwasm helpers
-        const { owner: aliceAddr, cwDeposit: _cwDepositAlice, cwWithdraw: _cwWithdrawAlice, } = yield (0, cw_helpers_1.getCwHelpers)(aliceClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
+        const aliceCwHelpers = yield (0, cw_helpers_1.getCwHelpers)(aliceClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
+        if (!aliceCwHelpers)
+            return;
+        const { owner: aliceAddr, cwDeposit: _cwDepositAlice, cwWithdraw: _cwWithdrawAlice, } = aliceCwHelpers;
         // bob cosmwasm helpers
-        const { owner: bobAddr, cwDeposit: _cwDepositBob } = yield (0, cw_helpers_1.getCwHelpers)(bobClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
+        const bobCwHelpers = yield (0, cw_helpers_1.getCwHelpers)(bobClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
+        if (!bobCwHelpers)
+            return;
+        const { owner: bobAddr, cwDeposit: _cwDepositBob } = bobCwHelpers;
         // dapp cosmwasm helpers
-        const { owner: dappAddr, cwSwap: _cwSwap, cwQueryPoolsAndUsers: _cwQueryPoolsAndUsers, cwUpdatePoolsAndUsers: _cwUpdatePoolsAndUsers, cwQueryUser: _cwQueryUser, cwTransfer: _cwTransfer, } = yield (0, cw_helpers_1.getCwHelpers)(dappClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
+        const dappCwHelpers = yield (0, cw_helpers_1.getCwHelpers)(dappClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
+        if (!dappCwHelpers)
+            return;
+        const { owner: dappAddr, cwSwap: _cwSwap, cwQueryPoolsAndUsers: _cwQueryPoolsAndUsers, cwUpdatePoolsAndUsers: _cwUpdatePoolsAndUsers, cwQueryUser: _cwQueryUser, cwTransfer: _cwTransfer, } = dappCwHelpers;
         // alice stargate helpers
-        const { sgGrantStakeAuth: _sgGrantStakeAuth, sgTransfer: _sgTransfer } = yield (0, sg_helpers_1.getSgHelpers)(aliceClientStruct);
+        const aliceSgHelpers = yield (0, sg_helpers_1.getSgHelpers)(aliceClientStruct);
+        if (!aliceSgHelpers)
+            return;
+        const { sgGrantStakeAuth: _sgGrantStakeAuth, sgTransfer: _sgTransfer } = aliceSgHelpers;
         // dapp stargate helpers
-        const { sgDelegateFrom: _sgDelegateFrom, sgGetTokenBalances: _sgGetTokenBalances, sgUpdatePoolList: _sgUpdatePoolList, } = yield (0, sg_helpers_1.getSgHelpers)(dappClientStruct);
+        const dappSgHelpers = yield (0, sg_helpers_1.getSgHelpers)(dappClientStruct);
+        if (!dappSgHelpers)
+            return;
+        const { sgDelegateFrom: _sgDelegateFrom, sgGetTokenBalances: _sgGetTokenBalances, sgUpdatePoolList: _sgUpdatePoolList, } = dappSgHelpers;
         function sgUpdatePoolList() {
             return __awaiter(this, void 0, void 0, function* () {
                 let pools = yield _sgUpdatePoolList();

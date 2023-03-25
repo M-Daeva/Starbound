@@ -193,7 +193,10 @@ function _verifyRpc(rpcList, prefix, seed) {
             };
             // query balances to check if url is fine
             try {
-                const { client, owner } = yield (0, signers_1.getSgClient)(clientStruct);
+                const sgClient = yield (0, signers_1.getSgClient)(clientStruct);
+                if (!sgClient)
+                    return;
+                const { client, owner } = sgClient;
                 yield (0, utils_1.specifyTimeout)(client.getAllBalances(owner));
                 urlChecked = url;
                 break;

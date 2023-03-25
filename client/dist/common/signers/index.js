@@ -143,21 +143,31 @@ function _getSigner(clientStruct) {
 }
 function getSgClient(clientStruct) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { signer, owner, RPC } = yield _getSigner(clientStruct);
-        if (!signer)
-            throw new Error("Signer is undefined!");
-        const client = yield stargate_1.SigningStargateClient.connectWithSigner(RPC, signer);
-        return { client, owner };
+        try {
+            const { signer, owner, RPC } = yield _getSigner(clientStruct);
+            if (!signer)
+                throw new Error("Signer is undefined!");
+            const client = yield stargate_1.SigningStargateClient.connectWithSigner(RPC, signer);
+            return { client, owner };
+        }
+        catch (error) {
+            (0, utils_1.l)(error);
+        }
     });
 }
 exports.getSgClient = getSgClient;
 function getCwClient(clientStruct) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { signer, owner, RPC } = yield _getSigner(clientStruct);
-        if (!signer)
-            throw new Error("Signer is undefined!");
-        const client = yield cosmwasm_stargate_1.SigningCosmWasmClient.connectWithSigner(RPC, signer);
-        return { client, owner };
+        try {
+            const { signer, owner, RPC } = yield _getSigner(clientStruct);
+            if (!signer)
+                throw new Error("Signer is undefined!");
+            const client = yield cosmwasm_stargate_1.SigningCosmWasmClient.connectWithSigner(RPC, signer);
+            return { client, owner };
+        }
+        catch (error) {
+            (0, utils_1.l)(error);
+        }
     });
 }
 exports.getCwClient = getCwClient;
@@ -186,7 +196,7 @@ function getAddrByChainPrefix(chainRegistry, chainType, prefix) {
     });
 }
 exports.getAddrByChainPrefix = getAddrByChainPrefix;
-function signAndBroadcastWrapper(client, signerAddress, margin = 1.05) {
+function signAndBroadcastWrapper(client, signerAddress, margin = 1.2) {
     return (messages, gasPrice, memo) => __awaiter(this, void 0, void 0, function* () {
         const gasSimulated = yield client.simulate(signerAddress, messages, memo);
         const gasWanted = Math.ceil(margin * gasSimulated);

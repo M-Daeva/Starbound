@@ -15,5 +15,5 @@ declare function init(seed: string): Promise<{
     sgDelegateFromAll: (denomGranterValoperList: [string, [string, string][]][], chainRegistryResponse: ChainRegistryStorage | undefined, chainType: "main" | "test", threshold?: number) => Promise<void>;
     cwQueryConfig: () => Promise<import("../codegen/Starbound.types").QueryConfigResponse | undefined>;
     cwUpdateConfig: (updateConfigStruct: UpdateConfigStruct, gasPrice: string) => Promise<import("@cosmjs/stargate").DeliverTxResponse | undefined>;
-}>;
+} | undefined>;
 export { init };

@@ -31,11 +31,14 @@ function setEncryptionKey(value) {
             const seed = (0, utils_1.decrypt)(testnet_config_json_1.SEED_DAPP, value);
             if (!seed)
                 throw new Error(`Key '${value}' is wrong!`);
-            const { owner } = yield (0, signers_1.getSgClient)({
+            const sgClient = yield (0, signers_1.getSgClient)({
                 prefix: "osmo",
                 RPC: "https://rpc.osmosis.zone:443",
                 seed,
             });
+            if (!sgClient)
+                throw new Error("sgClient is failde!");
+            const { owner } = sgClient;
             if (owner !== envs_1.DAPP_ADDRESS)
                 throw new Error(`Key '${value}' is wrong!`);
             _encryptionKeyStorage.set(value);

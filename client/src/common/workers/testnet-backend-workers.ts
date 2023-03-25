@@ -1,4 +1,9 @@
-import { l, createRequest, specifyTimeout as _specifyTimeout } from "../utils";
+import {
+  l,
+  createRequest,
+  specifyTimeout as _specifyTimeout,
+  decrypt,
+} from "../utils";
 import { coin } from "@cosmjs/stargate";
 import { getGasPriceFromChainRegistryItem } from "../signers";
 import { getCwHelpers } from "../helpers/cw-helpers";
@@ -51,12 +56,14 @@ async function init(seed: string) {
   };
   const dappClientStructJuno: ClientStructWithoutKeplr = {
     prefix: "juno",
-    //RPC: "https://rpc.uni.juno.deuslabs.fi:443",
-    RPC: "https://rpc.uni.junonetwork.io:443",
+    RPC: "https://juno-testnet-rpc.polkachu.com:443",
     seed,
   };
 
   // dapp cosmwasm helpers
+  const dappCwHelpers = await getCwHelpers(dappClientStruct, CONTRACT_ADDRESS);
+  if (!dappCwHelpers) return;
+
   const {
     owner: dappAddr,
     cwSwap: _cwSwap,
@@ -67,19 +74,25 @@ async function init(seed: string) {
     cwUpdateConfig: _cwUpdateConfig,
     cwQueryConfig: _cwQueryConfig,
     // cwMultiTransfer: _cwMultiTransfer,
-  } = await getCwHelpers(dappClientStruct, CONTRACT_ADDRESS);
+  } = dappCwHelpers;
 
   // dapp stargate helpers
+  const dappSgHelpers = await getSgHelpers(dappClientStruct);
+  if (!dappSgHelpers) return;
+
   const {
     sgUpdatePoolList: _sgUpdatePoolList,
     sgTransfer: _sgTransfer,
     sgSend: _sgSend,
-  } = await getSgHelpers(dappClientStruct);
+  } = dappSgHelpers;
+
+  const junoSgHelpers = await getSgHelpers(dappClientStructJuno);
+  if (!junoSgHelpers) return;
 
   const {
     sgDelegateFrom: _sgDelegateFrom,
     sgGetTokenBalances: _sgGetTokenBalances,
-  } = await getSgHelpers(dappClientStructJuno);
+  } = junoSgHelpers;
 
   async function sgUpdatePoolList() {
     let pools = await _sgUpdatePoolList();
@@ -141,12 +154,13 @@ async function init(seed: string) {
       const dappClientStruct: ClientStructWithoutKeplr = {
         prefix: chain.prefix,
         RPC: rpc,
-        seed: SEED_DAPP,
+        seed,
       };
 
-      const { sgDelegateFromList: _sgDelegateFromList } = await getSgHelpers(
-        dappClientStruct
-      );
+      const dappSgHelpers = await getSgHelpers(dappClientStruct);
+      if (!dappSgHelpers) return;
+
+      const { sgDelegateFromList: _sgDelegateFromList } = dappSgHelpers;
 
       let delegationStructList: DelegationStruct[] = [];
 
@@ -164,12 +178,12 @@ async function init(seed: string) {
           const amount = +(balance?.amount || "0");
 
           // skip delegation if amount <= threshold
-          if (amount <= threshold) return;
+          //if (amount <= threshold) return;
 
           const delegationStruct: DelegationStruct = {
             targetAddr: granter,
-            tokenAmount: amount - threshold,
-            // tokenAmount: 1,
+            //tokenAmount: amount - threshold,
+            tokenAmount: 1,
             tokenDenom: denom,
             validatorAddr: valoper,
           };

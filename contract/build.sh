@@ -16,7 +16,7 @@ cosmwasm-ts-codegen generate \
   --plugin client \
 	--plugin message-composer \
   --schema ./schema \
-  --out ./client/src/common/codegen \
+  --out ../client/src/common/codegen \
   --name $DIR_NAME \
   --no-bundle
 

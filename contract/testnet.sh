@@ -2,7 +2,7 @@
 
 PREFIX="osmo"
 CHAIN_ID="osmo-test-4"
-RPC="https://osmosis-testnet-rpc.allthatnode.com:26657"
+RPC="https://rpc-test.osmosis.zone:443"
 # osmo1gjqnuhv52pd2a7ets2vhw9w9qa9knyhy7y9tgx
 SEED_ALICE=$(jq -r '.ALICE_SEED' ../../.test-wallets/test_wallets.json)
 # osmo1chgwz55h9kepjq0fkj5supl2ta3nwu63e3ds8x

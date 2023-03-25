@@ -72,7 +72,10 @@ function triggerContract() {
         const seed = (0, utils_2.decrypt)(testnet_config_json_1.SEED_DAPP, encryptionKey);
         if (!seed)
             return;
-        const { cwSwap, cwTransfer, cwQueryPoolsAndUsers, sgDelegateFromAll, cwUpdatePoolsAndUsers, } = yield (0, testnet_backend_workers_1.init)(seed);
+        const helpers = yield (0, testnet_backend_workers_1.init)(seed);
+        if (!helpers)
+            return;
+        const { cwSwap, cwTransfer, cwQueryPoolsAndUsers, sgDelegateFromAll, cwUpdatePoolsAndUsers, } = helpers;
         const chainRegistry = yield (0, api_2.getChainRegistry)();
         const chain = chainRegistry.find((item) => item.denomNative === "uosmo");
         if (!chain)
@@ -80,15 +83,11 @@ function triggerContract() {
         const gasPrice = (0, signers_1.getGasPriceFromChainRegistryItem)(chain, envs_1.CHAIN_TYPE);
         const poolsStorage = yield (0, api_2.getPools)();
         const poolsAndUsers = yield cwQueryPoolsAndUsers();
-        // const grants = await _getAllGrants(
-        //   DAPP_ADDRESS,
-        //   chainRegistry,
-        //   CHAIN_TYPE
-        // );
+        // const grants = await _getAllGrants(DAPP_ADDRESS, chainRegistry, CHAIN_TYPE);
         // if (!grants) return;
-        // l(grants[0]);
+        // for (const item of grants) l(item);
         // await sgDelegateFromAll(grants, chainRegistry, CHAIN_TYPE);
-        //return;
+        // return;
         const res = yield (0, api_helpers_1.updatePoolsAndUsers)(chainRegistry, poolsAndUsers, poolsStorage, envs_1.CHAIN_TYPE);
         if (!res)
             return;

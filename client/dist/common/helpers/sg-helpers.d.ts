@@ -15,5 +15,5 @@ declare function getSgHelpers(clientStruct: ClientStruct): Promise<{
     sgUpdatePoolList: () => Promise<PoolInfo[]>;
     sgSend: (recipient: string, amount: Coin) => Promise<import("@cosmjs/stargate").DeliverTxResponse>;
     sgDelegateFromList: (delegationStructList: DelegationStruct[], gasPrice: string) => Promise<import("@cosmjs/stargate").DeliverTxResponse>;
-}>;
+} | undefined>;
 export { getSgHelpers };

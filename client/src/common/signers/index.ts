@@ -162,24 +162,38 @@ async function _getSigner(clientStruct: ClientStruct) {
   return { signer, owner, RPC: clientStruct.RPC };
 }
 
-async function getSgClient(clientStruct: ClientStruct): Promise<{
-  client: SigningStargateClient;
-  owner: string;
-}> {
-  const { signer, owner, RPC } = await _getSigner(clientStruct);
-  if (!signer) throw new Error("Signer is undefined!");
-  const client = await SigningStargateClient.connectWithSigner(RPC, signer);
-  return { client, owner };
+async function getSgClient(clientStruct: ClientStruct): Promise<
+  | {
+      client: SigningStargateClient;
+      owner: string;
+    }
+  | undefined
+> {
+  try {
+    const { signer, owner, RPC } = await _getSigner(clientStruct);
+    if (!signer) throw new Error("Signer is undefined!");
+    const client = await SigningStargateClient.connectWithSigner(RPC, signer);
+    return { client, owner };
+  } catch (error) {
+    l(error);
+  }
 }
 
-async function getCwClient(clientStruct: ClientStruct): Promise<{
-  client: SigningCosmWasmClient;
-  owner: string;
-}> {
-  const { signer, owner, RPC } = await _getSigner(clientStruct);
-  if (!signer) throw new Error("Signer is undefined!");
-  const client = await SigningCosmWasmClient.connectWithSigner(RPC, signer);
-  return { client, owner };
+async function getCwClient(clientStruct: ClientStruct): Promise<
+  | {
+      client: SigningCosmWasmClient;
+      owner: string;
+    }
+  | undefined
+> {
+  try {
+    const { signer, owner, RPC } = await _getSigner(clientStruct);
+    if (!signer) throw new Error("Signer is undefined!");
+    const client = await SigningCosmWasmClient.connectWithSigner(RPC, signer);
+    return { client, owner };
+  } catch (error) {
+    l(error);
+  }
 }
 
 function getAddrByPrefix(address: string, prefix: string): string {
@@ -210,7 +224,7 @@ async function getAddrByChainPrefix(
 function signAndBroadcastWrapper(
   client: SigningStargateClient | SigningCosmWasmClient,
   signerAddress: string,
-  margin: number = 1.05
+  margin: number = 1.2
 ) {
   return async (
     messages: readonly EncodeObject[],

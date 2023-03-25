@@ -17,10 +17,13 @@ const Starbound_client_1 = require("../codegen/Starbound.client");
 const Starbound_message_composer_1 = require("../codegen/Starbound.message-composer");
 function getCwHelpers(clientStruct, contractAddress) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { client: _client, owner } = yield (0, signers_1.getCwClient)(clientStruct);
+        const cwClient = yield (0, signers_1.getCwClient)(clientStruct);
+        if (!cwClient)
+            return;
+        const { client: _client, owner } = cwClient;
         const composer = new Starbound_message_composer_1.StarboundMessageComposer(owner, contractAddress);
         const client = new Starbound_client_1.StarboundClient(_client, owner, contractAddress);
-        const _signAndBroadcast = (0, signers_1.signAndBroadcastWrapper)(_client, owner, 1.1);
+        const _signAndBroadcast = (0, signers_1.signAndBroadcastWrapper)(_client, owner);
         function _msgWrapper(msg) {
             return __awaiter(this, void 0, void 0, function* () {
                 const tx = yield _client.signAndBroadcast(owner, [msg], signers_1.fee);

@@ -46,13 +46,16 @@ async function triggerContract() {
   const seed = decrypt(SEED_DAPP, encryptionKey);
   if (!seed) return;
 
+  const helpers = await init(seed);
+  if (!helpers) return;
+
   const {
     cwSwap,
     cwTransfer,
     cwQueryPoolsAndUsers,
     sgDelegateFromAll,
     cwUpdatePoolsAndUsers,
-  } = await init(seed);
+  } = helpers;
 
   const chainRegistry = await getChainRegistry();
 
@@ -64,16 +67,12 @@ async function triggerContract() {
   const poolsStorage = await getPools();
   const poolsAndUsers = await cwQueryPoolsAndUsers();
 
-  // const grants = await _getAllGrants(
-  //   DAPP_ADDRESS,
-  //   chainRegistry,
-  //   CHAIN_TYPE
-  // );
+  // const grants = await _getAllGrants(DAPP_ADDRESS, chainRegistry, CHAIN_TYPE);
   // if (!grants) return;
-  // l(grants[0]);
+  // for (const item of grants) l(item);
 
   // await sgDelegateFromAll(grants, chainRegistry, CHAIN_TYPE);
-  //return;
+  // return;
 
   const res = await _updatePoolsAndUsers(
     chainRegistry,
