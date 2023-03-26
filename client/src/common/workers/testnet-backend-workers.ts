@@ -54,11 +54,6 @@ async function init(seed: string) {
     RPC,
     seed,
   };
-  const dappClientStructJuno: ClientStructWithoutKeplr = {
-    prefix: "juno",
-    RPC: "https://juno-testnet-rpc.polkachu.com:443",
-    seed,
-  };
 
   // dapp cosmwasm helpers
   const dappCwHelpers = await getCwHelpers(dappClientStruct, CONTRACT_ADDRESS);
@@ -86,38 +81,9 @@ async function init(seed: string) {
     sgSend: _sgSend,
   } = dappSgHelpers;
 
-  const junoSgHelpers = await getSgHelpers(dappClientStructJuno);
-  if (!junoSgHelpers) return;
-
-  const {
-    sgDelegateFrom: _sgDelegateFrom,
-    sgGetTokenBalances: _sgGetTokenBalances,
-  } = junoSgHelpers;
-
   async function sgUpdatePoolList() {
     let pools = await _sgUpdatePoolList();
     l({ pools });
-  }
-
-  async function _queryBalance() {
-    let balances = await _sgGetTokenBalances(CONTRACT_ADDRESS);
-    l({ contract: balances });
-  }
-
-  // const grantStakeStruct: DelegationStruct = {
-  //   targetAddr: dappAddr,
-  //   tokenAmount: 1_000,
-  //   tokenDenom: DENOMS.JUNO,
-  //   validatorAddr: "junovaloper1w8cpaaljwrytquj86kvp9s72lvmddcc208ghun",
-  // };
-
-  async function sgDelegateFrom(stakeFromStruct: DelegationStruct) {
-    try {
-      const tx = await _sgDelegateFrom(stakeFromStruct);
-      l(tx, "\n");
-    } catch (error) {
-      l(error, "\n");
-    }
   }
 
   async function sgDelegateFromAll(
@@ -367,9 +333,7 @@ async function init(seed: string) {
   }
 
   return {
-    _queryBalance,
     cwSwap,
-    sgDelegateFrom,
     sgUpdatePoolList,
     cwQueryPoolsAndUsers,
     cwMockUpdatePoolsAndUsers,

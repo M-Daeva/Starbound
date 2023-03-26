@@ -1,5 +1,5 @@
 APP_NAME="starbound-client-testnet"
-VERSION="1.0.44"
+VERSION="1.0.48"
 ACCOUNT_NAME="mdaeva"
 
 INTERNAL_PORT=4000
@@ -7,6 +7,8 @@ EXTERNAL_PORT=4000
 
 IMAGE_NAME=$APP_NAME
 CONTAINER_NAME=$APP_NAME
+
+DOCKER_PASSWORD=$(jq -r '.password' ../.test-wallets/docker.json)
 
 
 print() {
@@ -18,7 +20,7 @@ print() {
 
 clear
 
-docker login -u $ACCOUNT_NAME docker.io
+docker login -u $ACCOUNT_NAME -p $DOCKER_PASSWORD docker.io
 
 print "Creating image from file..."
 docker build -t "$IMAGE_NAME:$VERSION" .

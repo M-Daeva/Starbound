@@ -1415,26 +1415,33 @@ async function getUserFunds(
           const urlHolded = `${rest}/cosmos/bank/v1beta1/balances/${asset.wallet_address}`;
           const urlStaked = `${rest}/cosmos/staking/v1beta1/delegations/${asset.wallet_address}`;
 
-          const ibcConfigList: string[] = [
-            _getIbcDenom(
-              ibcConfigAb.b_channel_id,
-              `${ibcConfigAb.a_port_id}/${_getChannelId(
-                denomNative,
-                chain.denomIbc,
-                ibcConfigAb.a_port_id
-              )}/${denomNative}`,
-              ibcConfigAb.a_port_id
-            ),
-            _getIbcDenom(
-              ibcConfigAc.b_channel_id,
-              `${ibcConfigAc.a_port_id}/${_getChannelId(
-                denomNative,
-                chain.denomIbc,
-                ibcConfigAc.a_port_id
-              )}/${denomNative}`,
-              ibcConfigAc.a_port_id
-            ),
-          ];
+          const ibcDenomAb =
+            denomNative !== "uosmo"
+              ? _getIbcDenom(
+                  ibcConfigAb.b_channel_id,
+                  `${ibcConfigAb.a_port_id}/${_getChannelId(
+                    denomNative,
+                    chain.denomIbc,
+                    ibcConfigAb.a_port_id
+                  )}/${denomNative}`,
+                  ibcConfigAb.a_port_id
+                )
+              : "uosmo";
+
+          const ibcDenomAc =
+            denomNative !== "uosmo"
+              ? _getIbcDenom(
+                  ibcConfigAc.b_channel_id,
+                  `${ibcConfigAc.a_port_id}/${_getChannelId(
+                    denomNative,
+                    chain.denomIbc,
+                    ibcConfigAc.a_port_id
+                  )}/${denomNative}`,
+                  ibcConfigAc.a_port_id
+                )
+              : "uosmo";
+
+          const ibcConfigList: string[] = [ibcDenomAb, ibcDenomAc];
 
           const fn = async () => {
             try {

@@ -34,11 +34,6 @@ function init(seed) {
             RPC: testnet_config_json_1.RPC,
             seed,
         };
-        const dappClientStructJuno = {
-            prefix: "juno",
-            RPC: "https://juno-testnet-rpc.polkachu.com:443",
-            seed,
-        };
         // dapp cosmwasm helpers
         const dappCwHelpers = yield (0, cw_helpers_1.getCwHelpers)(dappClientStruct, testnet_config_json_1.CONTRACT_ADDRESS);
         if (!dappCwHelpers)
@@ -51,20 +46,10 @@ function init(seed) {
         if (!dappSgHelpers)
             return;
         const { sgUpdatePoolList: _sgUpdatePoolList, sgTransfer: _sgTransfer, sgSend: _sgSend, } = dappSgHelpers;
-        const junoSgHelpers = yield (0, sg_helpers_1.getSgHelpers)(dappClientStructJuno);
-        if (!junoSgHelpers)
-            return;
-        const { sgDelegateFrom: _sgDelegateFrom, sgGetTokenBalances: _sgGetTokenBalances, } = junoSgHelpers;
         function sgUpdatePoolList() {
             return __awaiter(this, void 0, void 0, function* () {
                 let pools = yield _sgUpdatePoolList();
                 (0, utils_1.l)({ pools });
-            });
-        }
-        function _queryBalance() {
-            return __awaiter(this, void 0, void 0, function* () {
-                let balances = yield _sgGetTokenBalances(testnet_config_json_1.CONTRACT_ADDRESS);
-                (0, utils_1.l)({ contract: balances });
             });
         }
         // const grantStakeStruct: DelegationStruct = {
@@ -73,17 +58,6 @@ function init(seed) {
         //   tokenDenom: DENOMS.JUNO,
         //   validatorAddr: "junovaloper1w8cpaaljwrytquj86kvp9s72lvmddcc208ghun",
         // };
-        function sgDelegateFrom(stakeFromStruct) {
-            return __awaiter(this, void 0, void 0, function* () {
-                try {
-                    const tx = yield _sgDelegateFrom(stakeFromStruct);
-                    (0, utils_1.l)(tx, "\n");
-                }
-                catch (error) {
-                    (0, utils_1.l)(error, "\n");
-                }
-            });
-        }
         function sgDelegateFromAll(denomGranterValoperList, chainRegistryResponse, chainType, threshold = 10000) {
             var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r;
             return __awaiter(this, void 0, void 0, function* () {
@@ -308,9 +282,7 @@ function init(seed) {
             });
         }
         return {
-            _queryBalance,
             cwSwap,
-            sgDelegateFrom,
             sgUpdatePoolList,
             cwQueryPoolsAndUsers,
             cwMockUpdatePoolsAndUsers,

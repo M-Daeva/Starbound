@@ -1049,10 +1049,13 @@ function getUserFunds(chainRegistryResponse, queryPoolsAndUsersResponse, poolsSt
                     if (rest) {
                         const urlHolded = `${rest}/cosmos/bank/v1beta1/balances/${asset.wallet_address}`;
                         const urlStaked = `${rest}/cosmos/staking/v1beta1/delegations/${asset.wallet_address}`;
-                        const ibcConfigList = [
-                            (0, utils_1.getIbcDenom)(ibc_config_ab_json_1.default.b_channel_id, `${ibc_config_ab_json_1.default.a_port_id}/${(0, utils_1.getChannelId)(denomNative, chain.denomIbc, ibc_config_ab_json_1.default.a_port_id)}/${denomNative}`, ibc_config_ab_json_1.default.a_port_id),
-                            (0, utils_1.getIbcDenom)(ibc_config_ac_json_1.default.b_channel_id, `${ibc_config_ac_json_1.default.a_port_id}/${(0, utils_1.getChannelId)(denomNative, chain.denomIbc, ibc_config_ac_json_1.default.a_port_id)}/${denomNative}`, ibc_config_ac_json_1.default.a_port_id),
-                        ];
+                        const ibcDenomAb = denomNative !== "uosmo"
+                            ? (0, utils_1.getIbcDenom)(ibc_config_ab_json_1.default.b_channel_id, `${ibc_config_ab_json_1.default.a_port_id}/${(0, utils_1.getChannelId)(denomNative, chain.denomIbc, ibc_config_ab_json_1.default.a_port_id)}/${denomNative}`, ibc_config_ab_json_1.default.a_port_id)
+                            : "uosmo";
+                        const ibcDenomAc = denomNative !== "uosmo"
+                            ? (0, utils_1.getIbcDenom)(ibc_config_ac_json_1.default.b_channel_id, `${ibc_config_ac_json_1.default.a_port_id}/${(0, utils_1.getChannelId)(denomNative, chain.denomIbc, ibc_config_ac_json_1.default.a_port_id)}/${denomNative}`, ibc_config_ac_json_1.default.a_port_id)
+                            : "uosmo";
+                        const ibcConfigList = [ibcDenomAb, ibcDenomAc];
                         const fn = () => __awaiter(this, void 0, void 0, function* () {
                             var _m, _o, _p;
                             try {
