@@ -362,7 +362,7 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
 }
 
 pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-    const TIMEOUT_IN_MINS: u64 = 5;
+    const TIMEOUT_IN_MINS: u64 = 15;
     verify_scheduler(&deps, &info)?;
 
     let pools: Vec<(String, Pool)> = POOLS
