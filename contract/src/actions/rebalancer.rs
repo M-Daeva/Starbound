@@ -35,7 +35,7 @@ pub fn dec_to_uint128(dec: Decimal) -> Uint128 {
 pub fn u128_vec_to_uint128_vec(u128_vec: Vec<u128>) -> Vec<Uint128> {
     u128_vec
         .iter()
-        .map(|&x| Uint128::from(x as u128))
+        .map(|&x| Uint128::from(x))
         .collect::<Vec<Uint128>>()
 }
 

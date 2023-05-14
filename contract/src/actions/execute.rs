@@ -6,7 +6,7 @@ use cosmwasm_std::{
 
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as PoolCoin,
-    osmosis::gamm::v1beta1::{MsgSwapExactAmountIn, SwapAmountInRoute},
+    osmosis::{gamm::v1beta1::MsgSwapExactAmountIn, poolmanager::v1beta1::SwapAmountInRoute},
 };
 
 use crate::{
