@@ -1,10 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 
-// preventing optimizer warning message
-#[allow(unused_imports)]
-use crate::messages::response::{
-    QueryConfigResponse, QueryLedgerResponse, QueryPoolsAndUsersResponse, QueryUserResponse,
-};
+use crate::state::{Config, Ledger, PoolExtracted, User, UserExtracted};
 
 #[cw_serde]
 #[derive(QueryResponses)]
@@ -17,4 +13,25 @@ pub enum QueryMsg {
     QueryLedger {},
     #[returns(QueryConfigResponse)]
     QueryConfig {},
+}
+
+#[cw_serde]
+pub struct QueryUserResponse {
+    pub user: User,
+}
+
+#[cw_serde]
+pub struct QueryPoolsAndUsersResponse {
+    pub users: Vec<UserExtracted>,
+    pub pools: Vec<PoolExtracted>,
+}
+
+#[cw_serde]
+pub struct QueryLedgerResponse {
+    pub ledger: Ledger,
+}
+
+#[cw_serde]
+pub struct QueryConfigResponse {
+    pub config: Config,
 }

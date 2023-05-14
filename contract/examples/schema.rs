@@ -1,7 +1,7 @@
 use cosmwasm_schema::write_api;
 
 use starbound::messages::{
-    execute::ExecuteMsg, instantiate::InstantiateMsg, migrate::MigrateMsg, query::QueryMsg,
+    execute::ExecuteMsg, instantiate::InstantiateMsg, other::MigrateMsg, query::QueryMsg,
 };
 
 fn main() {

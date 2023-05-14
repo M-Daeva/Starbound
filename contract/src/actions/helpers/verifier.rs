@@ -230,7 +230,7 @@ mod test {
     use cosmwasm_std::{coin, Addr, StdError, StdError::GenericErr, Uint128};
 
     use crate::{
-        actions::rebalancer::str_to_dec,
+        actions::helpers::math::str_to_dec,
         contract::execute,
         error::{ContractError, ContractError::Std},
         messages::execute::ExecuteMsg,

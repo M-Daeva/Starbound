@@ -1,8 +1,7 @@
-use std::ops::{Div, Mul};
-
 use cosmwasm_std::{
     coin, Addr, BankMsg, Coin, CosmosMsg, Decimal, IbcMsg, IbcTimeout, Timestamp, Uint128,
 };
+use std::ops::{Div, Mul};
 
 use crate::state::{Asset, Ledger, Pool, User};
 

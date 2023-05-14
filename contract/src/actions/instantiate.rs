@@ -3,7 +3,7 @@ use cosmwasm_std::{DepsMut, Env, MessageInfo, Response, Timestamp};
 use cw2::set_contract_version;
 
 use crate::{
-    actions::rebalancer::str_to_dec,
+    actions::helpers::math::str_to_dec,
     error::ContractError,
     messages::instantiate::InstantiateMsg,
     state::{Config, Ledger, CONFIG, LEDGER},

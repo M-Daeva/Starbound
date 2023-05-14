@@ -2,7 +2,7 @@
 use cosmwasm_std::{to_binary, Binary, Deps, Env, Order, StdResult};
 
 use crate::{
-    messages::response::{
+    messages::query::{
         QueryConfigResponse, QueryLedgerResponse, QueryPoolsAndUsersResponse, QueryUserResponse,
     },
     state::{Pool, PoolExtracted, UserExtracted, CONFIG, LEDGER, POOLS, USERS},

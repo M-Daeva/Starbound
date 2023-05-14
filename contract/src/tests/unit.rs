@@ -7,13 +7,13 @@ use osmosis_testing::{
 use std::ops::{Add, Div};
 
 use crate::{
-    actions::rebalancer::{dec_to_u128, str_to_dec, u128_to_dec},
+    actions::helpers::math::{dec_to_u128, str_to_dec, u128_to_dec},
     messages::{
         execute::ExecuteMsg,
         instantiate::InstantiateMsg,
-        query::QueryMsg,
-        response::{
-            QueryConfigResponse, QueryLedgerResponse, QueryPoolsAndUsersResponse, QueryUserResponse,
+        query::{
+            QueryConfigResponse, QueryLedgerResponse, QueryMsg, QueryPoolsAndUsersResponse,
+            QueryUserResponse,
         },
     },
     state::{Asset, AssetExtracted, Pool, PoolExtracted, User, UserExtracted},

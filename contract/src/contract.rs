@@ -8,12 +8,12 @@ use crate::{
             withdraw,
         },
         instantiate::init,
-        migrate::migrate_contract,
+        other::migrate_contract,
         query::{query_config, query_ledger, query_pools_and_users, query_user},
     },
     error::ContractError,
     messages::{
-        execute::ExecuteMsg, instantiate::InstantiateMsg, migrate::MigrateMsg, query::QueryMsg,
+        execute::ExecuteMsg, instantiate::InstantiateMsg, other::MigrateMsg, query::QueryMsg,
     },
 };
 

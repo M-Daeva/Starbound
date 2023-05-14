@@ -7,14 +7,13 @@ use cosmwasm_std::{
 use cw_multi_test::{App, AppResponse, ContractWrapper, Executor};
 
 use crate::{
-    actions::rebalancer::{str_to_dec, u128_to_dec},
+    actions::helpers::math::{str_to_dec, u128_to_dec},
     contract::{execute, instantiate, query},
     error::ContractError,
     messages::{
         execute::ExecuteMsg,
         instantiate::InstantiateMsg,
-        query::QueryMsg,
-        response::{QueryPoolsAndUsersResponse, QueryUserResponse},
+        query::{QueryMsg, QueryPoolsAndUsersResponse, QueryUserResponse},
     },
     state::{Asset, Pool, PoolExtracted, User, UserExtracted},
 };

@@ -10,8 +10,8 @@ use osmosis_std::types::{
 };
 
 use crate::{
-    actions::{
-        rebalancer::{get_ledger, transfer_router},
+    actions::helpers::{
+        math::{get_ledger, transfer_router},
         verifier::{verify_deposit_data, verify_scheduler, LocalApi},
     },
     error::ContractError,

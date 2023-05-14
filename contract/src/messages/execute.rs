@@ -1,6 +1,7 @@
-use crate::state::{PoolExtracted, TransferParams, User, UserExtracted};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Decimal, Uint128};
+
+use crate::state::{PoolExtracted, TransferParams, User, UserExtracted};
 
 #[cw_serde]
 pub enum ExecuteMsg {

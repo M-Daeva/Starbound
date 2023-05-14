@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::{DepsMut, Env, Response};
 
-use crate::{error::ContractError, messages::migrate::MigrateMsg};
+use crate::{error::ContractError, messages::other::MigrateMsg};
 
 pub fn migrate_contract(
     _deps: DepsMut,
