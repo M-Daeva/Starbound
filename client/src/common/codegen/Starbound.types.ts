@@ -97,6 +97,7 @@ export interface QueryConfigResponse {
 }
 export interface Config {
   admin: Addr;
+  chain_id_dev: string;
   dapp_address_and_denom_list: [Addr, string][];
   fee_default: Decimal;
   fee_osmo: Decimal;

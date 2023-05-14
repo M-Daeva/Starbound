@@ -18,7 +18,7 @@ use crate::{
     },
     state::{Asset, AssetExtracted, Pool, PoolExtracted, User, UserExtracted},
     tests::helpers::{
-        get_initial_pools, Starbound, UserName, ADDR_ADMIN_OSMO, ADDR_ALICE_ATOM, ADDR_ALICE_OSMO,
+        get_initial_pools, Project, UserName, ADDR_ADMIN_OSMO, ADDR_ALICE_ATOM, ADDR_ALICE_OSMO,
         ADDR_BOB_ATOM, ADDR_BOB_OSMO, ADDR_BOB_SCRT, DENOM_ATOM, DENOM_EEUR, DENOM_JUNO,
         DENOM_OSMO, DENOM_SCRT, FUNDS_AMOUNT,
     },
@@ -26,51 +26,51 @@ use crate::{
 
 #[test]
 fn deposit() {
-    let mut st = Starbound::new();
-    let user = Starbound::get_user(UserName::Alice);
+    let mut prj = Project::new(None);
+    let user = Project::get_user(UserName::Alice);
 
-    st.init_pools(ADDR_ADMIN_OSMO).unwrap();
+    prj.init_pools(ADDR_ADMIN_OSMO).unwrap();
 
-    st.deposit(
+    prj.deposit(
         ADDR_ALICE_OSMO,
         &user,
         &[coin(user.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
 
-    let res = st.query_user(ADDR_ALICE_OSMO);
+    let res = prj.query_user(ADDR_ALICE_OSMO);
 
     assert_eq!(res.unwrap(), QueryUserResponse { user });
 }
 
 #[test]
 fn deposit_multiple_times_and_without_assets() {
-    let mut st = Starbound::new();
-    let mut user = Starbound::get_user(UserName::Alice);
+    let mut prj = Project::new(None);
+    let mut user = Project::get_user(UserName::Alice);
 
-    st.init_pools(ADDR_ADMIN_OSMO).unwrap();
+    prj.init_pools(ADDR_ADMIN_OSMO).unwrap();
 
-    st.deposit(
+    prj.deposit(
         ADDR_ALICE_OSMO,
         &user,
         &[coin(FUNDS_AMOUNT / 10, DENOM_EEUR)],
     )
     .unwrap();
 
-    st.deposit(
+    prj.deposit(
         ADDR_ALICE_OSMO,
         &user,
         &[coin(FUNDS_AMOUNT / 10, DENOM_EEUR)],
     )
     .unwrap();
 
-    let res = st.query_user(ADDR_ALICE_OSMO);
+    let res = prj.query_user(ADDR_ALICE_OSMO);
 
     user.deposited = Uint128::from(2 * FUNDS_AMOUNT / 10);
 
     assert_eq!(res.unwrap(), QueryUserResponse { user: user.clone() });
 
-    st.deposit(
+    prj.deposit(
         ADDR_ALICE_OSMO,
         &User {
             asset_list: vec![],
@@ -80,7 +80,7 @@ fn deposit_multiple_times_and_without_assets() {
     )
     .unwrap();
 
-    let res = st.query_user(ADDR_ALICE_OSMO);
+    let res = prj.query_user(ADDR_ALICE_OSMO);
 
     user.deposited = Uint128::from(3 * FUNDS_AMOUNT / 10);
 
@@ -89,10 +89,10 @@ fn deposit_multiple_times_and_without_assets() {
 
 #[test]
 fn deposit_unsupported_asset() {
-    let mut st = Starbound::new();
-    let user = Starbound::get_user(UserName::Alice);
+    let mut prj = Project::new(None);
+    let user = Project::get_user(UserName::Alice);
 
-    let res = st
+    let res = prj
         .deposit(
             ADDR_ALICE_OSMO,
             &user,
@@ -106,8 +106,8 @@ fn deposit_unsupported_asset() {
 // check if asset outside pool list can not be deposited (excluding osmo)
 #[test]
 fn deposit_non_pool_asset_osmo() {
-    let mut st = Starbound::new();
-    let mut user = Starbound::get_user(UserName::Alice);
+    let mut prj = Project::new(None);
+    let mut user = Project::get_user(UserName::Alice);
     user.asset_list.push(Asset::new(
         DENOM_OSMO,
         &Addr::unchecked(ADDR_ALICE_OSMO),
@@ -116,16 +116,16 @@ fn deposit_non_pool_asset_osmo() {
         Uint128::zero(),
     ));
 
-    st.init_pools(ADDR_ADMIN_OSMO).unwrap();
+    prj.init_pools(ADDR_ADMIN_OSMO).unwrap();
 
-    st.deposit(
+    prj.deposit(
         ADDR_ALICE_OSMO,
         &user,
         &[coin(user.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
 
-    let res = st.query_user(ADDR_ALICE_OSMO);
+    let res = prj.query_user(ADDR_ALICE_OSMO);
 
     assert_eq!(res.unwrap(), QueryUserResponse { user });
 }
@@ -134,8 +134,8 @@ fn deposit_non_pool_asset_osmo() {
 #[test]
 #[should_panic]
 fn deposit_non_pool_asset_scrt() {
-    let mut st = Starbound::new();
-    let mut user = Starbound::get_user(UserName::Alice);
+    let mut prj = Project::new(None);
+    let mut user = Project::get_user(UserName::Alice);
     user.asset_list.push(Asset::new(
         DENOM_SCRT,
         &Addr::unchecked(ADDR_BOB_SCRT),
@@ -144,7 +144,7 @@ fn deposit_non_pool_asset_scrt() {
         Uint128::zero(),
     ));
 
-    st.deposit(
+    prj.deposit(
         ADDR_ALICE_OSMO,
         &user,
         &[coin(user.deposited.u128(), DENOM_EEUR)],
@@ -155,12 +155,12 @@ fn deposit_non_pool_asset_scrt() {
 // check if user can not has multiple addresses on same asset
 #[test]
 fn deposit_and_update_wallet_address() {
-    let mut st = Starbound::new();
-    let mut user = Starbound::get_user(UserName::Alice);
+    let mut prj = Project::new(None);
+    let mut user = Project::get_user(UserName::Alice);
 
-    st.init_pools(ADDR_ADMIN_OSMO).unwrap();
+    prj.init_pools(ADDR_ADMIN_OSMO).unwrap();
 
-    st.deposit(
+    prj.deposit(
         ADDR_ALICE_OSMO,
         &user,
         &[coin(user.deposited.u128(), DENOM_EEUR)],
@@ -170,7 +170,7 @@ fn deposit_and_update_wallet_address() {
     // ADDR_BOB_ATOM must replace ADDR_ALICE_ATOM
     user.asset_list[0].wallet_address = Addr::unchecked(ADDR_BOB_ATOM);
 
-    st.deposit(
+    prj.deposit(
         ADDR_ALICE_OSMO,
         &User {
             deposited: Uint128::zero(),
@@ -180,7 +180,7 @@ fn deposit_and_update_wallet_address() {
     )
     .unwrap();
 
-    let res = st.query_user(ADDR_ALICE_OSMO);
+    let res = prj.query_user(ADDR_ALICE_OSMO);
 
     assert_eq!(res.unwrap().user, user);
 }
@@ -188,10 +188,10 @@ fn deposit_and_update_wallet_address() {
 // check if asset lists can be merged properly
 #[test]
 fn deposit_and_update_asset_list() {
-    let mut st = Starbound::new();
-    let user = Starbound::get_user(UserName::Alice);
+    let mut prj = Project::new(None);
+    let user = Project::get_user(UserName::Alice);
 
-    st.init_pools(ADDR_ADMIN_OSMO).unwrap();
+    prj.init_pools(ADDR_ADMIN_OSMO).unwrap();
 
     // add atom to asset list
     let asset_list = vec![Asset::new(
@@ -202,14 +202,14 @@ fn deposit_and_update_asset_list() {
         Uint128::from(100_u128), // must be ignored
     )];
 
-    st.deposit(
+    prj.deposit(
         ADDR_ALICE_OSMO,
         &User { asset_list, ..user },
         &[coin(user.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
 
-    let res = st.query_user(ADDR_ALICE_OSMO).unwrap();
+    let res = prj.query_user(ADDR_ALICE_OSMO).unwrap();
     assert_eq!(
         res.user,
         User {
@@ -225,7 +225,7 @@ fn deposit_and_update_asset_list() {
     );
 
     // add atom and juno to asset list and update it
-    st.deposit(
+    prj.deposit(
         ADDR_ALICE_OSMO,
         &User {
             deposited: Uint128::zero(),
@@ -235,19 +235,19 @@ fn deposit_and_update_asset_list() {
     )
     .unwrap();
 
-    let res = st.query_user(ADDR_ALICE_OSMO).unwrap();
+    let res = prj.query_user(ADDR_ALICE_OSMO).unwrap();
 
     assert_eq!(res.user, user);
 }
 
 #[test]
 fn withdraw() {
-    let mut st = Starbound::new();
-    let user = Starbound::get_user(UserName::Alice);
+    let mut prj = Project::new(None);
+    let user = Project::get_user(UserName::Alice);
 
-    st.init_pools(ADDR_ADMIN_OSMO).unwrap();
+    prj.init_pools(ADDR_ADMIN_OSMO).unwrap();
 
-    st.deposit(
+    prj.deposit(
         ADDR_ALICE_OSMO,
         &user,
         &[coin(user.deposited.u128(), DENOM_EEUR)],
@@ -256,9 +256,9 @@ fn withdraw() {
 
     let part_of_deposited = user.deposited.div(Uint128::from(2_u128));
 
-    st.withdraw(ADDR_ALICE_OSMO, part_of_deposited).unwrap();
+    prj.withdraw(ADDR_ALICE_OSMO, part_of_deposited).unwrap();
 
-    let res = st.query_user(ADDR_ALICE_OSMO);
+    let res = prj.query_user(ADDR_ALICE_OSMO);
 
     assert_eq!(
         res.unwrap().user,
@@ -272,21 +272,21 @@ fn withdraw() {
 #[test]
 #[should_panic]
 fn update_scheduler_before() {
-    let mut st = Starbound::new();
+    let mut prj = Project::new(None);
 
     let QueryPoolsAndUsersResponse {
         pools: res_pools,
         users: res_users,
-    } = st.query_pools_and_users().unwrap();
+    } = prj.query_pools_and_users().unwrap();
 
-    st.update_pools_and_users(ADDR_BOB_OSMO, res_pools, res_users)
+    prj.update_pools_and_users(ADDR_BOB_OSMO, res_pools, res_users)
         .unwrap();
 }
 
 #[test]
 fn update_scheduler_after() {
-    let mut st = Starbound::new();
-    let res = st
+    let mut prj = Project::new(None);
+    let res = prj
         .update_config(
             ADDR_ADMIN_OSMO,
             Some(ADDR_BOB_OSMO.to_string()),
@@ -298,59 +298,59 @@ fn update_scheduler_after() {
         )
         .unwrap();
 
-    assert_eq!(Starbound::get_attr(&res, "method"), "update_config");
+    assert_eq!(Project::get_attr(&res, "method"), "update_config");
 
     let QueryPoolsAndUsersResponse {
         pools: res_pools,
         users: res_users,
-    } = st.query_pools_and_users().unwrap();
+    } = prj.query_pools_and_users().unwrap();
 
-    st.update_pools_and_users(ADDR_BOB_OSMO, res_pools, res_users)
+    prj.update_pools_and_users(ADDR_BOB_OSMO, res_pools, res_users)
         .unwrap();
 }
 
 #[test]
 fn query_user() {
-    let mut st = Starbound::new();
-    let user_alice = Starbound::get_user(UserName::Alice);
-    let user_bob = Starbound::get_user(UserName::Bob);
+    let mut prj = Project::new(None);
+    let user_alice = Project::get_user(UserName::Alice);
+    let user_bob = Project::get_user(UserName::Bob);
 
-    st.init_pools(ADDR_ADMIN_OSMO).unwrap();
+    prj.init_pools(ADDR_ADMIN_OSMO).unwrap();
 
-    st.deposit(
+    prj.deposit(
         ADDR_ALICE_OSMO,
         &user_alice,
         &[coin(user_alice.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
-    st.deposit(
+    prj.deposit(
         ADDR_BOB_OSMO,
         &user_bob,
         &[coin(user_bob.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
 
-    let res = st.query_user(ADDR_ALICE_OSMO).unwrap();
+    let res = prj.query_user(ADDR_ALICE_OSMO).unwrap();
 
     assert_eq!(res.user, user_alice);
 }
 
 #[test]
 fn query_pools_and_users() {
-    let mut st = Starbound::new();
-    let pools = Starbound::get_pools();
-    let user_alice = Starbound::get_user(UserName::Alice);
-    let user_bob = Starbound::get_user(UserName::Bob);
+    let mut prj = Project::new(None);
+    let pools = Project::get_pools();
+    let user_alice = Project::get_user(UserName::Alice);
+    let user_bob = Project::get_user(UserName::Bob);
 
-    st.init_pools(ADDR_ADMIN_OSMO).unwrap();
+    prj.init_pools(ADDR_ADMIN_OSMO).unwrap();
 
-    st.deposit(
+    prj.deposit(
         ADDR_ALICE_OSMO,
         &user_alice,
         &[coin(user_alice.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
-    st.deposit(
+    prj.deposit(
         ADDR_BOB_OSMO,
         &user_bob,
         &[coin(user_bob.deposited.u128(), DENOM_EEUR)],
@@ -360,7 +360,7 @@ fn query_pools_and_users() {
     let QueryPoolsAndUsersResponse {
         pools: res_pools,
         users: res_users,
-    } = st.query_pools_and_users().unwrap();
+    } = prj.query_pools_and_users().unwrap();
 
     assert_eq!(
         res_pools.iter().map(|x| x.slice()).collect::<Vec<Pool>>(),
@@ -389,19 +389,19 @@ fn query_pools_and_users() {
 #[test]
 fn update_pools_and_users() {
     // initialize
-    let mut st = Starbound::new();
-    let user_alice = Starbound::get_user(UserName::Alice);
-    let user_bob = Starbound::get_user(UserName::Bob);
+    let mut prj = Project::new(None);
+    let user_alice = Project::get_user(UserName::Alice);
+    let user_bob = Project::get_user(UserName::Bob);
 
-    st.init_pools(ADDR_ADMIN_OSMO).unwrap();
+    prj.init_pools(ADDR_ADMIN_OSMO).unwrap();
 
-    st.deposit(
+    prj.deposit(
         ADDR_ALICE_OSMO,
         &user_alice,
         &[coin(user_alice.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
-    st.deposit(
+    prj.deposit(
         ADDR_BOB_OSMO,
         &user_bob,
         &[coin(user_bob.deposited.u128(), DENOM_EEUR)],
@@ -412,7 +412,7 @@ fn update_pools_and_users() {
     let QueryPoolsAndUsersResponse {
         pools: res_pools,
         users: res_users,
-    } = st.query_pools_and_users().unwrap();
+    } = prj.query_pools_and_users().unwrap();
 
     // update data
     let pools_updated = res_pools
@@ -438,7 +438,7 @@ fn update_pools_and_users() {
         })
         .collect::<Vec<UserExtracted>>();
 
-    st.update_pools_and_users(
+    prj.update_pools_and_users(
         ADDR_ADMIN_OSMO,
         pools_updated.clone(),
         users_updated.clone(),
@@ -449,7 +449,7 @@ fn update_pools_and_users() {
     let QueryPoolsAndUsersResponse {
         pools: res_pools_updated,
         users: res_users_updated,
-    } = st.query_pools_and_users().unwrap();
+    } = prj.query_pools_and_users().unwrap();
 
     assert_eq!(res_pools_updated, pools_updated);
     assert_eq!(res_users_updated, users_updated);
@@ -459,19 +459,19 @@ fn update_pools_and_users() {
 #[test]
 fn update_pools_and_users_unsupported_asset() {
     // initialize
-    let mut st = Starbound::new();
-    let user_alice = Starbound::get_user(UserName::Alice);
-    let user_bob = Starbound::get_user(UserName::Bob);
+    let mut prj = Project::new(None);
+    let user_alice = Project::get_user(UserName::Alice);
+    let user_bob = Project::get_user(UserName::Bob);
 
-    st.init_pools(ADDR_ADMIN_OSMO).unwrap();
+    prj.init_pools(ADDR_ADMIN_OSMO).unwrap();
 
-    st.deposit(
+    prj.deposit(
         ADDR_ALICE_OSMO,
         &user_alice,
         &[coin(user_alice.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
-    st.deposit(
+    prj.deposit(
         ADDR_BOB_OSMO,
         &user_bob,
         &[coin(user_bob.deposited.u128(), DENOM_EEUR)],
@@ -482,7 +482,7 @@ fn update_pools_and_users_unsupported_asset() {
     let QueryPoolsAndUsersResponse {
         pools: res_pools,
         users: res_users,
-    } = st.query_pools_and_users().unwrap();
+    } = prj.query_pools_and_users().unwrap();
 
     // update data
     let mut users_updated = res_users.clone();
@@ -492,14 +492,14 @@ fn update_pools_and_users_unsupported_asset() {
         wallet_balance: Uint128::zero(),
     });
 
-    st.update_pools_and_users(ADDR_ADMIN_OSMO, res_pools, users_updated)
+    prj.update_pools_and_users(ADDR_ADMIN_OSMO, res_pools, users_updated)
         .unwrap();
 
     // check changes
     let QueryPoolsAndUsersResponse {
         pools: _res_pools_updated,
         users: res_users_updated,
-    } = st.query_pools_and_users().unwrap();
+    } = prj.query_pools_and_users().unwrap();
 
     assert_eq!(res_users_updated, res_users);
 }
@@ -530,7 +530,7 @@ fn swap() {
     // create Gamm Module Wrapper
     let gamm = Gamm::new(&app);
 
-    let asset_prices = Starbound::get_pools()
+    let asset_prices = Project::get_pools()
         .iter()
         .map(|x| x.price)
         .collect::<Vec<Decimal>>();
@@ -666,7 +666,7 @@ fn swap() {
         stablecoin_pool_id.unwrap()
     );
 
-    let user_alice = Starbound::get_user(UserName::Alice);
+    let user_alice = Project::get_user(UserName::Alice);
 
     wasm.execute::<ExecuteMsg>(
         &contract_addr,
@@ -740,7 +740,7 @@ fn swap_with_osmo_in_asset_list() {
     // create Gamm Module Wrapper
     let gamm = Gamm::new(&app);
 
-    let asset_prices = Starbound::get_pools()
+    let asset_prices = Project::get_pools()
         .iter()
         .map(|x| x.price)
         .collect::<Vec<Decimal>>();
@@ -866,7 +866,7 @@ fn swap_with_osmo_in_asset_list() {
     .unwrap();
 
     // init user
-    let mut user_alice = Starbound::get_user(UserName::Alice);
+    let mut user_alice = Project::get_user(UserName::Alice);
 
     // create asset list with osmo
     user_alice.asset_list = vec![
@@ -1046,10 +1046,10 @@ fn swap_with_osmo_in_asset_list() {
 
 // #[test]
 // fn multi_transfer() {
-//     let mut st = Starbound::new();
-//     let user = Starbound::get_user(UserName::Alice);
+//     let mut prj = Project::new(None);
+//     let user = Project::get_user(UserName::Alice);
 
-//     st.multi_transfer(
+//     prj.multi_transfer(
 //         ADDR_ADMIN_OSMO,
 //         vec![TransferParams {
 //             amount: Uint128::from(42_u128),

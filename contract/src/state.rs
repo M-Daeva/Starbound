@@ -2,8 +2,11 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal, Timestamp, Uint128};
 use cw_storage_plus::{Item, Map};
 
-pub const CONFIG: Item<Config> = Item::new("config");
+use crate::actions::helpers::math::str_to_dec;
 
+pub const CHAIN_ID_DEV: &str = "devnet-1";
+
+pub const CONFIG: Item<Config> = Item::new("config");
 #[cw_serde]
 pub struct Config {
     pub admin: Addr,
@@ -14,10 +17,37 @@ pub struct Config {
     pub fee_osmo: Decimal,
     pub dapp_address_and_denom_list: Vec<(Addr, String)>,
     pub timestamp: Timestamp,
+    chain_id_dev: String,
+}
+
+impl Config {
+    pub fn new(
+        admin: &Addr,
+        scheduler: &Addr,
+        stablecoin_denom: &str,
+        stablecoin_pool_id: u64,
+        fee_default: &str,
+        fee_osmo: &str,
+    ) -> Self {
+        Self {
+            admin: admin.to_owned(),
+            scheduler: scheduler.to_owned(),
+            stablecoin_denom: stablecoin_denom.to_string(),
+            stablecoin_pool_id,
+            fee_default: str_to_dec(fee_default),
+            fee_osmo: str_to_dec(fee_osmo),
+            dapp_address_and_denom_list: vec![],
+            timestamp: Timestamp::default(),
+            chain_id_dev: String::from(CHAIN_ID_DEV),
+        }
+    }
+
+    pub fn get_chain_id(&self) -> String {
+        self.chain_id_dev.clone()
+    }
 }
 
 pub const LEDGER: Item<Ledger> = Item::new("ledger");
-
 #[cw_serde]
 pub struct Ledger {
     pub global_delta_balance_list: Vec<Uint128>,
@@ -28,7 +58,6 @@ pub struct Ledger {
 
 // key - denom: &str
 pub const POOLS: Map<&str, Pool> = Map::new("pools");
-
 #[cw_serde]
 pub struct Pool {
     pub id: Uint128,
@@ -52,7 +81,6 @@ impl Pool {
 
 // key - osmo_address: &Addr
 pub const USERS: Map<&Addr, User> = Map::new("users");
-
 #[cw_serde]
 pub struct User {
     pub asset_list: Vec<Asset>,

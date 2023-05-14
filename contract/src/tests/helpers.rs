@@ -15,7 +15,7 @@ use crate::{
         instantiate::InstantiateMsg,
         query::{QueryMsg, QueryPoolsAndUsersResponse, QueryUserResponse},
     },
-    state::{Asset, Pool, PoolExtracted, User, UserExtracted},
+    state::{Asset, Pool, PoolExtracted, User, UserExtracted, CHAIN_ID_DEV},
 };
 
 pub const ADDR_ADMIN_OSMO: &str = "osmo1k6ja23e7t9w2n87m2dn0cc727ag9pjkm2xlmck";
@@ -180,14 +180,18 @@ pub fn get_initial_pools() -> Vec<PoolExtracted> {
     extracted_pools
 }
 
-pub struct Starbound {
+pub struct Project {
     pub address: Addr,
     app: App,
 }
 
-impl Starbound {
-    pub fn new() -> Self {
+impl Project {
+    pub fn new(chain_id_mocked: Option<&str>) -> Self {
         let mut app = Self::create_app();
+        // set specific chain_id to prevent execution of mocked actions on real networks
+        let chain_id = chain_id_mocked.unwrap_or(CHAIN_ID_DEV);
+        app.update_block(|block| block.chain_id = String::from(chain_id));
+
         let id = Self::store_code(&mut app);
         let address = Self::instantiate(&mut app, id);
 

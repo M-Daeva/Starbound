@@ -152,49 +152,37 @@ pub fn update_config(
         deps.storage,
         |mut config| -> Result<Config, ContractError> {
             if info.sender != config.admin {
-                return Err(ContractError::Unauthorized {});
+                Err(ContractError::Unauthorized {})?;
             }
 
-            if let Some(scheduler) = scheduler {
-                config = Config {
-                    scheduler: deps.api.addr_validate(&scheduler)?,
-                    ..config
-                };
+            if let Some(x) = scheduler {
+                config.scheduler = deps.api.addr_validate(&x)?;
             }
 
-            if let Some(stablecoin_denom) = stablecoin_denom {
+            if let Some(x) = stablecoin_denom {
                 // pool id must be updated same time as denom
-                config = Config {
-                    stablecoin_denom,
-                    stablecoin_pool_id: stablecoin_pool_id
-                        .ok_or(ContractError::StablePoolIdIsNotUpdated {})?,
-                    ..config
-                };
+                config.stablecoin_denom = x;
+                config.stablecoin_pool_id =
+                    stablecoin_pool_id.ok_or(ContractError::StablePoolIdIsNotUpdated {})?;
             }
 
-            if let Some(fee_default) = fee_default {
-                config = Config {
-                    fee_default,
-                    ..config
-                };
+            if let Some(x) = fee_default {
+                config.fee_default = x;
             }
 
-            if let Some(fee_osmo) = fee_osmo {
-                config = Config { fee_osmo, ..config };
+            if let Some(x) = fee_osmo {
+                config.fee_osmo = x;
             }
 
-            if let Some(dapp_address_and_denom_list) = dapp_address_and_denom_list {
+            if let Some(x) = dapp_address_and_denom_list {
                 let mut verified_list: Vec<(Addr, String)> = vec![];
                 let api = LocalApi::default();
 
-                for (address, denom) in dapp_address_and_denom_list {
+                for (address, denom) in x {
                     verified_list.push((api.addr_validate(&address)?, denom));
                 }
 
-                config = Config {
-                    dapp_address_and_denom_list: verified_list,
-                    ..config
-                };
+                config.dapp_address_and_denom_list = verified_list;
             }
 
             Ok(config)

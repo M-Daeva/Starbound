@@ -495,6 +495,7 @@
           "type": "object",
           "required": [
             "admin",
+            "chain_id_dev",
             "dapp_address_and_denom_list",
             "fee_default",
             "fee_osmo",
@@ -506,6 +507,9 @@
           "properties": {
             "admin": {
               "$ref": "#/definitions/Addr"
+            },
+            "chain_id_dev": {
+              "type": "string"
             },
             "dapp_address_and_denom_list": {
               "type": "array",
