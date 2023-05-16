@@ -6,8 +6,8 @@
 
 import { CosmWasmClient, SigningCosmWasmClient, ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 import { Coin, StdFee } from "@cosmjs/amino";
-import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, Timestamp, Uint64, User, Asset, PoolExtracted, UserExtracted, AssetExtracted, TransferParams, QueryMsg, MigrateMsg, QueryConfigResponse, Config, QueryLedgerResponse, Ledger, QueryPoolsAndUsersResponse, QueryUserResponse } from "./Starbound.types";
-export interface StarboundReadOnlyInterface {
+import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, Timestamp, Uint64, User, Asset, PoolExtracted, UserExtracted, AssetExtracted, TransferParams, QueryMsg, MigrateMsg, QueryConfigResponse, Config, QueryLedgerResponse, Ledger, QueryPoolsAndUsersResponse, QueryUserResponse } from "./StarboundOsmosis.types";
+export interface StarboundOsmosisReadOnlyInterface {
   contractAddress: string;
   queryUser: ({
     address
@@ -18,7 +18,7 @@ export interface StarboundReadOnlyInterface {
   queryLedger: () => Promise<QueryLedgerResponse>;
   queryConfig: () => Promise<QueryConfigResponse>;
 }
-export class StarboundQueryClient implements StarboundReadOnlyInterface {
+export class StarboundOsmosisQueryClient implements StarboundOsmosisReadOnlyInterface {
   client: CosmWasmClient;
   contractAddress: string;
 
@@ -58,7 +58,7 @@ export class StarboundQueryClient implements StarboundReadOnlyInterface {
     });
   };
 }
-export interface StarboundInterface extends StarboundReadOnlyInterface {
+export interface StarboundOsmosisInterface extends StarboundOsmosisReadOnlyInterface {
   contractAddress: string;
   sender: string;
   deposit: ({
@@ -101,7 +101,7 @@ export interface StarboundInterface extends StarboundReadOnlyInterface {
     params: TransferParams[];
   }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
 }
-export class StarboundClient extends StarboundQueryClient implements StarboundInterface {
+export class StarboundOsmosisClient extends StarboundOsmosisQueryClient implements StarboundOsmosisInterface {
   client: SigningCosmWasmClient;
   sender: string;
   contractAddress: string;

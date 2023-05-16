@@ -2,7 +2,10 @@
   import { l } from "../../../common/utils";
   import { Bar } from "svelte-chartjs";
   import { get } from "svelte/store";
-  import type { Asset, User } from "../../../common/codegen/Starbound.types";
+  import type {
+    Asset,
+    User,
+  } from "../../../common/codegen/StarboundOsmosis.types";
   import {
     // deposit as _deposit,
     // withdraw as _withdraw,

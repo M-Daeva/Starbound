@@ -6,7 +6,7 @@ import ibcConfigAc from "../config/ibc-config-ac.json";
 import {
   PoolExtracted,
   QueryPoolsAndUsersResponse,
-} from "../codegen/Starbound.types";
+} from "../codegen/StarboundOsmosis.types";
 import {
   l,
   createRequest,

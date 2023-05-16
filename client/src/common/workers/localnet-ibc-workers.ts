@@ -2,7 +2,7 @@ import { l, SEP } from "../utils";
 import { getCwHelpers } from "../helpers/cw-helpers";
 import { getSgHelpers } from "../helpers/sg-helpers";
 import { DENOMS } from "../helpers/assets";
-import { TransferParams, Asset, User } from "../codegen/Starbound.types";
+import { TransferParams, Asset, User } from "../codegen/StarboundOsmosis.types";
 import {
   IbcStruct,
   SwapStruct,

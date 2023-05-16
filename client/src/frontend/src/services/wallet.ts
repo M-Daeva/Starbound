@@ -1,5 +1,5 @@
 import { init as _init } from "../../../common/workers/testnet-frontend-workers";
-import type { User } from "../../../common/codegen/Starbound.types";
+import type { User } from "../../../common/codegen/StarboundOsmosis.types";
 import { getAddrByChainPrefix, initWalletList } from "../../../common/signers";
 import { get } from "svelte/store";
 import { l } from "../../../common/utils";

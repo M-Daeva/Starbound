@@ -1,7 +1,7 @@
 import { Coin, DeliverTxResponse } from "@cosmjs/stargate";
 import { Keplr } from "@keplr-wallet/types";
 import Decimal from "decimal.js";
-import { QueryPoolsAndUsersResponse } from "../../common/codegen/Starbound.types";
+import { QueryPoolsAndUsersResponse } from "../../common/codegen/StarboundOsmosis.types";
 
 // TODO: split to different files for better navigation
 

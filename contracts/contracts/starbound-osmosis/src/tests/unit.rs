@@ -24,6 +24,8 @@ use crate::{
     },
 };
 
+const PATH_TO_WASM: &str = "../../artifacts/starbound_osmosis.wasm";
+
 #[test]
 fn deposit() {
     let mut prj = Project::new(None);
@@ -577,7 +579,7 @@ fn swap() {
     let bank = Bank::new(&app);
 
     // Load compiled wasm bytecode
-    let wasm_byte_code = std::fs::read("./artifacts/starbound.wasm").unwrap();
+    let wasm_byte_code = std::fs::read(PATH_TO_WASM).unwrap();
     let code_id = wasm
         .store_code(&wasm_byte_code, None, admin)
         .unwrap()
@@ -787,7 +789,7 @@ fn swap_with_osmo_in_asset_list() {
     let bank = Bank::new(&app);
 
     // Load compiled wasm bytecode
-    let wasm_byte_code = std::fs::read("./artifacts/starbound.wasm").unwrap();
+    let wasm_byte_code = std::fs::read(PATH_TO_WASM).unwrap();
     let code_id = wasm
         .store_code(&wasm_byte_code, None, admin)
         .unwrap()

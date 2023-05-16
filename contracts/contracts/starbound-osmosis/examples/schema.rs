@@ -1,6 +1,6 @@
 use cosmwasm_schema::write_api;
 
-use starbound::messages::{
+use starbound_osmosis::messages::{
     execute::ExecuteMsg, instantiate::InstantiateMsg, other::MigrateMsg, query::QueryMsg,
 };
 

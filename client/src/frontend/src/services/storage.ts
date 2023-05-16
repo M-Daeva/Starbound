@@ -7,7 +7,7 @@ import { getAddrByPrefix } from "../../../common/signers";
 import type {
   PoolExtracted,
   User,
-} from "../../../common/codegen/Starbound.types";
+} from "../../../common/codegen/StarboundOsmosis.types";
 import type {
   NetworkData,
   IbcResponse,

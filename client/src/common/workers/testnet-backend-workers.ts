@@ -17,7 +17,7 @@ import {
   UserExtracted,
   // TransferParams,
   PoolExtracted,
-} from "../codegen/Starbound.types";
+} from "../codegen/StarboundOsmosis.types";
 import {
   DelegationStruct,
   ClientStructWithoutKeplr,

@@ -1,6 +1,9 @@
 import { init } from "../src/common/workers/testnet-combined-workers";
 
 async function main() {
+  const helpers = await init();
+  if (!helpers) return;
+
   const {
     cwQueryPoolsAndUsers,
     cwDepositAlice,
@@ -10,7 +13,7 @@ async function main() {
     cwQueryUser,
     cwSwap,
     cwTransfer,
-  } = await init();
+  } = helpers;
 
   let r = await cwQueryPoolsAndUsers();
   console.log(r);

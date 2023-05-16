@@ -3,14 +3,14 @@ import { getCwClient, fee, signAndBroadcastWrapper } from "../signers";
 import { ClientStruct, UpdateConfigStruct } from "./interfaces";
 import { DENOMS } from "./assets";
 import { MsgExecuteContractEncodeObject, Coin } from "cosmwasm";
-import { StarboundClient } from "../codegen/Starbound.client";
-import { StarboundMessageComposer } from "../codegen/Starbound.message-composer";
+import { StarboundOsmosisClient as StarboundClient } from "../codegen/StarboundOsmosis.client";
+import { StarboundOsmosisMessageComposer as StarboundMessageComposer } from "../codegen/StarboundOsmosis.message-composer";
 import {
   User,
   PoolExtracted,
   UserExtracted,
   TransferParams,
-} from "../codegen/Starbound.types";
+} from "../codegen/StarboundOsmosis.types";
 
 async function getCwHelpers(
   clientStruct: ClientStruct,

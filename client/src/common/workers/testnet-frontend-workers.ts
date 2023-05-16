@@ -2,7 +2,7 @@ import { l } from "../utils";
 import { getCwHelpers } from "../helpers/cw-helpers";
 import { getSgHelpers } from "../helpers/sg-helpers";
 import { initWalletList } from "../signers";
-import { type User } from "../codegen/Starbound.types";
+import { type User } from "../codegen/StarboundOsmosis.types";
 import {
   type ClientStructWithKeplr,
   type ChainRegistryStorage,

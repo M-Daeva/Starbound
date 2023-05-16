@@ -9,7 +9,7 @@ import {
   QueryPoolsAndUsersResponse,
   PoolExtracted,
   UserExtracted,
-} from "../codegen/Starbound.types";
+} from "../codegen/StarboundOsmosis.types";
 import {
   DelegationStruct,
   ClientStructWithoutKeplr,

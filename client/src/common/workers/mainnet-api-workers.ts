@@ -1,6 +1,9 @@
 import { l } from "../utils";
-import { PoolExtracted, UserExtracted } from "../codegen/Starbound.types";
 import { initStorage } from "../../backend/storages";
+import {
+  PoolExtracted,
+  UserExtracted,
+} from "../codegen/StarboundOsmosis.types";
 import {
   updatePoolsAndUsers as _updatePoolsAndUsers,
   getValidators as _getValidators,
