@@ -43,4 +43,4 @@ R="{
 \"SEED_BOB\":\"$SEED_BOB\",
 \"SEED_DAPP\":\"$SEED_DAPP\"
 }"
-echo $R > ../../client/src/common/config/testnet2-config.json
+echo $R > ../../client/src/common/config/testnet-config.json
