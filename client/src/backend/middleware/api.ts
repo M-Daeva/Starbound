@@ -26,7 +26,7 @@ import {
 } from "../../common/helpers/api-helpers";
 
 const allowList: [string, string, string[]][] = [
-  ["osmo", "test", ["https://rpc-test.osmosis.zone/"]],
+  ["osmo", "test", ["https://rpc.osmotest5.osmosis.zone/"]],
   ["secret", "test", ["https://rpc.pulsar.scrttestnet.com/"]],
 ];
 const ignoreList: [string, string, string[]][] = [];
@@ -46,12 +46,14 @@ let poolsAndUsersStorage = initStorage<PoolsAndUsersStorage>(
   "pools-and-users-storage"
 );
 
-async function updateChainRegistry() {
+async function updateChainRegistry(seed?: string) {
   try {
-    const encryptionKey = getEncryptionKey();
-    if (!encryptionKey) throw new Error("Key is not found!");
+    if (!seed) {
+      const encryptionKey = getEncryptionKey();
+      if (!encryptionKey) throw new Error("Key is not found!");
 
-    const seed = decrypt(SEED_DAPP, encryptionKey);
+      seed = decrypt(SEED_DAPP, encryptionKey);
+    }
     if (!seed) throw new Error("Key is wrong!");
 
     const res = mergeChainRegistry(
@@ -200,12 +202,14 @@ async function getUserFunds(userOsmoAddress: string) {
   return userFunds.filter(([address]) => addressList.includes(address));
 }
 
-async function updatePoolsAndUsers() {
+async function updatePoolsAndUsers(seed?: string) {
   try {
-    const encryptionKey = getEncryptionKey();
-    if (!encryptionKey) throw new Error("Key is not found!");
+    if (!seed) {
+      const encryptionKey = getEncryptionKey();
+      if (!encryptionKey) throw new Error("Key is not found!");
 
-    const seed = decrypt(SEED_DAPP, encryptionKey);
+      seed = decrypt(SEED_DAPP, encryptionKey);
+    }
     if (!seed) throw new Error("Key is wrong!");
 
     const helpers = await init(seed);
@@ -239,12 +243,12 @@ async function filterChainRegistry() {
   );
 }
 
-async function updateAll() {
+async function updateAll(seed?: string) {
   // request contract data
-  const resCw = await updatePoolsAndUsers();
+  const resCw = await updatePoolsAndUsers(seed);
 
   // process it and request data from other sources
-  const resChainRegistry = await updateChainRegistry();
+  const resChainRegistry = await updateChainRegistry(seed);
   const res = await Promise.all([
     updateIbcChannels(),
     updatePools(),

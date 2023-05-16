@@ -1,20 +1,16 @@
 import { CHAIN_TYPE, DAPP_ADDRESS } from "../envs";
-import { decrypt } from "../../common/utils";
 import { getGasPriceFromChainRegistryItem } from "../../common/signers";
 import { init } from "../../common/workers/testnet-backend-workers";
-import { getEncryptionKey } from "../middleware/key";
 import { SEED_DAPP } from "../../common/config/testnet-config.json";
-import { updatePoolsAndUsers as _updatePoolsAndUsers } from "../../common/helpers/api-helpers";
+import {
+  updatePoolsAndUsers,
+  getDappAddressAndDenomList,
+} from "../../common/helpers/api-helpers";
 import { getChainRegistry, getPools } from "../middleware/api";
+import { getSeed } from "./get-seed";
 
 async function initContract() {
-  const encryptionKey = getEncryptionKey();
-  if (!encryptionKey) return;
-
-  const seed = decrypt(SEED_DAPP, encryptionKey);
-  if (!seed) return;
-
-  const helpers = await init(seed);
+  const helpers = await init(await getSeed(SEED_DAPP));
   if (!helpers) return;
 
   const { cwQueryPoolsAndUsers, cwUpdatePoolsAndUsers, cwUpdateConfig } =
@@ -45,7 +41,7 @@ async function initContract() {
   // add pools
   const poolsAndUsers = await cwQueryPoolsAndUsers();
 
-  const res = await _updatePoolsAndUsers(
+  const res = await updatePoolsAndUsers(
     chainRegistry,
     poolsAndUsers,
     poolsStorage,
