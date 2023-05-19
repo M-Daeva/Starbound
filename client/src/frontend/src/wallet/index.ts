@@ -2,8 +2,7 @@ import { init as _init } from "../../../common/workers/testnet-frontend-workers"
 import type { User } from "../../../common/codegen/StarboundOsmosis.types";
 import { getAddrByChainPrefix, initWalletList } from "../../../common/signers";
 import { get } from "svelte/store";
-import { l } from "../../../common/utils";
-import { displayModal } from "./helpers";
+import { displayModal } from "../services/helpers";
 import { type ChainRegistryStorage } from "../../../common/helpers/interfaces";
 import {
   addressStorage,
@@ -22,12 +21,6 @@ async function init(chains: ChainRegistryStorage, chainType: "main" | "test") {
   async function withdraw(amount: number) {
     const { cwWithdraw } = await _init(chains, chainType);
     return await cwWithdraw(amount);
-  }
-
-  // TODO: for debugging - remove it later
-  async function queryPoolsAndUsers() {
-    const { cwQueryPoolsAndUsers } = await _init(chains, chainType);
-    return await cwQueryPoolsAndUsers();
   }
 
   async function queryUser(address: string) {
@@ -69,7 +62,6 @@ async function init(chains: ChainRegistryStorage, chainType: "main" | "test") {
   return {
     deposit,
     withdraw,
-    queryPoolsAndUsers,
     queryUser,
     initCwHandler,
     setUserContractStorage,

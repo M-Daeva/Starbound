@@ -1,11 +1,11 @@
 <script lang="ts">
   import { Router, Link, Route } from "svelte-navigator";
-  import Home from "./routes/Home.svelte";
-  import Dashboard from "./routes/Dashboard.svelte";
-  import Assets from "./routes/Assets.svelte";
-  import Bank from "./routes/Bank.svelte";
-  import NotFound from "./routes/NotFound.svelte";
-  import { init } from "./services/wallet";
+  import Home from "./pages/Home.svelte";
+  import Dashboard from "./pages/Dashboard.svelte";
+  import Assets from "./pages/Assets.svelte";
+  import Bank from "./pages/Bank.svelte";
+  import NotFound from "./pages/NotFound.svelte";
+  import { init } from "./wallet";
   import Modal from "./components/Modal.svelte";
   import { displayAddress, getImageUrl } from "./services/helpers";
   import { get } from "svelte/store";

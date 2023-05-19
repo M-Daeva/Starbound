@@ -1,7 +1,7 @@
 import { type Writable, get, writable } from "svelte/store";
 import { createRequest, l } from "../../../common/utils";
 import { baseURL } from "../config";
-import { init } from "./wallet";
+import { init } from "../wallet";
 import { getValidatorListBySymbol, sortAssets } from "./helpers";
 import { getAddrByPrefix } from "../../../common/signers";
 import type {

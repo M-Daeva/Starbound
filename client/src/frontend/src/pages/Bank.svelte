@@ -11,7 +11,7 @@
     // withdraw as _withdraw,
     // queryPoolsAndUsers as _queryPoolsAndUsers,
     init,
-  } from "../services/wallet";
+  } from "../wallet";
   import {
     calcTimeDiff,
     getTimeUntilRebalancing,
