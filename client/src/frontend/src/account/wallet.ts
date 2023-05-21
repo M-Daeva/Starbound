@@ -6,10 +6,10 @@ import { displayModal } from "../services/helpers";
 import { type ChainRegistryStorage } from "../../../common/interfaces";
 import {
   addressStorage,
-  LOCAL_STORAGE_KEY,
   chainRegistryStorage,
   CHAIN_TYPE,
   userContractStorage,
+  ls,
 } from "../services/storage";
 
 async function init(chains: ChainRegistryStorage, chainType: "main" | "test") {
@@ -45,7 +45,7 @@ async function init(chains: ChainRegistryStorage, chainType: "main" | "test") {
       }
 
       addressStorage.set(address);
-      localStorage.setItem(LOCAL_STORAGE_KEY, address);
+      ls.set(address);
       window.location.reload();
     } catch (error) {
       displayModal(error);
