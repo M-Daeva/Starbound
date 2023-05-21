@@ -18,85 +18,87 @@ import {
 } from "../middleware/api";
 
 async function updateChainRegistry(_req: Request, res: Response) {
-  let data = await _updateChainRegistry();
+  const data = await _updateChainRegistry();
   res.send(data);
 }
 
 async function getChainRegistry(_req: Request, res: Response) {
-  let data = await _getChainRegistry();
+  const data = await _getChainRegistry();
   res.send(data);
 }
 
 async function updateIbcChannels(_req: Request, res: Response) {
-  let data = await _updateIbcChannels();
+  const data = await _updateIbcChannels();
   res.send(data);
 }
 
 async function getIbcChannnels(_req: Request, res: Response) {
-  let data = await _getIbcChannnels();
+  const data = await _getIbcChannnels();
   res.send(data);
 }
 
 async function updatePools(_req: Request, res: Response) {
-  let data = await _updatePools();
+  const data = await _updatePools();
   res.send(data);
 }
 
 async function getPools(_req: Request, res: Response) {
-  let data = await _getPools();
+  const data = await _getPools();
   res.send(data);
 }
 
 async function updateValidators(_req: Request, res: Response) {
-  let data = await _updateValidators();
+  const data = await _updateValidators();
   res.send(data);
 }
 
 async function getValidators(_req: Request, res: Response) {
-  let data = await _getValidators();
+  const data = await _getValidators();
   res.send(data);
 }
 
 async function updateUserFunds(_req: Request, res: Response) {
-  let data = await _updateUserFunds();
+  const data = await _updateUserFunds();
   res.send(data);
 }
 
 async function getUserFunds(req: Request, res: Response) {
-  let { userOsmoAddress } = req.query as unknown as {
+  const { userOsmoAddress } = req.query as unknown as {
     userOsmoAddress: string | undefined;
   };
   if (!userOsmoAddress) return;
-  let data = await _getUserFunds(userOsmoAddress);
+  const data = await _getUserFunds(userOsmoAddress);
   res.send(data);
 }
 
 async function updatePoolsAndUsers(_req: Request, res: Response) {
-  let data = await _updatePoolsAndUsers();
+  const data = await _updatePoolsAndUsers();
   res.send(data);
 }
 
 async function getPoolsAndUsers(_req: Request, res: Response) {
-  let data = await _getPoolsAndUsers();
+  const data = await _getPoolsAndUsers();
   res.send(data);
 }
 
 async function filterChainRegistry(_req: Request, res: Response) {
-  let data = await _filterChainRegistry();
+  const data = await _filterChainRegistry();
   res.send(data);
 }
 
 async function updateAll(_req: Request, res: Response) {
-  let data = await _updateAll();
+  const data = await _updateAll();
   res.send(data);
 }
 
+// userOsmoAddress presence is not required to get other data
+// comparing to getUserFunds()
 async function getAll(req: Request, res: Response) {
-  let { userOsmoAddress } = req.query as {
+  const { userOsmoAddress } = req.query as {
     userOsmoAddress: string | undefined;
   };
-  if (!userOsmoAddress) return;
-  let data = await _getAll(userOsmoAddress);
+
+  const data = await _getAll(userOsmoAddress);
   res.send(data);
 }
 

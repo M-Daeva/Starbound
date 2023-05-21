@@ -240,7 +240,7 @@ async function updateAll() {
   return [resCw, resChainRegistry, ...res];
 }
 
-async function getAll(userOsmoAddress: string) {
+async function getAll(userOsmoAddress?: string) {
   const { activeNetworks, chainRegistry, ibcChannels, pools } =
     _filterChainRegistry(
       chainRegistryStorage.get(),
@@ -250,7 +250,7 @@ async function getAll(userOsmoAddress: string) {
       CHAIN_TYPE
     );
 
-  let userFunds = await getUserFunds(userOsmoAddress);
+  const userFunds = userOsmoAddress ? await getUserFunds(userOsmoAddress) : [];
 
   return {
     activeNetworks,
