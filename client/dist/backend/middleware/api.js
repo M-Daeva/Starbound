@@ -201,7 +201,7 @@ exports.updateAll = updateAll;
 function getAll(userOsmoAddress) {
     return __awaiter(this, void 0, void 0, function* () {
         const { activeNetworks, chainRegistry, ibcChannels, pools } = (0, helpers_1.filterChainRegistry)(chainRegistryStorage.get(), ibcChannelsStorage.get(), poolsStorage.get(), validatorsStorage.get(), envs_1.CHAIN_TYPE);
-        let userFunds = yield getUserFunds(userOsmoAddress);
+        const userFunds = userOsmoAddress ? yield getUserFunds(userOsmoAddress) : [];
         return {
             activeNetworks,
             chainRegistry,

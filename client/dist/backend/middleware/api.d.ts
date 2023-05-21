@@ -39,7 +39,7 @@ declare function updateAll(): Promise<{
     fn: string;
     updateStatus: string;
 }[]>;
-declare function getAll(userOsmoAddress: string): Promise<{
+declare function getAll(userOsmoAddress?: string): Promise<{
     activeNetworks: import("../../common/codegen/StarboundOsmosis.types").PoolExtracted[];
     chainRegistry: import("../../common/interfaces").NetworkData[];
     ibcChannels: import("../../common/interfaces").IbcResponse[];

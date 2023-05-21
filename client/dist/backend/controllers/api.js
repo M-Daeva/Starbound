@@ -13,111 +13,111 @@ exports.getAll = exports.updateAll = exports.filterChainRegistry = exports.getPo
 const api_1 = require("../middleware/api");
 function updateChainRegistry(_req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        let data = yield (0, api_1.updateChainRegistry)();
+        const data = yield (0, api_1.updateChainRegistry)();
         res.send(data);
     });
 }
 exports.updateChainRegistry = updateChainRegistry;
 function getChainRegistry(_req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        let data = yield (0, api_1.getChainRegistry)();
+        const data = yield (0, api_1.getChainRegistry)();
         res.send(data);
     });
 }
 exports.getChainRegistry = getChainRegistry;
 function updateIbcChannels(_req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        let data = yield (0, api_1.updateIbcChannels)();
+        const data = yield (0, api_1.updateIbcChannels)();
         res.send(data);
     });
 }
 exports.updateIbcChannels = updateIbcChannels;
 function getIbcChannnels(_req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        let data = yield (0, api_1.getIbcChannnels)();
+        const data = yield (0, api_1.getIbcChannnels)();
         res.send(data);
     });
 }
 exports.getIbcChannnels = getIbcChannnels;
 function updatePools(_req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        let data = yield (0, api_1.updatePools)();
+        const data = yield (0, api_1.updatePools)();
         res.send(data);
     });
 }
 exports.updatePools = updatePools;
 function getPools(_req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        let data = yield (0, api_1.getPools)();
+        const data = yield (0, api_1.getPools)();
         res.send(data);
     });
 }
 exports.getPools = getPools;
 function updateValidators(_req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        let data = yield (0, api_1.updateValidators)();
+        const data = yield (0, api_1.updateValidators)();
         res.send(data);
     });
 }
 exports.updateValidators = updateValidators;
 function getValidators(_req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        let data = yield (0, api_1.getValidators)();
+        const data = yield (0, api_1.getValidators)();
         res.send(data);
     });
 }
 exports.getValidators = getValidators;
 function updateUserFunds(_req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        let data = yield (0, api_1.updateUserFunds)();
+        const data = yield (0, api_1.updateUserFunds)();
         res.send(data);
     });
 }
 exports.updateUserFunds = updateUserFunds;
 function getUserFunds(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        let { userOsmoAddress } = req.query;
+        const { userOsmoAddress } = req.query;
         if (!userOsmoAddress)
             return;
-        let data = yield (0, api_1.getUserFunds)(userOsmoAddress);
+        const data = yield (0, api_1.getUserFunds)(userOsmoAddress);
         res.send(data);
     });
 }
 exports.getUserFunds = getUserFunds;
 function updatePoolsAndUsers(_req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        let data = yield (0, api_1.updatePoolsAndUsers)();
+        const data = yield (0, api_1.updatePoolsAndUsers)();
         res.send(data);
     });
 }
 exports.updatePoolsAndUsers = updatePoolsAndUsers;
 function getPoolsAndUsers(_req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        let data = yield (0, api_1.getPoolsAndUsers)();
+        const data = yield (0, api_1.getPoolsAndUsers)();
         res.send(data);
     });
 }
 exports.getPoolsAndUsers = getPoolsAndUsers;
 function filterChainRegistry(_req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        let data = yield (0, api_1.filterChainRegistry)();
+        const data = yield (0, api_1.filterChainRegistry)();
         res.send(data);
     });
 }
 exports.filterChainRegistry = filterChainRegistry;
 function updateAll(_req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        let data = yield (0, api_1.updateAll)();
+        const data = yield (0, api_1.updateAll)();
         res.send(data);
     });
 }
 exports.updateAll = updateAll;
+// userOsmoAddress presence is not required to get other data
+// comparing to getUserFunds()
 function getAll(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        let { userOsmoAddress } = req.query;
-        if (!userOsmoAddress)
-            return;
-        let data = yield (0, api_1.getAll)(userOsmoAddress);
+        const { userOsmoAddress } = req.query;
+        const data = yield (0, api_1.getAll)(userOsmoAddress);
         res.send(data);
     });
 }
