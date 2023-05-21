@@ -1,4 +1,4 @@
-export declare const IS_PRODUCTION: boolean, PATH_TO_STATIC: string, PORT: string, BASE_URL: {
+export declare const IS_PRODUCTION: boolean, PATH_TO_STATIC: string, PATH_TO_ENCRYPTION_KEY: string, PORT: string, BASE_URL: {
     DEV: string;
     PROD: string;
     PROXY: string;

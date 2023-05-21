@@ -11,6 +11,7 @@ const e = process.env as { [key: string]: string };
 
 export const IS_PRODUCTION = e.IS_PRODUCTION === "true",
   PATH_TO_STATIC = e.PATH_TO_STATIC_FROM_ROOT_DIR,
+  PATH_TO_ENCRYPTION_KEY = rootPath(e.PATH_TO_ENCRYPTION_KEY),
   PORT = e.PORT,
   BASE_URL = {
     DEV: `${e.BASE_URL_DEV}:${e.PORT}`,

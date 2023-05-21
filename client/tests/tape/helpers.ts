@@ -1,5 +1,5 @@
 import test from "tape";
-import { trimDecimal } from "../../src/common/helpers/general";
+import { trimDecimal } from "../../src/common/utils";
 
 test("Testing general helpers", (a) => {
   const priceListSrc = [

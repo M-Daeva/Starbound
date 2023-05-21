@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 import { l, calcTimeDelta } from "../../../common/utils";
 import type { DeliverTxResponse } from "@cosmjs/cosmwasm-stargate";
-import type { AssetListItem } from "../../../common/helpers/interfaces";
+import type { AssetListItem } from "../../../common/interfaces";
 import {
   chainRegistryStorage,
   poolsStorage,

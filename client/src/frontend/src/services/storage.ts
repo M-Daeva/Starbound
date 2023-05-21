@@ -1,9 +1,9 @@
 import { type Writable, get, writable } from "svelte/store";
-import { createRequest, l } from "../../../common/utils";
+import { Request, l } from "../../../common/utils";
 import { baseURL } from "../config";
-import { init } from "../wallet";
+import { init } from "../account/wallet";
 import { getValidatorListBySymbol, sortAssets } from "./helpers";
-import { getAddrByPrefix } from "../../../common/signers";
+import { getAddrByPrefix } from "../../../common/account/clients";
 import type {
   PoolExtracted,
   User,
@@ -17,7 +17,7 @@ import type {
   AuthzHandler,
   UserBalance,
   TimeInHoursAndMins,
-} from "../../../common/helpers/interfaces";
+} from "../../../common/interfaces";
 
 // global constants
 const STABLECOIN_SYMBOL = "EEUR";
@@ -65,7 +65,7 @@ let txResStorage: Writable<["Success" | "Error", string]> = writable([
   "",
 ]);
 
-let req = createRequest({ baseURL: baseURL + "/api" });
+let req = new Request({ baseURL: baseURL + "/api" });
 
 // request main storages
 async function getRegistryChannelsPools(): Promise<{

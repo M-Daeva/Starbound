@@ -1,7 +1,7 @@
 import {
   getValidators,
   updatePoolsAndUsers,
-} from "../src/common/workers/mainnet-api-workers";
+} from "../src/backend/account/mainnet-api-workers";
 
 async function main() {
   await getValidators();

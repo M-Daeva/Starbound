@@ -1,7 +1,8 @@
-import axios, { AxiosRequestConfig } from "axios";
+import axios, { AxiosRequestConfig, AxiosInstance } from "axios";
 import path from "path";
 import { SHA256, AES, enc } from "crypto-js";
-import { TimeInHoursAndMins } from "../helpers/interfaces";
+import { TimeInHoursAndMins } from "../interfaces";
+import { Decimal } from "decimal.js";
 
 const l = console.log.bind(console);
 
@@ -18,26 +19,20 @@ function rootPath(dir: string) {
   return path.resolve(__dirname, "../../../", dir);
 }
 
-const SEP =
-  "////////////////////////////////////////////////////////////////////////////////////\n";
+class Request {
+  private req: AxiosInstance;
 
-function createRequest(config: Object) {
-  const req = axios.create(config);
+  constructor(config: Object = {}) {
+    this.req = axios.create(config);
+  }
 
-  return {
-    get: async (url: string, config?: Object) => {
-      return (await req.get(url, config)).data;
-    },
-    post: async (url: string, params: Object, config?: AxiosRequestConfig) => {
-      return (await req.post(url, params, config)).data;
-    },
-    put: async (url: string, params: Object, config?: AxiosRequestConfig) => {
-      return (await req.put(url, params, config)).data;
-    },
-    patch: async (url: string, params: Object, config?: AxiosRequestConfig) => {
-      return (await req.patch(url, params, config)).data;
-    },
-  };
+  async get(url: string, config?: Object) {
+    return (await this.req.get(url, config)).data;
+  }
+
+  async post(url: string, params: Object, config?: AxiosRequestConfig) {
+    return (await this.req.post(url, params, config)).data;
+  }
 }
 
 async function specifyTimeout(
@@ -156,12 +151,31 @@ function calcTimeDelta(
   return _minsToTime(res);
 }
 
+// removes additional digits on display
+function trimDecimal(price: string | Decimal, err: string = "0.001"): string {
+  price = price.toString();
+  if (!price.includes(".")) return price;
+
+  const one = new Decimal("1");
+  const target = one.sub(new Decimal(err));
+
+  let priceNext = price;
+  let ratio = one;
+
+  while (ratio.greaterThan(target)) {
+    price = price.slice(0, price.length - 1);
+    priceNext = price.slice(0, price.length - 1);
+    ratio = new Decimal(priceNext).div(new Decimal(price));
+  }
+
+  return price.replace(/0/g, "") === "." ? "0" : price;
+}
+
 export {
+  Request,
   l,
   r,
-  createRequest,
   rootPath,
-  SEP,
   getLast,
   specifyTimeout,
   getIbcDenom,
@@ -169,4 +183,5 @@ export {
   encrypt,
   decrypt,
   calcTimeDelta,
+  trimDecimal,
 };

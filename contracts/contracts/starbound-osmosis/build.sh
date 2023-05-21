@@ -22,6 +22,16 @@ cosmwasm-ts-codegen generate \
   --name $DIR_NAME \
   --no-bundle
 
+# TODO: remove when https://github.com/CosmWasm/ts-codegen/pull/109 will be merged
+# temporary fix to not use `cosmwasm` module
+for file in "../../../client/src/common/codegen/"*
+do
+  if [ -f "$file" ]
+  then
+    sed -i 's/import { MsgExecuteContractEncodeObject } from "cosmwasm";/import { MsgExecuteContractEncodeObject } from "@cosmjs\/cosmwasm-stargate";/g' "$file"
+  fi
+done
+
 # build optimized binary
 cd ../..
 cargo cw-optimizoor

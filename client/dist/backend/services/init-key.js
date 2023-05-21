@@ -18,14 +18,15 @@ const promises_2 = __importDefault(require("readline/promises"));
 const envs_1 = require("../envs");
 const isProduction = (0, utils_1.getLast)(process.argv).trim() === "production";
 const baseURL = isProduction ? envs_1.BASE_URL.PROXY : envs_1.BASE_URL.DEV;
-const req = (0, utils_1.createRequest)({ baseURL: baseURL + "/key" });
+const req = new utils_1.Request({ baseURL: baseURL + "/key" });
 function initKey() {
     return __awaiter(this, void 0, void 0, function* () {
-        const keyPath = (0, utils_1.rootPath)("../../.test-wallets/key");
         let encryptionKey = "";
         try {
-            yield (0, promises_1.access)(keyPath);
-            encryptionKey = yield (0, promises_1.readFile)(keyPath, { encoding: "utf-8" });
+            yield (0, promises_1.access)(envs_1.PATH_TO_ENCRYPTION_KEY);
+            encryptionKey = yield (0, promises_1.readFile)(envs_1.PATH_TO_ENCRYPTION_KEY, {
+                encoding: "utf-8",
+            });
         }
         catch (error) {
             const inquirer = promises_2.default.createInterface({

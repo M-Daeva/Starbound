@@ -5,7 +5,7 @@
   import Assets from "./pages/Assets.svelte";
   import Bank from "./pages/Bank.svelte";
   import NotFound from "./pages/NotFound.svelte";
-  import { init } from "./wallet";
+  import { init } from "./account/wallet";
   import Modal from "./components/Modal.svelte";
   import { displayAddress, getImageUrl } from "./services/helpers";
   import { get } from "svelte/store";

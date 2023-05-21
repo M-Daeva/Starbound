@@ -2,16 +2,11 @@
   import { l } from "../../../common/utils";
   import { Bar } from "svelte-chartjs";
   import { get } from "svelte/store";
+  import { init } from "../account/wallet";
   import type {
     Asset,
     User,
   } from "../../../common/codegen/StarboundOsmosis.types";
-  import {
-    // deposit as _deposit,
-    // withdraw as _withdraw,
-    // queryPoolsAndUsers as _queryPoolsAndUsers,
-    init,
-  } from "../wallet";
   import {
     calcTimeDiff,
     getTimeUntilRebalancing,

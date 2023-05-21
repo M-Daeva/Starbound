@@ -2,8 +2,8 @@
   import { Doughnut } from "svelte-chartjs";
   import Decimal from "decimal.js";
   import { l } from "../../../common/utils";
-  import { type DashboardAsset } from "../../../common/helpers/interfaces";
-  import { trimDecimal } from "../../../common/helpers/general";
+  import { type DashboardAsset } from "../../../common/interfaces";
+  import { trimDecimal } from "../../../common/utils";
   import {
     getAssetInfoByAddress,
     generateColorList,

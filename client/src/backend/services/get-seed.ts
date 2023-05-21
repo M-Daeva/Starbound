@@ -1,7 +1,7 @@
 import { access, readFile } from "fs/promises";
 import { rootPath, decrypt, l } from "../../common/utils";
 
-async function getSeed(seedEncrypted: string): Promise<string> {
+async function getSeed(seedEncrypted: string): Promise<string | undefined> {
   const keyPath = rootPath("../../.test-wallets/key");
 
   try {
@@ -12,7 +12,6 @@ async function getSeed(seedEncrypted: string): Promise<string> {
     return seed;
   } catch (error) {
     l(error);
-    return "";
   }
 }
 

@@ -1,12 +1,16 @@
 <script lang="ts">
   import { l } from "../../../common/utils";
   import { get } from "svelte/store";
-  import { getAddrByPrefix, initWalletList } from "../../../common/signers";
-  import { getSgHelpers } from "../../../common/helpers/sg-helpers";
+  import { initWalletList, getSigner } from "../account/signer";
+  import { getAddrByPrefix } from "../../../common/account/clients";
+  import {
+    getSgExecHelpers,
+    getSgQueryHelpers,
+  } from "../../../common/account/sg-helpers";
   import type {
     AssetListItem,
     DelegationStruct,
-  } from "../../../common/helpers/interfaces";
+  } from "../../../common/interfaces";
   import {
     displayModal,
     getValidatorListBySymbol,
@@ -64,11 +68,13 @@
       });
 
       // add handlers
-      const { sgGrantStakeAuth, sgRevokeStakeAuth } = await getSgHelpers({
-        RPC,
-        wallet,
-        chainId,
-      });
+      const { rpc, owner, signer } = await getSigner(RPC, chainId, wallet);
+      const { sgGrantStakeAuth, sgRevokeStakeAuth } = await getSgExecHelpers(
+        rpc,
+        owner,
+        signer
+      );
+
       const delegationStruct: DelegationStruct = {
         tokenAmount: 1e15,
         tokenDenom: chain.denomNative,
