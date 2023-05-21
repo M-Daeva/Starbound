@@ -1,14 +1,5 @@
 import test from "tape";
-import { initStorage } from "../../src/backend/storages";
-import { readFile, access } from "fs/promises";
-import { SEED_DAPP } from "../../src/common/config/testnet-config.json";
-import {
-  l,
-  getIbcDenom,
-  getChannelId,
-  rootPath,
-  decrypt,
-} from "../../src/common/utils";
+import { Storage } from "../../src/backend/storages";
 import ibcConfigAb from "../../src/common/config/ibc-config-ab.json";
 import ibcConfigAc from "../../src/common/config/ibc-config-ac.json";
 import {
@@ -18,7 +9,7 @@ import {
   ValidatorsStorage,
   PoolsAndUsersStorage,
   AssetDescription,
-} from "../../src/common/helpers/interfaces";
+} from "../../src/common/interfaces";
 import {
   _verifyRpc,
   _verifyRpcList,
@@ -40,43 +31,25 @@ import {
   queryPools,
   getPools,
   _getChainByChainId,
-} from "../../src/common/helpers/api-helpers";
+} from "../../src/backend/helpers";
 
-let chainRegistryStorage = initStorage<ChainRegistryStorage>(
+const chainRegistryStorage = new Storage<ChainRegistryStorage>(
   "chain-registry-storage"
 );
-let ibcChannelsStorage = initStorage<IbcChannelsStorage>(
+const ibcChannelsStorage = new Storage<IbcChannelsStorage>(
   "ibc-channels-storage"
 );
-let poolsStorage = initStorage<PoolsStorage>("pools-storage");
-let validatorsStorage = initStorage<ValidatorsStorage>("validators-storage");
-
-async function getSeed(): Promise<string> {
-  const keyPath = rootPath("../../.test-wallets/key");
-
-  try {
-    await access(keyPath);
-    const encryptionKey = await readFile(keyPath, { encoding: "utf-8" });
-    const seed = decrypt(SEED_DAPP, encryptionKey);
-    if (!seed) throw new Error("Can not get seed!");
-    return seed;
-  } catch (error) {
-    l(error);
-    return "";
-  }
-}
+const poolsStorage = new Storage<PoolsStorage>("pools-storage");
+const validatorsStorage = new Storage<ValidatorsStorage>("validators-storage");
 
 test("Testing API helpers", async (t) => {
-  const seed = await getSeed();
-
   const res = await _verifyRpc(
     [
       "https://rpc.osmo-test.ccvalidators.com",
       "https://osmosistest-rpc.quickapi.com/",
       "https://testnet-rpc.osmosis.zone/",
     ],
-    "osmo",
-    seed
+    "osmo"
   );
 
   t.assert(res, "_verifyRpc");
@@ -85,9 +58,7 @@ test("Testing API helpers", async (t) => {
 });
 
 test("Testing API helpers", async (t) => {
-  const seed = await getSeed();
-
-  const res = await getChainRegistry(seed, [], []);
+  const res = await getChainRegistry([], []);
   const mainnetList = res.map(({ main }) => main).filter((item) => item);
   const testnetList = res.map(({ test }) => test).filter((item) => item);
   const c1 = mainnetList.length > 50;

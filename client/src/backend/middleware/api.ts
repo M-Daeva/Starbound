@@ -1,9 +1,7 @@
-import { init } from "../../common/workers/testnet-backend-workers";
-import { SEED_DAPP } from "../../common/config/testnet-config.json";
-import { l, decrypt } from "../../common/utils";
-import { getEncryptionKey } from "./key";
-import { initStorage } from "../storages";
-import { CHAIN_TYPE } from "../envs"; // TODO: change on maiinet
+import { init } from "../account/testnet-backend-workers";
+import { l } from "../../common/utils";
+import { Storage } from "../storages";
+import { CHAIN_TYPE } from "../envs"; // TODO: change on mainnet
 import {
   ChainRegistryStorage,
   IbcChannelsStorage,
@@ -11,7 +9,7 @@ import {
   ValidatorsStorage,
   UserFundsStorage,
   PoolsAndUsersStorage,
-} from "../../common/helpers/interfaces";
+} from "../../common/interfaces";
 import {
   getChainRegistry as _getChainRegistry,
   getIbcChannnels as _getIbcChannnels,
@@ -23,50 +21,43 @@ import {
   mergeIbcChannels,
   mergePools,
   getChainNameAndRestList as _getChainNameAndRestList,
-} from "../../common/helpers/api-helpers";
+} from "../helpers";
 
 const allowList: [string, string, string[]][] = [
-  ["osmo", "test", ["https://rpc-test.osmosis.zone/"]],
   ["secret", "test", ["https://rpc.pulsar.scrttestnet.com/"]],
 ];
 const ignoreList: [string, string, string[]][] = [];
 
 // client specific storages
-let chainRegistryStorage = initStorage<ChainRegistryStorage>(
+const chainRegistryStorage = new Storage<ChainRegistryStorage>(
   "chain-registry-storage"
 );
-let ibcChannelsStorage = initStorage<IbcChannelsStorage>(
+const ibcChannelsStorage = new Storage<IbcChannelsStorage>(
   "ibc-channels-storage"
 );
-let poolsStorage = initStorage<PoolsStorage>("pools-storage");
-let validatorsStorage = initStorage<ValidatorsStorage>("validators-storage");
-let userFundsStorage = initStorage<UserFundsStorage>("user-funds-storage");
+const poolsStorage = new Storage<PoolsStorage>("pools-storage");
+const validatorsStorage = new Storage<ValidatorsStorage>("validators-storage");
+const userFundsStorage = new Storage<UserFundsStorage>("user-funds-storage");
 // contract specific storage
-let poolsAndUsersStorage = initStorage<PoolsAndUsersStorage>(
+const poolsAndUsersStorage = new Storage<PoolsAndUsersStorage>(
   "pools-and-users-storage"
 );
 
 async function updateChainRegistry() {
   try {
-    const encryptionKey = getEncryptionKey();
-    if (!encryptionKey) throw new Error("Key is not found!");
-
-    const seed = decrypt(SEED_DAPP, encryptionKey);
-    if (!seed) throw new Error("Key is wrong!");
-
     const res = mergeChainRegistry(
       chainRegistryStorage.get(),
-      await _getChainRegistry(seed, allowList, ignoreList)
+      await _getChainRegistry(allowList, ignoreList)
     );
 
     chainRegistryStorage.set(res);
     chainRegistryStorage.write(res);
 
-    return { fn: "updateChainRegistry", isStorageUpdated: true };
+    return { fn: "updateChainRegistry", updateStatus: "✔️" };
   } catch (error) {
     l(error);
 
-    return { fn: "updateChainRegistry", isStorageUpdated: false };
+    return { fn: "updateChainRegistry", updateStatus: "❌" };
   }
 }
 
@@ -92,11 +83,11 @@ async function updateIbcChannels() {
     ibcChannelsStorage.set(res);
     ibcChannelsStorage.write(res);
 
-    return { fn: "updateIbcChannels", isStorageUpdated: true };
+    return { fn: "updateIbcChannels", updateStatus: "✔️" };
   } catch (error) {
     l(error);
 
-    return { fn: "updateIbcChannels", isStorageUpdated: false };
+    return { fn: "updateIbcChannels", updateStatus: "❌" };
   }
 }
 
@@ -118,11 +109,11 @@ async function updatePools() {
     poolsStorage.set(res);
     poolsStorage.write(res);
 
-    return { fn: "updatePools", isStorageUpdated: true };
+    return { fn: "updatePools", updateStatus: "✔️" };
   } catch (error) {
     l(error);
 
-    return { fn: "updatePools", isStorageUpdated: false };
+    return { fn: "updatePools", updateStatus: "❌" };
   }
 }
 
@@ -147,11 +138,11 @@ async function updateValidators() {
     validatorsStorage.set(res);
     validatorsStorage.write(res);
 
-    return { fn: "updateValidators", isStorageUpdated: true };
+    return { fn: "updateValidators", updateStatus: "✔️" };
   } catch (error) {
     l(error);
 
-    return { fn: "updateValidators", isStorageUpdated: false };
+    return { fn: "updateValidators", updateStatus: "❌" };
   }
 }
 
@@ -173,11 +164,11 @@ async function updateUserFunds() {
     userFundsStorage.set(res);
     userFundsStorage.write(res);
 
-    return { fn: "updateUserFunds", isStorageUpdated: true };
+    return { fn: "updateUserFunds", updateStatus: "✔️" };
   } catch (error) {
     l(error);
 
-    return { fn: "updateUserFunds", isStorageUpdated: false };
+    return { fn: "updateUserFunds", updateStatus: "❌" };
   }
 }
 
@@ -202,13 +193,7 @@ async function getUserFunds(userOsmoAddress: string) {
 
 async function updatePoolsAndUsers() {
   try {
-    const encryptionKey = getEncryptionKey();
-    if (!encryptionKey) throw new Error("Key is not found!");
-
-    const seed = decrypt(SEED_DAPP, encryptionKey);
-    if (!seed) throw new Error("Key is wrong!");
-
-    const helpers = await init(seed);
+    const helpers = await init();
     if (!helpers) throw new Error("Init is failed!");
 
     const { cwQueryPoolsAndUsers } = helpers;
@@ -217,11 +202,11 @@ async function updatePoolsAndUsers() {
     poolsAndUsersStorage.set(res);
     poolsAndUsersStorage.write(res);
 
-    return { fn: "updatePoolsAndUsers", isStorageUpdated: true };
+    return { fn: "updatePoolsAndUsers", updateStatus: "✔️" };
   } catch (error) {
     l(error);
 
-    return { fn: "updatePoolsAndUsers", isStorageUpdated: false };
+    return { fn: "updatePoolsAndUsers", updateStatus: "❌" };
   }
 }
 
@@ -255,7 +240,7 @@ async function updateAll() {
   return [resCw, resChainRegistry, ...res];
 }
 
-async function getAll(userOsmoAddress: string) {
+async function getAll(userOsmoAddress?: string) {
   const { activeNetworks, chainRegistry, ibcChannels, pools } =
     _filterChainRegistry(
       chainRegistryStorage.get(),
@@ -265,7 +250,7 @@ async function getAll(userOsmoAddress: string) {
       CHAIN_TYPE
     );
 
-  let userFunds = await getUserFunds(userOsmoAddress);
+  const userFunds = userOsmoAddress ? await getUserFunds(userOsmoAddress) : [];
 
   return {
     activeNetworks,

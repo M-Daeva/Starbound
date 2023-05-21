@@ -12,40 +12,37 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.setEncryptionKey = exports.getEncryptionKey = void 0;
 const storages_1 = require("../storages");
 const utils_1 = require("../../common/utils");
-const signers_1 = require("../../common/signers");
-const testnet_config_json_1 = require("../../common/config/testnet-config.json");
+const signer_1 = require("../account/signer");
+const osmosis_testnet_config_json_1 = require("../../common/config/osmosis-testnet-config.json");
 const envs_1 = require("../envs");
-let _encryptionKeyStorage = (0, storages_1.initStorage)("encryption-key-storage");
+const RPC = "https://rpc.osmosis.zone:443";
+const prefix = "osmo";
+const encryptionKeyStorage = new storages_1.Storage("encryption-key-storage");
 function getEncryptionKey() {
-    return _encryptionKeyStorage.get();
+    return encryptionKeyStorage.get();
 }
 exports.getEncryptionKey = getEncryptionKey;
 function setEncryptionKey(value) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             // skip if key specified
-            if (_encryptionKeyStorage.get()) {
-                throw new Error(`Key is already specified!`);
+            if (encryptionKeyStorage.get()) {
+                throw new Error(`⚠️ Encryption key is already specified!`);
             }
             // skip if key is wrong
-            const seed = (0, utils_1.decrypt)(testnet_config_json_1.SEED_DAPP, value);
-            if (!seed)
-                throw new Error(`Key '${value}' is wrong!`);
-            const sgClient = yield (0, signers_1.getSgClient)({
-                prefix: "osmo",
-                RPC: "https://rpc.osmosis.zone:443",
-                seed,
-            });
-            if (!sgClient)
-                throw new Error("sgClient is failde!");
-            const { owner } = sgClient;
-            if (owner !== envs_1.DAPP_ADDRESS)
-                throw new Error(`Key '${value}' is wrong!`);
-            _encryptionKeyStorage.set(value);
-            return "Success!";
+            const seed = (0, utils_1.decrypt)(osmosis_testnet_config_json_1.SEED_DAPP, value);
+            if (!seed) {
+                throw new Error(`❌ Encryption key '${value}' is wrong!`);
+            }
+            const { owner } = yield (0, signer_1.getSigner)(RPC, prefix, seed);
+            if (owner !== envs_1.DAPP_ADDRESS) {
+                throw new Error(`❌ Encryption key '${value}' is wrong!`);
+            }
+            encryptionKeyStorage.set(value);
+            return "✔️ Encryption key is loaded!\n";
         }
         catch (error) {
-            return `${error}`;
+            return `${error}`.split("Error: ")[1];
         }
     });
 }

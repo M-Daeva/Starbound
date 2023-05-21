@@ -1,5 +1,6 @@
 import { AxiosRequestConfig } from "axios";
-import { TimeInHoursAndMins } from "../helpers/interfaces";
+import { TimeInHoursAndMins } from "../interfaces";
+import { Decimal } from "decimal.js";
 declare const l: {
     (...data: any[]): void;
     (message?: any, ...optionalParams: any[]): void;
@@ -7,13 +8,12 @@ declare const l: {
 declare function r(num: number, digits?: number): number;
 declare function getLast<T>(arr: T[]): T;
 declare function rootPath(dir: string): string;
-declare const SEP = "////////////////////////////////////////////////////////////////////////////////////\n";
-declare function createRequest(config: Object): {
-    get: (url: string, config?: Object) => Promise<any>;
-    post: (url: string, params: Object, config?: AxiosRequestConfig) => Promise<any>;
-    put: (url: string, params: Object, config?: AxiosRequestConfig) => Promise<any>;
-    patch: (url: string, params: Object, config?: AxiosRequestConfig) => Promise<any>;
-};
+declare class Request {
+    private req;
+    constructor(config?: Object);
+    get(url: string, config?: Object): Promise<any>;
+    post(url: string, params: Object, config?: AxiosRequestConfig): Promise<any>;
+}
 declare function specifyTimeout(promise: Promise<any>, timeout?: number, exception?: Function): Promise<any>;
 /**
  * Returns destination denom of coin/token on chain A transferred from chain A to chain B, where
@@ -35,4 +35,5 @@ declare function getChannelId(srcDenom: string, dstDenom: string, portId?: strin
 declare function encrypt(data: string, key: string): string;
 declare function decrypt(encryptedData: string, key: string): string | undefined;
 declare function calcTimeDelta(targetTime: TimeInHoursAndMins, period: TimeInHoursAndMins, ignoreRange?: [TimeInHoursAndMins, TimeInHoursAndMins] | []): TimeInHoursAndMins;
-export { l, r, createRequest, rootPath, SEP, getLast, specifyTimeout, getIbcDenom, getChannelId, encrypt, decrypt, calcTimeDelta, };
+declare function trimDecimal(price: string | Decimal, err?: string): string;
+export { Request, l, r, rootPath, getLast, specifyTimeout, getIbcDenom, getChannelId, encrypt, decrypt, calcTimeDelta, trimDecimal, };

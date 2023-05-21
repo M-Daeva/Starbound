@@ -1,13 +1,14 @@
 import { type Writable, get, writable } from "svelte/store";
-import { createRequest, l } from "../../../common/utils";
+import { Request, l } from "../../../common/utils";
 import { baseURL } from "../config";
-import { init } from "./wallet";
+import { init } from "../account/wallet";
+import { enc } from "crypto-js";
 import { getValidatorListBySymbol, sortAssets } from "./helpers";
-import { getAddrByPrefix } from "../../../common/signers";
+import { getAddrByPrefix } from "../../../common/account/clients";
 import type {
   PoolExtracted,
   User,
-} from "../../../common/codegen/Starbound.types";
+} from "../../../common/codegen/StarboundOsmosis.types";
 import type {
   NetworkData,
   IbcResponse,
@@ -17,7 +18,7 @@ import type {
   AuthzHandler,
   UserBalance,
   TimeInHoursAndMins,
-} from "../../../common/helpers/interfaces";
+} from "../../../common/interfaces";
 
 // global constants
 const STABLECOIN_SYMBOL = "EEUR";
@@ -65,7 +66,25 @@ let txResStorage: Writable<["Success" | "Error", string]> = writable([
   "",
 ]);
 
-let req = createRequest({ baseURL: baseURL + "/api" });
+class Localstorage {
+  get(): string | undefined {
+    const value = `${localStorage.getItem(LOCAL_STORAGE_KEY)}`;
+    if (value === "null") return;
+
+    return enc.Utf8.stringify(enc.Base64.parse(value));
+  }
+
+  set(value: string): void {
+    localStorage.setItem(
+      LOCAL_STORAGE_KEY,
+      enc.Base64.stringify(enc.Utf8.parse(value))
+    );
+  }
+}
+
+const ls = new Localstorage();
+
+let req = new Request({ baseURL: baseURL + "/api" });
 
 // request main storages
 async function getRegistryChannelsPools(): Promise<{
@@ -141,7 +160,7 @@ async function getAll(userOsmoAddress: string): Promise<{
 
 async function initAll() {
   try {
-    const address = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const address = ls.get();
     addressStorage.set(address);
     const data = await getAll(address);
     l({ data });
@@ -162,7 +181,7 @@ async function initAll() {
     // init assetListStorage
     let assetList: AssetListItem[] = [];
 
-    for (let asset of user?.asset_list) {
+    for (const asset of user?.asset_list) {
       const registryItem = get(chainRegistryStorage).find(({ denomIbc }) => {
         if (!denomIbc && asset.asset_denom === "uosmo") return true;
         return denomIbc === asset.asset_denom;
@@ -206,6 +225,7 @@ export {
   sortingConfigStorage,
   isModalActiveStorage,
   txResStorage,
+  ls,
   getRegistryChannelsPools,
   getPools,
   getValidators,

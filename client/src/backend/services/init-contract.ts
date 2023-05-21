@@ -1,60 +1,67 @@
 import { CHAIN_TYPE, DAPP_ADDRESS } from "../envs";
-import { decrypt } from "../../common/utils";
-import { getGasPriceFromChainRegistryItem } from "../../common/signers";
-import { init } from "../../common/workers/testnet-backend-workers";
-import { getEncryptionKey } from "../middleware/key";
-import { SEED_DAPP } from "../../common/config/testnet-config.json";
-import { updatePoolsAndUsers as _updatePoolsAndUsers } from "../../common/helpers/api-helpers";
+import { getGasPriceFromChainRegistryItem } from "../../common/account/clients";
+import { init } from "../account/testnet-backend-workers";
+import { SEED_DAPP } from "../../common/config/osmosis-testnet-config.json";
+import { updatePoolsAndUsers, getDappAddressAndDenomList } from "../helpers";
 import { getChainRegistry, getPools } from "../middleware/api";
+import { getSeed } from "./get-seed";
+import { l } from "../../common/utils";
 
 async function initContract() {
-  const encryptionKey = getEncryptionKey();
-  if (!encryptionKey) return;
+  try {
+    const seed = await getSeed(SEED_DAPP);
+    if (!seed) throw new Error("Seed is not found!");
 
-  const seed = decrypt(SEED_DAPP, encryptionKey);
-  if (!seed) return;
+    const helpers = await init();
+    if (!helpers) return;
 
-  const helpers = await init(seed);
-  if (!helpers) return;
+    const {
+      owner,
+      cwQueryPoolsAndUsers,
+      cwUpdatePoolsAndUsers,
+      cwUpdateConfig,
+    } = helpers;
+    if (!owner) return;
 
-  const { cwQueryPoolsAndUsers, cwUpdatePoolsAndUsers, cwUpdateConfig } =
-    helpers;
+    // add dapp addresses
+    const poolsStorage = await getPools();
+    const chainRegistry = await getChainRegistry();
 
-  // add dapp addresses
-  const poolsStorage = await getPools();
-  const chainRegistry = await getChainRegistry();
+    const chain = chainRegistry.find((item) => item.denomNative === "uosmo");
+    if (!chain) return;
 
-  const chain = chainRegistry.find((item) => item.denomNative === "uosmo");
-  if (!chain) return;
+    const gasPrice = getGasPriceFromChainRegistryItem(chain, CHAIN_TYPE);
 
-  const gasPrice = getGasPriceFromChainRegistryItem(chain, CHAIN_TYPE);
+    const dappAddressAndDenomList = getDappAddressAndDenomList(
+      DAPP_ADDRESS,
+      chainRegistry
+    ) as unknown as string[][][]; // ts-codegen issue
 
-  // @ts-ignore
-  const dappAddressAndDenomList: string[][][] = getDappAddressAndDenomList(
-    DAPP_ADDRESS,
-    chainRegistry
-  );
+    await cwUpdateConfig(
+      {
+        dappAddressAndDenomList,
+      },
+      gasPrice
+    );
 
-  await cwUpdateConfig(
-    {
-      dappAddressAndDenomList,
-    },
-    gasPrice
-  );
+    // add pools
+    const poolsAndUsers = await cwQueryPoolsAndUsers();
 
-  // add pools
-  const poolsAndUsers = await cwQueryPoolsAndUsers();
+    const res = await updatePoolsAndUsers(
+      chainRegistry,
+      poolsAndUsers,
+      poolsStorage,
+      CHAIN_TYPE
+    );
+    if (!res) return;
 
-  const res = await _updatePoolsAndUsers(
-    chainRegistry,
-    poolsAndUsers,
-    poolsStorage,
-    CHAIN_TYPE
-  );
-  if (!res) return;
+    const { pools, users } = res;
+    await cwUpdatePoolsAndUsers(pools, users, gasPrice);
 
-  const { pools, users } = res;
-  await cwUpdatePoolsAndUsers(pools, users, gasPrice);
+    l("✔️ The contract was initialized!");
+  } catch (error) {
+    l(error);
+  }
 }
 
 initContract();

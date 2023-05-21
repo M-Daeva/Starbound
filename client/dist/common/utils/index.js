@@ -12,10 +12,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.calcTimeDelta = exports.decrypt = exports.encrypt = exports.getChannelId = exports.getIbcDenom = exports.specifyTimeout = exports.getLast = exports.SEP = exports.rootPath = exports.createRequest = exports.r = exports.l = void 0;
+exports.trimDecimal = exports.calcTimeDelta = exports.decrypt = exports.encrypt = exports.getChannelId = exports.getIbcDenom = exports.specifyTimeout = exports.getLast = exports.rootPath = exports.r = exports.l = exports.Request = void 0;
 const axios_1 = __importDefault(require("axios"));
 const path_1 = __importDefault(require("path"));
 const crypto_js_1 = require("crypto-js");
+const decimal_js_1 = require("decimal.js");
 const l = console.log.bind(console);
 exports.l = l;
 function r(num, digits = 0) {
@@ -31,26 +32,22 @@ function rootPath(dir) {
     return path_1.default.resolve(__dirname, "../../../", dir);
 }
 exports.rootPath = rootPath;
-const SEP = "////////////////////////////////////////////////////////////////////////////////////\n";
-exports.SEP = SEP;
-function createRequest(config) {
-    const req = axios_1.default.create(config);
-    return {
-        get: (url, config) => __awaiter(this, void 0, void 0, function* () {
-            return (yield req.get(url, config)).data;
-        }),
-        post: (url, params, config) => __awaiter(this, void 0, void 0, function* () {
-            return (yield req.post(url, params, config)).data;
-        }),
-        put: (url, params, config) => __awaiter(this, void 0, void 0, function* () {
-            return (yield req.put(url, params, config)).data;
-        }),
-        patch: (url, params, config) => __awaiter(this, void 0, void 0, function* () {
-            return (yield req.patch(url, params, config)).data;
-        }),
-    };
+class Request {
+    constructor(config = {}) {
+        this.req = axios_1.default.create(config);
+    }
+    get(url, config) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return (yield this.req.get(url, config)).data;
+        });
+    }
+    post(url, params, config) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return (yield this.req.post(url, params, config)).data;
+        });
+    }
 }
-exports.createRequest = createRequest;
+exports.Request = Request;
 function specifyTimeout(promise, timeout = 5000, exception = () => {
     throw new Error("Timeout!");
 }) {
@@ -142,3 +139,20 @@ function calcTimeDelta(targetTime, period, ignoreRange = []) {
     return _minsToTime(res);
 }
 exports.calcTimeDelta = calcTimeDelta;
+// removes additional digits on display
+function trimDecimal(price, err = "0.001") {
+    price = price.toString();
+    if (!price.includes("."))
+        return price;
+    const one = new decimal_js_1.Decimal("1");
+    const target = one.sub(new decimal_js_1.Decimal(err));
+    let priceNext = price;
+    let ratio = one;
+    while (ratio.greaterThan(target)) {
+        price = price.slice(0, price.length - 1);
+        priceNext = price.slice(0, price.length - 1);
+        ratio = new decimal_js_1.Decimal(priceNext).div(new decimal_js_1.Decimal(price));
+    }
+    return price.replace(/0/g, "") === "." ? "0" : price;
+}
+exports.trimDecimal = trimDecimal;

@@ -3,20 +3,28 @@ import { l, calcTimeDelta } from "../common/utils";
 import { text, json } from "body-parser";
 import cors from "cors";
 import { rootPath, decrypt } from "../common/utils";
-import { TimeInHoursAndMins } from "../common/helpers/interfaces";
-import { getGasPriceFromChainRegistryItem } from "../common/signers";
-import { init } from "../common/workers/testnet-backend-workers";
+import { TimeInHoursAndMins } from "../common/interfaces";
+import { getGasPriceFromChainRegistryItem } from "../common/account/clients";
+import { init } from "./account/testnet-backend-workers";
 import { api } from "./routes/api";
 import { key } from "./routes/key";
 import { getEncryptionKey } from "./middleware/key";
-import { SEED_DAPP } from "../common/config/testnet-config.json";
+import { SEED_DAPP } from "../common/config/osmosis-testnet-config.json";
 import rateLimit from "express-rate-limit";
+import { readFile, access } from "fs/promises";
 import * as h from "helmet";
-import { CHAIN_TYPE, DAPP_ADDRESS, PORT } from "./envs";
+import { setEncryptionKey } from "./middleware/key";
 import {
   updatePoolsAndUsers as _updatePoolsAndUsers,
   _getAllGrants,
-} from "../common/helpers/api-helpers";
+} from "./helpers";
+import {
+  CHAIN_TYPE,
+  DAPP_ADDRESS,
+  PORT,
+  PATH_TO_ENCRYPTION_KEY,
+  BASE_URL,
+} from "./envs";
 import {
   updatePools,
   updatePoolsAndUsers,
@@ -50,12 +58,14 @@ async function triggerContract() {
   if (!helpers) return;
 
   const {
+    owner,
     cwSwap,
     cwTransfer,
     cwQueryPoolsAndUsers,
     sgDelegateFromAll,
     cwUpdatePoolsAndUsers,
   } = helpers;
+  if (!owner) return;
 
   const chainRegistry = await getChainRegistry();
 
@@ -99,9 +109,74 @@ async function triggerContract() {
   }, 15 * 60 * 1000);
 }
 
+async function setKey() {
+  try {
+    await access(PATH_TO_ENCRYPTION_KEY);
+    const encryptionKey = await readFile(PATH_TO_ENCRYPTION_KEY, {
+      encoding: "utf-8",
+    });
+    const res = await setEncryptionKey(encryptionKey);
+    l(res);
+  } catch (error) {
+    l("⚠️ Encryption key is not found!\n");
+  }
+}
+
+function process() {
+  const periodDebounce = 60_000;
+
+  const periodSensitive = 10_000;
+
+  const startTimeInsensitive: TimeInHoursAndMins = { hours: 17, minutes: 45 };
+  const periodInsensitive: TimeInHoursAndMins = { hours: 0, minutes: 30 };
+
+  const startTimeContract: TimeInHoursAndMins = { hours: 18, minutes: 0 };
+  const periodContract: TimeInHoursAndMins = { hours: 0, minutes: 30 };
+
+  // updating time sensitive storages scheduler
+  setInterval(updateTimeSensitiveStorages, periodSensitive);
+
+  // updating time insensitive storages scheduler
+  let isStoragesInteractionAllowed = true;
+
+  setInterval(async () => {
+    if (!isStoragesInteractionAllowed) return;
+
+    const { hours, minutes } = calcTimeDelta(
+      startTimeInsensitive,
+      periodInsensitive
+    );
+
+    if (!hours && !minutes) {
+      isStoragesInteractionAllowed = false;
+      await updateTimeInsensitiveStorages();
+      setTimeout(() => {
+        isStoragesInteractionAllowed = true;
+      }, periodDebounce);
+    }
+  }, 60_000);
+
+  // triggerring contract scheduler
+  let isContractInteractionAllowed = true;
+
+  setInterval(async () => {
+    if (!isContractInteractionAllowed) return;
+
+    const { hours, minutes } = calcTimeDelta(startTimeContract, periodContract);
+
+    if (!hours && !minutes) {
+      isContractInteractionAllowed = false;
+      await triggerContract();
+      setTimeout(() => {
+        isContractInteractionAllowed = true;
+      }, periodDebounce);
+    }
+  }, 5_000);
+}
+
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 30, // Limit each IP to 20 requests per `window`
+  max: 30, // Limit each IP to 30 requests per `window`
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   handler: (req, res) => res.send("Request rate is limited"),
@@ -109,6 +184,7 @@ const limiter = rateLimit({
 
 const staticHandler = express.static(rootPath("./dist/frontend"));
 
+// TODO: check helmet updates
 express()
   .disable("x-powered-by")
   .use(
@@ -117,7 +193,6 @@ express()
     h.crossOriginOpenerPolicy(),
     h.crossOriginResourcePolicy(),
     h.dnsPrefetchControl(),
-    h.expectCt(),
     h.frameguard(),
     h.hidePoweredBy(),
     h.hsts(),
@@ -137,58 +212,8 @@ express()
   .use("/key", key)
   .use("/*", staticHandler)
   .listen(PORT, async () => {
-    l(`Ready on port ${PORT}`);
+    l(`\n✔️ Server is running on ${BASE_URL.DEV}`);
+    await setKey(); // set encryption key in dev mode if it can be found
 
-    const periodDebounce = 60_000;
-
-    const periodSensitive = 10_000;
-
-    const startTimeInsensitive: TimeInHoursAndMins = { hours: 17, minutes: 45 };
-    const periodInsensitive: TimeInHoursAndMins = { hours: 0, minutes: 30 };
-
-    const startTimeContract: TimeInHoursAndMins = { hours: 18, minutes: 0 };
-    const periodContract: TimeInHoursAndMins = { hours: 0, minutes: 30 };
-
-    // updating time sensitive storages scheduler
-    setInterval(updateTimeSensitiveStorages, periodSensitive);
-
-    // updating time insensitive storages scheduler
-    let isStoragesInteractionAllowed = true;
-
-    setInterval(async () => {
-      if (!isStoragesInteractionAllowed) return;
-
-      const { hours, minutes } = calcTimeDelta(
-        startTimeInsensitive,
-        periodInsensitive
-      );
-
-      if (!hours && !minutes) {
-        isStoragesInteractionAllowed = false;
-        await updateTimeInsensitiveStorages();
-        setTimeout(() => {
-          isStoragesInteractionAllowed = true;
-        }, periodDebounce);
-      }
-    }, 60_000);
-
-    // triggerring contract scheduler
-    let isContractInteractionAllowed = true;
-
-    setInterval(async () => {
-      if (!isContractInteractionAllowed) return;
-
-      const { hours, minutes } = calcTimeDelta(
-        startTimeContract,
-        periodContract
-      );
-
-      if (!hours && !minutes) {
-        isContractInteractionAllowed = false;
-        await triggerContract();
-        setTimeout(() => {
-          isContractInteractionAllowed = true;
-        }, periodDebounce);
-      }
-    }, 5_000);
+    // process(); // TODO: uncomment before prod
   });

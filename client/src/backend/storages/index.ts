@@ -1,45 +1,41 @@
 import path from "path";
 import { readFileSync, writeFileSync, accessSync } from "fs";
-import { StorageNames, StorageTypes } from "../../common/helpers/interfaces";
+import { StorageNames, StorageTypes } from "../../common/interfaces";
 
-const encoding = "utf8";
+class Storage<T extends StorageTypes> {
+  private encoding: BufferEncoding = "utf8";
+  private st: T | undefined;
 
-function _getPath(name: string) {
-  return path.resolve(__dirname, `./${name}.json`);
+  constructor(private name: StorageNames) {
+    try {
+      accessSync(this.getPath(this.name));
+      this.st = this.read();
+    } catch (error) {}
+  }
+
+  get() {
+    return this.st;
+  }
+
+  set(data: T) {
+    this.st = data;
+  }
+
+  read() {
+    return JSON.parse(
+      readFileSync(this.getPath(this.name), { encoding: this.encoding })
+    );
+  }
+
+  write(data: T) {
+    writeFileSync(this.getPath(this.name), JSON.stringify(data), {
+      encoding: this.encoding,
+    });
+  }
+
+  private getPath(name: string) {
+    return path.resolve(__dirname, `./${name}.json`);
+  }
 }
 
-function _readDecorator<T>(name: string): () => T | undefined {
-  return () => JSON.parse(readFileSync(_getPath(name), { encoding }));
-}
-
-function _writeDecorator<T>(name: string) {
-  return (data: T) => {
-    return writeFileSync(_getPath(name), JSON.stringify(data), { encoding });
-  };
-}
-
-function initStorage<T extends StorageTypes>(name: StorageNames) {
-  let st: T | undefined;
-
-  const read = _readDecorator<T>(name);
-  const write = _writeDecorator<T>(name);
-
-  try {
-    accessSync(_getPath(name));
-    st = read();
-  } catch (error) {}
-
-  const get = () => st;
-  const set = (data: T) => {
-    st = data;
-  };
-
-  return {
-    read,
-    write,
-    get,
-    set,
-  };
-}
-
-export { initStorage };
+export { Storage };

@@ -1,18 +1,18 @@
 import { get } from "svelte/store";
 import { l, calcTimeDelta } from "../../../common/utils";
 import type { DeliverTxResponse } from "@cosmjs/cosmwasm-stargate";
-import type { AssetListItem } from "../../../common/helpers/interfaces";
+import type { AssetListItem } from "../../../common/interfaces";
 import {
   chainRegistryStorage,
   poolsStorage,
   txResStorage,
   isModalActiveStorage,
   CHAIN_TYPE,
-  LOCAL_STORAGE_KEY,
   START_TIME_CONTRACT,
   PERIOD_CONTRACT,
   validatorsStorage,
   sortingConfigStorage,
+  ls,
 } from "../services/storage";
 
 function getAssetInfoByAddress(address: string) {
@@ -85,7 +85,9 @@ function getTimeUntilRebalancing() {
   return `${dHoursStr}:${dMinsStr}`;
 }
 
-function displayModal(tx: DeliverTxResponse) {
+function displayModal(tx: DeliverTxResponse | string) {
+  if (typeof tx === "string" || `${tx}`.includes("Error")) return;
+
   const status = tx.rawLog.includes("failed") ? "Error" : "Success";
   txResStorage.set([status, tx.transactionHash]);
   isModalActiveStorage.set(true);
@@ -96,9 +98,9 @@ function closeModal() {
 }
 
 function displayAddress() {
-  const address = localStorage.getItem(LOCAL_STORAGE_KEY);
+  const address = ls.get();
+
   if (!address || !address.includes("1")) {
-    // displayModal("Connect wallet first!");
     return "";
   }
 

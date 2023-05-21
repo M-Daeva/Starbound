@@ -14,13 +14,18 @@ const envs_1 = require("../envs");
 const utils_1 = require("../../common/utils");
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        const configFilePath = (0, utils_1.rootPath)("./src/frontend/src/config/index.ts");
-        yield (0, promises_1.access)(configFilePath);
-        let configFile = yield (0, promises_1.readFile)(configFilePath, { encoding: "utf-8" });
-        configFile = configFile
-            .replace(/const devUrl = "[^"]*";/, `const devUrl = "${envs_1.BASE_URL.DEV}";`)
-            .replace(/const prodUrl = "[^"]*";/, `const prodUrl = "${envs_1.BASE_URL.PROXY}";`);
-        yield (0, promises_1.writeFile)(configFilePath, configFile);
+        try {
+            const configFilePath = (0, utils_1.rootPath)("./src/frontend/src/config/index.ts");
+            yield (0, promises_1.access)(configFilePath);
+            let configFile = yield (0, promises_1.readFile)(configFilePath, { encoding: "utf-8" });
+            configFile = configFile
+                .replace(/const devUrl = "[^"]*";/, `const devUrl = "${envs_1.BASE_URL.DEV}";`)
+                .replace(/const prodUrl = "[^"]*";/, `const prodUrl = "${envs_1.BASE_URL.PROXY}";`);
+            yield (0, promises_1.writeFile)(configFilePath, configFile);
+        }
+        catch (error) {
+            (0, utils_1.l)(error);
+        }
     });
 }
 main();
