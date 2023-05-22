@@ -1,5 +1,7 @@
 #[cfg(not(feature = "library"))]
-use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{
+    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+};
 
 use crate::{
     actions::{
@@ -70,10 +72,10 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::QueryUser { address } => query_user(deps, env, address),
-        QueryMsg::QueryPoolsAndUsers {} => query_pools_and_users(deps, env),
-        QueryMsg::QueryLedger {} => query_ledger(deps, env),
-        QueryMsg::QueryConfig {} => query_config(deps, env),
+        QueryMsg::QueryUser { address } => to_binary(&query_user(deps, env, address)?),
+        QueryMsg::QueryPoolsAndUsers {} => to_binary(&query_pools_and_users(deps, env)?),
+        QueryMsg::QueryLedger {} => to_binary(&query_ledger(deps, env)?),
+        QueryMsg::QueryConfig {} => to_binary(&query_config(deps, env)?),
     }
 }
 
