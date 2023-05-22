@@ -4,6 +4,9 @@ use cw_storage_plus::{Item, Map};
 
 use crate::actions::helpers::math::str_to_dec;
 
+pub type Denom = String; // TODO: add verification
+pub type AddrUnchecked = String;
+
 pub const CHAIN_ID_DEV: &str = "devnet-1";
 
 pub const CONFIG: Item<Config> = Item::new("config");
@@ -11,11 +14,11 @@ pub const CONFIG: Item<Config> = Item::new("config");
 pub struct Config {
     pub admin: Addr,
     pub scheduler: Addr,
-    pub stablecoin_denom: String,
+    pub stablecoin_denom: Denom,
     pub stablecoin_pool_id: u64,
     pub fee_default: Decimal,
     pub fee_osmo: Decimal,
-    pub dapp_address_and_denom_list: Vec<(Addr, String)>,
+    pub dapp_address_and_denom_list: Vec<(Addr, Denom)>,
     pub timestamp: Timestamp,
     chain_id_dev: String,
 }
@@ -52,7 +55,7 @@ pub const LEDGER: Item<Ledger> = Item::new("ledger");
 pub struct Ledger {
     pub global_delta_balance_list: Vec<Uint128>,
     pub global_delta_cost_list: Vec<Uint128>,
-    pub global_denom_list: Vec<String>,
+    pub global_denom_list: Vec<Denom>,
     pub global_price_list: Vec<Decimal>,
 }
 
@@ -94,7 +97,6 @@ impl User {
         asset_list: &Vec<Asset>,
         day_counter: Uint128,
         deposited: Uint128,
-
         is_controlled_rebalancing: bool,
     ) -> Self {
         User {
@@ -108,7 +110,7 @@ impl User {
 
 #[cw_serde]
 pub struct Asset {
-    pub asset_denom: String,
+    pub asset_denom: Denom,
     pub wallet_address: Addr,
     pub wallet_balance: Uint128,
     pub weight: Decimal,
@@ -131,49 +133,6 @@ impl Asset {
             amount_to_send_until_next_epoch,
         }
     }
-
-    pub fn extract(&self) -> AssetExtracted {
-        AssetExtracted {
-            asset_denom: self.asset_denom.to_string(),
-            wallet_address: self.wallet_address.to_string(),
-            wallet_balance: self.wallet_balance,
-        }
-    }
-}
-
-#[cw_serde]
-pub struct PoolExtracted {
-    pub id: Uint128,
-    pub denom: String,
-    pub price: Decimal,
-    pub symbol: String,
-    pub channel_id: String,
-    pub port_id: String,
-}
-
-impl PoolExtracted {
-    pub fn slice(&self) -> Pool {
-        Pool::new(
-            self.id,
-            self.price,
-            &self.channel_id,
-            &self.port_id,
-            &self.symbol,
-        )
-    }
-}
-
-#[cw_serde]
-pub struct UserExtracted {
-    pub osmo_address: String,
-    pub asset_list: Vec<AssetExtracted>,
-}
-
-#[cw_serde]
-pub struct AssetExtracted {
-    pub asset_denom: String,
-    pub wallet_address: String,
-    pub wallet_balance: Uint128,
 }
 
 #[cw_serde]
@@ -181,7 +140,7 @@ pub struct TransferParams {
     pub channel_id: String,
     pub to: String,
     pub amount: Uint128,
-    pub denom: String,
+    pub denom: Denom,
     pub block_revision: Uint128,
     pub block_height: Uint128,
     pub timestamp: Timestamp,

@@ -6,7 +6,7 @@
 
 import { CosmWasmClient, SigningCosmWasmClient, ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 import { Coin, StdFee } from "@cosmjs/amino";
-import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, Timestamp, Uint64, User, Asset, PoolExtracted, UserExtracted, AssetExtracted, TransferParams, QueryMsg, MigrateMsg, QueryConfigResponse, Config, QueryLedgerResponse, Ledger, QueryPoolsAndUsersResponse, QueryUserResponse } from "./StarboundOsmosis.types";
+import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, Timestamp, Uint64, User, Asset, Pool, UserExtracted, AssetExtracted, TransferParams, QueryMsg, MigrateMsg, QueryConfigResponse, Config, QueryLedgerResponse, Ledger, QueryPoolsAndUsersResponse, QueryUserResponse } from "./StarboundOsmosis.types";
 export interface StarboundOsmosisReadOnlyInterface {
   contractAddress: string;
   queryUser: ({
@@ -90,7 +90,7 @@ export interface StarboundOsmosisInterface extends StarboundOsmosisReadOnlyInter
     pools,
     users
   }: {
-    pools: PoolExtracted[];
+    pools: string[][];
     users: UserExtracted[];
   }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
   swap: (fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
@@ -172,7 +172,7 @@ export class StarboundOsmosisClient extends StarboundOsmosisQueryClient implemen
     pools,
     users
   }: {
-    pools: PoolExtracted[];
+    pools: string[][];
     users: UserExtracted[];
   }, fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
     return await this.client.execute(this.sender, this.contractAddress, {

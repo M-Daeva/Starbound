@@ -24,7 +24,7 @@ export type ExecuteMsg = {
   };
 } | {
   update_pools_and_users: {
-    pools: PoolExtracted[];
+    pools: [string, Pool][];
     users: UserExtracted[];
   };
 } | {
@@ -54,9 +54,8 @@ export interface Asset {
   wallet_balance: Uint128;
   weight: Decimal;
 }
-export interface PoolExtracted {
+export interface Pool {
   channel_id: string;
-  denom: string;
   id: Uint128;
   port_id: string;
   price: Decimal;
@@ -116,7 +115,7 @@ export interface Ledger {
   global_price_list: Decimal[];
 }
 export interface QueryPoolsAndUsersResponse {
-  pools: PoolExtracted[];
+  pools: [string, Pool][];
   users: UserExtracted[];
 }
 export interface QueryUserResponse {

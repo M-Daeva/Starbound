@@ -15,7 +15,7 @@ use crate::{
         instantiate::InstantiateMsg,
         query::{QueryMsg, QueryPoolsAndUsersResponse, QueryUserResponse},
     },
-    state::{Asset, Pool, PoolExtracted, User, UserExtracted, CHAIN_ID_DEV},
+    state::{AddrUnchecked, Asset, Denom, Pool, User, CHAIN_ID_DEV},
 };
 
 pub const ADDR_ADMIN_OSMO: &str = "osmo1k6ja23e7t9w2n87m2dn0cc727ag9pjkm2xlmck";
@@ -112,7 +112,7 @@ pub fn get_instance(addr: &str) -> Instance {
 //     (deps, env, info, res)
 // }
 
-pub fn get_initial_pools() -> Vec<PoolExtracted> {
+pub fn get_initial_pools() -> Vec<(Denom, Pool)> {
     let init_pools = vec![
         // ATOM / OSMO
         (
@@ -154,26 +154,11 @@ pub fn get_initial_pools() -> Vec<PoolExtracted> {
         ),
     ];
 
-    let extracted_pools: Vec<PoolExtracted> = init_pools
+    let extracted_pools: Vec<(Denom, Pool)> = init_pools
         .iter()
         .map(|x| {
             let (denom, pool) = x.to_owned();
-            let Pool {
-                channel_id,
-                port_id,
-                symbol,
-                id,
-                price,
-            } = pool;
-
-            PoolExtracted {
-                id,
-                denom: denom.to_owned(),
-                price,
-                symbol,
-                channel_id,
-                port_id,
-            }
+            (denom.to_owned(), pool)
         })
         .collect();
 
@@ -300,12 +285,17 @@ impl Project {
     }
 
     #[track_caller]
-    pub fn update_pools_and_users(
+    pub fn update_pools_and_users<T: ToString>(
         &mut self,
         sender: &str,
-        pools: Vec<PoolExtracted>,
-        users: Vec<UserExtracted>,
+        pools: Vec<(Denom, Pool)>,
+        users: Vec<(T, User)>,
     ) -> Result<AppResponse, StdError> {
+        let users: Vec<(AddrUnchecked, User)> = users
+            .iter()
+            .map(|(addr_generic, user)| (addr_generic.to_string(), user.to_owned()))
+            .collect();
+
         self.app
             .execute_contract(
                 Addr::unchecked(sender.to_string()),
@@ -318,7 +308,7 @@ impl Project {
 
     #[track_caller]
     pub fn init_pools(&mut self, sender: &str) -> Result<AppResponse, StdError> {
-        self.update_pools_and_users(sender, get_initial_pools(), vec![])
+        self.update_pools_and_users::<AddrUnchecked>(sender, get_initial_pools(), vec![])
     }
 
     // #[track_caller]

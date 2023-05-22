@@ -5,10 +5,10 @@ use crate::{
     messages::query::{
         QueryConfigResponse, QueryLedgerResponse, QueryPoolsAndUsersResponse, QueryUserResponse,
     },
-    state::{Pool, PoolExtracted, UserExtracted, CONFIG, LEDGER, POOLS, USERS},
+    state::{AddrUnchecked, CONFIG, LEDGER, POOLS, USERS},
 };
 
-pub fn query_user(deps: Deps, _env: Env, address: String) -> StdResult<Binary> {
+pub fn query_user(deps: Deps, _env: Env, address: AddrUnchecked) -> StdResult<Binary> {
     let address_validated = deps.api.addr_validate(&address)?;
     let user = USERS.load(deps.storage, &address_validated)?;
 
@@ -18,38 +18,12 @@ pub fn query_user(deps: Deps, _env: Env, address: String) -> StdResult<Binary> {
 pub fn query_pools_and_users(deps: Deps, _env: Env) -> StdResult<Binary> {
     let users = USERS
         .range(deps.storage, None, None, Order::Ascending)
-        .map(|x| {
-            let (osmo_address, user) = x.unwrap();
-            let asset_list = user.asset_list.iter().map(|x| x.extract()).collect();
-
-            UserExtracted {
-                osmo_address: osmo_address.to_string(),
-                asset_list,
-            }
-        })
+        .map(|x| x.unwrap())
         .collect();
 
     let pools = POOLS
         .range(deps.storage, None, None, Order::Ascending)
-        .map(|x| {
-            let (denom, pool) = x.unwrap();
-            let Pool {
-                channel_id,
-                id,
-                port_id,
-                price,
-                symbol,
-            } = pool;
-
-            PoolExtracted {
-                denom,
-                channel_id,
-                id,
-                port_id,
-                price,
-                symbol,
-            }
-        })
+        .map(|x| x.unwrap())
         .collect();
 
     to_binary(&QueryPoolsAndUsersResponse { users, pools })

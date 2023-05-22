@@ -16,8 +16,8 @@ use crate::{
     },
     error::ContractError,
     state::{
-        Asset, Config, Pool, PoolExtracted, TransferParams, User, UserExtracted, CONFIG, LEDGER,
-        POOLS, USERS,
+        AddrUnchecked, Asset, Config, Denom, Pool, TransferParams, User, CONFIG, LEDGER, POOLS,
+        USERS,
     },
 };
 
@@ -141,12 +141,12 @@ pub fn update_config(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    scheduler: Option<String>,
-    stablecoin_denom: Option<String>,
+    scheduler: Option<AddrUnchecked>,
+    stablecoin_denom: Option<Denom>,
     stablecoin_pool_id: Option<u64>,
     fee_default: Option<Decimal>,
     fee_osmo: Option<Decimal>,
-    dapp_address_and_denom_list: Option<Vec<(String, String)>>,
+    dapp_address_and_denom_list: Option<Vec<(AddrUnchecked, Denom)>>,
 ) -> Result<Response, ContractError> {
     CONFIG.update(
         deps.storage,
@@ -196,17 +196,17 @@ pub fn update_pools_and_users(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    pools: Vec<PoolExtracted>,
-    users: Vec<UserExtracted>,
+    pools: Vec<(Denom, Pool)>,
+    users: Vec<(AddrUnchecked, User)>,
 ) -> Result<Response, ContractError> {
     verify_scheduler(&deps, &info)?;
 
     // update pools info
-    for pool_received in pools {
+    for (denom, pool_received) in pools {
         if POOLS
             .save(
                 deps.storage,
-                &pool_received.denom,
+                &denom,
                 &Pool::new(
                     pool_received.id,
                     pool_received.price,
@@ -222,12 +222,12 @@ pub fn update_pools_and_users(
     }
 
     // update users info
-    for user_received in users {
+    for (address_unchecked, user_received) in users {
         // validate address
-        let osmo_address_received = deps.api.addr_validate(&user_received.osmo_address)?;
+        let address = deps.api.addr_validate(&address_unchecked)?;
 
         // get user from storage by address
-        let user_loaded = match USERS.load(deps.storage, &osmo_address_received) {
+        let user_loaded = match USERS.load(deps.storage, &address) {
             Ok(x) => x,
             _ => {
                 return Err(ContractError::UserIsNotFound {});
@@ -262,7 +262,7 @@ pub fn update_pools_and_users(
 
         USERS.save(
             deps.storage,
-            &osmo_address_received,
+            &address,
             &User {
                 asset_list,
                 ..user_loaded
