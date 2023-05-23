@@ -1,6 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::{
-    coin, Addr, BankMsg, CosmosMsg, Decimal, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo, Order,
+    coin, Addr, BankMsg, CosmosMsg, Decimal, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo,
     Response, StdError, Uint128,
 };
 
@@ -10,14 +10,18 @@ use osmosis_std::types::{
 };
 
 use crate::{
-    actions::helpers::{
-        math::{get_ledger, transfer_router},
-        verifier::{verify_deposit_data, verify_scheduler, LocalApi},
+    actions::{
+        helpers::{
+            math::{get_ledger, transfer_router},
+            verifier::{verify_deposit_data, verify_scheduler, LocalApi},
+        },
+        query::query_pools_and_users,
     },
     error::ContractError,
+    messages::query::QueryPoolsAndUsersResponse,
     state::{
-        AddrUnchecked, Asset, Config, Denom, Pool, TransferParams, User, CONFIG, LEDGER, POOLS,
-        USERS,
+        AddrUnchecked, Asset, Config, Denom, Pool, TransferParams, User, CONFIG, EXCHANGE_DENOM,
+        IBC_TIMEOUT_IN_MINS, LEDGER, POOLS, USERS,
     },
 };
 
@@ -33,10 +37,7 @@ pub fn deposit(
     let denom_token_in = config.stablecoin_denom;
 
     // check if user exists or create new
-    let user_loaded = match USERS.load(deps.storage, &info.sender) {
-        Ok(x) => x,
-        _ => User::new(&vec![], Uint128::zero(), Uint128::zero(), false),
-    };
+    let user_loaded = USERS.load(deps.storage, &info.sender).unwrap_or_default();
 
     // update asset list
     let mut asset_list = user
@@ -44,31 +45,23 @@ pub fn deposit(
         .iter()
         .map(|asset| -> Result<Asset, ContractError> {
             // check if asset is in pool
-            if (asset.asset_denom != "uosmo")
+            if (asset.asset_denom != EXCHANGE_DENOM)
                 && POOLS.load(deps.storage, &asset.asset_denom).is_err()
             {
-                return Err(ContractError::AssetIsNotFound {});
+                Err(ContractError::AssetIsNotFound {})?;
             };
 
-            // search same denom asset
-            Ok(
-                match user_loaded
-                    .asset_list
-                    .iter()
-                    .find(|&x| (x.asset_denom == asset.asset_denom))
-                {
-                    // preserve amount_to_send_until_next_epoch if asset is found
-                    Some(y) => Asset {
-                        amount_to_send_until_next_epoch: y.amount_to_send_until_next_epoch,
-                        ..asset.to_owned()
-                    },
-                    // add new if asset is not found
-                    _ => Asset {
-                        amount_to_send_until_next_epoch: Uint128::zero(),
-                        ..asset.to_owned()
-                    },
-                },
-            )
+            // search same denom asset and preserve amount_to_send_until_next_epoch if asset is found
+            let amount_to_send_until_next_epoch = user_loaded
+                .asset_list
+                .iter()
+                .find(|&x| (x.asset_denom == asset.asset_denom))
+                .map_or(Uint128::zero(), |y| y.amount_to_send_until_next_epoch);
+
+            Ok(Asset {
+                amount_to_send_until_next_epoch,
+                ..asset.to_owned()
+            })
         })
         .collect::<Result<Vec<Asset>, ContractError>>()?;
 
@@ -77,10 +70,11 @@ pub fn deposit(
         asset_list = user_loaded.asset_list;
     }
 
-    let funds_amount = match &info.funds.iter().find(|&x| x.denom == denom_token_in) {
-        Some(x) => x.amount,
-        None => Uint128::zero(),
-    };
+    let funds_amount = info
+        .funds
+        .iter()
+        .find(|&x| x.denom == denom_token_in)
+        .map_or(Uint128::zero(), |x| x.amount);
 
     USERS.save(
         deps.storage,
@@ -115,7 +109,7 @@ pub fn withdraw(
 
             // check withdraw amount
             if amount > user.deposited {
-                return Err(ContractError::WithdrawAmountIsExceeded {});
+                Err(ContractError::WithdrawAmountIsExceeded {})?;
             }
 
             Ok(User {
@@ -217,7 +211,7 @@ pub fn update_pools_and_users(
             )
             .is_err()
         {
-            return Err(ContractError::PoolIsNotUpdated {});
+            Err(ContractError::PoolIsNotUpdated {})?;
         };
     }
 
@@ -227,12 +221,9 @@ pub fn update_pools_and_users(
         let address = deps.api.addr_validate(&address_unchecked)?;
 
         // get user from storage by address
-        let user_loaded = match USERS.load(deps.storage, &address) {
-            Ok(x) => x,
-            _ => {
-                return Err(ContractError::UserIsNotFound {});
-            }
-        };
+        let user_loaded = USERS
+            .load(deps.storage, &address)
+            .map_err(|_| ContractError::UserIsNotFound {})?;
 
         // update user assets (wallet balances)
         let asset_list = user_loaded
@@ -240,10 +231,10 @@ pub fn update_pools_and_users(
             .iter()
             .map(|asset_loaded| -> Result<Asset, ContractError> {
                 // check if asset is in pool
-                if (asset_loaded.asset_denom != "uosmo")
+                if (asset_loaded.asset_denom != EXCHANGE_DENOM)
                     && POOLS.load(deps.storage, &asset_loaded.asset_denom).is_err()
                 {
-                    return Err(ContractError::AssetIsNotFound {});
+                    Err(ContractError::AssetIsNotFound {})?;
                 };
 
                 // search same denom
@@ -251,7 +242,7 @@ pub fn update_pools_and_users(
                     .asset_list
                     .iter()
                     .find(|&x| (x.asset_denom == asset_loaded.asset_denom))
-                    .unwrap();
+                    .ok_or(ContractError::AssetIsNotFound {})?;
 
                 Ok(Asset {
                     wallet_balance: asset_received.wallet_balance,
@@ -276,15 +267,8 @@ pub fn update_pools_and_users(
 pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     verify_scheduler(&deps, &info)?;
 
-    let pools = POOLS
-        .range(deps.storage, None, None, Order::Ascending)
-        .map(|x| x.unwrap())
-        .collect();
-
-    let users = USERS
-        .range(deps.storage, None, None, Order::Ascending)
-        .map(|x| x.unwrap())
-        .collect();
+    let QueryPoolsAndUsersResponse { pools, users } =
+        query_pools_and_users(deps.as_ref(), env.clone())?;
 
     let (ledger, users_with_addresses) = get_ledger(&pools, &users);
 
@@ -312,11 +296,11 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         // swap stablecoin to osmo anyway
         let mut routes: Vec<SwapAmountInRoute> = vec![SwapAmountInRoute {
             pool_id: config.stablecoin_pool_id,
-            token_out_denom: "uosmo".to_string(),
+            token_out_denom: EXCHANGE_DENOM.to_string(),
         }];
 
         // if other asset is needed add extra route
-        if global_denom != "uosmo" {
+        if global_denom != EXCHANGE_DENOM {
             routes.push(SwapAmountInRoute {
                 pool_id: pool.id.u128() as u64,
                 token_out_denom: global_denom.to_string(),
@@ -350,18 +334,10 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
 }
 
 pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-    const TIMEOUT_IN_MINS: u64 = 15;
     verify_scheduler(&deps, &info)?;
 
-    let pools: Vec<(String, Pool)> = POOLS
-        .range(deps.storage, None, None, Order::Ascending)
-        .map(|x| x.unwrap())
-        .collect();
-
-    let users: Vec<(Addr, User)> = USERS
-        .range(deps.storage, None, None, Order::Ascending)
-        .map(|x| x.unwrap())
-        .collect();
+    let QueryPoolsAndUsersResponse { pools, users } =
+        query_pools_and_users(deps.as_ref(), env.clone())?;
 
     let ledger = LEDGER.load(deps.storage)?;
 
@@ -372,7 +348,7 @@ pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
         dapp_address_and_denom_list,
         ..
     } = CONFIG.load(deps.storage)?;
-    let timestamp = env.block.time.plus_seconds(TIMEOUT_IN_MINS * 60);
+    let timestamp = env.block.time.plus_seconds(IBC_TIMEOUT_IN_MINS * 60);
 
     let contract_balances = deps.querier.query_all_balances(env.contract.address)?;
 
@@ -410,8 +386,7 @@ pub fn multi_transfer(
     _info: MessageInfo,
     params: Vec<TransferParams>,
 ) -> Result<Response, ContractError> {
-    const TIMEOUT_IN_MINS: u64 = 15;
-    let timestamp = env.block.time.plus_seconds(TIMEOUT_IN_MINS * 60);
+    let timestamp = env.block.time.plus_seconds(IBC_TIMEOUT_IN_MINS * 60);
 
     let msg_list = params
         .iter()

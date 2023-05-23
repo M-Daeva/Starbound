@@ -7,6 +7,8 @@ use crate::actions::helpers::math::str_to_dec;
 pub type Denom = String; // TODO: add verification
 pub type AddrUnchecked = String;
 
+pub const IBC_TIMEOUT_IN_MINS: u64 = 15;
+pub const EXCHANGE_DENOM: &str = "uosmo";
 pub const CHAIN_ID_DEV: &str = "devnet-1";
 
 pub const CONFIG: Item<Config> = Item::new("config");
@@ -52,6 +54,7 @@ impl Config {
 
 pub const LEDGER: Item<Ledger> = Item::new("ledger");
 #[cw_serde]
+#[derive(Default)]
 pub struct Ledger {
     pub global_delta_balance_list: Vec<Uint128>,
     pub global_delta_cost_list: Vec<Uint128>,
@@ -72,7 +75,7 @@ pub struct Pool {
 
 impl Pool {
     pub fn new(id: Uint128, price: Decimal, channel_id: &str, port_id: &str, symbol: &str) -> Self {
-        Pool {
+        Self {
             id,
             price,
             channel_id: channel_id.to_string(),
@@ -85,11 +88,12 @@ impl Pool {
 // key - osmo_address: &Addr
 pub const USERS: Map<&Addr, User> = Map::new("users");
 #[cw_serde]
+#[derive(Default)]
 pub struct User {
     pub asset_list: Vec<Asset>,
     pub is_controlled_rebalancing: bool,
     pub day_counter: Uint128,
-    pub deposited: Uint128,
+    pub deposited: Uint128, // TODO: change Deposit msg
 }
 
 impl User {
@@ -99,7 +103,7 @@ impl User {
         deposited: Uint128,
         is_controlled_rebalancing: bool,
     ) -> Self {
-        User {
+        Self {
             is_controlled_rebalancing,
             asset_list: asset_list.to_owned(),
             day_counter,
@@ -125,7 +129,7 @@ impl Asset {
         weight: Decimal,
         amount_to_send_until_next_epoch: Uint128,
     ) -> Self {
-        Asset {
+        Self {
             asset_denom: asset_denom.to_string(),
             wallet_address: wallet_address.to_owned(),
             wallet_balance,

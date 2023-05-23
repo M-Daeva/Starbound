@@ -25,7 +25,7 @@ export type ExecuteMsg = {
 } | {
   update_pools_and_users: {
     pools: [string, Pool][];
-    users: UserExtracted[];
+    users: [string, User][];
   };
 } | {
   swap: {};
@@ -61,15 +61,6 @@ export interface Pool {
   price: Decimal;
   symbol: string;
 }
-export interface UserExtracted {
-  asset_list: AssetExtracted[];
-  osmo_address: string;
-}
-export interface AssetExtracted {
-  asset_denom: string;
-  wallet_address: string;
-  wallet_balance: Uint128;
-}
 export interface TransferParams {
   amount: Uint128;
   block_height: Uint128;
@@ -91,9 +82,6 @@ export type QueryMsg = {
   query_config: {};
 };
 export type MigrateMsg = string;
-export interface QueryConfigResponse {
-  config: Config;
-}
 export interface Config {
   admin: Addr;
   chain_id_dev: string;
@@ -105,9 +93,6 @@ export interface Config {
   stablecoin_pool_id: number;
   timestamp: Timestamp;
 }
-export interface QueryLedgerResponse {
-  ledger: Ledger;
-}
 export interface Ledger {
   global_delta_balance_list: Uint128[];
   global_delta_cost_list: Uint128[];
@@ -116,8 +101,5 @@ export interface Ledger {
 }
 export interface QueryPoolsAndUsersResponse {
   pools: [string, Pool][];
-  users: UserExtracted[];
-}
-export interface QueryUserResponse {
-  user: User;
+  users: [Addr, User][];
 }

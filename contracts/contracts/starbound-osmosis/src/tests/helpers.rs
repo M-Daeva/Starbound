@@ -13,7 +13,7 @@ use crate::{
     messages::{
         execute::ExecuteMsg,
         instantiate::InstantiateMsg,
-        query::{QueryMsg, QueryPoolsAndUsersResponse, QueryUserResponse},
+        query::{QueryMsg, QueryPoolsAndUsersResponse},
     },
     state::{AddrUnchecked, Asset, Denom, Pool, User, CHAIN_ID_DEV},
 };
@@ -336,7 +336,7 @@ impl Project {
     // }
 
     #[track_caller]
-    pub fn query_user(&self, address: &str) -> Result<QueryUserResponse, StdError> {
+    pub fn query_user(&self, address: &str) -> Result<User, StdError> {
         self.app.wrap().query_wasm_smart(
             self.address.clone(),
             &QueryMsg::QueryUser {

@@ -11,12 +11,9 @@ use crate::{
     messages::{
         execute::ExecuteMsg,
         instantiate::InstantiateMsg,
-        query::{
-            QueryConfigResponse, QueryLedgerResponse, QueryMsg, QueryPoolsAndUsersResponse,
-            QueryUserResponse,
-        },
+        query::{QueryMsg, QueryPoolsAndUsersResponse},
     },
-    state::{Asset, Denom, Pool, User},
+    state::{Asset, Config, Denom, Ledger, Pool, User},
     tests::helpers::{
         get_initial_pools, Project, UserName, ADDR_ADMIN_OSMO, ADDR_ALICE_ATOM, ADDR_ALICE_OSMO,
         ADDR_BOB_ATOM, ADDR_BOB_OSMO, ADDR_BOB_SCRT, DENOM_ATOM, DENOM_EEUR, DENOM_JUNO,
@@ -42,7 +39,7 @@ fn deposit() {
 
     let res = prj.query_user(ADDR_ALICE_OSMO);
 
-    assert_eq!(res.unwrap(), QueryUserResponse { user });
+    assert_eq!(res.unwrap(), user);
 }
 
 #[test]
@@ -70,7 +67,7 @@ fn deposit_multiple_times_and_without_assets() {
 
     user.deposited = Uint128::from(2 * FUNDS_AMOUNT / 10);
 
-    assert_eq!(res.unwrap(), QueryUserResponse { user: user.clone() });
+    assert_eq!(res.unwrap(), user.clone());
 
     prj.deposit(
         ADDR_ALICE_OSMO,
@@ -86,7 +83,7 @@ fn deposit_multiple_times_and_without_assets() {
 
     user.deposited = Uint128::from(3 * FUNDS_AMOUNT / 10);
 
-    assert_eq!(res.unwrap(), QueryUserResponse { user });
+    assert_eq!(res.unwrap(), user);
 }
 
 #[test]
@@ -129,7 +126,7 @@ fn deposit_non_pool_asset_osmo() {
 
     let res = prj.query_user(ADDR_ALICE_OSMO);
 
-    assert_eq!(res.unwrap(), QueryUserResponse { user });
+    assert_eq!(res.unwrap(), user);
 }
 
 // check if asset outside pool list can not be deposited
@@ -184,7 +181,7 @@ fn deposit_and_update_wallet_address() {
 
     let res = prj.query_user(ADDR_ALICE_OSMO);
 
-    assert_eq!(res.unwrap().user, user);
+    assert_eq!(res.unwrap(), user);
 }
 
 // check if asset lists can be merged properly
@@ -213,7 +210,7 @@ fn deposit_and_update_asset_list() {
 
     let res = prj.query_user(ADDR_ALICE_OSMO).unwrap();
     assert_eq!(
-        res.user,
+        res,
         User {
             asset_list: vec![Asset::new(
                 DENOM_ATOM,
@@ -239,7 +236,7 @@ fn deposit_and_update_asset_list() {
 
     let res = prj.query_user(ADDR_ALICE_OSMO).unwrap();
 
-    assert_eq!(res.user, user);
+    assert_eq!(res, user);
 }
 
 #[test]
@@ -263,7 +260,7 @@ fn withdraw() {
     let res = prj.query_user(ADDR_ALICE_OSMO);
 
     assert_eq!(
-        res.unwrap().user,
+        res.unwrap(),
         User {
             deposited: part_of_deposited,
             ..user
@@ -334,7 +331,7 @@ fn query_user() {
 
     let res = prj.query_user(ADDR_ALICE_OSMO).unwrap();
 
-    assert_eq!(res.user, user_alice);
+    assert_eq!(res, user_alice);
 }
 
 #[test]
@@ -674,14 +671,11 @@ fn swap() {
 
     // test QueryConfig
     let config = wasm
-        .query::<QueryMsg, QueryConfigResponse>(&contract_addr, &QueryMsg::QueryConfig {})
+        .query::<QueryMsg, Config>(&contract_addr, &QueryMsg::QueryConfig {})
         .unwrap();
 
-    assert_eq!(config.config.stablecoin_denom, stablecoin_denom.unwrap());
-    assert_eq!(
-        config.config.stablecoin_pool_id,
-        stablecoin_pool_id.unwrap()
-    );
+    assert_eq!(config.stablecoin_denom, stablecoin_denom.unwrap());
+    assert_eq!(config.stablecoin_pool_id, stablecoin_pool_id.unwrap());
 
     let user_alice = Project::get_user(UserName::Alice);
 
@@ -707,7 +701,7 @@ fn swap() {
     println!("{:#?}", contract_balances);
 
     let ledger = wasm
-        .query::<QueryMsg, QueryLedgerResponse>(&contract_addr, &QueryMsg::QueryLedger {})
+        .query::<QueryMsg, Ledger>(&contract_addr, &QueryMsg::QueryLedger {})
         .unwrap();
     println!("{:#?}", ledger);
 
@@ -726,7 +720,7 @@ fn swap() {
     println!("{:#?}", contract_balances);
 
     let ledger = wasm
-        .query::<QueryMsg, QueryLedgerResponse>(&contract_addr, &QueryMsg::QueryLedger {})
+        .query::<QueryMsg, Ledger>(&contract_addr, &QueryMsg::QueryLedger {})
         .unwrap();
     println!("{:#?}", ledger);
 }
@@ -930,7 +924,7 @@ fn swap_with_osmo_in_asset_list() {
     println!("{:#?}", contract_balances);
 
     let ledger = wasm
-        .query::<QueryMsg, QueryLedgerResponse>(&contract_addr, &QueryMsg::QueryLedger {})
+        .query::<QueryMsg, Ledger>(&contract_addr, &QueryMsg::QueryLedger {})
         .unwrap();
     println!("{:#?}", ledger);
 
@@ -949,7 +943,7 @@ fn swap_with_osmo_in_asset_list() {
     println!("{:#?}", contract_balances);
 
     let ledger = wasm
-        .query::<QueryMsg, QueryLedgerResponse>(&contract_addr, &QueryMsg::QueryLedger {})
+        .query::<QueryMsg, Ledger>(&contract_addr, &QueryMsg::QueryLedger {})
         .unwrap();
     println!("{:#?}", ledger);
 }

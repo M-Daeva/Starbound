@@ -6,33 +6,18 @@ use crate::state::{AddrUnchecked, Config, Denom, Ledger, Pool, User};
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
-    #[returns(QueryUserResponse)]
+    #[returns(User)]
     QueryUser { address: AddrUnchecked },
     #[returns(QueryPoolsAndUsersResponse)]
     QueryPoolsAndUsers {},
-    #[returns(QueryLedgerResponse)]
+    #[returns(Ledger)]
     QueryLedger {},
-    #[returns(QueryConfigResponse)]
+    #[returns(Config)]
     QueryConfig {},
-}
-
-#[cw_serde]
-pub struct QueryUserResponse {
-    pub user: User,
 }
 
 #[cw_serde]
 pub struct QueryPoolsAndUsersResponse {
     pub users: Vec<(Addr, User)>,
     pub pools: Vec<(Denom, Pool)>,
-}
-
-#[cw_serde]
-pub struct QueryLedgerResponse {
-    pub ledger: Ledger,
-}
-
-#[cw_serde]
-pub struct QueryConfigResponse {
-    pub config: Config,
 }

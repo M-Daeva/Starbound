@@ -8,7 +8,7 @@ import { Coin } from "@cosmjs/amino";
 import { MsgExecuteContractEncodeObject } from "@cosmjs/cosmwasm-stargate";
 import { MsgExecuteContract } from "cosmjs-types/cosmwasm/wasm/v1/tx";
 import { toUtf8 } from "@cosmjs/encoding";
-import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, Timestamp, Uint64, User, Asset, Pool, UserExtracted, AssetExtracted, TransferParams, QueryMsg, MigrateMsg, QueryConfigResponse, Config, QueryLedgerResponse, Ledger, QueryPoolsAndUsersResponse, QueryUserResponse } from "./StarboundOsmosis.types";
+import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, Timestamp, Uint64, User, Asset, Pool, TransferParams, QueryMsg, MigrateMsg, Config, Ledger, QueryPoolsAndUsersResponse } from "./StarboundOsmosis.types";
 export interface StarboundOsmosisMessage {
   contractAddress: string;
   sender: string;
@@ -42,7 +42,7 @@ export interface StarboundOsmosisMessage {
     users
   }: {
     pools: string[][];
-    users: UserExtracted[];
+    users: string[][];
   }, funds?: Coin[]) => MsgExecuteContractEncodeObject;
   swap: (funds?: Coin[]) => MsgExecuteContractEncodeObject;
   transfer: (funds?: Coin[]) => MsgExecuteContractEncodeObject;
@@ -145,7 +145,7 @@ export class StarboundOsmosisMessageComposer implements StarboundOsmosisMessage 
     users
   }: {
     pools: string[][];
-    users: UserExtracted[];
+    users: string[][];
   }, funds?: Coin[]): MsgExecuteContractEncodeObject => {
     return {
       typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",

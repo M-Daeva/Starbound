@@ -35,15 +35,7 @@ pub fn init(
         ),
     )?;
 
-    LEDGER.save(
-        deps.storage,
-        &Ledger {
-            global_delta_balance_list: vec![],
-            global_delta_cost_list: vec![],
-            global_denom_list: vec![],
-            global_price_list: vec![],
-        },
-    )?;
+    LEDGER.save(deps.storage, &Ledger::default())?;
 
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 

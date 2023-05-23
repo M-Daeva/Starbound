@@ -6,17 +6,17 @@
 
 import { CosmWasmClient, SigningCosmWasmClient, ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 import { Coin, StdFee } from "@cosmjs/amino";
-import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, Timestamp, Uint64, User, Asset, Pool, UserExtracted, AssetExtracted, TransferParams, QueryMsg, MigrateMsg, QueryConfigResponse, Config, QueryLedgerResponse, Ledger, QueryPoolsAndUsersResponse, QueryUserResponse } from "./StarboundOsmosis.types";
+import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, Timestamp, Uint64, User, Asset, Pool, TransferParams, QueryMsg, MigrateMsg, Config, Ledger, QueryPoolsAndUsersResponse } from "./StarboundOsmosis.types";
 export interface StarboundOsmosisReadOnlyInterface {
   contractAddress: string;
   queryUser: ({
     address
   }: {
     address: string;
-  }) => Promise<QueryUserResponse>;
+  }) => Promise<User>;
   queryPoolsAndUsers: () => Promise<QueryPoolsAndUsersResponse>;
-  queryLedger: () => Promise<QueryLedgerResponse>;
-  queryConfig: () => Promise<QueryConfigResponse>;
+  queryLedger: () => Promise<Ledger>;
+  queryConfig: () => Promise<Config>;
 }
 export class StarboundOsmosisQueryClient implements StarboundOsmosisReadOnlyInterface {
   client: CosmWasmClient;
@@ -35,7 +35,7 @@ export class StarboundOsmosisQueryClient implements StarboundOsmosisReadOnlyInte
     address
   }: {
     address: string;
-  }): Promise<QueryUserResponse> => {
+  }): Promise<User> => {
     return this.client.queryContractSmart(this.contractAddress, {
       query_user: {
         address
@@ -47,12 +47,12 @@ export class StarboundOsmosisQueryClient implements StarboundOsmosisReadOnlyInte
       query_pools_and_users: {}
     });
   };
-  queryLedger = async (): Promise<QueryLedgerResponse> => {
+  queryLedger = async (): Promise<Ledger> => {
     return this.client.queryContractSmart(this.contractAddress, {
       query_ledger: {}
     });
   };
-  queryConfig = async (): Promise<QueryConfigResponse> => {
+  queryConfig = async (): Promise<Config> => {
     return this.client.queryContractSmart(this.contractAddress, {
       query_config: {}
     });
@@ -91,7 +91,7 @@ export interface StarboundOsmosisInterface extends StarboundOsmosisReadOnlyInter
     users
   }: {
     pools: string[][];
-    users: UserExtracted[];
+    users: string[][];
   }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
   swap: (fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
   transfer: (fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
@@ -173,7 +173,7 @@ export class StarboundOsmosisClient extends StarboundOsmosisQueryClient implemen
     users
   }: {
     pools: string[][];
-    users: UserExtracted[];
+    users: string[][];
   }, fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
     return await this.client.execute(this.sender, this.contractAddress, {
       update_pools_and_users: {
