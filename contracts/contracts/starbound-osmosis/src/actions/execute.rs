@@ -29,9 +29,11 @@ pub fn deposit(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    user: User,
+    asset_list: Vec<Asset>,
+    is_rebalancing_used: bool,
+    day_counter: Uint128,
 ) -> Result<Response, ContractError> {
-    verify_deposit_data(&deps, &info, &user)?;
+    verify_deposit_data(&deps, &info, &asset_list, is_rebalancing_used, day_counter)?;
 
     let config = CONFIG.load(deps.storage)?;
     let denom_token_in = config.stablecoin_denom;
@@ -40,8 +42,7 @@ pub fn deposit(
     let user_loaded = USERS.load(deps.storage, &info.sender).unwrap_or_default();
 
     // update asset list
-    let mut asset_list = user
-        .asset_list
+    let mut asset_list = asset_list
         .iter()
         .map(|asset| -> Result<Asset, ContractError> {
             // check if asset is in pool
@@ -51,15 +52,15 @@ pub fn deposit(
                 Err(ContractError::AssetIsNotFound {})?;
             };
 
-            // search same denom asset and preserve amount_to_send_until_next_epoch if asset is found
-            let amount_to_send_until_next_epoch = user_loaded
+            // search same denom asset and preserve amount_to_transfer if asset is found
+            let amount_to_transfer = user_loaded
                 .asset_list
                 .iter()
                 .find(|&x| (x.asset_denom == asset.asset_denom))
-                .map_or(Uint128::zero(), |y| y.amount_to_send_until_next_epoch);
+                .map_or(Uint128::zero(), |y| y.amount_to_transfer);
 
             Ok(Asset {
-                amount_to_send_until_next_epoch,
+                amount_to_transfer,
                 ..asset.to_owned()
             })
         })
@@ -82,13 +83,14 @@ pub fn deposit(
         &User {
             asset_list,
             deposited: user_loaded.deposited + funds_amount,
-            ..user
+            day_counter,
+            is_rebalancing_used,
         },
     )?;
 
     Ok(Response::new().add_attributes(vec![
         ("method", "deposit"),
-        ("user_deposited", &user.deposited.to_string()),
+        ("user_deposited", &funds_amount.to_string()),
     ]))
 }
 

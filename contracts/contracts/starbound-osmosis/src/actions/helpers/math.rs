@@ -279,13 +279,13 @@ pub fn get_ledger(
 
         // 5) calculate user_delta_costs using one of two rebalance functions
         // user_delta_costs - vector of user payments in $ to buy assets
-        let user_delta_costs = if user.is_controlled_rebalancing {
+        let user_delta_costs = if user.is_rebalancing_used {
             rebalance_controlled(&user_costs, &user_weights, daily_payment)
         } else {
             rebalance_proportional(&user_weights, daily_payment)
         };
 
-        // 6) calcuclate user_delta_balances using prices and fill amount_to_send_until_next_epoch
+        // 6) calcuclate user_delta_balances using prices and fill amount_to_transfer
         // user_delta_costs - vector of user assets to buy
         let user_delta_balances = vec_div(&user_delta_costs, &global_price_list, true);
 
@@ -298,7 +298,7 @@ pub fn get_ledger(
 
         let deposited = user.deposited - daily_payment;
 
-        // update user assets amount to buy data (amount_to_send_until_next_epoch)
+        // update user assets amount to buy data (amount_to_transfer)
         let mut asset_list_updated: Vec<Asset> = vec![];
         for asset in &user.asset_list {
             let some_index = global_denom_list
@@ -306,20 +306,18 @@ pub fn get_ledger(
                 .position(|x| x == &asset.asset_denom);
 
             if let Some(index) = some_index {
-                let amount_to_send_until_next_epoch =
-                    asset.amount_to_send_until_next_epoch + user_delta_balances[index];
+                let amount_to_transfer = asset.amount_to_transfer + user_delta_balances[index];
 
                 let asset_updated = Asset {
-                    amount_to_send_until_next_epoch,
+                    amount_to_transfer,
                     ..asset.to_owned()
                 };
                 asset_list_updated.push(asset_updated);
 
                 // 7) fill global_delta_balance_list and global_delta_cost_list
-                global_delta_balance_list[index] += amount_to_send_until_next_epoch;
+                global_delta_balance_list[index] += amount_to_transfer;
                 global_delta_cost_list[index] += dec_to_uint128(
-                    (uint128_to_dec(amount_to_send_until_next_epoch) * global_price_list[index])
-                        .ceil(),
+                    (uint128_to_dec(amount_to_transfer) * global_price_list[index]).ceil(),
                 );
             }
         }
@@ -365,7 +363,7 @@ pub fn transfer_router(
     const DENOM_OSMO: &str = "uosmo";
     let mut fee_list: Vec<Uint128> = vec![Uint128::zero(); ledger.global_denom_list.len()];
 
-    // get vector of ratios to correct amount_to_send_until_next_epoch due to difference between
+    // get vector of ratios to correct amount_to_transfer due to difference between
     // contract balances and calculated values
     let asset_amount_correction_vector = ledger
         .global_denom_list
@@ -406,30 +404,27 @@ pub fn transfer_router(
                 .iter()
                 .position(|x| x == &asset.asset_denom)
             {
-                let amount_to_send_until_next_epoch = dec_to_uint128(
-                    (uint128_to_dec(asset.amount_to_send_until_next_epoch)
+                let amount_to_transfer = dec_to_uint128(
+                    (uint128_to_dec(asset.amount_to_transfer)
                         * asset_amount_correction_vector[index])
                         .floor(),
                 );
 
-                // reset amount_to_send_until_next_epoch
+                // reset amount_to_transfer
                 asset_list.push(Asset {
-                    amount_to_send_until_next_epoch: Uint128::zero(),
+                    amount_to_transfer: Uint128::zero(),
                     ..asset.to_owned()
                 });
 
                 // don't create message with zero balance
-                if amount_to_send_until_next_epoch.is_zero() {
+                if amount_to_transfer.is_zero() {
                     continue;
                 }
 
                 if asset.asset_denom == DENOM_OSMO {
                     let bank_msg = CosmosMsg::Bank(BankMsg::Send {
                         to_address: asset.wallet_address.to_string(),
-                        amount: vec![coin(
-                            amount_to_send_until_next_epoch.u128(),
-                            &asset.asset_denom,
-                        )],
+                        amount: vec![coin(amount_to_transfer.u128(), &asset.asset_denom)],
                     });
 
                     msg_list.push(bank_msg);
@@ -440,7 +435,7 @@ pub fn transfer_router(
                     let ibc_msg = CosmosMsg::Ibc(IbcMsg::Transfer {
                         channel_id: pool.channel_id.to_owned(),
                         to_address: asset.wallet_address.to_string(),
-                        amount: coin(amount_to_send_until_next_epoch.u128(), &asset.asset_denom),
+                        amount: coin(amount_to_transfer.u128(), &asset.asset_denom),
                         timeout: IbcTimeout::with_timestamp(timestamp),
                     });
 
@@ -515,7 +510,7 @@ pub mod test {
     use crate::tests::helpers::{
         ADDR_ALICE_ATOM, ADDR_ALICE_JUNO, ADDR_ALICE_OSMO, ADDR_BOB_ATOM, ADDR_BOB_JUNO,
         ADDR_BOB_OSMO, ADDR_BOB_STARS, DENOM_ATOM, DENOM_EEUR, DENOM_JUNO, DENOM_SCRT, DENOM_STARS,
-        IS_CONTROLLED_REBALANCING,
+        IS_REBALANCING_USED,
     };
 
     use super::{
@@ -549,7 +544,7 @@ pub mod test {
             &asset_list_alice,
             Uint128::from(3_u128),
             Uint128::from(7500_u128),
-            IS_CONTROLLED_REBALANCING,
+            IS_REBALANCING_USED,
         );
 
         let users_with_addresses: Vec<(Addr, User)> =
@@ -857,7 +852,7 @@ pub mod test {
             &asset_list_alice,
             day_counter_alice,
             deposited_alice,
-            !IS_CONTROLLED_REBALANCING,
+            !IS_REBALANCING_USED,
         );
 
         let deposited_bob = Uint128::from(4_130_u128);
@@ -884,7 +879,7 @@ pub mod test {
             &asset_list_bob,
             day_counter_bob,
             deposited_bob,
-            !IS_CONTROLLED_REBALANCING,
+            !IS_REBALANCING_USED,
         );
 
         let users_with_addresses: Vec<(Addr, User)> = vec![
@@ -965,7 +960,7 @@ pub mod test {
                         .unwrap();
 
                     let price = ledger.global_price_list[index];
-                    let amount = asset.amount_to_send_until_next_epoch;
+                    let amount = asset.amount_to_transfer;
                     let daily_payment = dec_to_uint128((uint128_to_dec(amount) * price).ceil());
                     user_daily_payment_right_item += daily_payment;
 
@@ -974,7 +969,7 @@ pub mod test {
                     global_delta_cost_list_left[index] += daily_payment;
 
                     asset_list_updated.push(Asset {
-                        amount_to_send_until_next_epoch: Uint128::zero(), // it is sent via ibc
+                        amount_to_transfer: Uint128::zero(), // it is sent via ibc
                         ..asset
                     });
                 }

@@ -39,7 +39,18 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Deposit { user } => deposit(deps, env, info, user),
+        ExecuteMsg::Deposit {
+            asset_list,
+            is_rebalancing_used,
+            day_counter,
+        } => deposit(
+            deps,
+            env,
+            info,
+            asset_list,
+            is_rebalancing_used,
+            day_counter,
+        ),
         ExecuteMsg::Withdraw { amount } => withdraw(deps, env, info, amount),
         ExecuteMsg::UpdateConfig {
             scheduler,

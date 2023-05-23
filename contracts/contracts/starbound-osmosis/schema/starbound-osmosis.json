@@ -21,11 +21,22 @@
           "deposit": {
             "type": "object",
             "required": [
-              "user"
+              "asset_list",
+              "day_counter",
+              "is_rebalancing_used"
             ],
             "properties": {
-              "user": {
-                "$ref": "#/definitions/User"
+              "asset_list": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/Asset"
+                }
+              },
+              "day_counter": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "is_rebalancing_used": {
+                "type": "boolean"
               }
             },
             "additionalProperties": false
@@ -238,14 +249,14 @@
       "Asset": {
         "type": "object",
         "required": [
-          "amount_to_send_until_next_epoch",
+          "amount_to_transfer",
           "asset_denom",
           "wallet_address",
           "wallet_balance",
           "weight"
         ],
         "properties": {
-          "amount_to_send_until_next_epoch": {
+          "amount_to_transfer": {
             "$ref": "#/definitions/Uint128"
           },
           "asset_denom": {
@@ -353,7 +364,7 @@
           "asset_list",
           "day_counter",
           "deposited",
-          "is_controlled_rebalancing"
+          "is_rebalancing_used"
         ],
         "properties": {
           "asset_list": {
@@ -368,7 +379,7 @@
           "deposited": {
             "$ref": "#/definitions/Uint128"
           },
-          "is_controlled_rebalancing": {
+          "is_rebalancing_used": {
             "type": "boolean"
           }
         },
@@ -632,14 +643,14 @@
         "Asset": {
           "type": "object",
           "required": [
-            "amount_to_send_until_next_epoch",
+            "amount_to_transfer",
             "asset_denom",
             "wallet_address",
             "wallet_balance",
             "weight"
           ],
           "properties": {
-            "amount_to_send_until_next_epoch": {
+            "amount_to_transfer": {
               "$ref": "#/definitions/Uint128"
             },
             "asset_denom": {
@@ -699,7 +710,7 @@
             "asset_list",
             "day_counter",
             "deposited",
-            "is_controlled_rebalancing"
+            "is_rebalancing_used"
           ],
           "properties": {
             "asset_list": {
@@ -714,7 +725,7 @@
             "deposited": {
               "$ref": "#/definitions/Uint128"
             },
-            "is_controlled_rebalancing": {
+            "is_rebalancing_used": {
               "type": "boolean"
             }
           },
@@ -730,7 +741,7 @@
         "asset_list",
         "day_counter",
         "deposited",
-        "is_controlled_rebalancing"
+        "is_rebalancing_used"
       ],
       "properties": {
         "asset_list": {
@@ -745,7 +756,7 @@
         "deposited": {
           "$ref": "#/definitions/Uint128"
         },
-        "is_controlled_rebalancing": {
+        "is_rebalancing_used": {
           "type": "boolean"
         }
       },
@@ -758,14 +769,14 @@
         "Asset": {
           "type": "object",
           "required": [
-            "amount_to_send_until_next_epoch",
+            "amount_to_transfer",
             "asset_denom",
             "wallet_address",
             "wallet_balance",
             "weight"
           ],
           "properties": {
-            "amount_to_send_until_next_epoch": {
+            "amount_to_transfer": {
               "$ref": "#/definitions/Uint128"
             },
             "asset_denom": {

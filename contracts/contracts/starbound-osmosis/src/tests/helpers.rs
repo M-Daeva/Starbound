@@ -41,7 +41,7 @@ pub const DENOM_STARS: &str =
 pub const DENOM_SCRT: &str = "ibc/0954E1C28EB7AF5B72D24F3BC2B47BBB2FDF91BDDFD57B74B99E133AED40972A";
 pub const DENOM_NONEXISTENT: &str = "DENOM_NONEXISTENT";
 
-pub const IS_CONTROLLED_REBALANCING: bool = false;
+pub const IS_REBALANCING_USED: bool = false;
 pub const FUNDS_AMOUNT: u128 = 10_000;
 
 // TODO: replace EEUR -> USDC on mainnet
@@ -72,7 +72,7 @@ pub fn get_instance(addr: &str) -> Instance {
 }
 
 // pub fn instantiate_and_deposit(
-//     is_controlled_rebalancing: bool,
+//     is_rebalancing_used: bool,
 //     is_current_period: bool,
 //     funds_amount: u128,
 // ) -> Instance {
@@ -86,14 +86,14 @@ pub fn get_instance(addr: &str) -> Instance {
 //             wallet_address: Addr::unchecked(ADDR_ALICE_ATOM),
 //             wallet_balance: Uint128::zero(),
 //             weight: str_to_dec("0.5"),
-//             amount_to_send_until_next_epoch: Uint128::zero(),
+//             amount_to_transfer: Uint128::zero(),
 //         },
 //         Asset {
 //             asset_denom: DENOM_JUNO.to_string(),
 //             wallet_address: Addr::unchecked(ADDR_ALICE_JUNO),
 //             wallet_balance: Uint128::zero(),
 //             weight: str_to_dec("0.5"),
-//             amount_to_send_until_next_epoch: Uint128::zero(),
+//             amount_to_transfer: Uint128::zero(),
 //         },
 //     ];
 
@@ -101,7 +101,7 @@ pub fn get_instance(addr: &str) -> Instance {
 //         asset_list: asset_list_alice,
 //         day_counter: Uint128::from(3_u128),
 //         deposited: Uint128::from(funds_amount),
-//         is_controlled_rebalancing,
+//         is_rebalancing_used,
 //     };
 
 //     let msg = ExecuteMsg::Deposit { user };
@@ -228,7 +228,9 @@ impl Project {
     pub fn deposit(
         &mut self,
         sender: &str,
-        user: &User,
+        asset_list: &Vec<Asset>,
+        is_rebalancing_used: bool,
+        day_counter: Uint128,
         funds: &[Coin],
     ) -> Result<AppResponse, StdError> {
         self.app
@@ -236,7 +238,9 @@ impl Project {
                 Addr::unchecked(sender.to_string()),
                 self.address.clone(),
                 &ExecuteMsg::Deposit {
-                    user: user.to_owned(),
+                    asset_list: asset_list.to_owned(),
+                    is_rebalancing_used,
+                    day_counter,
                 },
                 funds,
             )
@@ -412,7 +416,7 @@ impl Project {
             &asset_list_alice,
             Uint128::from(4_u128),
             Uint128::from(FUNDS_AMOUNT),
-            IS_CONTROLLED_REBALANCING,
+            IS_REBALANCING_USED,
         );
 
         let asset_list_bob: Vec<Asset> = vec![
@@ -436,7 +440,7 @@ impl Project {
             &asset_list_bob,
             Uint128::from(3_u128),
             Uint128::from(FUNDS_AMOUNT),
-            IS_CONTROLLED_REBALANCING,
+            IS_REBALANCING_USED,
         );
 
         match user_name {

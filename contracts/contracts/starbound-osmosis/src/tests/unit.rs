@@ -32,7 +32,9 @@ fn deposit() {
 
     prj.deposit(
         ADDR_ALICE_OSMO,
-        &user,
+        &user.asset_list,
+        user.is_rebalancing_used,
+        user.day_counter,
         &[coin(user.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
@@ -51,14 +53,18 @@ fn deposit_multiple_times_and_without_assets() {
 
     prj.deposit(
         ADDR_ALICE_OSMO,
-        &user,
+        &user.asset_list,
+        user.is_rebalancing_used,
+        user.day_counter,
         &[coin(FUNDS_AMOUNT / 10, DENOM_EEUR)],
     )
     .unwrap();
 
     prj.deposit(
         ADDR_ALICE_OSMO,
-        &user,
+        &user.asset_list,
+        user.is_rebalancing_used,
+        user.day_counter,
         &[coin(FUNDS_AMOUNT / 10, DENOM_EEUR)],
     )
     .unwrap();
@@ -71,10 +77,9 @@ fn deposit_multiple_times_and_without_assets() {
 
     prj.deposit(
         ADDR_ALICE_OSMO,
-        &User {
-            asset_list: vec![],
-            ..user
-        },
+        &vec![],
+        user.is_rebalancing_used,
+        user.day_counter,
         &[coin(FUNDS_AMOUNT / 10, DENOM_EEUR)],
     )
     .unwrap();
@@ -94,7 +99,9 @@ fn deposit_unsupported_asset() {
     let res = prj
         .deposit(
             ADDR_ALICE_OSMO,
-            &user,
+            &user.asset_list,
+            user.is_rebalancing_used,
+            user.day_counter,
             &[coin(user.deposited.u128(), DENOM_OSMO)],
         )
         .unwrap_err();
@@ -119,7 +126,9 @@ fn deposit_non_pool_asset_osmo() {
 
     prj.deposit(
         ADDR_ALICE_OSMO,
-        &user,
+        &user.asset_list,
+        user.is_rebalancing_used,
+        user.day_counter,
         &[coin(user.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
@@ -145,7 +154,9 @@ fn deposit_non_pool_asset_scrt() {
 
     prj.deposit(
         ADDR_ALICE_OSMO,
-        &user,
+        &user.asset_list,
+        user.is_rebalancing_used,
+        user.day_counter,
         &[coin(user.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
@@ -161,7 +172,9 @@ fn deposit_and_update_wallet_address() {
 
     prj.deposit(
         ADDR_ALICE_OSMO,
-        &user,
+        &user.asset_list,
+        user.is_rebalancing_used,
+        user.day_counter,
         &[coin(user.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
@@ -171,10 +184,9 @@ fn deposit_and_update_wallet_address() {
 
     prj.deposit(
         ADDR_ALICE_OSMO,
-        &User {
-            deposited: Uint128::zero(),
-            ..user.clone()
-        },
+        &user.asset_list,
+        user.is_rebalancing_used,
+        user.day_counter,
         &[],
     )
     .unwrap();
@@ -203,7 +215,9 @@ fn deposit_and_update_asset_list() {
 
     prj.deposit(
         ADDR_ALICE_OSMO,
-        &User { asset_list, ..user },
+        &asset_list,
+        user.is_rebalancing_used,
+        user.day_counter,
         &[coin(user.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
@@ -226,10 +240,9 @@ fn deposit_and_update_asset_list() {
     // add atom and juno to asset list and update it
     prj.deposit(
         ADDR_ALICE_OSMO,
-        &User {
-            deposited: Uint128::zero(),
-            ..user.to_owned()
-        },
+        &user.asset_list,
+        user.is_rebalancing_used,
+        user.day_counter,
         &[],
     )
     .unwrap();
@@ -248,7 +261,9 @@ fn withdraw() {
 
     prj.deposit(
         ADDR_ALICE_OSMO,
-        &user,
+        &user.asset_list,
+        user.is_rebalancing_used,
+        user.day_counter,
         &[coin(user.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
@@ -318,13 +333,17 @@ fn query_user() {
 
     prj.deposit(
         ADDR_ALICE_OSMO,
-        &user_alice,
+        &user_alice.asset_list,
+        user_alice.is_rebalancing_used,
+        user_alice.day_counter,
         &[coin(user_alice.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
     prj.deposit(
         ADDR_BOB_OSMO,
-        &user_bob,
+        &user_bob.asset_list,
+        user_bob.is_rebalancing_used,
+        user_bob.day_counter,
         &[coin(user_bob.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
@@ -345,13 +364,17 @@ fn query_pools_and_users() {
 
     prj.deposit(
         ADDR_ALICE_OSMO,
-        &user_alice,
+        &user_alice.asset_list,
+        user_alice.is_rebalancing_used,
+        user_alice.day_counter,
         &[coin(user_alice.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
     prj.deposit(
         ADDR_BOB_OSMO,
-        &user_bob,
+        &user_bob.asset_list,
+        user_bob.is_rebalancing_used,
+        user_bob.day_counter,
         &[coin(user_bob.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
@@ -394,13 +417,17 @@ fn update_pools_and_users() {
 
     prj.deposit(
         ADDR_ALICE_OSMO,
-        &user_alice,
+        &user_alice.asset_list,
+        user_alice.is_rebalancing_used,
+        user_alice.day_counter,
         &[coin(user_alice.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
     prj.deposit(
         ADDR_BOB_OSMO,
-        &user_bob,
+        &user_bob.asset_list,
+        user_bob.is_rebalancing_used,
+        user_bob.day_counter,
         &[coin(user_bob.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
@@ -474,13 +501,17 @@ fn update_pools_and_users_unsupported_asset() {
 
     prj.deposit(
         ADDR_ALICE_OSMO,
-        &user_alice,
+        &user_alice.asset_list,
+        user_alice.is_rebalancing_used,
+        user_alice.day_counter,
         &[coin(user_alice.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
     prj.deposit(
         ADDR_BOB_OSMO,
-        &user_bob,
+        &user_bob.asset_list,
+        user_bob.is_rebalancing_used,
+        user_bob.day_counter,
         &[coin(user_bob.deposited.u128(), DENOM_EEUR)],
     )
     .unwrap();
@@ -682,7 +713,9 @@ fn swap() {
     wasm.execute::<ExecuteMsg>(
         &contract_addr,
         &ExecuteMsg::Deposit {
-            user: user_alice.clone(),
+            asset_list: user_alice.asset_list,
+            day_counter: user_alice.day_counter,
+            is_rebalancing_used: user_alice.is_rebalancing_used,
         },
         &[coin(user_alice.deposited.u128(), DENOM_EEUR)],
         user,
@@ -905,7 +938,9 @@ fn swap_with_osmo_in_asset_list() {
     wasm.execute::<ExecuteMsg>(
         &contract_addr,
         &ExecuteMsg::Deposit {
-            user: user_alice.clone(),
+            asset_list: user_alice.asset_list,
+            day_counter: user_alice.day_counter,
+            is_rebalancing_used: user_alice.is_rebalancing_used,
         },
         &[coin(user_alice.deposited.u128(), DENOM_EEUR)],
         user,
@@ -951,7 +986,7 @@ fn swap_with_osmo_in_asset_list() {
 // #[test]
 // fn test_execute_swap_with_updated_users() {
 //     let (mut deps, env, mut info, _res) =
-//         instantiate_and_deposit(IS_CONTROLLED_REBALANCING, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
+//         instantiate_and_deposit(IS_REBALANCING_USED, IS_CURRENT_PERIOD, FUNDS_AMOUNT);
 
 //     // add 2nd user
 //     let funds_amount = 600_000;
@@ -963,14 +998,14 @@ fn swap_with_osmo_in_asset_list() {
 //             wallet_address: Addr::unchecked(ADDR_BOB_ATOM),
 //             wallet_balance: Uint128::from(10_000_000_u128),
 //             weight: str_to_dec("0.3"),
-//             amount_to_send_until_next_epoch: Uint128::zero(),
+//             amount_to_transfer: Uint128::zero(),
 //         },
 //         Asset {
 //             asset_denom: DENOM_JUNO.to_string(),
 //             wallet_address: Addr::unchecked(ADDR_BOB_JUNO),
 //             wallet_balance: Uint128::from(10_000_000_u128),
 //             weight: str_to_dec("0.7"),
-//             amount_to_send_until_next_epoch: Uint128::zero(),
+//             amount_to_transfer: Uint128::zero(),
 //         },
 //     ];
 
@@ -979,7 +1014,7 @@ fn swap_with_osmo_in_asset_list() {
 //         day_counter: Uint128::from(3_u128),
 //         deposited_on_current_period: Uint128::from(funds_amount),
 //         deposited_on_next_period: Uint128::zero(),
-//         is_controlled_rebalancing: IS_CONTROLLED_REBALANCING,
+//         is_rebalancing_used: IS_REBALANCING_USED,
 //     };
 
 //     let msg = ExecuteMsg::Deposit { user };

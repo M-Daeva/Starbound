@@ -6,7 +6,7 @@
 
 import { CosmWasmClient, SigningCosmWasmClient, ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 import { Coin, StdFee } from "@cosmjs/amino";
-import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, Timestamp, Uint64, User, Asset, Pool, TransferParams, QueryMsg, MigrateMsg, Config, Ledger, QueryPoolsAndUsersResponse } from "./StarboundOsmosis.types";
+import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, Timestamp, Uint64, Asset, Pool, User, TransferParams, QueryMsg, MigrateMsg, Config, Ledger, QueryPoolsAndUsersResponse } from "./StarboundOsmosis.types";
 export interface StarboundOsmosisReadOnlyInterface {
   contractAddress: string;
   queryUser: ({
@@ -62,9 +62,13 @@ export interface StarboundOsmosisInterface extends StarboundOsmosisReadOnlyInter
   contractAddress: string;
   sender: string;
   deposit: ({
-    user
+    assetList,
+    dayCounter,
+    isRebalancingUsed
   }: {
-    user: User;
+    assetList: Asset[];
+    dayCounter: Uint128;
+    isRebalancingUsed: boolean;
   }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
   withdraw: ({
     amount
@@ -121,13 +125,19 @@ export class StarboundOsmosisClient extends StarboundOsmosisQueryClient implemen
   }
 
   deposit = async ({
-    user
+    assetList,
+    dayCounter,
+    isRebalancingUsed
   }: {
-    user: User;
+    assetList: Asset[];
+    dayCounter: Uint128;
+    isRebalancingUsed: boolean;
   }, fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
     return await this.client.execute(this.sender, this.contractAddress, {
       deposit: {
-        user
+        asset_list: assetList,
+        day_counter: dayCounter,
+        is_rebalancing_used: isRebalancingUsed
       }
     }, fee, memo, funds);
   };

@@ -91,7 +91,7 @@ pub const USERS: Map<&Addr, User> = Map::new("users");
 #[derive(Default)]
 pub struct User {
     pub asset_list: Vec<Asset>,
-    pub is_controlled_rebalancing: bool,
+    pub is_rebalancing_used: bool,
     pub day_counter: Uint128,
     pub deposited: Uint128, // TODO: change Deposit msg
 }
@@ -101,10 +101,10 @@ impl User {
         asset_list: &Vec<Asset>,
         day_counter: Uint128,
         deposited: Uint128,
-        is_controlled_rebalancing: bool,
+        is_rebalancing_used: bool,
     ) -> Self {
         Self {
-            is_controlled_rebalancing,
+            is_rebalancing_used,
             asset_list: asset_list.to_owned(),
             day_counter,
             deposited,
@@ -118,7 +118,7 @@ pub struct Asset {
     pub wallet_address: Addr,
     pub wallet_balance: Uint128,
     pub weight: Decimal,
-    pub amount_to_send_until_next_epoch: Uint128,
+    pub amount_to_transfer: Uint128,
 }
 
 impl Asset {
@@ -127,14 +127,14 @@ impl Asset {
         wallet_address: &Addr,
         wallet_balance: Uint128,
         weight: Decimal,
-        amount_to_send_until_next_epoch: Uint128,
+        amount_to_transfer: Uint128,
     ) -> Self {
         Self {
             asset_denom: asset_denom.to_string(),
             wallet_address: wallet_address.to_owned(),
             wallet_balance,
             weight,
-            amount_to_send_until_next_epoch,
+            amount_to_transfer,
         }
     }
 }

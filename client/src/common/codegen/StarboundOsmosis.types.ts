@@ -7,7 +7,9 @@
 export interface InstantiateMsg {}
 export type ExecuteMsg = {
   deposit: {
-    user: User;
+    asset_list: Asset[];
+    day_counter: Uint128;
+    is_rebalancing_used: boolean;
   };
 } | {
   withdraw: {
@@ -41,14 +43,8 @@ export type Addr = string;
 export type Decimal = string;
 export type Timestamp = Uint64;
 export type Uint64 = string;
-export interface User {
-  asset_list: Asset[];
-  day_counter: Uint128;
-  deposited: Uint128;
-  is_controlled_rebalancing: boolean;
-}
 export interface Asset {
-  amount_to_send_until_next_epoch: Uint128;
+  amount_to_transfer: Uint128;
   asset_denom: string;
   wallet_address: Addr;
   wallet_balance: Uint128;
@@ -60,6 +56,12 @@ export interface Pool {
   port_id: string;
   price: Decimal;
   symbol: string;
+}
+export interface User {
+  asset_list: Asset[];
+  day_counter: Uint128;
+  deposited: Uint128;
+  is_rebalancing_used: boolean;
 }
 export interface TransferParams {
   amount: Uint128;

@@ -1,9 +1,11 @@
 #[cfg(not(feature = "library"))]
-use cosmwasm_std::{Addr, CanonicalAddr, Decimal, DepsMut, MessageInfo, StdError, StdResult};
+use cosmwasm_std::{
+    Addr, CanonicalAddr, Decimal, DepsMut, MessageInfo, StdError, StdResult, Uint128,
+};
 
 use crate::{
     error::ContractError,
-    state::{User, CONFIG, POOLS, USERS},
+    state::{Asset, CONFIG, POOLS, USERS},
 };
 
 // This simple Api provided for address verification
@@ -149,7 +151,9 @@ impl LocalApi {
 pub fn verify_deposit_data(
     deps: &DepsMut,
     info: &MessageInfo,
-    user: &User,
+    asset_list: &Vec<Asset>,
+    _is_rebalancing_used: bool,
+    _day_counter: Uint128,
 ) -> Result<(), ContractError> {
     // check funds
     let config = CONFIG.load(deps.storage)?;
@@ -161,13 +165,12 @@ pub fn verify_deposit_data(
     }
 
     // skip checking assets and weight if we need just add funds and update day counter
-    if user.asset_list.is_empty() && USERS.load(deps.storage, &info.sender).is_ok() {
+    if asset_list.is_empty() && USERS.load(deps.storage, &info.sender).is_ok() {
         return Ok(());
     }
 
     // check if all weights are in range [0, 1]
-    if user
-        .asset_list
+    if asset_list
         .iter()
         .any(|asset| asset.weight.lt(&Decimal::zero()) || asset.weight.gt(&Decimal::one()))
     {
@@ -175,8 +178,7 @@ pub fn verify_deposit_data(
     }
 
     // check if sum of weights is equal one
-    let weight_sum = user
-        .asset_list
+    let weight_sum = asset_list
         .iter()
         .fold(Decimal::zero(), |acc, cur| acc + cur.weight);
 
@@ -185,8 +187,7 @@ pub fn verify_deposit_data(
     }
 
     // check if asset_list contains unique denoms
-    let mut list = user
-        .asset_list
+    let mut list = asset_list
         .iter()
         .map(|x| x.asset_denom.clone())
         .collect::<Vec<String>>();
@@ -194,12 +195,12 @@ pub fn verify_deposit_data(
     list.sort();
     list.dedup();
 
-    if list.len() != user.asset_list.len() {
+    if list.len() != asset_list.len() {
         return Err(ContractError::DuplicatedAssets {});
     }
 
     // verify asset list
-    for asset in &user.asset_list {
+    for asset in asset_list {
         // check if asset exists in pool list
         if (asset.asset_denom != "uosmo") && POOLS.load(deps.storage, &asset.asset_denom).is_err() {
             return Err(ContractError::AssetIsNotFound {});
@@ -234,11 +235,11 @@ mod test {
         contract::execute,
         error::{ContractError, ContractError::Std},
         messages::execute::ExecuteMsg,
-        state::{Asset, User},
+        state::Asset,
         tests::helpers::{
             get_initial_pools, get_instance, ADDR_ADMIN_OSMO, ADDR_ALICE_ATOM, ADDR_ALICE_JUNO,
             ADDR_ALICE_OSMO, ADDR_INVALID, DENOM_ATOM, DENOM_EEUR, DENOM_JUNO, DENOM_NONEXISTENT,
-            FUNDS_AMOUNT, IS_CONTROLLED_REBALANCING,
+            FUNDS_AMOUNT, IS_REBALANCING_USED,
         },
     };
 
@@ -279,7 +280,7 @@ mod test {
         // try to deposit ATOM istead of stablecoin
         let funds_denom = DENOM_ATOM;
         let funds_amount = FUNDS_AMOUNT;
-        let is_controlled_rebalancing = IS_CONTROLLED_REBALANCING;
+        let is_rebalancing_used = IS_REBALANCING_USED;
 
         let (mut deps, env, mut info, _) = get_instance(ADDR_ADMIN_OSMO);
 
@@ -300,14 +301,11 @@ mod test {
             ),
         ];
 
-        let user = User {
+        let msg = ExecuteMsg::Deposit {
             asset_list: asset_list_alice,
             day_counter: Uint128::from(3_u128),
-            deposited: Uint128::from(funds_amount),
-            is_controlled_rebalancing,
+            is_rebalancing_used,
         };
-
-        let msg = ExecuteMsg::Deposit { user };
         info.funds = vec![coin(funds_amount, funds_denom)];
         info.sender = Addr::unchecked(ADDR_ALICE_OSMO);
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
@@ -334,14 +332,11 @@ mod test {
             ),
         ];
 
-        let user = User {
+        let msg = ExecuteMsg::Deposit {
             asset_list: asset_list_alice,
             day_counter: Uint128::from(3_u128),
-            deposited: Uint128::from(funds_amount),
-            is_controlled_rebalancing,
+            is_rebalancing_used,
         };
-
-        let msg = ExecuteMsg::Deposit { user };
         info.funds = vec![coin(funds_amount, funds_denom)];
         info.sender = Addr::unchecked(ADDR_ALICE_OSMO);
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
@@ -366,14 +361,11 @@ mod test {
             ),
         ];
 
-        let user = User {
+        let msg = ExecuteMsg::Deposit {
             asset_list: asset_list_alice,
             day_counter: Uint128::from(3_u128),
-            deposited: Uint128::from(funds_amount),
-            is_controlled_rebalancing,
+            is_rebalancing_used,
         };
-
-        let msg = ExecuteMsg::Deposit { user };
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
 
         assert_eq!(res.err(), Some(ContractError::WeightsAreUnbalanced {}));
@@ -403,14 +395,11 @@ mod test {
             ),
         ];
 
-        let user = User {
+        let msg = ExecuteMsg::Deposit {
             asset_list: asset_list_alice,
             day_counter: Uint128::from(3_u128),
-            deposited: Uint128::from(funds_amount),
-            is_controlled_rebalancing,
+            is_rebalancing_used,
         };
-
-        let msg = ExecuteMsg::Deposit { user };
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
 
         assert_eq!(res.err(), Some(ContractError::DuplicatedAssets {}));
@@ -433,14 +422,11 @@ mod test {
             ),
         ];
 
-        let user = User {
+        let msg = ExecuteMsg::Deposit {
             asset_list: asset_list_alice,
             day_counter: Uint128::from(3_u128),
-            deposited: Uint128::from(funds_amount),
-            is_controlled_rebalancing,
+            is_rebalancing_used,
         };
-
-        let msg = ExecuteMsg::Deposit { user };
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
 
         assert_eq!(res.err(), Some(ContractError::AssetIsNotFound {}));
@@ -471,14 +457,11 @@ mod test {
         info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
         execute(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
 
-        let user = User {
+        let msg = ExecuteMsg::Deposit {
             asset_list: asset_list_alice,
             day_counter: Uint128::from(3_u128),
-            deposited: Uint128::from(funds_amount),
-            is_controlled_rebalancing,
+            is_rebalancing_used,
         };
-
-        let msg = ExecuteMsg::Deposit { user };
         info.sender = Addr::unchecked(ADDR_ALICE_OSMO);
         let res = execute(deps.as_mut(), env, info, msg);
 

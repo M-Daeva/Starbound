@@ -1,12 +1,14 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Decimal, Uint128};
 
-use crate::state::{AddrUnchecked, Denom, Pool, TransferParams, User};
+use crate::state::{AddrUnchecked, Asset, Denom, Pool, TransferParams, User};
 
 #[cw_serde]
 pub enum ExecuteMsg {
     Deposit {
-        user: User,
+        asset_list: Vec<Asset>, // TODO: use Option
+        is_rebalancing_used: bool,
+        day_counter: Uint128,
     },
     Withdraw {
         amount: Uint128,

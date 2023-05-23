@@ -8,14 +8,18 @@ import { Coin } from "@cosmjs/amino";
 import { MsgExecuteContractEncodeObject } from "@cosmjs/cosmwasm-stargate";
 import { MsgExecuteContract } from "cosmjs-types/cosmwasm/wasm/v1/tx";
 import { toUtf8 } from "@cosmjs/encoding";
-import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, Timestamp, Uint64, User, Asset, Pool, TransferParams, QueryMsg, MigrateMsg, Config, Ledger, QueryPoolsAndUsersResponse } from "./StarboundOsmosis.types";
+import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, Timestamp, Uint64, Asset, Pool, User, TransferParams, QueryMsg, MigrateMsg, Config, Ledger, QueryPoolsAndUsersResponse } from "./StarboundOsmosis.types";
 export interface StarboundOsmosisMessage {
   contractAddress: string;
   sender: string;
   deposit: ({
-    user
+    assetList,
+    dayCounter,
+    isRebalancingUsed
   }: {
-    user: User;
+    assetList: Asset[];
+    dayCounter: Uint128;
+    isRebalancingUsed: boolean;
   }, funds?: Coin[]) => MsgExecuteContractEncodeObject;
   withdraw: ({
     amount
@@ -69,9 +73,13 @@ export class StarboundOsmosisMessageComposer implements StarboundOsmosisMessage 
   }
 
   deposit = ({
-    user
+    assetList,
+    dayCounter,
+    isRebalancingUsed
   }: {
-    user: User;
+    assetList: Asset[];
+    dayCounter: Uint128;
+    isRebalancingUsed: boolean;
   }, funds?: Coin[]): MsgExecuteContractEncodeObject => {
     return {
       typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
@@ -80,7 +88,9 @@ export class StarboundOsmosisMessageComposer implements StarboundOsmosisMessage 
         contract: this.contractAddress,
         msg: toUtf8(JSON.stringify({
           deposit: {
-            user
+            asset_list: assetList,
+            day_counter: dayCounter,
+            is_rebalancing_used: isRebalancingUsed
           }
         })),
         funds
