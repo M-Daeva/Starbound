@@ -1,150 +1,21 @@
 #[cfg(not(feature = "library"))]
-use cosmwasm_std::{
-    Addr, CanonicalAddr, Decimal, DepsMut, MessageInfo, StdError, StdResult, Uint128,
-};
+use cosmwasm_std::{Decimal, DepsMut, MessageInfo, StdError, StdResult, Uint128};
+
+use bech32::{decode, encode, Variant};
 
 use crate::{
     error::ContractError,
-    state::{Asset, CONFIG, POOLS, USERS},
+    state::{Asset, CONFIG, EXCHANGE_PREFIX, POOLS, USERS},
 };
 
-// This simple Api provided for address verification
+// to convert any other chain address to current chain address and use it with deps.api.addr_validate
 // because deps.api.addr_validate can not validate addresses from other networks
 // https://testnet.mintscan.io/osmosis-testnet/txs/44709BCDFFAC51C1AB1245FB7AF31D14B3607357E18A57A569BD82E66DB12F06
-// It based on MockApi
-// https://github.com/CosmWasm/cosmwasm/blob/main/packages/std/src/testing/mock.rs
-#[derive(Copy, Clone)]
-pub struct LocalApi {
-    length_max: usize,
-    shuffles_encode: usize,
-    shuffles_decode: usize,
-    prefix_len_min: usize,
-    prefix_len_max: usize,
-    postfix_len: usize,
-}
-
-impl Default for LocalApi {
-    fn default() -> Self {
-        LocalApi {
-            length_max: 54,
-            shuffles_encode: 18,
-            shuffles_decode: 2,
-            prefix_len_min: 3,
-            prefix_len_max: 10,
-            postfix_len: 38,
-        }
-    }
-}
-
-impl LocalApi {
-    fn digit_sum(input: &[u8]) -> usize {
-        input.iter().fold(0, |sum, val| sum + (*val as usize))
-    }
-
-    pub fn riffle_shuffle<T: Clone>(input: &[T]) -> Vec<T> {
-        assert!(
-            input.len() % 2 == 0,
-            "Method only defined for even number of elements"
-        );
-        let mid = input.len() / 2;
-        let (left, right) = input.split_at(mid);
-        let mut out = Vec::<T>::with_capacity(input.len());
-        for i in 0..mid {
-            out.push(right[i].clone());
-            out.push(left[i].clone());
-        }
-        out
-    }
-
-    fn addr_canonicalize(&self, input: &str) -> StdResult<CanonicalAddr> {
-        let api = Self::default();
-
-        // check if address looks like <prefix>1<postfix> where
-        // prefix is alphabetic, its length is in range [3, 10]
-        // postfix is alphanumeric, its length equal 38
-        let [prefix, postfix] = match input.split_once('1') {
-            Some((x, y)) => [x, y],
-            None => return Err(StdError::generic_err("Invalid input: wrong address format")),
-        };
-
-        if prefix.len() < api.prefix_len_min {
-            return Err(StdError::generic_err("Invalid input: prefix is too short"));
-        }
-
-        if prefix.len() > api.prefix_len_max {
-            return Err(StdError::generic_err("Invalid input: prefix is too long"));
-        }
-
-        if postfix.len() != api.postfix_len {
-            return Err(StdError::generic_err(
-                "Invalid input: postfix is too short/long",
-            ));
-        }
-
-        if prefix.chars().any(|c| !c.is_ascii_alphabetic()) {
-            return Err(StdError::generic_err(
-                "Invalid input: prefix is not alphabetic",
-            ));
-        }
-
-        if postfix.chars().any(|c| !c.is_ascii_alphanumeric()) {
-            return Err(StdError::generic_err(
-                "Invalid input: postfix is not alis_ascii_alphanumeric",
-            ));
-        }
-
-        // mimicks formats like hex or bech32 where different casings are valid for one address
-        let normalized = input.to_lowercase();
-
-        let mut out = Vec::from(normalized);
-
-        // pad to canonical length with NULL bytes
-        out.resize(api.length_max, 0x00);
-        // content-dependent rotate followed by shuffle to destroy
-        // the most obvious structure (https://github.com/CosmWasm/cosmwasm/issues/552)
-        let rotate_by = Self::digit_sum(&out) % api.length_max;
-        out.rotate_left(rotate_by);
-        for _ in 0..api.shuffles_encode {
-            out = Self::riffle_shuffle(&out);
-        }
-        Ok(out.into())
-    }
-
-    fn addr_humanize(&self, canonical: &CanonicalAddr) -> StdResult<Addr> {
-        let api = Self::default();
-
-        if canonical.len() != api.length_max {
-            return Err(StdError::generic_err(
-                "Invalid input: canonical address length not correct",
-            ));
-        }
-
-        let mut tmp: Vec<u8> = canonical.clone().into();
-        // Shuffle two more times which restored the original value (24 elements are back to original after 20 rounds)
-        for _ in 0..api.shuffles_decode {
-            tmp = Self::riffle_shuffle(&tmp);
-        }
-        // Rotate back
-        let rotate_by = Self::digit_sum(&tmp) % api.length_max;
-        tmp.rotate_right(rotate_by);
-        // Remove NULL bytes (i.e. the padding)
-        let trimmed = tmp.into_iter().filter(|&x| x != 0x00).collect();
-        // decode UTF-8 bytes into string
-        let human = String::from_utf8(trimmed)?;
-        Ok(Addr::unchecked(human))
-    }
-
-    pub fn addr_validate(&self, input: &str) -> StdResult<Addr> {
-        let canonical = self.addr_canonicalize(input)?;
-        let normalized = self.addr_humanize(&canonical)?;
-        if input != normalized {
-            return Err(StdError::generic_err(
-                "Invalid input: address not normalized",
-            ));
-        }
-
-        Ok(Addr::unchecked(input))
-    }
+pub fn get_addr_by_prefix(address: &str, prefix: &str) -> StdResult<String> {
+    let (_hrp, data, _) = decode(address).map_err(|e| StdError::generic_err(e.to_string()))?;
+    let new_address =
+        encode(prefix, data, Variant::Bech32).map_err(|e| StdError::generic_err(e.to_string()))?;
+    Ok(new_address)
 }
 
 // data verification for deposit method
@@ -207,7 +78,10 @@ pub fn verify_deposit_data(
         };
 
         // validate wallet address
-        LocalApi::default().addr_validate(asset.wallet_address.as_str())?;
+        deps.api.addr_validate(&get_addr_by_prefix(
+            asset.wallet_address.as_str(),
+            EXCHANGE_PREFIX,
+        )?)?;
     }
 
     Ok(())
@@ -228,14 +102,14 @@ pub fn verify_scheduler(deps: &DepsMut, info: &MessageInfo) -> Result<(), Contra
 // TODO: refactor tests
 #[cfg(test)]
 mod test {
-    use cosmwasm_std::{coin, Addr, StdError, StdError::GenericErr, Uint128};
+    use cosmwasm_std::{coin, Addr, StdError::GenericErr, Uint128};
 
     use crate::{
         actions::helpers::math::str_to_dec,
         contract::execute,
         error::{ContractError, ContractError::Std},
         messages::execute::ExecuteMsg,
-        state::Asset,
+        state::{Asset, EXCHANGE_PREFIX},
         tests::helpers::{
             get_initial_pools, get_instance, ADDR_ADMIN_OSMO, ADDR_ALICE_ATOM, ADDR_ALICE_JUNO,
             ADDR_ALICE_OSMO, ADDR_INVALID, DENOM_ATOM, DENOM_EEUR, DENOM_JUNO, DENOM_NONEXISTENT,
@@ -243,36 +117,28 @@ mod test {
         },
     };
 
-    use super::LocalApi;
+    use super::get_addr_by_prefix;
 
     #[test]
     fn address_native() {
-        let addr = ADDR_ALICE_OSMO;
-
         assert_eq!(
-            LocalApi::default().addr_validate(addr).unwrap(),
-            Addr::unchecked(addr)
+            &get_addr_by_prefix(ADDR_ALICE_OSMO, EXCHANGE_PREFIX).unwrap(),
+            ADDR_ALICE_OSMO
         );
     }
 
     #[test]
     fn address_other() {
-        let addr = ADDR_ALICE_JUNO;
-
         assert_eq!(
-            LocalApi::default().addr_validate(addr).unwrap(),
-            Addr::unchecked(addr)
+            &get_addr_by_prefix(ADDR_ALICE_JUNO, EXCHANGE_PREFIX).unwrap(),
+            ADDR_ALICE_OSMO
         );
     }
 
     #[test]
+    #[should_panic = "invalid character (code=i)"]
     fn address_bad() {
-        let addr = "bad address";
-
-        assert_eq!(
-            LocalApi::default().addr_validate(addr).unwrap_err(),
-            StdError::generic_err("Invalid input: wrong address format")
-        );
+        get_addr_by_prefix(ADDR_INVALID, EXCHANGE_PREFIX).unwrap();
     }
 
     #[test]
@@ -468,7 +334,7 @@ mod test {
         assert_eq!(
             res.err(),
             Some(Std(GenericErr {
-                msg: "Invalid input: wrong address format".to_string()
+                msg: "invalid character (code=i)".to_string()
             }))
         );
     }

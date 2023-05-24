@@ -9,6 +9,7 @@ pub type AddrUnchecked = String;
 
 pub const IBC_TIMEOUT_IN_MINS: u64 = 15;
 pub const EXCHANGE_DENOM: &str = "uosmo";
+pub const EXCHANGE_PREFIX: &str = "osmo";
 pub const CHAIN_ID_DEV: &str = "devnet-1";
 
 pub const CONFIG: Item<Config> = Item::new("config");

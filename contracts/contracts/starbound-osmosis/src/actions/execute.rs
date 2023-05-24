@@ -13,7 +13,7 @@ use crate::{
     actions::{
         helpers::{
             math::{get_ledger, transfer_router},
-            verifier::{verify_deposit_data, verify_scheduler, LocalApi},
+            verifier::{get_addr_by_prefix, verify_deposit_data, verify_scheduler},
         },
         query::query_pools_and_users,
     },
@@ -21,7 +21,7 @@ use crate::{
     messages::query::QueryPoolsAndUsersResponse,
     state::{
         AddrUnchecked, Asset, Config, Denom, Pool, TransferParams, User, CONFIG, EXCHANGE_DENOM,
-        IBC_TIMEOUT_IN_MINS, LEDGER, POOLS, USERS,
+        EXCHANGE_PREFIX, IBC_TIMEOUT_IN_MINS, LEDGER, POOLS, USERS,
     },
 };
 
@@ -172,10 +172,13 @@ pub fn update_config(
 
             if let Some(x) = dapp_address_and_denom_list {
                 let mut verified_list: Vec<(Addr, String)> = vec![];
-                let api = LocalApi::default();
 
                 for (address, denom) in x {
-                    verified_list.push((api.addr_validate(&address)?, denom));
+                    verified_list.push((
+                        deps.api
+                            .addr_validate(&get_addr_by_prefix(&address, EXCHANGE_PREFIX)?)?,
+                        denom,
+                    ));
                 }
 
                 config.dapp_address_and_denom_list = verified_list;

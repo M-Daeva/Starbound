@@ -30,7 +30,7 @@ pub const ADDR_BOB_ATOM: &str = "cosmos1chgwz55h9kepjq0fkj5supl2ta3nwu63327q35";
 pub const ADDR_BOB_STARS: &str = "stars1chgwz55h9kepjq0fkj5supl2ta3nwu639kfa69";
 pub const ADDR_BOB_SCRT: &str = "secret1cpl0n9hx9e3az7vl9tnvl5w0r7x9a4wgq2jk5m";
 
-pub const ADDR_INVALID: &str = "ADDR_INVALID";
+pub const ADDR_INVALID: &str = "addr1invalid";
 
 pub const DENOM_OSMO: &str = "uosmo";
 pub const DENOM_ATOM: &str = "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2";
