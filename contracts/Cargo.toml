@@ -1,2 +1,9 @@
 [workspace]
-members = ["contracts/*"]
+members = [
+    "contracts/starbound-noria"
+]
+
+[profile.release]
+opt-level = 3
+debug = false
+lto = true
