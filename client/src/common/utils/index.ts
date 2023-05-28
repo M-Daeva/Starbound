@@ -1,10 +1,16 @@
-import axios, { AxiosRequestConfig, AxiosInstance } from "axios";
+import axios, {
+  AxiosRequestConfig,
+  AxiosInstance,
+  CreateAxiosDefaults,
+} from "axios";
 import path from "path";
 import { SHA256, AES, enc } from "crypto-js";
 import { TimeInHoursAndMins } from "../interfaces";
 import { Decimal } from "decimal.js";
 
 const l = console.log.bind(console);
+
+const getID = () => Date.now() + "" + Math.random();
 
 function r(num: number, digits: number = 0): number {
   let k = 10 ** digits;
@@ -22,7 +28,7 @@ function rootPath(dir: string) {
 class Request {
   private req: AxiosInstance;
 
-  constructor(config: Object = {}) {
+  constructor(config: CreateAxiosDefaults = {}) {
     this.req = axios.create(config);
   }
 
@@ -173,6 +179,7 @@ function trimDecimal(price: string | Decimal, err: string = "0.001"): string {
 
 export {
   Request,
+  getID,
   l,
   r,
   rootPath,

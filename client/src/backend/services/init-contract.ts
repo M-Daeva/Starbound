@@ -7,7 +7,7 @@ import { getChainRegistry, getPools } from "../middleware/api";
 import { getSeed } from "./get-seed";
 import { l } from "../../common/utils";
 
-async function initContract() {
+async function main() {
   try {
     const seed = await getSeed(SEED_DAPP);
     if (!seed) throw new Error("Seed is not found!");
@@ -64,4 +64,4 @@ async function initContract() {
   }
 }
 
-initContract();
+main();

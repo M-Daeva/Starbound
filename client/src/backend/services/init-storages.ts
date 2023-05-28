@@ -1,7 +1,7 @@
 import { l } from "../../common/utils";
 import { updateAll } from "../middleware/api";
 
-async function initStorages() {
+async function main() {
   try {
     const t = Date.now();
     const res = await updateAll();
@@ -15,4 +15,4 @@ async function initStorages() {
   }
 }
 
-initStorages();
+main();

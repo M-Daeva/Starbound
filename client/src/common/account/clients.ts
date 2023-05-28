@@ -1,4 +1,5 @@
 import { l } from "../utils";
+import { Tendermint37Client } from "@cosmjs/tendermint-rpc";
 import { fromBech32, toBech32 } from "@cosmjs/encoding";
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 import { NetworkData } from "../interfaces";
@@ -23,7 +24,7 @@ import {
 
 // TODO: replace
 const fee: StdFee = {
-  amount: [coin(0, "uosmo")],
+  amount: [coin(0, "ucrd")],
   gas: `${700_000}`,
 };
 
@@ -43,10 +44,12 @@ async function getSgClient(
 > {
   try {
     if (owner && signer) {
-      const signingClient = await SigningStargateClient.connectWithSigner(
-        rpc,
+      const tmClient = await Tendermint37Client.connect(rpc);
+      const signingClient = await SigningStargateClient.createWithSigner(
+        tmClient,
         signer
       );
+
       return { client: signingClient, owner };
     }
 
@@ -73,8 +76,9 @@ async function getCwClient(
 > {
   try {
     if (owner && signer) {
-      const signingClient = await SigningCosmWasmClient.connectWithSigner(
-        rpc,
+      const tmClient = await Tendermint37Client.connect(rpc);
+      const signingClient = await SigningCosmWasmClient.createWithSigner(
+        tmClient,
         signer
       );
       return { client: signingClient, owner };

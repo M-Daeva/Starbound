@@ -389,6 +389,16 @@ interface TimeInHoursAndMins {
   minutes: number;
 }
 
+type NetworkConfig = {
+  [network: string]: {
+    PREFIX: string;
+    DENOM: string;
+    CHAIN_ID: string;
+    RPC: string;
+    GAS_PRICE_AMOUNT: number;
+  };
+};
+
 type AssetDenom = {
   [assetSymbol in AssetSymbol]: string;
 };
@@ -467,7 +477,7 @@ type StorageTypes =
   | PoolsAndUsersStorage
   | EncryptionKeyStorage;
 
-export type { NetworkData };
+export type { NetworkData, NetworkConfig };
 
 export {
   AssetListItem,

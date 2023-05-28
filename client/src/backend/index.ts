@@ -14,17 +14,11 @@ import rateLimit from "express-rate-limit";
 import { readFile, access } from "fs/promises";
 import * as h from "helmet";
 import { setEncryptionKey } from "./middleware/key";
+import { CHAIN_TYPE, DAPP_ADDRESS, PORT, PATH, BASE_URL } from "./envs";
 import {
   updatePoolsAndUsers as _updatePoolsAndUsers,
   _getAllGrants,
 } from "./helpers";
-import {
-  CHAIN_TYPE,
-  DAPP_ADDRESS,
-  PORT,
-  PATH_TO_ENCRYPTION_KEY,
-  BASE_URL,
-} from "./envs";
 import {
   updatePools,
   updatePoolsAndUsers,
@@ -111,8 +105,8 @@ async function triggerContract() {
 
 async function setKey() {
   try {
-    await access(PATH_TO_ENCRYPTION_KEY);
-    const encryptionKey = await readFile(PATH_TO_ENCRYPTION_KEY, {
+    await access(PATH.TO_ENCRYPTION_KEY);
+    const encryptionKey = await readFile(PATH.TO_ENCRYPTION_KEY, {
       encoding: "utf-8",
     });
     const res = await setEncryptionKey(encryptionKey);
@@ -179,7 +173,7 @@ const limiter = rateLimit({
   max: 30, // Limit each IP to 30 requests per `window`
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  handler: (req, res) => res.send("Request rate is limited"),
+  handler: (_req, res) => res.send("Request rate is limited"),
 });
 
 const staticHandler = express.static(rootPath("./dist/frontend"));
