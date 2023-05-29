@@ -57,7 +57,7 @@ pub fn execute(
             stablecoin_denom,
             stablecoin_pool_id,
             fee_default,
-            fee_osmo,
+            fee_native,
             dapp_address_and_denom_list,
         } => update_config(
             deps,
@@ -67,7 +67,7 @@ pub fn execute(
             stablecoin_denom,
             stablecoin_pool_id,
             fee_default,
-            fee_osmo,
+            fee_native,
             dapp_address_and_denom_list,
         ),
         ExecuteMsg::UpdatePoolsAndUsers { pools, users } => {

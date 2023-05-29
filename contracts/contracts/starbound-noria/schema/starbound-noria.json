@@ -103,7 +103,7 @@
                   }
                 ]
               },
-              "fee_osmo": {
+              "fee_native": {
                 "anyOf": [
                   {
                     "$ref": "#/definitions/Decimal"
@@ -250,7 +250,7 @@
         "type": "object",
         "required": [
           "amount_to_transfer",
-          "asset_denom",
+          "denom",
           "wallet_address",
           "wallet_balance",
           "weight"
@@ -259,7 +259,7 @@
           "amount_to_transfer": {
             "$ref": "#/definitions/Uint128"
           },
-          "asset_denom": {
+          "denom": {
             "type": "string"
           },
           "wallet_address": {
@@ -470,7 +470,7 @@
         "chain_id_dev",
         "dapp_address_and_denom_list",
         "fee_default",
-        "fee_osmo",
+        "fee_native",
         "scheduler",
         "stablecoin_denom",
         "stablecoin_pool_id",
@@ -502,7 +502,7 @@
         "fee_default": {
           "$ref": "#/definitions/Decimal"
         },
-        "fee_osmo": {
+        "fee_native": {
           "$ref": "#/definitions/Decimal"
         },
         "scheduler": {
@@ -644,7 +644,7 @@
           "type": "object",
           "required": [
             "amount_to_transfer",
-            "asset_denom",
+            "denom",
             "wallet_address",
             "wallet_balance",
             "weight"
@@ -653,7 +653,7 @@
             "amount_to_transfer": {
               "$ref": "#/definitions/Uint128"
             },
-            "asset_denom": {
+            "denom": {
               "type": "string"
             },
             "wallet_address": {
@@ -770,7 +770,7 @@
           "type": "object",
           "required": [
             "amount_to_transfer",
-            "asset_denom",
+            "denom",
             "wallet_address",
             "wallet_balance",
             "weight"
@@ -779,7 +779,7 @@
             "amount_to_transfer": {
               "$ref": "#/definitions/Uint128"
             },
-            "asset_denom": {
+            "denom": {
               "type": "string"
             },
             "wallet_address": {

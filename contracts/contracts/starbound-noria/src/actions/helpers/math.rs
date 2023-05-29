@@ -3,7 +3,7 @@ use cosmwasm_std::{
 };
 use std::ops::{Div, Mul};
 
-use crate::state::{Asset, Ledger, Pool, User};
+use crate::state::{Asset, Ledger, Pool, User, EXCHANGE_DENOM};
 
 pub fn str_to_dec(s: &str) -> Decimal {
     s.to_string().parse::<Decimal>().unwrap()
@@ -229,7 +229,7 @@ pub fn get_ledger(
 
     let mut daily_payment_sum = Uint128::zero();
 
-    for (osmo_address, user) in users_with_addresses {
+    for (native_address, user) in users_with_addresses {
         // 2) calculate daily payment, update day_counter and deposited
 
         // skip if user is out of money or investment period is ended
@@ -249,7 +249,7 @@ pub fn get_ledger(
 
         if daily_payment.is_zero() {
             users_with_addresses_updated.push((
-                osmo_address.to_owned(),
+                native_address.to_owned(),
                 User {
                     day_counter,
                     ..user.to_owned()
@@ -267,7 +267,7 @@ pub fn get_ledger(
 
         // 3) iterate over user assets and fill user_weights and user_balances
         for (i, denom) in global_denom_list.iter().enumerate() {
-            if let Some(asset_by_denom) = user.asset_list.iter().find(|x| &x.asset_denom == denom) {
+            if let Some(asset_by_denom) = user.asset_list.iter().find(|x| &x.denom == denom) {
                 user_weights[i] = asset_by_denom.weight;
                 user_balances[i] = asset_by_denom.wallet_balance;
             };
@@ -301,9 +301,7 @@ pub fn get_ledger(
         // update user assets amount to buy data (amount_to_transfer)
         let mut asset_list_updated: Vec<Asset> = vec![];
         for asset in &user.asset_list {
-            let some_index = global_denom_list
-                .iter()
-                .position(|x| x == &asset.asset_denom);
+            let some_index = global_denom_list.iter().position(|x| x == &asset.denom);
 
             if let Some(index) = some_index {
                 let amount_to_transfer = asset.amount_to_transfer + user_delta_balances[index];
@@ -323,7 +321,7 @@ pub fn get_ledger(
         }
 
         users_with_addresses_updated.push((
-            osmo_address.to_owned(),
+            native_address.to_owned(),
             User {
                 day_counter,
                 deposited,
@@ -355,12 +353,11 @@ pub fn transfer_router(
     contract_balances: Vec<Coin>,
     ledger: Ledger,
     fee_default: Decimal,
-    fee_osmo: Decimal,
+    fee_native: Decimal,
     dapp_address_and_denom_list: Vec<(Addr, String)>,
     stablecoin_denom: &str,
     timestamp: Timestamp,
 ) -> (Vec<(Addr, User)>, Vec<CosmosMsg>) {
-    const DENOM_OSMO: &str = "uosmo";
     let mut fee_list: Vec<Uint128> = vec![Uint128::zero(); ledger.global_denom_list.len()];
 
     // get vector of ratios to correct amount_to_transfer due to difference between
@@ -372,8 +369,8 @@ pub fn transfer_router(
         .map(|(i, denom)| {
             let asset_amount = match contract_balances.iter().find(|x| &x.denom == denom) {
                 Some(y) => {
-                    let fee_multiplier = if y.denom == DENOM_OSMO {
-                        fee_osmo
+                    let fee_multiplier = if y.denom == EXCHANGE_DENOM {
+                        fee_native
                     } else {
                         fee_default
                     };
@@ -402,7 +399,7 @@ pub fn transfer_router(
             if let Some(index) = ledger
                 .global_denom_list
                 .iter()
-                .position(|x| x == &asset.asset_denom)
+                .position(|x| x == &asset.denom)
             {
                 let amount_to_transfer = dec_to_uint128(
                     (uint128_to_dec(asset.amount_to_transfer)
@@ -421,21 +418,21 @@ pub fn transfer_router(
                     continue;
                 }
 
-                if asset.asset_denom == DENOM_OSMO {
+                if asset.denom == EXCHANGE_DENOM {
                     let bank_msg = CosmosMsg::Bank(BankMsg::Send {
                         to_address: asset.wallet_address.to_string(),
-                        amount: vec![coin(amount_to_transfer.u128(), &asset.asset_denom)],
+                        amount: vec![coin(amount_to_transfer.u128(), &asset.denom)],
                     });
 
                     msg_list.push(bank_msg);
                 } else if let Some((_denom, pool)) = pools_with_denoms
                     .iter()
-                    .find(|(denom, _pool)| denom == &asset.asset_denom)
+                    .find(|(denom, _pool)| denom == &asset.denom)
                 {
                     let ibc_msg = CosmosMsg::Ibc(IbcMsg::Transfer {
                         channel_id: pool.channel_id.to_owned(),
                         to_address: asset.wallet_address.to_string(),
-                        amount: coin(amount_to_transfer.u128(), &asset.asset_denom),
+                        amount: coin(amount_to_transfer.u128(), &asset.denom),
                         timeout: IbcTimeout::with_timestamp(timestamp),
                     });
 
@@ -464,7 +461,7 @@ pub fn transfer_router(
             .iter()
             .find(|(_addr, denom)| denom == fee_denom)
         {
-            if denom == DENOM_OSMO {
+            if denom == EXCHANGE_DENOM {
                 let bank_msg = CosmosMsg::Bank(BankMsg::Send {
                     to_address: addr.to_string(),
                     amount: vec![coin(fee.u128(), fee_denom)],
@@ -584,7 +581,7 @@ pub mod test {
         };
 
         let fee_default = str_to_dec("0.01");
-        let fee_osmo = str_to_dec("0.02");
+        let fee_native = str_to_dec("0.02");
         let dapp_address_and_denom_list: Vec<(Addr, String)> = vec![
             (Addr::unchecked(ADDR_BOB_ATOM), DENOM_ATOM.to_string()),
             (Addr::unchecked(ADDR_BOB_JUNO), DENOM_JUNO.to_string()),
@@ -645,7 +642,7 @@ pub mod test {
             contract_balances,
             ledger,
             fee_default,
-            fee_osmo,
+            fee_native,
             dapp_address_and_denom_list,
             DENOM_EEUR,
             Timestamp::default(),
@@ -956,7 +953,7 @@ pub mod test {
                     let index = ledger
                         .global_denom_list
                         .iter()
-                        .position(|x| x == &asset.asset_denom)
+                        .position(|x| x == &asset.denom)
                         .unwrap();
 
                     let price = ledger.global_price_list[index];

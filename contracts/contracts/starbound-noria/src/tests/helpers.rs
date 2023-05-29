@@ -268,7 +268,7 @@ impl Project {
         stablecoin_denom: Option<String>,
         stablecoin_pool_id: Option<u64>,
         fee_default: Option<Decimal>,
-        fee_osmo: Option<Decimal>,
+        fee_native: Option<Decimal>,
         dapp_address_and_denom_list: Option<Vec<(String, String)>>,
     ) -> Result<AppResponse, StdError> {
         self.app
@@ -280,7 +280,7 @@ impl Project {
                     stablecoin_denom,
                     stablecoin_pool_id,
                     fee_default,
-                    fee_osmo,
+                    fee_native,
                     dapp_address_and_denom_list,
                 },
                 &[],

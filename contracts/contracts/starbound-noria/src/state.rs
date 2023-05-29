@@ -20,7 +20,7 @@ pub struct Config {
     pub stablecoin_denom: Denom,
     pub stablecoin_pool_id: u64,
     pub fee_default: Decimal,
-    pub fee_osmo: Decimal,
+    pub fee_native: Decimal,
     pub dapp_address_and_denom_list: Vec<(Addr, Denom)>,
     pub timestamp: Timestamp,
     chain_id_dev: String,
@@ -33,7 +33,7 @@ impl Config {
         stablecoin_denom: &str,
         stablecoin_pool_id: u64,
         fee_default: &str,
-        fee_osmo: &str,
+        fee_native: &str,
     ) -> Self {
         Self {
             admin: admin.to_owned(),
@@ -41,7 +41,7 @@ impl Config {
             stablecoin_denom: stablecoin_denom.to_string(),
             stablecoin_pool_id,
             fee_default: str_to_dec(fee_default),
-            fee_osmo: str_to_dec(fee_osmo),
+            fee_native: str_to_dec(fee_native),
             dapp_address_and_denom_list: vec![],
             timestamp: Timestamp::default(),
             chain_id_dev: String::from(CHAIN_ID_DEV),
@@ -86,7 +86,7 @@ impl Pool {
     }
 }
 
-// key - osmo_address: &Addr
+// key - native_address: &Addr
 pub const USERS: Map<&Addr, User> = Map::new("users");
 #[cw_serde]
 #[derive(Default)]
@@ -94,7 +94,7 @@ pub struct User {
     pub asset_list: Vec<Asset>,
     pub is_rebalancing_used: bool,
     pub day_counter: Uint128,
-    pub deposited: Uint128, // TODO: change Deposit msg
+    pub deposited: Uint128,
 }
 
 impl User {
@@ -115,7 +115,7 @@ impl User {
 
 #[cw_serde]
 pub struct Asset {
-    pub asset_denom: Denom,
+    pub denom: Denom,
     pub wallet_address: Addr,
     pub wallet_balance: Uint128,
     pub weight: Decimal,
@@ -124,14 +124,14 @@ pub struct Asset {
 
 impl Asset {
     pub fn new(
-        asset_denom: &str,
+        denom: &str,
         wallet_address: &Addr,
         wallet_balance: Uint128,
         weight: Decimal,
         amount_to_transfer: Uint128,
     ) -> Self {
         Self {
-            asset_denom: asset_denom.to_string(),
+            denom: denom.to_string(),
             wallet_address: wallet_address.to_owned(),
             wallet_balance,
             weight,

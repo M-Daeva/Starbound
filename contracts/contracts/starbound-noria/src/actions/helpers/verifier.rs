@@ -5,7 +5,7 @@ use bech32::{decode, encode, Variant};
 
 use crate::{
     error::ContractError,
-    state::{Asset, CONFIG, EXCHANGE_PREFIX, POOLS, USERS},
+    state::{Asset, Config, CONFIG, EXCHANGE_DENOM, EXCHANGE_PREFIX, POOLS, USERS},
 };
 
 // to convert any other chain address to current chain address and use it with deps.api.addr_validate
@@ -32,7 +32,7 @@ pub fn verify_deposit_data(
 
     // only single stablecoin payments are allowed
     if info.funds.len() > 1 || (info.funds.len() == 1 && info.funds[0].denom != denom_token_in) {
-        return Err(ContractError::UnexpectedFunds {});
+        Err(ContractError::UnexpectedFunds {})?;
     }
 
     // skip checking assets and weight if we need just add funds and update day counter
@@ -41,11 +41,8 @@ pub fn verify_deposit_data(
     }
 
     // check if all weights are in range [0, 1]
-    if asset_list
-        .iter()
-        .any(|asset| asset.weight.lt(&Decimal::zero()) || asset.weight.gt(&Decimal::one()))
-    {
-        return Err(ContractError::WeightIsOutOfRange {});
+    if asset_list.iter().any(|asset| asset.weight > Decimal::one()) {
+        Err(ContractError::WeightIsOutOfRange {})?;
     }
 
     // check if sum of weights is equal one
@@ -53,33 +50,38 @@ pub fn verify_deposit_data(
         .iter()
         .fold(Decimal::zero(), |acc, cur| acc + cur.weight);
 
-    if weight_sum.ne(&Decimal::one()) {
-        return Err(ContractError::WeightsAreUnbalanced {});
+    if weight_sum != Decimal::one() {
+        Err(ContractError::WeightsAreUnbalanced {})?;
     }
 
     // check if asset_list contains unique denoms
     let mut list = asset_list
         .iter()
-        .map(|x| x.asset_denom.clone())
+        .map(|x| x.denom.clone())
         .collect::<Vec<String>>();
 
     list.sort();
     list.dedup();
 
     if list.len() != asset_list.len() {
-        return Err(ContractError::DuplicatedAssets {});
+        Err(ContractError::DuplicatedAssets {})?;
     }
 
     // verify asset list
-    for asset in asset_list {
+    for Asset {
+        denom,
+        wallet_address,
+        ..
+    } in asset_list
+    {
         // check if asset exists in pool list
-        if (asset.asset_denom != "uosmo") && POOLS.load(deps.storage, &asset.asset_denom).is_err() {
-            return Err(ContractError::AssetIsNotFound {});
+        if (denom != EXCHANGE_DENOM) && POOLS.load(deps.storage, denom).is_err() {
+            Err(ContractError::AssetIsNotFound {})?;
         };
 
         // validate wallet address
         deps.api.addr_validate(&get_addr_by_prefix(
-            asset.wallet_address.as_str(),
+            wallet_address.as_str(),
             EXCHANGE_PREFIX,
         )?)?;
     }
@@ -89,11 +91,12 @@ pub fn verify_deposit_data(
 
 // data verification for update_pools_and_users, swap, transfer methods
 pub fn verify_scheduler(deps: &DepsMut, info: &MessageInfo) -> Result<(), ContractError> {
-    // check if sender is scheduler
-    let config = CONFIG.load(deps.storage)?;
+    let Config {
+        admin, scheduler, ..
+    } = CONFIG.load(deps.storage)?;
 
-    if info.sender != config.admin && info.sender != config.scheduler {
-        return Err(ContractError::Unauthorized {});
+    if info.sender != admin && info.sender != scheduler {
+        Err(ContractError::Unauthorized {})?;
     }
 
     Ok(())

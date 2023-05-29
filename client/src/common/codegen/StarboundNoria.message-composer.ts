@@ -29,14 +29,14 @@ export interface StarboundNoriaMessage {
   updateConfig: ({
     dappAddressAndDenomList,
     feeDefault,
-    feeOsmo,
+    feeNative,
     scheduler,
     stablecoinDenom,
     stablecoinPoolId
   }: {
     dappAddressAndDenomList?: string[][][];
     feeDefault?: Decimal;
-    feeOsmo?: Decimal;
+    feeNative?: Decimal;
     scheduler?: string;
     stablecoinDenom?: string;
     stablecoinPoolId?: number;
@@ -119,14 +119,14 @@ export class StarboundNoriaMessageComposer implements StarboundNoriaMessage {
   updateConfig = ({
     dappAddressAndDenomList,
     feeDefault,
-    feeOsmo,
+    feeNative,
     scheduler,
     stablecoinDenom,
     stablecoinPoolId
   }: {
     dappAddressAndDenomList?: string[][][];
     feeDefault?: Decimal;
-    feeOsmo?: Decimal;
+    feeNative?: Decimal;
     scheduler?: string;
     stablecoinDenom?: string;
     stablecoinPoolId?: number;
@@ -140,7 +140,7 @@ export class StarboundNoriaMessageComposer implements StarboundNoriaMessage {
           update_config: {
             dapp_address_and_denom_list: dappAddressAndDenomList,
             fee_default: feeDefault,
-            fee_osmo: feeOsmo,
+            fee_native: feeNative,
             scheduler,
             stablecoin_denom: stablecoinDenom,
             stablecoin_pool_id: stablecoinPoolId

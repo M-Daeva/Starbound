@@ -41,9 +41,7 @@ pub fn deposit(
         .iter()
         .map(|asset| -> Result<Asset, ContractError> {
             // check if asset is in pool
-            if (asset.asset_denom != EXCHANGE_DENOM)
-                && POOLS.load(deps.storage, &asset.asset_denom).is_err()
-            {
+            if (asset.denom != EXCHANGE_DENOM) && POOLS.load(deps.storage, &asset.denom).is_err() {
                 Err(ContractError::AssetIsNotFound {})?;
             };
 
@@ -51,7 +49,7 @@ pub fn deposit(
             let amount_to_transfer = user_loaded
                 .asset_list
                 .iter()
-                .find(|&x| (x.asset_denom == asset.asset_denom))
+                .find(|&x| (x.denom == asset.denom))
                 .map_or(Uint128::zero(), |y| y.amount_to_transfer);
 
             Ok(Asset {
@@ -136,7 +134,7 @@ pub fn update_config(
     stablecoin_denom: Option<Denom>,
     stablecoin_pool_id: Option<u64>,
     fee_default: Option<Decimal>,
-    fee_osmo: Option<Decimal>,
+    fee_native: Option<Decimal>,
     dapp_address_and_denom_list: Option<Vec<(AddrUnchecked, Denom)>>,
 ) -> Result<Response, ContractError> {
     CONFIG.update(
@@ -161,8 +159,8 @@ pub fn update_config(
                 config.fee_default = x;
             }
 
-            if let Some(x) = fee_osmo {
-                config.fee_osmo = x;
+            if let Some(x) = fee_native {
+                config.fee_native = x;
             }
 
             if let Some(x) = dapp_address_and_denom_list {
@@ -231,8 +229,8 @@ pub fn update_pools_and_users(
             .iter()
             .map(|asset_loaded| -> Result<Asset, ContractError> {
                 // check if asset is in pool
-                if (asset_loaded.asset_denom != EXCHANGE_DENOM)
-                    && POOLS.load(deps.storage, &asset_loaded.asset_denom).is_err()
+                if (asset_loaded.denom != EXCHANGE_DENOM)
+                    && POOLS.load(deps.storage, &asset_loaded.denom).is_err()
                 {
                     Err(ContractError::AssetIsNotFound {})?;
                 };
@@ -241,7 +239,7 @@ pub fn update_pools_and_users(
                 let asset_received = user_received
                     .asset_list
                     .iter()
-                    .find(|&x| (x.asset_denom == asset_loaded.asset_denom))
+                    .find(|&x| (x.denom == asset_loaded.denom))
                     .ok_or(ContractError::AssetIsNotFound {})?;
 
                 Ok(Asset {
@@ -281,7 +279,7 @@ pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
     let Config {
         stablecoin_denom,
         fee_default,
-        fee_osmo,
+        fee_native,
         dapp_address_and_denom_list,
         ..
     } = CONFIG.load(deps.storage)?;
@@ -295,7 +293,7 @@ pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
         contract_balances,
         ledger,
         fee_default,
-        fee_osmo,
+        fee_native,
         dapp_address_and_denom_list,
         &stablecoin_denom,
         timestamp,

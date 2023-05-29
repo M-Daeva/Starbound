@@ -98,9 +98,9 @@ fn deposit_unsupported_asset() {
     assert_eq!(&res.to_string(), "Overflow: Cannot Sub with 0 and 10000")
 }
 
-// check if asset outside pool list can not be deposited (excluding osmo)
+// check if asset outside pool list can not be deposited (excluding native asset)
 #[test]
-fn deposit_non_pool_asset_osmo() {
+fn deposit_non_pool_asset_native() {
     let mut prj = Project::new(None);
     let mut user = Project::get_user(UserName::Alice);
     user.asset_list.push(Asset::new(

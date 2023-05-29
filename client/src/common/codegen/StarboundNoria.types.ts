@@ -19,7 +19,7 @@ export type ExecuteMsg = {
   update_config: {
     dapp_address_and_denom_list?: [string, string][] | null;
     fee_default?: Decimal | null;
-    fee_osmo?: Decimal | null;
+    fee_native?: Decimal | null;
     scheduler?: string | null;
     stablecoin_denom?: string | null;
     stablecoin_pool_id?: number | null;
@@ -45,7 +45,7 @@ export type Timestamp = Uint64;
 export type Uint64 = string;
 export interface Asset {
   amount_to_transfer: Uint128;
-  asset_denom: string;
+  denom: string;
   wallet_address: Addr;
   wallet_balance: Uint128;
   weight: Decimal;
@@ -89,7 +89,7 @@ export interface Config {
   chain_id_dev: string;
   dapp_address_and_denom_list: [Addr, string][];
   fee_default: Decimal;
-  fee_osmo: Decimal;
+  fee_native: Decimal;
   scheduler: Addr;
   stablecoin_denom: string;
   stablecoin_pool_id: number;

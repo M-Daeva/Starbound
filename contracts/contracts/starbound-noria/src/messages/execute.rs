@@ -18,7 +18,7 @@ pub enum ExecuteMsg {
         stablecoin_denom: Option<Denom>,
         stablecoin_pool_id: Option<u64>,
         fee_default: Option<Decimal>,
-        fee_osmo: Option<Decimal>,
+        fee_native: Option<Decimal>,
         dapp_address_and_denom_list: Option<Vec<(AddrUnchecked, Denom)>>,
     },
     UpdatePoolsAndUsers {
