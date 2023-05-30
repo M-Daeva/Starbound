@@ -233,10 +233,12 @@ pub fn get_ledger(
         // 2) calculate daily payment, update day_counter and deposited
 
         // skip if user is out of money or investment period is ended
-        let mut daily_payment = match user.deposited.checked_div(user.day_counter) {
-            Ok(x) => x.clamp(Uint128::zero(), user.deposited),
-            _ => Uint128::zero(),
-        };
+        let mut daily_payment = user
+            .deposited
+            .checked_div(user.day_counter)
+            .map_or(Uint128::zero(), |x| {
+                x.clamp(Uint128::zero(), user.deposited)
+            });
 
         // we can get (deposited/day_counter == 0) && (deposited != 0) &&
         // (day_counter != 0) so day_counter must be decremented anyway
@@ -367,25 +369,25 @@ pub fn transfer_router(
         .iter()
         .enumerate()
         .map(|(i, denom)| {
-            let asset_amount = match contract_balances.iter().find(|x| &x.denom == denom) {
-                Some(y) => {
-                    let fee_multiplier = if y.denom == EXCHANGE_DENOM {
-                        fee_native
-                    } else {
-                        fee_default
-                    };
-                    let amount = uint128_to_dec(y.amount);
-                    let fee = (amount * fee_multiplier).ceil();
-                    fee_list[i] = dec_to_uint128(fee);
-                    amount - fee
-                }
-                _ => Decimal::zero(),
-            };
+            let asset_amount =
+                contract_balances
+                    .iter()
+                    .find(|x| &x.denom == denom)
+                    .map_or(Decimal::zero(), |y| {
+                        let fee_multiplier = if y.denom == EXCHANGE_DENOM {
+                            fee_native
+                        } else {
+                            fee_default
+                        };
+                        let amount = uint128_to_dec(y.amount);
+                        let fee = (amount * fee_multiplier).ceil();
+                        fee_list[i] = dec_to_uint128(fee);
+                        amount - fee
+                    });
 
-            match asset_amount.checked_div(uint128_to_dec(ledger.global_delta_balance_list[i])) {
-                Ok(y) => y,
-                _ => Decimal::zero(),
-            }
+            asset_amount
+                .checked_div(uint128_to_dec(ledger.global_delta_balance_list[i]))
+                .map_or(Decimal::zero(), |y| y)
         })
         .collect::<Vec<Decimal>>();
 

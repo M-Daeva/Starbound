@@ -5,10 +5,7 @@ use cosmwasm_std::{
 
 use crate::{
     actions::{
-        execute::{
-            deposit, multi_transfer, swap, transfer, update_config, update_pools_and_users,
-            withdraw,
-        },
+        execute::{deposit, swap, transfer, update_config, update_pools_and_users, withdraw},
         instantiate::init,
         other::migrate_contract,
         query::{query_config, query_ledger, query_pools_and_users, query_user},
@@ -75,7 +72,6 @@ pub fn execute(
         }
         ExecuteMsg::Swap {} => swap(deps, env, info),
         ExecuteMsg::Transfer {} => transfer(deps, env, info),
-        ExecuteMsg::MultiTransfer { params } => multi_transfer(deps, env, info, params),
     }
 }
 

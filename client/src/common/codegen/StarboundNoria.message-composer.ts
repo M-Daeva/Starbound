@@ -8,7 +8,7 @@ import { Coin } from "@cosmjs/amino";
 import { MsgExecuteContractEncodeObject } from "@cosmjs/cosmwasm-stargate";
 import { MsgExecuteContract } from "cosmjs-types/cosmwasm/wasm/v1/tx";
 import { toUtf8 } from "@cosmjs/encoding";
-import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, Timestamp, Uint64, Asset, Pool, User, TransferParams, QueryMsg, MigrateMsg, Config, Ledger, QueryPoolsAndUsersResponse } from "./StarboundNoria.types";
+import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, Asset, Pool, User, QueryMsg, MigrateMsg, Timestamp, Uint64, Config, Ledger, QueryPoolsAndUsersResponse } from "./StarboundNoria.types";
 export interface StarboundNoriaMessage {
   contractAddress: string;
   sender: string;
@@ -50,11 +50,6 @@ export interface StarboundNoriaMessage {
   }, funds?: Coin[]) => MsgExecuteContractEncodeObject;
   swap: (funds?: Coin[]) => MsgExecuteContractEncodeObject;
   transfer: (funds?: Coin[]) => MsgExecuteContractEncodeObject;
-  multiTransfer: ({
-    params
-  }: {
-    params: TransferParams[];
-  }, funds?: Coin[]) => MsgExecuteContractEncodeObject;
 }
 export class StarboundNoriaMessageComposer implements StarboundNoriaMessage {
   sender: string;
@@ -69,7 +64,6 @@ export class StarboundNoriaMessageComposer implements StarboundNoriaMessage {
     this.updatePoolsAndUsers = this.updatePoolsAndUsers.bind(this);
     this.swap = this.swap.bind(this);
     this.transfer = this.transfer.bind(this);
-    this.multiTransfer = this.multiTransfer.bind(this);
   }
 
   deposit = ({
@@ -193,25 +187,6 @@ export class StarboundNoriaMessageComposer implements StarboundNoriaMessage {
         contract: this.contractAddress,
         msg: toUtf8(JSON.stringify({
           transfer: {}
-        })),
-        funds
-      })
-    };
-  };
-  multiTransfer = ({
-    params
-  }: {
-    params: TransferParams[];
-  }, funds?: Coin[]): MsgExecuteContractEncodeObject => {
-    return {
-      typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
-      value: MsgExecuteContract.fromPartial({
-        sender: this.sender,
-        contract: this.contractAddress,
-        msg: toUtf8(JSON.stringify({
-          multi_transfer: {
-            params
-          }
         })),
         funds
       })

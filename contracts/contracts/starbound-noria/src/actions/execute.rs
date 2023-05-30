@@ -1,7 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::{
-    coin, Addr, BankMsg, CosmosMsg, Decimal, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo,
-    Response, StdError, Uint128,
+    coin, Addr, BankMsg, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdError, Uint128,
 };
 
 use crate::{
@@ -15,8 +14,8 @@ use crate::{
     error::ContractError,
     messages::query::QueryPoolsAndUsersResponse,
     state::{
-        AddrUnchecked, Asset, Config, Denom, Pool, TransferParams, User, CONFIG, EXCHANGE_DENOM,
-        EXCHANGE_PREFIX, IBC_TIMEOUT_IN_MINS, LEDGER, POOLS, USERS,
+        AddrUnchecked, Asset, Config, Denom, Pool, User, CONFIG, EXCHANGE_DENOM, EXCHANGE_PREFIX,
+        IBC_TIMEOUT_IN_MINS, LEDGER, POOLS, USERS,
     },
 };
 
@@ -312,30 +311,4 @@ pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
     Ok(Response::new()
         .add_messages(msg_list)
         .add_attributes(vec![("method", "transfer")]))
-}
-
-// function for testing ibc transfers
-pub fn multi_transfer(
-    _deps: DepsMut,
-    env: Env,
-    _info: MessageInfo,
-    params: Vec<TransferParams>,
-) -> Result<Response, ContractError> {
-    let timestamp = env.block.time.plus_seconds(IBC_TIMEOUT_IN_MINS * 60);
-
-    let msg_list = params
-        .iter()
-        .map(|x| {
-            CosmosMsg::Ibc(IbcMsg::Transfer {
-                channel_id: x.channel_id.to_owned(),
-                to_address: x.to.to_owned(),
-                amount: coin(x.amount.u128(), x.denom.to_owned()),
-                timeout: IbcTimeout::with_timestamp(timestamp),
-            })
-        })
-        .collect::<Vec<CosmosMsg>>();
-
-    Ok(Response::new()
-        .add_messages(msg_list)
-        .add_attributes(vec![("method", "multi_transfer")]))
 }

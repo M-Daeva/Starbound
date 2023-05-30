@@ -1,7 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Decimal, Uint128};
 
-use crate::state::{AddrUnchecked, Asset, Denom, Pool, TransferParams, User};
+use crate::state::{AddrUnchecked, Asset, Denom, Pool, User};
 
 #[cw_serde]
 pub enum ExecuteMsg {
@@ -27,7 +27,4 @@ pub enum ExecuteMsg {
     },
     Swap {},
     Transfer {},
-    MultiTransfer {
-        params: Vec<TransferParams>,
-    },
 }

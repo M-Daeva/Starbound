@@ -6,7 +6,7 @@
 
 import { CosmWasmClient, SigningCosmWasmClient, ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 import { Coin, StdFee } from "@cosmjs/amino";
-import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, Timestamp, Uint64, Asset, Pool, User, TransferParams, QueryMsg, MigrateMsg, Config, Ledger, QueryPoolsAndUsersResponse } from "./StarboundNoria.types";
+import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, Asset, Pool, User, QueryMsg, MigrateMsg, Timestamp, Uint64, Config, Ledger, QueryPoolsAndUsersResponse } from "./StarboundNoria.types";
 export interface StarboundNoriaReadOnlyInterface {
   contractAddress: string;
   queryUser: ({
@@ -99,11 +99,6 @@ export interface StarboundNoriaInterface extends StarboundNoriaReadOnlyInterface
   }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
   swap: (fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
   transfer: (fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
-  multiTransfer: ({
-    params
-  }: {
-    params: TransferParams[];
-  }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
 }
 export class StarboundNoriaClient extends StarboundNoriaQueryClient implements StarboundNoriaInterface {
   client: SigningCosmWasmClient;
@@ -121,7 +116,6 @@ export class StarboundNoriaClient extends StarboundNoriaQueryClient implements S
     this.updatePoolsAndUsers = this.updatePoolsAndUsers.bind(this);
     this.swap = this.swap.bind(this);
     this.transfer = this.transfer.bind(this);
-    this.multiTransfer = this.multiTransfer.bind(this);
   }
 
   deposit = async ({
@@ -200,17 +194,6 @@ export class StarboundNoriaClient extends StarboundNoriaQueryClient implements S
   transfer = async (fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
     return await this.client.execute(this.sender, this.contractAddress, {
       transfer: {}
-    }, fee, memo, funds);
-  };
-  multiTransfer = async ({
-    params
-  }: {
-    params: TransferParams[];
-  }, fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
-    return await this.client.execute(this.sender, this.contractAddress, {
-      multi_transfer: {
-        params
-      }
     }, fee, memo, funds);
   };
 }

@@ -139,14 +139,3 @@ impl Asset {
         }
     }
 }
-
-#[cw_serde]
-pub struct TransferParams {
-    pub channel_id: String,
-    pub to: String,
-    pub amount: Uint128,
-    pub denom: Denom,
-    pub block_revision: Uint128,
-    pub block_height: Uint128,
-    pub timestamp: Timestamp,
-}
