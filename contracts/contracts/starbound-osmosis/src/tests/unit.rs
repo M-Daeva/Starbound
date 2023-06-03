@@ -16,7 +16,7 @@ use crate::{
             QueryUserResponse,
         },
     },
-    state::{Asset, AssetExtracted, Pool, PoolExtracted, User, UserExtracted},
+    state::{Asset, Denom, Pool, User},
     tests::helpers::{
         get_initial_pools, Project, UserName, ADDR_ADMIN_OSMO, ADDR_ALICE_ATOM, ADDR_ALICE_OSMO,
         ADDR_BOB_ATOM, ADDR_BOB_OSMO, ADDR_BOB_SCRT, DENOM_ATOM, DENOM_EEUR, DENOM_JUNO,
@@ -365,25 +365,23 @@ fn query_pools_and_users() {
     } = prj.query_pools_and_users().unwrap();
 
     assert_eq!(
-        res_pools.iter().map(|x| x.slice()).collect::<Vec<Pool>>(),
+        res_pools
+            .iter()
+            .map(|(_denom, pool)| pool.to_owned())
+            .collect::<Vec<Pool>>(),
         pools
     );
 
     let assets_received = res_users
         .iter()
-        .map(|x| x.asset_list.clone())
-        .collect::<Vec<Vec<AssetExtracted>>>();
+        .map(|(_addr, user)| user.asset_list.to_owned())
+        .collect::<Vec<Vec<Asset>>>();
 
     // user order matters!
     let assets_initial = vec![user_bob, user_alice]
         .iter()
-        .map(|x| {
-            x.asset_list
-                .iter()
-                .map(|y| y.extract())
-                .collect::<Vec<AssetExtracted>>()
-        })
-        .collect::<Vec<Vec<AssetExtracted>>>();
+        .map(|x| x.asset_list.to_owned())
+        .collect::<Vec<Vec<Asset>>>();
 
     assert_eq!(assets_received, assets_initial)
 }
@@ -419,26 +417,36 @@ fn update_pools_and_users() {
     // update data
     let pools_updated = res_pools
         .iter()
-        .map(|x| PoolExtracted {
-            price: x.price.add(Decimal::one()),
-            ..x.to_owned()
+        .map(|(denom, pool)| {
+            (
+                denom.to_owned(),
+                Pool {
+                    price: pool.price.add(Decimal::one()),
+                    ..pool.to_owned()
+                },
+            )
         })
-        .collect::<Vec<PoolExtracted>>();
+        .collect::<Vec<(Denom, Pool)>>();
 
     let users_updated = res_users
         .iter()
-        .map(|x| UserExtracted {
-            asset_list: x
-                .asset_list
-                .iter()
-                .map(|y| AssetExtracted {
-                    wallet_balance: y.wallet_balance.add(Uint128::from(500_u128)),
-                    ..y.to_owned()
-                })
-                .collect::<Vec<AssetExtracted>>(),
-            ..x.to_owned()
+        .map(|(addr, user)| {
+            (
+                addr.to_owned(),
+                User {
+                    asset_list: user
+                        .asset_list
+                        .iter()
+                        .map(|y| Asset {
+                            wallet_balance: y.wallet_balance.add(Uint128::from(500_u128)),
+                            ..y.to_owned()
+                        })
+                        .collect::<Vec<Asset>>(),
+                    ..user.to_owned()
+                },
+            )
         })
-        .collect::<Vec<UserExtracted>>();
+        .collect::<Vec<(Addr, User)>>();
 
     prj.update_pools_and_users(
         ADDR_ADMIN_OSMO,
@@ -488,11 +496,13 @@ fn update_pools_and_users_unsupported_asset() {
 
     // update data
     let mut users_updated = res_users.clone();
-    users_updated[0].asset_list.push(AssetExtracted {
-        asset_denom: DENOM_SCRT.to_string(),
-        wallet_address: ADDR_BOB_SCRT.to_string(),
-        wallet_balance: Uint128::zero(),
-    });
+    users_updated[0].1.asset_list.push(Asset::new(
+        DENOM_SCRT,
+        &Addr::unchecked(ADDR_BOB_SCRT),
+        Uint128::zero(),
+        Decimal::one(),
+        Uint128::zero(),
+    ));
 
     prj.update_pools_and_users(ADDR_ADMIN_OSMO, res_pools, users_updated)
         .unwrap();
@@ -627,11 +637,16 @@ fn swap() {
             pools: pools
                 .iter()
                 .enumerate()
-                .map(|(i, x)| PoolExtracted {
-                    id: Uint128::from(i as u128) + Uint128::one(),
-                    ..x.to_owned()
+                .map(|(i, (denom, pool))| {
+                    (
+                        denom.to_owned(),
+                        Pool {
+                            id: Uint128::from(i as u128) + Uint128::one(),
+                            ..pool.to_owned()
+                        },
+                    )
                 })
-                .collect::<Vec<PoolExtracted>>(),
+                .collect::<Vec<(Denom, Pool)>>(),
             users: vec![],
         },
         &[],
@@ -837,11 +852,16 @@ fn swap_with_osmo_in_asset_list() {
             pools: pools
                 .iter()
                 .enumerate()
-                .map(|(i, x)| PoolExtracted {
-                    id: Uint128::from(i as u128) + Uint128::one(),
-                    ..x.to_owned()
+                .map(|(i, (denom, pool))| {
+                    (
+                        denom.to_owned(),
+                        Pool {
+                            id: Uint128::from(i as u128) + Uint128::one(),
+                            ..pool.to_owned()
+                        },
+                    )
                 })
-                .collect::<Vec<PoolExtracted>>(),
+                .collect::<Vec<(Denom, Pool)>>(),
             users: vec![],
         },
         &[],

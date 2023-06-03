@@ -1,12 +1,13 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::Addr;
 
-use crate::state::{Config, Ledger, PoolExtracted, User, UserExtracted};
+use crate::state::{AddrUnchecked, Config, Denom, Ledger, Pool, User};
 
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
     #[returns(QueryUserResponse)]
-    QueryUser { address: String },
+    QueryUser { address: AddrUnchecked },
     #[returns(QueryPoolsAndUsersResponse)]
     QueryPoolsAndUsers {},
     #[returns(QueryLedgerResponse)]
@@ -22,8 +23,8 @@ pub struct QueryUserResponse {
 
 #[cw_serde]
 pub struct QueryPoolsAndUsersResponse {
-    pub users: Vec<UserExtracted>,
-    pub pools: Vec<PoolExtracted>,
+    pub users: Vec<(Addr, User)>,
+    pub pools: Vec<(Denom, Pool)>,
 }
 
 #[cw_serde]
