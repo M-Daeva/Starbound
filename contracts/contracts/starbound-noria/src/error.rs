@@ -64,4 +64,7 @@ pub enum ContractError {
 
     #[error("Stablecoin pool id is not updated!")]
     StablePoolIdIsNotUpdated {},
+
+    #[error("'asset_list' and 'down_counter' are required for new user!")]
+    NewUserRequirements {},
 }

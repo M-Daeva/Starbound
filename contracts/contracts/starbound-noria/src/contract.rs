@@ -5,10 +5,10 @@ use cosmwasm_std::{
 
 use crate::{
     actions::{
-        execute::{deposit, swap, transfer, update_config, update_pools_and_users, withdraw},
+        execute::deposit,
         instantiate::init,
         other::migrate_contract,
-        query::{query_config, query_ledger, query_pools_and_users, query_user},
+        query::{query_config, query_pairs, query_users},
     },
     error::ContractError,
     messages::{
@@ -39,39 +39,36 @@ pub fn execute(
         ExecuteMsg::Deposit {
             asset_list,
             is_rebalancing_used,
-            day_counter,
+            down_counter,
         } => deposit(
             deps,
             env,
             info,
             asset_list,
             is_rebalancing_used,
-            day_counter,
+            down_counter,
         ),
-        ExecuteMsg::Withdraw { amount } => withdraw(deps, env, info, amount),
-        ExecuteMsg::UpdateConfig {
-            scheduler,
-            stablecoin_denom,
-            stablecoin_pool_id,
-            fee_default,
-            fee_native,
-            dapp_address_and_denom_list,
-        } => update_config(
-            deps,
-            env,
-            info,
-            scheduler,
-            stablecoin_denom,
-            stablecoin_pool_id,
-            fee_default,
-            fee_native,
-            dapp_address_and_denom_list,
-        ),
-        ExecuteMsg::UpdatePoolsAndUsers { pools, users } => {
-            update_pools_and_users(deps, env, info, pools, users)
-        }
-        ExecuteMsg::Swap {} => swap(deps, env, info),
-        ExecuteMsg::Transfer {} => transfer(deps, env, info),
+        // ExecuteMsg::Withdraw { amount } => withdraw(deps, env, info, amount),
+        // ExecuteMsg::UpdateConfig {
+        //     scheduler,
+        //     stablecoin_denom,
+        //     stablecoin_pool_id,
+        //     fee_default,
+        //     fee_native,
+        //     dapp_address_and_denom_list,
+        // } => update_config(
+        //     deps,
+        //     env,
+        //     info,
+        //     scheduler,
+        //     stablecoin_denom,
+        //     stablecoin_pool_id,
+        //     fee_default,
+        //     fee_native,
+        //     dapp_address_and_denom_list,
+        // ),
+        // ExecuteMsg::Swap {} => swap(deps, env, info),
+        // ExecuteMsg::Transfer {} => transfer(deps, env, info),
     }
 }
 
@@ -79,10 +76,9 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::QueryUser { address } => to_binary(&query_user(deps, env, address)?),
-        QueryMsg::QueryPoolsAndUsers {} => to_binary(&query_pools_and_users(deps, env)?),
-        QueryMsg::QueryLedger {} => to_binary(&query_ledger(deps, env)?),
+        QueryMsg::QueryUsers { address_list } => to_binary(&query_users(deps, env, address_list)?),
         QueryMsg::QueryConfig {} => to_binary(&query_config(deps, env)?),
+        QueryMsg::QueryPairs {} => to_binary(&query_pairs(deps, env)?),
     }
 }
 

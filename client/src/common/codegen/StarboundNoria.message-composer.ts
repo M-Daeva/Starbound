@@ -8,48 +8,19 @@ import { Coin } from "@cosmjs/amino";
 import { MsgExecuteContractEncodeObject } from "@cosmjs/cosmwasm-stargate";
 import { MsgExecuteContract } from "cosmjs-types/cosmwasm/wasm/v1/tx";
 import { toUtf8 } from "@cosmjs/encoding";
-import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, Asset, Pool, User, QueryMsg, MigrateMsg, Timestamp, Uint64, Config, Ledger, QueryPoolsAndUsersResponse } from "./StarboundNoria.types";
+import { InstantiateMsg, ExecuteMsg, Decimal, Uint128, QueryMsg, MigrateMsg, Addr, Timestamp, Uint64, Config, User, Asset } from "./StarboundNoria.types";
 export interface StarboundNoriaMessage {
   contractAddress: string;
   sender: string;
   deposit: ({
     assetList,
-    dayCounter,
+    downCounter,
     isRebalancingUsed
   }: {
-    assetList: Asset[];
-    dayCounter: Uint128;
-    isRebalancingUsed: boolean;
+    assetList?: string[][][];
+    downCounter?: Uint128;
+    isRebalancingUsed?: boolean;
   }, funds?: Coin[]) => MsgExecuteContractEncodeObject;
-  withdraw: ({
-    amount
-  }: {
-    amount: Uint128;
-  }, funds?: Coin[]) => MsgExecuteContractEncodeObject;
-  updateConfig: ({
-    dappAddressAndDenomList,
-    feeDefault,
-    feeNative,
-    scheduler,
-    stablecoinDenom,
-    stablecoinPoolId
-  }: {
-    dappAddressAndDenomList?: string[][][];
-    feeDefault?: Decimal;
-    feeNative?: Decimal;
-    scheduler?: string;
-    stablecoinDenom?: string;
-    stablecoinPoolId?: number;
-  }, funds?: Coin[]) => MsgExecuteContractEncodeObject;
-  updatePoolsAndUsers: ({
-    pools,
-    users
-  }: {
-    pools: string[][];
-    users: string[][];
-  }, funds?: Coin[]) => MsgExecuteContractEncodeObject;
-  swap: (funds?: Coin[]) => MsgExecuteContractEncodeObject;
-  transfer: (funds?: Coin[]) => MsgExecuteContractEncodeObject;
 }
 export class StarboundNoriaMessageComposer implements StarboundNoriaMessage {
   sender: string;
@@ -59,21 +30,16 @@ export class StarboundNoriaMessageComposer implements StarboundNoriaMessage {
     this.sender = sender;
     this.contractAddress = contractAddress;
     this.deposit = this.deposit.bind(this);
-    this.withdraw = this.withdraw.bind(this);
-    this.updateConfig = this.updateConfig.bind(this);
-    this.updatePoolsAndUsers = this.updatePoolsAndUsers.bind(this);
-    this.swap = this.swap.bind(this);
-    this.transfer = this.transfer.bind(this);
   }
 
   deposit = ({
     assetList,
-    dayCounter,
+    downCounter,
     isRebalancingUsed
   }: {
-    assetList: Asset[];
-    dayCounter: Uint128;
-    isRebalancingUsed: boolean;
+    assetList?: string[][][];
+    downCounter?: Uint128;
+    isRebalancingUsed?: boolean;
   }, funds?: Coin[]): MsgExecuteContractEncodeObject => {
     return {
       typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
@@ -83,110 +49,9 @@ export class StarboundNoriaMessageComposer implements StarboundNoriaMessage {
         msg: toUtf8(JSON.stringify({
           deposit: {
             asset_list: assetList,
-            day_counter: dayCounter,
+            down_counter: downCounter,
             is_rebalancing_used: isRebalancingUsed
           }
-        })),
-        funds
-      })
-    };
-  };
-  withdraw = ({
-    amount
-  }: {
-    amount: Uint128;
-  }, funds?: Coin[]): MsgExecuteContractEncodeObject => {
-    return {
-      typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
-      value: MsgExecuteContract.fromPartial({
-        sender: this.sender,
-        contract: this.contractAddress,
-        msg: toUtf8(JSON.stringify({
-          withdraw: {
-            amount
-          }
-        })),
-        funds
-      })
-    };
-  };
-  updateConfig = ({
-    dappAddressAndDenomList,
-    feeDefault,
-    feeNative,
-    scheduler,
-    stablecoinDenom,
-    stablecoinPoolId
-  }: {
-    dappAddressAndDenomList?: string[][][];
-    feeDefault?: Decimal;
-    feeNative?: Decimal;
-    scheduler?: string;
-    stablecoinDenom?: string;
-    stablecoinPoolId?: number;
-  }, funds?: Coin[]): MsgExecuteContractEncodeObject => {
-    return {
-      typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
-      value: MsgExecuteContract.fromPartial({
-        sender: this.sender,
-        contract: this.contractAddress,
-        msg: toUtf8(JSON.stringify({
-          update_config: {
-            dapp_address_and_denom_list: dappAddressAndDenomList,
-            fee_default: feeDefault,
-            fee_native: feeNative,
-            scheduler,
-            stablecoin_denom: stablecoinDenom,
-            stablecoin_pool_id: stablecoinPoolId
-          }
-        })),
-        funds
-      })
-    };
-  };
-  updatePoolsAndUsers = ({
-    pools,
-    users
-  }: {
-    pools: string[][];
-    users: string[][];
-  }, funds?: Coin[]): MsgExecuteContractEncodeObject => {
-    return {
-      typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
-      value: MsgExecuteContract.fromPartial({
-        sender: this.sender,
-        contract: this.contractAddress,
-        msg: toUtf8(JSON.stringify({
-          update_pools_and_users: {
-            pools,
-            users
-          }
-        })),
-        funds
-      })
-    };
-  };
-  swap = (funds?: Coin[]): MsgExecuteContractEncodeObject => {
-    return {
-      typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
-      value: MsgExecuteContract.fromPartial({
-        sender: this.sender,
-        contract: this.contractAddress,
-        msg: toUtf8(JSON.stringify({
-          swap: {}
-        })),
-        funds
-      })
-    };
-  };
-  transfer = (funds?: Coin[]): MsgExecuteContractEncodeObject => {
-    return {
-      typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
-      value: MsgExecuteContract.fromPartial({
-        sender: this.sender,
-        contract: this.contractAddress,
-        msg: toUtf8(JSON.stringify({
-          transfer: {}
         })),
         funds
       })

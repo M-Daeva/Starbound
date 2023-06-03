@@ -6,16 +6,14 @@
 
 import { CosmWasmClient, SigningCosmWasmClient, ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 import { Coin, StdFee } from "@cosmjs/amino";
-import { InstantiateMsg, ExecuteMsg, Uint128, Addr, Decimal, Asset, Pool, User, QueryMsg, MigrateMsg, Timestamp, Uint64, Config, Ledger, QueryPoolsAndUsersResponse } from "./StarboundNoria.types";
+import { InstantiateMsg, ExecuteMsg, Decimal, Uint128, QueryMsg, MigrateMsg, Addr, Timestamp, Uint64, Config, User, Asset } from "./StarboundNoria.types";
 export interface StarboundNoriaReadOnlyInterface {
   contractAddress: string;
-  queryUser: ({
-    address
+  queryUsers: ({
+    addressList
   }: {
-    address: string;
+    addressList: string[];
   }) => Promise<User>;
-  queryPoolsAndUsers: () => Promise<QueryPoolsAndUsersResponse>;
-  queryLedger: () => Promise<Ledger>;
   queryConfig: () => Promise<Config>;
 }
 export class StarboundNoriaQueryClient implements StarboundNoriaReadOnlyInterface {
@@ -25,31 +23,19 @@ export class StarboundNoriaQueryClient implements StarboundNoriaReadOnlyInterfac
   constructor(client: CosmWasmClient, contractAddress: string) {
     this.client = client;
     this.contractAddress = contractAddress;
-    this.queryUser = this.queryUser.bind(this);
-    this.queryPoolsAndUsers = this.queryPoolsAndUsers.bind(this);
-    this.queryLedger = this.queryLedger.bind(this);
+    this.queryUsers = this.queryUsers.bind(this);
     this.queryConfig = this.queryConfig.bind(this);
   }
 
-  queryUser = async ({
-    address
+  queryUsers = async ({
+    addressList
   }: {
-    address: string;
+    addressList: string[];
   }): Promise<User> => {
     return this.client.queryContractSmart(this.contractAddress, {
-      query_user: {
-        address
+      query_users: {
+        address_list: addressList
       }
-    });
-  };
-  queryPoolsAndUsers = async (): Promise<QueryPoolsAndUsersResponse> => {
-    return this.client.queryContractSmart(this.contractAddress, {
-      query_pools_and_users: {}
-    });
-  };
-  queryLedger = async (): Promise<Ledger> => {
-    return this.client.queryContractSmart(this.contractAddress, {
-      query_ledger: {}
     });
   };
   queryConfig = async (): Promise<Config> => {
@@ -63,42 +49,13 @@ export interface StarboundNoriaInterface extends StarboundNoriaReadOnlyInterface
   sender: string;
   deposit: ({
     assetList,
-    dayCounter,
+    downCounter,
     isRebalancingUsed
   }: {
-    assetList: Asset[];
-    dayCounter: Uint128;
-    isRebalancingUsed: boolean;
+    assetList?: string[][][];
+    downCounter?: Uint128;
+    isRebalancingUsed?: boolean;
   }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
-  withdraw: ({
-    amount
-  }: {
-    amount: Uint128;
-  }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
-  updateConfig: ({
-    dappAddressAndDenomList,
-    feeDefault,
-    feeNative,
-    scheduler,
-    stablecoinDenom,
-    stablecoinPoolId
-  }: {
-    dappAddressAndDenomList?: string[][][];
-    feeDefault?: Decimal;
-    feeNative?: Decimal;
-    scheduler?: string;
-    stablecoinDenom?: string;
-    stablecoinPoolId?: number;
-  }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
-  updatePoolsAndUsers: ({
-    pools,
-    users
-  }: {
-    pools: string[][];
-    users: string[][];
-  }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
-  swap: (fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
-  transfer: (fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
 }
 export class StarboundNoriaClient extends StarboundNoriaQueryClient implements StarboundNoriaInterface {
   client: SigningCosmWasmClient;
@@ -111,89 +68,23 @@ export class StarboundNoriaClient extends StarboundNoriaQueryClient implements S
     this.sender = sender;
     this.contractAddress = contractAddress;
     this.deposit = this.deposit.bind(this);
-    this.withdraw = this.withdraw.bind(this);
-    this.updateConfig = this.updateConfig.bind(this);
-    this.updatePoolsAndUsers = this.updatePoolsAndUsers.bind(this);
-    this.swap = this.swap.bind(this);
-    this.transfer = this.transfer.bind(this);
   }
 
   deposit = async ({
     assetList,
-    dayCounter,
+    downCounter,
     isRebalancingUsed
   }: {
-    assetList: Asset[];
-    dayCounter: Uint128;
-    isRebalancingUsed: boolean;
+    assetList?: string[][][];
+    downCounter?: Uint128;
+    isRebalancingUsed?: boolean;
   }, fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
     return await this.client.execute(this.sender, this.contractAddress, {
       deposit: {
         asset_list: assetList,
-        day_counter: dayCounter,
+        down_counter: downCounter,
         is_rebalancing_used: isRebalancingUsed
       }
-    }, fee, memo, funds);
-  };
-  withdraw = async ({
-    amount
-  }: {
-    amount: Uint128;
-  }, fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
-    return await this.client.execute(this.sender, this.contractAddress, {
-      withdraw: {
-        amount
-      }
-    }, fee, memo, funds);
-  };
-  updateConfig = async ({
-    dappAddressAndDenomList,
-    feeDefault,
-    feeNative,
-    scheduler,
-    stablecoinDenom,
-    stablecoinPoolId
-  }: {
-    dappAddressAndDenomList?: string[][][];
-    feeDefault?: Decimal;
-    feeNative?: Decimal;
-    scheduler?: string;
-    stablecoinDenom?: string;
-    stablecoinPoolId?: number;
-  }, fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
-    return await this.client.execute(this.sender, this.contractAddress, {
-      update_config: {
-        dapp_address_and_denom_list: dappAddressAndDenomList,
-        fee_default: feeDefault,
-        fee_native: feeNative,
-        scheduler,
-        stablecoin_denom: stablecoinDenom,
-        stablecoin_pool_id: stablecoinPoolId
-      }
-    }, fee, memo, funds);
-  };
-  updatePoolsAndUsers = async ({
-    pools,
-    users
-  }: {
-    pools: string[][];
-    users: string[][];
-  }, fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
-    return await this.client.execute(this.sender, this.contractAddress, {
-      update_pools_and_users: {
-        pools,
-        users
-      }
-    }, fee, memo, funds);
-  };
-  swap = async (fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
-    return await this.client.execute(this.sender, this.contractAddress, {
-      swap: {}
-    }, fee, memo, funds);
-  };
-  transfer = async (fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
-    return await this.client.execute(this.sender, this.contractAddress, {
-      transfer: {}
     }, fee, memo, funds);
   };
 }

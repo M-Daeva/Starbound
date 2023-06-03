@@ -7,88 +7,38 @@
 export interface InstantiateMsg {}
 export type ExecuteMsg = {
   deposit: {
-    asset_list: Asset[];
-    day_counter: Uint128;
-    is_rebalancing_used: boolean;
+    asset_list?: [string, Decimal][] | null;
+    down_counter?: Uint128 | null;
+    is_rebalancing_used?: boolean | null;
   };
-} | {
-  withdraw: {
-    amount: Uint128;
-  };
-} | {
-  update_config: {
-    dapp_address_and_denom_list?: [string, string][] | null;
-    fee_default?: Decimal | null;
-    fee_native?: Decimal | null;
-    scheduler?: string | null;
-    stablecoin_denom?: string | null;
-    stablecoin_pool_id?: number | null;
-  };
-} | {
-  update_pools_and_users: {
-    pools: [string, Pool][];
-    users: [string, User][];
-  };
-} | {
-  swap: {};
-} | {
-  transfer: {};
 };
-export type Uint128 = string;
-export type Addr = string;
 export type Decimal = string;
-export interface Asset {
-  amount_to_transfer: Uint128;
-  denom: string;
-  wallet_address: Addr;
-  wallet_balance: Uint128;
-  weight: Decimal;
-}
-export interface Pool {
-  channel_id: string;
-  id: Uint128;
-  port_id: string;
-  price: Decimal;
-  symbol: string;
-}
-export interface User {
-  asset_list: Asset[];
-  day_counter: Uint128;
-  deposited: Uint128;
-  is_rebalancing_used: boolean;
-}
+export type Uint128 = string;
 export type QueryMsg = {
-  query_user: {
-    address: string;
+  query_users: {
+    address_list: string[];
   };
-} | {
-  query_pools_and_users: {};
-} | {
-  query_ledger: {};
 } | {
   query_config: {};
 };
 export type MigrateMsg = string;
+export type Addr = string;
 export type Timestamp = Uint64;
 export type Uint64 = string;
 export interface Config {
   admin: Addr;
   chain_id_dev: string;
-  dapp_address_and_denom_list: [Addr, string][];
-  fee_default: Decimal;
-  fee_native: Decimal;
+  fee_rate: Decimal;
   scheduler: Addr;
-  stablecoin_denom: string;
-  stablecoin_pool_id: number;
   timestamp: Timestamp;
 }
-export interface Ledger {
-  global_delta_balance_list: Uint128[];
-  global_delta_cost_list: Uint128[];
-  global_denom_list: string[];
-  global_price_list: Decimal[];
+export interface User {
+  asset_list: Asset[];
+  down_counter: Uint128;
+  is_rebalancing_used: boolean;
+  stable_balance: Uint128;
 }
-export interface QueryPoolsAndUsersResponse {
-  pools: [string, Pool][];
-  users: [Addr, User][];
+export interface Asset {
+  contract: Addr;
+  weight: Decimal;
 }

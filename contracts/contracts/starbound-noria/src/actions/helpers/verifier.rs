@@ -5,7 +5,7 @@ use bech32::{decode, encode, Variant};
 
 use crate::{
     error::ContractError,
-    state::{Asset, Config, CONFIG, EXCHANGE_DENOM, EXCHANGE_PREFIX, POOLS, USERS},
+    state::{Config, User, CONFIG, PREFIX},
 };
 
 // to convert any other chain address to current chain address and use it with deps.api.addr_validate
@@ -15,40 +15,50 @@ pub fn get_addr_by_prefix(address: &str, prefix: &str) -> StdResult<String> {
     let (_hrp, data, _) = decode(address).map_err(|e| StdError::generic_err(e.to_string()))?;
     let new_address =
         encode(prefix, data, Variant::Bech32).map_err(|e| StdError::generic_err(e.to_string()))?;
+
     Ok(new_address)
 }
 
 // data verification for deposit method
-pub fn verify_deposit_data(
+pub fn verify_deposit_args(
     deps: &DepsMut,
     info: &MessageInfo,
-    asset_list: &Vec<Asset>,
-    _is_rebalancing_used: bool,
-    _day_counter: Uint128,
+    asset_list: &Option<Vec<(String, Decimal)>>,
+    _is_rebalancing_used: Option<bool>,
+    down_counter: Option<Uint128>,
+    denom_stable: &str,
+    user_loaded: &User,
 ) -> Result<(), ContractError> {
-    // check funds
-    let config = CONFIG.load(deps.storage)?;
-    let denom_token_in = config.stablecoin_denom;
-
-    // only single stablecoin payments are allowed
-    if info.funds.len() > 1 || (info.funds.len() == 1 && info.funds[0].denom != denom_token_in) {
+    // only single stable currency payments are allowed
+    if info.funds.len() > 1 || (info.funds.len() == 1 && info.funds[0].denom != denom_stable) {
         Err(ContractError::UnexpectedFunds {})?;
     }
 
-    // skip checking assets and weight if we need just add funds and update day counter
-    if asset_list.is_empty() && USERS.load(deps.storage, &info.sender).is_ok() {
+    // skip checking assets and weight if we need just update down_counter or is_rebalancing_used
+    if user_loaded != &User::default() && asset_list.is_none() {
         return Ok(());
     }
 
+    // asset_list and down_counter are required if new user was created
+    if !(user_loaded == &User::default() && asset_list.is_some() && down_counter.is_some()) {
+        Err(ContractError::NewUserRequirements {})?;
+    }
+
     // check if all weights are in range [0, 1]
-    if asset_list.iter().any(|asset| asset.weight > Decimal::one()) {
+    if asset_list
+        .clone()
+        .unwrap_or_default()
+        .iter()
+        .any(|(_contract, weight)| weight > &Decimal::one())
+    {
         Err(ContractError::WeightIsOutOfRange {})?;
     }
 
     // check if sum of weights is equal one
-    let weight_sum = asset_list
-        .iter()
-        .fold(Decimal::zero(), |acc, cur| acc + cur.weight);
+    let weight_sum = asset_list.clone().map_or(Decimal::one(), |x| {
+        x.iter()
+            .fold(Decimal::zero(), |acc, (_contract, weight)| acc + weight)
+    });
 
     if weight_sum != Decimal::one() {
         Err(ContractError::WeightsAreUnbalanced {})?;
@@ -56,34 +66,29 @@ pub fn verify_deposit_data(
 
     // check if asset_list contains unique denoms
     let mut list = asset_list
+        .clone()
+        .unwrap_or_default()
         .iter()
-        .map(|x| x.denom.clone())
+        .map(|(contract, _weight)| contract.to_owned())
         .collect::<Vec<String>>();
 
     list.sort();
     list.dedup();
 
-    if list.len() != asset_list.len() {
+    if list.len() != asset_list.clone().unwrap_or_default().len() {
         Err(ContractError::DuplicatedAssets {})?;
     }
 
     // verify asset list
-    for Asset {
-        denom,
-        wallet_address,
-        ..
-    } in asset_list
-    {
+    for (contract, _weight) in asset_list.clone().unwrap_or_default() {
         // check if asset exists in pool list
-        if (denom != EXCHANGE_DENOM) && POOLS.load(deps.storage, denom).is_err() {
-            Err(ContractError::AssetIsNotFound {})?;
-        };
+        // if (denom != EXCHANGE_DENOM) && POOLS.load(deps.storage, denom).is_err() {
+        //     Err(ContractError::AssetIsNotFound {})?;
+        // };
 
         // validate wallet address
-        deps.api.addr_validate(&get_addr_by_prefix(
-            wallet_address.as_str(),
-            EXCHANGE_PREFIX,
-        )?)?;
+        deps.api
+            .addr_validate(&get_addr_by_prefix(&contract, PREFIX)?)?;
     }
 
     Ok(())
@@ -112,127 +117,66 @@ mod test {
         contract::execute,
         error::{ContractError, ContractError::Std},
         messages::execute::ExecuteMsg,
-        state::{Asset, EXCHANGE_PREFIX},
+        state::DENOM_STABLE,
         tests::helpers::{
-            get_initial_pools, get_instance, ADDR_ADMIN_OSMO, ADDR_ALICE_ATOM, ADDR_ALICE_JUNO,
-            ADDR_ALICE_OSMO, ADDR_INVALID, DENOM_ATOM, DENOM_EEUR, DENOM_JUNO, DENOM_NONEXISTENT,
-            FUNDS_AMOUNT, IS_REBALANCING_USED,
+            get_instance, ADDR_ADMIN, ADDR_ALICE, ADDR_INVALID, DENOM_NORIA, FUNDS_AMOUNT,
+            IS_REBALANCING_USED,
         },
     };
 
-    use super::get_addr_by_prefix;
-
-    #[test]
-    fn address_native() {
-        assert_eq!(
-            &get_addr_by_prefix(ADDR_ALICE_OSMO, EXCHANGE_PREFIX).unwrap(),
-            ADDR_ALICE_OSMO
-        );
-    }
-
-    #[test]
-    fn address_other() {
-        assert_eq!(
-            &get_addr_by_prefix(ADDR_ALICE_JUNO, EXCHANGE_PREFIX).unwrap(),
-            ADDR_ALICE_OSMO
-        );
-    }
-
-    #[test]
-    #[should_panic = "invalid character (code=i)"]
-    fn address_bad() {
-        get_addr_by_prefix(ADDR_INVALID, EXCHANGE_PREFIX).unwrap();
-    }
-
     #[test]
     fn verify_funds() {
-        // try to deposit ATOM istead of stablecoin
-        let funds_denom = DENOM_ATOM;
+        // try to deposit regular asset instead of stable currency
+        let funds_denom = DENOM_NORIA;
         let funds_amount = FUNDS_AMOUNT;
-        let is_rebalancing_used = IS_REBALANCING_USED;
+        let is_rebalancing_used = Some(IS_REBALANCING_USED);
 
-        let (mut deps, env, mut info, _) = get_instance(ADDR_ADMIN_OSMO);
+        let (mut deps, env, mut info, _) = get_instance(ADDR_ADMIN);
 
         let asset_list_alice = vec![
-            Asset::new(
-                DENOM_ATOM,
-                &Addr::unchecked(ADDR_ALICE_ATOM),
-                Uint128::zero(),
-                str_to_dec("0.5"),
-                Uint128::zero(),
-            ),
-            Asset::new(
-                DENOM_JUNO,
-                &Addr::unchecked(ADDR_ALICE_JUNO),
-                Uint128::zero(),
-                str_to_dec("0.5"),
-                Uint128::zero(),
-            ),
+            (ADDR_ALICE.to_string(), str_to_dec("0.5")),
+            (ADDR_ALICE.to_string(), str_to_dec("0.5")),
         ];
 
         let msg = ExecuteMsg::Deposit {
-            asset_list: asset_list_alice,
-            day_counter: Uint128::from(3_u128),
+            asset_list: Some(asset_list_alice),
+            down_counter: Some(Uint128::from(3_u128)),
             is_rebalancing_used,
         };
         info.funds = vec![coin(funds_amount, funds_denom)];
-        info.sender = Addr::unchecked(ADDR_ALICE_OSMO);
+        info.sender = Addr::unchecked(ADDR_ALICE);
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
 
         assert_eq!(res.err(), Some(ContractError::UnexpectedFunds {}));
 
         // try to deposit with [0, 1.5] weights
-        let funds_denom = DENOM_EEUR;
+        let funds_denom = DENOM_STABLE;
 
         let asset_list_alice = vec![
-            Asset::new(
-                DENOM_ATOM,
-                &Addr::unchecked(ADDR_ALICE_ATOM),
-                Uint128::zero(),
-                str_to_dec("0"),
-                Uint128::zero(),
-            ),
-            Asset::new(
-                DENOM_JUNO,
-                &Addr::unchecked(ADDR_ALICE_JUNO),
-                Uint128::zero(),
-                str_to_dec("1.5"),
-                Uint128::zero(),
-            ),
+            (ADDR_ALICE.to_string(), str_to_dec("0")),
+            (ADDR_ALICE.to_string(), str_to_dec("1.5")),
         ];
 
         let msg = ExecuteMsg::Deposit {
-            asset_list: asset_list_alice,
-            day_counter: Uint128::from(3_u128),
+            asset_list: Some(asset_list_alice),
+            down_counter: Some(Uint128::from(3_u128)),
             is_rebalancing_used,
         };
         info.funds = vec![coin(funds_amount, funds_denom)];
-        info.sender = Addr::unchecked(ADDR_ALICE_OSMO);
+        info.sender = Addr::unchecked(ADDR_ALICE);
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
 
         assert_eq!(res.err(), Some(ContractError::WeightIsOutOfRange {}));
 
         // try to deposit with [0.7, 0.5] weights
         let asset_list_alice = vec![
-            Asset::new(
-                DENOM_ATOM,
-                &Addr::unchecked(ADDR_ALICE_ATOM),
-                Uint128::zero(),
-                str_to_dec("0.7"),
-                Uint128::zero(),
-            ),
-            Asset::new(
-                DENOM_JUNO,
-                &Addr::unchecked(ADDR_ALICE_JUNO),
-                Uint128::zero(),
-                str_to_dec("0.5"),
-                Uint128::zero(),
-            ),
+            (ADDR_ALICE.to_string(), str_to_dec("0.7")),
+            (ADDR_ALICE.to_string(), str_to_dec("0.5")),
         ];
 
         let msg = ExecuteMsg::Deposit {
-            asset_list: asset_list_alice,
-            day_counter: Uint128::from(3_u128),
+            asset_list: Some(asset_list_alice),
+            down_counter: Some(Uint128::from(3_u128)),
             is_rebalancing_used,
         };
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
@@ -241,97 +185,32 @@ mod test {
 
         // try to deposit with duplicated denoms
         let asset_list_alice = vec![
-            Asset::new(
-                DENOM_ATOM,
-                &Addr::unchecked(ADDR_ALICE_ATOM),
-                Uint128::zero(),
-                str_to_dec("0.3"),
-                Uint128::zero(),
-            ),
-            Asset::new(
-                DENOM_JUNO,
-                &Addr::unchecked(ADDR_ALICE_JUNO),
-                Uint128::zero(),
-                str_to_dec("0.4"),
-                Uint128::zero(),
-            ),
-            Asset::new(
-                DENOM_ATOM,
-                &Addr::unchecked(ADDR_ALICE_ATOM),
-                Uint128::zero(),
-                str_to_dec("0.3"),
-                Uint128::zero(),
-            ),
+            (ADDR_ALICE.to_string(), str_to_dec("0.3")),
+            (ADDR_ALICE.to_string(), str_to_dec("0.4")),
+            (ADDR_ALICE.to_string(), str_to_dec("0.3")),
         ];
 
         let msg = ExecuteMsg::Deposit {
-            asset_list: asset_list_alice,
-            day_counter: Uint128::from(3_u128),
+            asset_list: Some(asset_list_alice),
+            down_counter: Some(Uint128::from(3_u128)),
             is_rebalancing_used,
         };
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
 
         assert_eq!(res.err(), Some(ContractError::DuplicatedAssets {}));
 
-        // try to deposit with nonexistent denom
-        let asset_list_alice = vec![
-            Asset::new(
-                DENOM_NONEXISTENT,
-                &Addr::unchecked(ADDR_ALICE_ATOM),
-                Uint128::zero(),
-                str_to_dec("0.6"),
-                Uint128::zero(),
-            ),
-            Asset::new(
-                DENOM_JUNO,
-                &Addr::unchecked(ADDR_ALICE_JUNO),
-                Uint128::zero(),
-                str_to_dec("0.4"),
-                Uint128::zero(),
-            ),
-        ];
-
-        let msg = ExecuteMsg::Deposit {
-            asset_list: asset_list_alice,
-            day_counter: Uint128::from(3_u128),
-            is_rebalancing_used,
-        };
-        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
-
-        assert_eq!(res.err(), Some(ContractError::AssetIsNotFound {}));
-
         // try to deposit with wrong address
         let asset_list_alice = vec![
-            Asset::new(
-                DENOM_ATOM,
-                &Addr::unchecked(ADDR_INVALID),
-                Uint128::zero(),
-                str_to_dec("0.6"),
-                Uint128::zero(),
-            ),
-            Asset::new(
-                DENOM_JUNO,
-                &Addr::unchecked(ADDR_ALICE_JUNO),
-                Uint128::zero(),
-                str_to_dec("0.4"),
-                Uint128::zero(),
-            ),
+            (ADDR_INVALID.to_string(), str_to_dec("0.6")),
+            (ADDR_ALICE.to_string(), str_to_dec("0.4")),
         ];
 
-        // init pools
-        let msg = ExecuteMsg::UpdatePoolsAndUsers {
-            pools: get_initial_pools(),
-            users: vec![],
-        };
-        info.sender = Addr::unchecked(ADDR_ADMIN_OSMO);
-        execute(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
-
         let msg = ExecuteMsg::Deposit {
-            asset_list: asset_list_alice,
-            day_counter: Uint128::from(3_u128),
+            asset_list: Some(asset_list_alice),
+            down_counter: Some(Uint128::from(3_u128)),
             is_rebalancing_used,
         };
-        info.sender = Addr::unchecked(ADDR_ALICE_OSMO);
+        info.sender = Addr::unchecked(ADDR_ALICE);
         let res = execute(deps.as_mut(), env, info, msg);
 
         assert_eq!(

@@ -1,72 +1,49 @@
 #[cfg(not(feature = "library"))]
-use cosmwasm_std::{
-    coin, Addr, BankMsg, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdError, Uint128,
-};
+use cosmwasm_std::{Decimal, DepsMut, Env, MessageInfo, Response, StdResult, Uint128};
 
 use crate::{
-    actions::{
-        helpers::{
-            math::transfer_router,
-            verifier::{get_addr_by_prefix, verify_deposit_data, verify_scheduler},
-        },
-        query::query_pools_and_users,
-    },
+    actions::helpers::verifier::verify_deposit_args,
     error::ContractError,
-    messages::query::QueryPoolsAndUsersResponse,
-    state::{
-        AddrUnchecked, Asset, Config, Denom, Pool, User, CONFIG, EXCHANGE_DENOM, EXCHANGE_PREFIX,
-        IBC_TIMEOUT_IN_MINS, LEDGER, POOLS, USERS,
-    },
+    state::{Asset, User, DENOM_STABLE, USERS},
 };
 
 pub fn deposit(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    asset_list: Vec<Asset>,
-    is_rebalancing_used: bool,
-    day_counter: Uint128,
+    asset_list: Option<Vec<(String, Decimal)>>,
+    is_rebalancing_used: Option<bool>,
+    down_counter: Option<Uint128>,
 ) -> Result<Response, ContractError> {
-    verify_deposit_data(&deps, &info, &asset_list, is_rebalancing_used, day_counter)?;
-
-    let config = CONFIG.load(deps.storage)?;
-    let denom_token_in = config.stablecoin_denom;
-
     // check if user exists or create new
     let user_loaded = USERS.load(deps.storage, &info.sender).unwrap_or_default();
 
-    // update asset list
-    let mut asset_list = asset_list
-        .iter()
-        .map(|asset| -> Result<Asset, ContractError> {
-            // check if asset is in pool
-            if (asset.denom != EXCHANGE_DENOM) && POOLS.load(deps.storage, &asset.denom).is_err() {
-                Err(ContractError::AssetIsNotFound {})?;
-            };
-
-            // search same denom asset and preserve amount_to_transfer if asset is found
-            let amount_to_transfer = user_loaded
-                .asset_list
-                .iter()
-                .find(|&x| (x.denom == asset.denom))
-                .map_or(Uint128::zero(), |y| y.amount_to_transfer);
-
-            Ok(Asset {
-                amount_to_transfer,
-                ..asset.to_owned()
-            })
-        })
-        .collect::<Result<Vec<Asset>, ContractError>>()?;
+    verify_deposit_args(
+        &deps,
+        &info,
+        &asset_list,
+        is_rebalancing_used,
+        down_counter,
+        DENOM_STABLE,
+        &user_loaded,
+    )?;
 
     // received asset_list is empty just take it from user_loaded
-    if asset_list.is_empty() {
-        asset_list = user_loaded.asset_list;
-    }
+    let asset_list: Vec<Asset> = asset_list.map_or(Ok(user_loaded.asset_list), |x| {
+        x.iter()
+            .map(|(contract, weight)| {
+                Ok(Asset::new(
+                    &deps.api.addr_validate(contract)?,
+                    weight.to_owned(),
+                ))
+            })
+            .collect::<StdResult<Vec<Asset>>>()
+    })?;
 
     let funds_amount = info
         .funds
         .iter()
-        .find(|&x| x.denom == denom_token_in)
+        .find(|&x| x.denom == DENOM_STABLE)
         .map_or(Uint128::zero(), |x| x.amount);
 
     USERS.save(
@@ -74,9 +51,9 @@ pub fn deposit(
         &info.sender,
         &User {
             asset_list,
-            deposited: user_loaded.deposited + funds_amount,
-            day_counter,
-            is_rebalancing_used,
+            stable_balance: user_loaded.stable_balance + funds_amount,
+            down_counter: down_counter.unwrap_or(user_loaded.down_counter),
+            is_rebalancing_used: is_rebalancing_used.unwrap_or(user_loaded.is_rebalancing_used),
         },
     )?;
 
@@ -86,229 +63,151 @@ pub fn deposit(
     ]))
 }
 
-pub fn withdraw(
-    deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
-    amount: Uint128,
-) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
-    let denom_token_out = config.stablecoin_denom;
+// pub fn withdraw(
+//     deps: DepsMut,
+//     _env: Env,
+//     info: MessageInfo,
+//     amount: Uint128,
+// ) -> Result<Response, ContractError> {
+//     let config = CONFIG.load(deps.storage)?;
+//     let denom_token_out = config.stablecoin_denom;
 
-    let user = USERS.update(
-        deps.storage,
-        &info.sender,
-        |some_user| -> Result<User, ContractError> {
-            let user = some_user.ok_or(ContractError::UserIsNotFound {})?;
+//     let user = USERS.update(
+//         deps.storage,
+//         &info.sender,
+//         |some_user| -> Result<User, ContractError> {
+//             let user = some_user.ok_or(ContractError::UserIsNotFound {})?;
 
-            // check withdraw amount
-            if amount > user.deposited {
-                Err(ContractError::WithdrawAmountIsExceeded {})?;
-            }
+//             // check withdraw amount
+//             if amount > user.deposited {
+//                 Err(ContractError::WithdrawAmountIsExceeded {})?;
+//             }
 
-            Ok(User {
-                deposited: user.deposited - amount,
-                ..user
-            })
-        },
-    )?;
+//             Ok(User {
+//                 deposited: user.deposited - amount,
+//                 ..user
+//             })
+//         },
+//     )?;
 
-    let msg = CosmosMsg::Bank(BankMsg::Send {
-        to_address: info.sender.to_string(),
-        amount: vec![coin(amount.u128(), denom_token_out)],
-    });
+//     let msg = CosmosMsg::Bank(BankMsg::Send {
+//         to_address: info.sender.to_string(),
+//         amount: vec![coin(amount.u128(), denom_token_out)],
+//     });
 
-    Ok(Response::new().add_message(msg).add_attributes(vec![
-        ("method", "withdraw"),
-        ("user_deposited", &user.deposited.to_string()),
-    ]))
-}
+//     Ok(Response::new().add_message(msg).add_attributes(vec![
+//         ("method", "withdraw"),
+//         ("user_deposited", &user.deposited.to_string()),
+//     ]))
+// }
 
-#[allow(clippy::too_many_arguments)]
-pub fn update_config(
-    deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
-    scheduler: Option<AddrUnchecked>,
-    stablecoin_denom: Option<Denom>,
-    stablecoin_pool_id: Option<u64>,
-    fee_default: Option<Decimal>,
-    fee_native: Option<Decimal>,
-    dapp_address_and_denom_list: Option<Vec<(AddrUnchecked, Denom)>>,
-) -> Result<Response, ContractError> {
-    CONFIG.update(
-        deps.storage,
-        |mut config| -> Result<Config, ContractError> {
-            if info.sender != config.admin {
-                Err(ContractError::Unauthorized {})?;
-            }
+// #[allow(clippy::too_many_arguments)]
+// pub fn update_config(
+//     deps: DepsMut,
+//     _env: Env,
+//     info: MessageInfo,
+//     scheduler: Option<AddrUnchecked>,
+//     stablecoin_denom: Option<Denom>,
+//     stablecoin_pool_id: Option<u64>,
+//     fee_default: Option<Decimal>,
+//     fee_native: Option<Decimal>,
+//     dapp_address_and_denom_list: Option<Vec<(AddrUnchecked, Denom)>>,
+// ) -> Result<Response, ContractError> {
+//     CONFIG.update(
+//         deps.storage,
+//         |mut config| -> Result<Config, ContractError> {
+//             if info.sender != config.admin {
+//                 Err(ContractError::Unauthorized {})?;
+//             }
 
-            if let Some(x) = scheduler {
-                config.scheduler = deps.api.addr_validate(&x)?;
-            }
+//             if let Some(x) = scheduler {
+//                 config.scheduler = deps.api.addr_validate(&x)?;
+//             }
 
-            if let Some(x) = stablecoin_denom {
-                // pool id must be updated same time as denom
-                config.stablecoin_denom = x;
-                config.stablecoin_pool_id =
-                    stablecoin_pool_id.ok_or(ContractError::StablePoolIdIsNotUpdated {})?;
-            }
+//             if let Some(x) = stablecoin_denom {
+//                 // pool id must be updated same time as denom
+//                 config.stablecoin_denom = x;
+//                 config.stablecoin_pool_id =
+//                     stablecoin_pool_id.ok_or(ContractError::StablePoolIdIsNotUpdated {})?;
+//             }
 
-            if let Some(x) = fee_default {
-                config.fee_default = x;
-            }
+//             if let Some(x) = fee_default {
+//                 config.fee_default = x;
+//             }
 
-            if let Some(x) = fee_native {
-                config.fee_native = x;
-            }
+//             if let Some(x) = fee_native {
+//                 config.fee_native = x;
+//             }
 
-            if let Some(x) = dapp_address_and_denom_list {
-                let mut verified_list: Vec<(Addr, String)> = vec![];
+//             if let Some(x) = dapp_address_and_denom_list {
+//                 let mut verified_list: Vec<(Addr, String)> = vec![];
 
-                for (address, denom) in x {
-                    verified_list.push((
-                        deps.api
-                            .addr_validate(&get_addr_by_prefix(&address, EXCHANGE_PREFIX)?)?,
-                        denom,
-                    ));
-                }
+//                 for (address, denom) in x {
+//                     verified_list.push((
+//                         deps.api
+//                             .addr_validate(&get_addr_by_prefix(&address, EXCHANGE_PREFIX)?)?,
+//                         denom,
+//                     ));
+//                 }
 
-                config.dapp_address_and_denom_list = verified_list;
-            }
+//                 config.dapp_address_and_denom_list = verified_list;
+//             }
 
-            Ok(config)
-        },
-    )?;
+//             Ok(config)
+//         },
+//     )?;
 
-    Ok(Response::new().add_attributes(vec![("method", "update_config")]))
-}
+//     Ok(Response::new().add_attributes(vec![("method", "update_config")]))
+// }
 
-pub fn update_pools_and_users(
-    deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
-    pools: Vec<(Denom, Pool)>,
-    users: Vec<(AddrUnchecked, User)>,
-) -> Result<Response, ContractError> {
-    verify_scheduler(&deps, &info)?;
+// pub fn swap(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+//     verify_scheduler(&deps, &info)?;
 
-    // update pools info
-    for (denom, pool_received) in pools {
-        if POOLS
-            .save(
-                deps.storage,
-                &denom,
-                &Pool::new(
-                    pool_received.id,
-                    pool_received.price,
-                    &pool_received.channel_id,
-                    &pool_received.port_id,
-                    &pool_received.symbol,
-                ),
-            )
-            .is_err()
-        {
-            Err(ContractError::PoolIsNotUpdated {})?;
-        };
-    }
+//     Ok(Response::new().add_attributes(vec![("method", "swap")]))
+// }
 
-    // update users info
-    for (address_unchecked, user_received) in users {
-        // validate address
-        let address = deps.api.addr_validate(&address_unchecked)?;
+// pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+//     verify_scheduler(&deps, &info)?;
 
-        // get user from storage by address
-        let user_loaded = USERS
-            .load(deps.storage, &address)
-            .map_err(|_| ContractError::UserIsNotFound {})?;
+//     let QueryPoolsAndUsersResponse { pools, users } =
+//         query_pools_and_users(deps.as_ref(), env.clone())?;
 
-        // update user assets (wallet balances)
-        let asset_list = user_loaded
-            .asset_list
-            .iter()
-            .map(|asset_loaded| -> Result<Asset, ContractError> {
-                // check if asset is in pool
-                if (asset_loaded.denom != EXCHANGE_DENOM)
-                    && POOLS.load(deps.storage, &asset_loaded.denom).is_err()
-                {
-                    Err(ContractError::AssetIsNotFound {})?;
-                };
+//     let ledger = LEDGER.load(deps.storage)?;
 
-                // search same denom
-                let asset_received = user_received
-                    .asset_list
-                    .iter()
-                    .find(|&x| (x.denom == asset_loaded.denom))
-                    .ok_or(ContractError::AssetIsNotFound {})?;
+//     let Config {
+//         stablecoin_denom,
+//         fee_default,
+//         fee_native,
+//         dapp_address_and_denom_list,
+//         ..
+//     } = CONFIG.load(deps.storage)?;
+//     let timestamp = env.block.time.plus_seconds(IBC_TIMEOUT_IN_MINS * 60);
 
-                Ok(Asset {
-                    wallet_balance: asset_received.wallet_balance,
-                    ..asset_loaded.to_owned()
-                })
-            })
-            .collect::<Result<Vec<Asset>, ContractError>>()?;
+//     let contract_balances = deps.querier.query_all_balances(env.contract.address)?;
 
-        USERS.save(
-            deps.storage,
-            &address,
-            &User {
-                asset_list,
-                ..user_loaded
-            },
-        )?;
-    }
+//     let (users_updated, msg_list) = transfer_router(
+//         &pools,
+//         &users,
+//         contract_balances,
+//         ledger,
+//         fee_default,
+//         fee_native,
+//         dapp_address_and_denom_list,
+//         &stablecoin_denom,
+//         timestamp,
+//     );
 
-    Ok(Response::new().add_attributes(vec![("method", "update_pools_and_users")]))
-}
+//     // update users
+//     for (address, user) in users_updated {
+//         USERS.save(deps.storage, &address, &user)?;
+//     }
 
-pub fn swap(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-    verify_scheduler(&deps, &info)?;
+//     CONFIG.update(deps.storage, |mut x| -> Result<Config, StdError> {
+//         x.timestamp = timestamp;
+//         Ok(x)
+//     })?;
 
-    Ok(Response::new().add_attributes(vec![("method", "swap")]))
-}
-
-pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-    verify_scheduler(&deps, &info)?;
-
-    let QueryPoolsAndUsersResponse { pools, users } =
-        query_pools_and_users(deps.as_ref(), env.clone())?;
-
-    let ledger = LEDGER.load(deps.storage)?;
-
-    let Config {
-        stablecoin_denom,
-        fee_default,
-        fee_native,
-        dapp_address_and_denom_list,
-        ..
-    } = CONFIG.load(deps.storage)?;
-    let timestamp = env.block.time.plus_seconds(IBC_TIMEOUT_IN_MINS * 60);
-
-    let contract_balances = deps.querier.query_all_balances(env.contract.address)?;
-
-    let (users_updated, msg_list) = transfer_router(
-        &pools,
-        &users,
-        contract_balances,
-        ledger,
-        fee_default,
-        fee_native,
-        dapp_address_and_denom_list,
-        &stablecoin_denom,
-        timestamp,
-    );
-
-    // update users
-    for (address, user) in users_updated {
-        USERS.save(deps.storage, &address, &user)?;
-    }
-
-    CONFIG.update(deps.storage, |mut x| -> Result<Config, StdError> {
-        x.timestamp = timestamp;
-        Ok(x)
-    })?;
-
-    Ok(Response::new()
-        .add_messages(msg_list)
-        .add_attributes(vec![("method", "transfer")]))
-}
+//     Ok(Response::new()
+//         .add_messages(msg_list)
+//         .add_attributes(vec![("method", "transfer")]))
+// }

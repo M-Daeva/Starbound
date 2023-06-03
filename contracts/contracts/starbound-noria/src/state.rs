@@ -4,45 +4,28 @@ use cw_storage_plus::{Item, Map};
 
 use crate::actions::helpers::math::str_to_dec;
 
-pub type Denom = String; // TODO: add verification
-pub type AddrUnchecked = String;
-
-pub const IBC_TIMEOUT_IN_MINS: u64 = 15;
-pub const EXCHANGE_DENOM: &str = "uosmo";
-pub const EXCHANGE_PREFIX: &str = "osmo";
+pub const PREFIX: &str = "noria";
+pub const DENOM_STABLE: &str = "ucrd";
 pub const CHAIN_ID_DEV: &str = "devnet-1";
+
+pub const DEX_FACTORY: &str = "noria14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9sx2wcwe";
 
 pub const CONFIG: Item<Config> = Item::new("config");
 #[cw_serde]
 pub struct Config {
     pub admin: Addr,
     pub scheduler: Addr,
-    pub stablecoin_denom: Denom,
-    pub stablecoin_pool_id: u64,
-    pub fee_default: Decimal,
-    pub fee_native: Decimal,
-    pub dapp_address_and_denom_list: Vec<(Addr, Denom)>,
+    pub fee_rate: Decimal,
     pub timestamp: Timestamp,
     chain_id_dev: String,
 }
 
 impl Config {
-    pub fn new(
-        admin: &Addr,
-        scheduler: &Addr,
-        stablecoin_denom: &str,
-        stablecoin_pool_id: u64,
-        fee_default: &str,
-        fee_native: &str,
-    ) -> Self {
+    pub fn new(admin: &Addr, scheduler: &Addr, fee_rate: &str) -> Self {
         Self {
             admin: admin.to_owned(),
             scheduler: scheduler.to_owned(),
-            stablecoin_denom: stablecoin_denom.to_string(),
-            stablecoin_pool_id,
-            fee_default: str_to_dec(fee_default),
-            fee_native: str_to_dec(fee_native),
-            dapp_address_and_denom_list: vec![],
+            fee_rate: str_to_dec(fee_rate),
             timestamp: Timestamp::default(),
             chain_id_dev: String::from(CHAIN_ID_DEV),
         }
@@ -53,39 +36,6 @@ impl Config {
     }
 }
 
-pub const LEDGER: Item<Ledger> = Item::new("ledger");
-#[cw_serde]
-#[derive(Default)]
-pub struct Ledger {
-    pub global_delta_balance_list: Vec<Uint128>,
-    pub global_delta_cost_list: Vec<Uint128>,
-    pub global_denom_list: Vec<Denom>,
-    pub global_price_list: Vec<Decimal>,
-}
-
-// key - denom: &str
-pub const POOLS: Map<&str, Pool> = Map::new("pools");
-#[cw_serde]
-pub struct Pool {
-    pub id: Uint128,
-    pub price: Decimal,
-    pub symbol: String,
-    pub channel_id: String,
-    pub port_id: String,
-}
-
-impl Pool {
-    pub fn new(id: Uint128, price: Decimal, channel_id: &str, port_id: &str, symbol: &str) -> Self {
-        Self {
-            id,
-            price,
-            channel_id: channel_id.to_string(),
-            port_id: port_id.to_string(),
-            symbol: symbol.to_string(),
-        }
-    }
-}
-
 // key - native_address: &Addr
 pub const USERS: Map<&Addr, User> = Map::new("users");
 #[cw_serde]
@@ -93,49 +43,37 @@ pub const USERS: Map<&Addr, User> = Map::new("users");
 pub struct User {
     pub asset_list: Vec<Asset>,
     pub is_rebalancing_used: bool,
-    pub day_counter: Uint128,
-    pub deposited: Uint128,
+    pub down_counter: Uint128,
+    pub stable_balance: Uint128,
 }
 
 impl User {
     pub fn new(
         asset_list: &Vec<Asset>,
-        day_counter: Uint128,
-        deposited: Uint128,
+        down_counter: Uint128,
+        stable_balance: Uint128,
         is_rebalancing_used: bool,
     ) -> Self {
         Self {
             is_rebalancing_used,
             asset_list: asset_list.to_owned(),
-            day_counter,
-            deposited,
+            down_counter,
+            stable_balance,
         }
     }
 }
 
 #[cw_serde]
 pub struct Asset {
-    pub denom: Denom,
-    pub wallet_address: Addr,
-    pub wallet_balance: Uint128,
+    pub contract: Addr, // TODO: rename to denom and support both cw20 and native assets
     pub weight: Decimal,
-    pub amount_to_transfer: Uint128,
 }
 
 impl Asset {
-    pub fn new(
-        denom: &str,
-        wallet_address: &Addr,
-        wallet_balance: Uint128,
-        weight: Decimal,
-        amount_to_transfer: Uint128,
-    ) -> Self {
+    pub fn new(contract: &Addr, weight: Decimal) -> Self {
         Self {
-            denom: denom.to_string(),
-            wallet_address: wallet_address.to_owned(),
-            wallet_balance,
+            contract: contract.to_owned(),
             weight,
-            amount_to_transfer,
         }
     }
 }
