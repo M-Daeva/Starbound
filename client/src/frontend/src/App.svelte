@@ -5,8 +5,8 @@
   import Assets from "./pages/Assets.svelte";
   import Bank from "./pages/Bank.svelte";
   import NotFound from "./pages/NotFound.svelte";
-  import { init } from "./account/wallet";
   import Test from './pages/Test.svelte';
+  import { init, initCwHandler } from "./account/wallet";
   import Modal from "./components/Modal.svelte";
   import { displayAddress, getImageUrl } from "./services/helpers";
   import { get } from "svelte/store";
@@ -137,6 +137,12 @@
               to={paths.dashboard}>Dashboard</Link
             >
           </li>
+          <li on:mousedown={removeOverlay}>
+            <Link
+                    class="text-center hover:no-underline visited:text-amber-200"
+                    to={paths.test}>Test</Link
+            >
+          </li>
         </ul>
       </nav>
       <div class="w-36 flex flex-row">
@@ -150,7 +156,7 @@
             get(chainRegistryStorage),
             CHAIN_TYPE
           );
-          initCwHandler();
+          await initCwHandler();
         }}>Connect Wallet</button
       >
     </header>
@@ -160,6 +166,7 @@
       <Route primary={false} path={paths.bank}><Bank /></Route>
       <Route primary={false} path={paths.assets}><Assets /></Route>
       <Route primary={false} path={paths.dashboard}><Dashboard /></Route>
+      <Route primary={false} path={paths.test}><Test /></Route>
       <Route primary={false} path={paths.other}><NotFound /></Route>
     </section>
 

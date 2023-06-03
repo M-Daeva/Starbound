@@ -171,7 +171,6 @@ async function initAll() {
     // order matters!
     validatorsStorage.set(data.validatorsStorage);
     poolsStorage.set(data.pools);
-    console.log("1");
     chainRegistryStorage.set(data.chainRegistry);
     // TODO: increase data update freq
     userFundsStorage.set(data.userFunds);

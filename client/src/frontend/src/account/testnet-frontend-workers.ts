@@ -1,9 +1,9 @@
 import { l } from "../../../common/utils";
 import { initWalletList, getSigner } from "./signer";
-import { type User } from "../../../common/codegen/StarboundOsmosis.types";
-import {
-  type ChainRegistryStorage,
-  type ChainResponse,
+import type { User } from "../../../common/codegen/StarboundOsmosis.types";
+import type {
+  ChainRegistryStorage,
+  ChainResponse,
 } from "../../../common/interfaces";
 import {
   CONTRACT_ADDRESS,
