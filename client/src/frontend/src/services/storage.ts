@@ -1,4 +1,5 @@
-import { type Writable, get, writable } from "svelte/store";
+import { get, readable, writable } from "svelte/store";
+import type { Writable } from "svelte/store";
 import { Request, l } from "../../../common/utils";
 import { baseURL } from "../config";
 import { init } from "../account/wallet";
@@ -19,6 +20,7 @@ import type {
   UserBalance,
   TimeInHoursAndMins,
 } from "../../../common/interfaces";
+import { ChainInfo } from "@keplr-wallet/types";
 
 // global constants
 const STABLECOIN_SYMBOL = "EEUR";
@@ -36,7 +38,7 @@ const CHAIN_TYPE: "main" | "test" = "test";
 // TODO: replace some writable storages with readable
 
 // api storages
-let chainRegistryStorage: Writable<NetworkData[]> = writable([]);
+let chainRegistryStorage: Writable<NetworkData[] | []> = writable([]);
 let ibcChannellsStorage: Writable<IbcResponse[]> = writable([]);
 let poolsStorage: Writable<[string, AssetDescription[]][]> = writable([]);
 let validatorsStorage: Writable<[string, ValidatorResponseReduced[]][]> =
@@ -66,6 +68,7 @@ let txResStorage: Writable<["Success" | "Error", string]> = writable([
   "",
 ]);
 
+let currenChain: Writable<ChainInfo> = writable();
 class Localstorage {
   get(): string | undefined {
     const value = `${localStorage.getItem(LOCAL_STORAGE_KEY)}`;
@@ -168,6 +171,7 @@ async function initAll() {
     // order matters!
     validatorsStorage.set(data.validatorsStorage);
     poolsStorage.set(data.pools);
+    console.log("1");
     chainRegistryStorage.set(data.chainRegistry);
     // TODO: increase data update freq
     userFundsStorage.set(data.userFunds);
@@ -225,6 +229,7 @@ export {
   sortingConfigStorage,
   isModalActiveStorage,
   txResStorage,
+  currenChain,
   ls,
   getRegistryChannelsPools,
   getPools,

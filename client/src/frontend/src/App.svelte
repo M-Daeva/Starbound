@@ -6,6 +6,7 @@
   import Bank from "./pages/Bank.svelte";
   import NotFound from "./pages/NotFound.svelte";
   import { init } from "./account/wallet";
+  import Test from './pages/Test.svelte';
   import Modal from "./components/Modal.svelte";
   import { displayAddress, getImageUrl } from "./services/helpers";
   import { get } from "svelte/store";
@@ -23,6 +24,7 @@
     dashboard: `${basePath}/dashboard`,
     assets: `${basePath}/assets`,
     bank: `${basePath}/bank`,
+    test: `${basePath}/test`,
     other: "/*",
   };
 
