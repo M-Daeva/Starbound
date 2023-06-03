@@ -17,7 +17,7 @@ fn query_pairs_default() {
     let mut prj = Project::new(None);
     // let user = Project::get_user(UserName::Alice);
 
-    prj.create_dex().unwrap();
+    prj.create_factory().unwrap();
 
     let asset_infos = [
         AssetInfo::NativeToken {

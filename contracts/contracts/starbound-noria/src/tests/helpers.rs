@@ -51,9 +51,7 @@ pub fn get_instance(addr: &str) -> Instance {
 pub struct Project {
     pub address: Addr,
     app: App,
-    dex_addr: Option<Addr>,
-    token_code_id_cnt: u64,
-    pair_code_id_cnt: u64,
+    factory_address: Addr,
 }
 
 impl Project {
@@ -65,20 +63,17 @@ impl Project {
 
         let id = Self::store_code(&mut app);
         let address = Self::instantiate(&mut app, id);
-        let token_code_id_cnt = 1;
-        let pair_code_id_cnt = 1;
+        let factory_address = Addr::unchecked("");
 
         Self {
             address,
             app,
-            dex_addr: None,
-            token_code_id_cnt,
-            pair_code_id_cnt,
+            factory_address,
         }
     }
 
-    fn get_dex_addr(&self) -> Addr {
-        self.dex_addr.clone().unwrap()
+    fn get_factory_address(&self) -> Addr {
+        self.factory_address.clone()
     }
 
     #[track_caller]
@@ -141,7 +136,7 @@ impl Project {
     }
 
     #[track_caller]
-    pub fn create_dex(&mut self) -> StdResult<()> {
+    pub fn create_factory(&mut self) -> StdResult<()> {
         let contract = ContractWrapper::new(
             terraswap_factory::contract::execute,
             terraswap_factory::contract::instantiate,
@@ -150,27 +145,39 @@ impl Project {
 
         let id = self.app.store_code(Box::new(contract));
 
+        // store pair code
+        let pair = ContractWrapper::new(
+            terraswap_pair::contract::execute,
+            terraswap_pair::contract::instantiate,
+            terraswap_pair::contract::query,
+        );
+        let id_pair = self.app.store_code(Box::new(pair)); // id = 3
+
+        let lp = ContractWrapper::new(
+            terraswap_pair::contract::execute,
+            terraswap_pair::contract::instantiate,
+            terraswap_pair::contract::query,
+        );
+        let id_lp = self.app.store_code(Box::new(lp)); // id = 4
+
         let msg = terraswap::factory::InstantiateMsg {
-            token_code_id: self.token_code_id_cnt,
-            pair_code_id: self.pair_code_id_cnt,
+            pair_code_id: 3,  // pair contract
+            token_code_id: 4, // LP token
         };
 
-        self.token_code_id_cnt += 1;
-        self.pair_code_id_cnt += 1;
-
-        let addr = self
+        let address = self
             .app
             .instantiate_contract(
                 id,
                 Addr::unchecked(ADDR_ADMIN),
                 &msg.clone(),
                 &[],
-                "dex",
+                "factory",
                 Some(ADDR_ADMIN.to_string()),
             )
             .unwrap();
 
-        self.dex_addr = Some(addr);
+        self.factory_address = address;
 
         Ok(())
     }
@@ -180,7 +187,7 @@ impl Project {
         self.app
             .execute_contract(
                 Addr::unchecked(ADDR_ADMIN),
-                self.get_dex_addr(),
+                self.get_factory_address(),
                 &terraswap::factory::ExecuteMsg::AddNativeTokenDecimals {
                     denom: denom.to_string(),
                     decimals,
@@ -198,9 +205,9 @@ impl Project {
         self.app
             .execute_contract(
                 Addr::unchecked(ADDR_ADMIN),
-                self.get_dex_addr(),
+                self.get_factory_address(),
                 &terraswap::factory::ExecuteMsg::CreatePair { asset_infos },
-                &[coin(1u128, DENOM_DENOM), coin(1u128, DENOM_NORIA)],
+                &[],
             )
             .map_err(|err| err.downcast().unwrap())
     }
@@ -284,7 +291,7 @@ impl Project {
     #[track_caller]
     pub fn query_dex(&self) -> StdResult<terraswap::factory::PairsResponse> {
         self.app.wrap().query_wasm_smart(
-            self.get_dex_addr(),
+            self.get_factory_address(),
             &terraswap::factory::QueryMsg::Pairs {
                 start_after: None,
                 limit: None,
