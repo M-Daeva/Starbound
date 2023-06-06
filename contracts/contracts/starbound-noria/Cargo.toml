@@ -52,3 +52,4 @@ speculoos = "0.11.0"
 terraswap-factory = {path = "../../packages/terraswap-factory"}
 terraswap-pair = {path = "../../packages/terraswap-pair"}
 terraswap-router = {path = "../../packages/terraswap-router"}
+terraswap-token = {path = "../../packages/terraswap-token"}

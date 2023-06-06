@@ -6,6 +6,15 @@ use cosmwasm_std::{
 };
 use cw_multi_test::{App, AppResponse, ContractWrapper, Executor};
 
+use terraswap::pair::{
+    Cw20HookMsg, ExecuteMsg as PairExecuteMsg, InstantiateMsg as PairInstantiateMsg,
+};
+use terraswap::{
+    asset::{Asset as TerraswapAsset, AssetInfo, PairInfo},
+    factory::{ExecuteMsg as FactoryExecuteMsg, InstantiateMsg as FactoryInstantiateMsg},
+};
+use terraswap_factory::state::Config as factoryConfig;
+
 use crate::{
     actions::helpers::math::{str_to_dec, u128_to_dec},
     contract::{execute, instantiate, query},
@@ -145,22 +154,22 @@ impl Project {
 
         let id = self.app.store_code(Box::new(contract));
 
-        // store pair code
-        let pair = ContractWrapper::new(
-            terraswap_pair::contract::execute,
-            terraswap_pair::contract::instantiate,
-            terraswap_pair::contract::query,
-        );
-        let id_pair = self.app.store_code(Box::new(pair)); // id = 3
+        // // store pair code
+        // let pair = ContractWrapper::new(
+        //     terraswap_pair::contract::execute,
+        //     terraswap_pair::contract::instantiate,
+        //     terraswap_pair::contract::query,
+        // );
+        // let id_pair = self.app.store_code(Box::new(pair)); // id = 3
 
-        let lp = ContractWrapper::new(
-            terraswap_pair::contract::execute,
-            terraswap_pair::contract::instantiate,
-            terraswap_pair::contract::query,
-        );
-        let id_lp = self.app.store_code(Box::new(lp)); // id = 4
+        // let lp = ContractWrapper::new(
+        //     terraswap_pair::contract::execute,
+        //     terraswap_pair::contract::instantiate,
+        //     terraswap_pair::contract::query,
+        // );
+        // let id_lp = self.app.store_code(Box::new(lp)); // id = 4
 
-        let msg = terraswap::factory::InstantiateMsg {
+        let msg = FactoryInstantiateMsg {
             pair_code_id: 3,  // pair contract
             token_code_id: 4, // LP token
         };

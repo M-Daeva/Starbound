@@ -24,5 +24,5 @@ pub mod messages {
 #[cfg(test)]
 mod tests {
     pub mod helpers;
-    pub mod unit;
+    pub mod integration;
 }
