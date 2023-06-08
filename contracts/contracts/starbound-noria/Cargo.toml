@@ -47,9 +47,8 @@ thiserror = "1.0.40"
 terraswap = {path = "../../packages/terraswap"}
 
 [dev-dependencies]
-cw-multi-test = "0.16.4"
+cw-multi-test = "0.16.5"
 speculoos = "0.11.0"
 terraswap-factory = {path = "../../packages/terraswap-factory"}
 terraswap-pair = {path = "../../packages/terraswap-pair"}
 terraswap-router = {path = "../../packages/terraswap-router"}
-terraswap-token = {path = "../../packages/terraswap-token"}

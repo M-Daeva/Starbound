@@ -1,171 +1,5 @@
-use cosmwasm_std::{
-    coin, Addr, Attribute, DepsMut, Empty, Env, Reply, Response, StdError, StdResult, SubMsgResult,
-};
+use cosmwasm_std::{coin, Addr, Empty, Uint128};
 use cw_multi_test::{App, ContractWrapper, Executor};
-
-fn handle_reply(_deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
-    match msg.result {
-        SubMsgResult::Ok(_) => Ok(Response::default()
-            .add_attributes(vec![("method", "reply"), ("msg_id", &msg.id.to_string())])),
-        SubMsgResult::Err(e) => Err(StdError::GenericErr { msg: e }),
-    }
-}
-
-#[test]
-fn create_pair_of_coins() {
-    const FUNDS_AMOUNT: u128 = 1_000;
-    const DENOM_COIN1: &str = "ucoin1";
-    const DENOM_COIN2: &str = "ucoin2";
-    const DECIMALS: u8 = 6;
-    const ADDR_ADMIN: &str = "wasm1admin";
-
-    // init app contract, id = 1, address = contract0
-    let mut app = App::new(|router, _api, storage| {
-        router
-            .bank
-            .init_balance(
-                storage,
-                &Addr::unchecked(ADDR_ADMIN),
-                vec![
-                    coin(FUNDS_AMOUNT, DENOM_COIN1),
-                    coin(FUNDS_AMOUNT, DENOM_COIN2),
-                ],
-            )
-            .unwrap();
-    });
-
-    let app_id = app.store_code(Box::new(ContractWrapper::new(
-        crate::contract::execute,
-        crate::contract::instantiate,
-        crate::contract::query,
-    )));
-
-    let _app_address = app
-        .instantiate_contract(
-            app_id,
-            Addr::unchecked(ADDR_ADMIN),
-            &Empty {},
-            &[],
-            "app",
-            Some(ADDR_ADMIN.to_string()),
-        )
-        .unwrap();
-
-    // init cw20_base contract for LP token, id = 2
-    let cw20_token_id = app.store_code(Box::new(ContractWrapper::new(
-        cw20_base::contract::instantiate,
-        cw20_base::contract::instantiate,
-        cw20_base::contract::query,
-    )));
-
-    // store pair contract, id = 3
-    let pair_id = app.store_code(Box::new(
-        ContractWrapper::new(
-            terraswap_pair::contract::execute,
-            terraswap_pair::contract::instantiate,
-            terraswap_pair::contract::query,
-        )
-        .with_reply(handle_reply),
-    ));
-
-    // init factory contract, id = 4, address = contract1
-    let factory_id = app.store_code(Box::new(
-        ContractWrapper::new(
-            terraswap_factory::contract::execute,
-            terraswap_factory::contract::instantiate,
-            terraswap_factory::contract::query,
-        )
-        .with_reply(handle_reply),
-    ));
-
-    let factory_address = app
-        .instantiate_contract(
-            factory_id,
-            Addr::unchecked(ADDR_ADMIN),
-            &terraswap::factory::InstantiateMsg {
-                pair_code_id: pair_id,
-                token_code_id: cw20_token_id,
-            },
-            &[],
-            "factory",
-            Some(ADDR_ADMIN.to_string()),
-        )
-        .unwrap();
-
-    // add decimals
-    let _res = app
-        .execute_contract(
-            Addr::unchecked(ADDR_ADMIN),
-            factory_address.clone(),
-            &terraswap::factory::ExecuteMsg::AddNativeTokenDecimals {
-                denom: DENOM_COIN1.to_string(),
-                decimals: DECIMALS,
-            },
-            &[coin(1, DENOM_COIN1)],
-        )
-        .unwrap();
-
-    let _res = app
-        .execute_contract(
-            Addr::unchecked(ADDR_ADMIN),
-            factory_address.clone(),
-            &terraswap::factory::ExecuteMsg::AddNativeTokenDecimals {
-                denom: DENOM_COIN2.to_string(),
-                decimals: DECIMALS,
-            },
-            &[coin(1, DENOM_COIN2)],
-        )
-        .unwrap();
-
-    // create pair
-    let asset_infos = [
-        terraswap::asset::AssetInfo::NativeToken {
-            denom: DENOM_COIN1.to_string(),
-        },
-        terraswap::asset::AssetInfo::NativeToken {
-            denom: DENOM_COIN2.to_string(),
-        },
-    ];
-
-    let res = app
-        .execute_contract(
-            Addr::unchecked(ADDR_ADMIN),
-            factory_address.clone(),
-            &terraswap::factory::ExecuteMsg::CreatePair {
-                asset_infos: asset_infos.clone(),
-            },
-            &[coin(10, DENOM_COIN1), coin(10, DENOM_COIN2)],
-        )
-        .unwrap();
-
-    let is_pair_found = res.events.iter().any(|x| {
-        x.attributes.contains(&Attribute {
-            key: "pair".to_string(),
-            value: format!("{}-{}", DENOM_COIN1, DENOM_COIN2),
-        })
-    });
-
-    speculoos::assert_that(&is_pair_found).is_equal_to(true);
-
-    // query pairs
-    let terraswap::factory::PairsResponse { pairs } = app
-        .wrap()
-        .query_wasm_smart(
-            factory_address.clone(),
-            &terraswap::factory::QueryMsg::Pairs {
-                start_after: None,
-                limit: None,
-            },
-        )
-        .unwrap();
-
-    let received: Vec<[terraswap::asset::AssetInfo; 2]> =
-        pairs.iter().map(|x| x.asset_infos.to_owned()).collect();
-
-    let expected = vec![asset_infos];
-
-    speculoos::assert_that(&received).is_equal_to(expected);
-}
 
 #[test]
 fn create_pair_of_tokens() {
@@ -253,7 +87,7 @@ fn create_pair_of_tokens() {
             terraswap_pair::contract::instantiate,
             terraswap_pair::contract::query,
         )
-        .with_reply(handle_reply),
+        .with_reply(terraswap_pair::contract::reply),
     ));
 
     // init factory contract, id = 4, address = contract3
@@ -263,7 +97,7 @@ fn create_pair_of_tokens() {
             terraswap_factory::contract::instantiate,
             terraswap_factory::contract::query,
         )
-        .with_reply(handle_reply),
+        .with_reply(terraswap_factory::contract::reply),
     ));
 
     let factory_address = app
@@ -290,25 +124,15 @@ fn create_pair_of_tokens() {
         },
     ];
 
-    let res = app
-        .execute_contract(
-            Addr::unchecked(ADDR_ADMIN),
-            factory_address.clone(),
-            &terraswap::factory::ExecuteMsg::CreatePair {
-                asset_infos: asset_infos.clone(),
-            },
-            &[],
-        )
-        .unwrap();
-
-    let is_pair_found = res.events.iter().any(|x| {
-        x.attributes.contains(&Attribute {
-            key: "pair".to_string(),
-            value: format!("{}-{}", token1_address, token2_address),
-        })
-    });
-
-    speculoos::assert_that(&is_pair_found).is_equal_to(true);
+    app.execute_contract(
+        Addr::unchecked(ADDR_ADMIN),
+        factory_address.clone(),
+        &terraswap::factory::ExecuteMsg::CreatePair {
+            asset_infos: asset_infos.clone(),
+        },
+        &[],
+    )
+    .unwrap();
 
     // query pairs
     let terraswap::factory::PairsResponse { pairs } = app
@@ -325,9 +149,197 @@ fn create_pair_of_tokens() {
     let received: Vec<[terraswap::asset::AssetInfo; 2]> =
         pairs.iter().map(|x| x.asset_infos.to_owned()).collect();
 
-    let expected = vec![asset_infos];
+    let expected = vec![asset_infos.clone()];
 
     speculoos::assert_that(&received).is_equal_to(expected);
+
+    // query pool
+    let pool_addr = &pairs[0].contract_addr;
+
+    let terraswap::pair::PoolResponse { assets, .. } = app
+        .wrap()
+        .query_wasm_smart(pool_addr, &terraswap::pair::QueryMsg::Pool {})
+        .unwrap();
+
+    let expected = TryInto::<[terraswap::asset::Asset; 2]>::try_into(
+        asset_infos
+            .iter()
+            .map(|x| terraswap::asset::Asset {
+                amount: Uint128::zero(),
+                info: x.to_owned(),
+            })
+            .collect::<Vec<terraswap::asset::Asset>>(),
+    )
+    .unwrap();
+
+    speculoos::assert_that(&assets).is_equal_to(expected);
+}
+
+#[test]
+fn create_pair_of_coins() {
+    const FUNDS_AMOUNT: u128 = 1_000;
+    const DENOM_COIN1: &str = "ucoin1";
+    const DENOM_COIN2: &str = "ucoin2";
+    const DECIMALS: u8 = 6;
+    const ADDR_ADMIN: &str = "wasm1admin";
+
+    // init app contract, id = 1, address = contract0
+    let mut app = App::new(|router, _api, storage| {
+        router
+            .bank
+            .init_balance(
+                storage,
+                &Addr::unchecked(ADDR_ADMIN),
+                vec![
+                    coin(FUNDS_AMOUNT, DENOM_COIN1),
+                    coin(FUNDS_AMOUNT, DENOM_COIN2),
+                ],
+            )
+            .unwrap();
+    });
+
+    let app_id = app.store_code(Box::new(ContractWrapper::new(
+        crate::contract::execute,
+        crate::contract::instantiate,
+        crate::contract::query,
+    )));
+
+    let _app_address = app
+        .instantiate_contract(
+            app_id,
+            Addr::unchecked(ADDR_ADMIN),
+            &Empty {},
+            &[],
+            "app",
+            Some(ADDR_ADMIN.to_string()),
+        )
+        .unwrap();
+
+    // init cw20_base contract for LP token, id = 2
+    let cw20_token_id = app.store_code(Box::new(ContractWrapper::new(
+        cw20_base::contract::instantiate,
+        cw20_base::contract::instantiate,
+        cw20_base::contract::query,
+    )));
+
+    // store pair contract, id = 3
+    let pair_id = app.store_code(Box::new(
+        ContractWrapper::new(
+            terraswap_pair::contract::execute,
+            terraswap_pair::contract::instantiate,
+            terraswap_pair::contract::query,
+        )
+        .with_reply(terraswap_pair::contract::reply),
+    ));
+
+    // init factory contract, id = 4, address = contract1
+    let factory_id = app.store_code(Box::new(
+        ContractWrapper::new(
+            terraswap_factory::contract::execute,
+            terraswap_factory::contract::instantiate,
+            terraswap_factory::contract::query,
+        )
+        .with_reply(terraswap_factory::contract::reply),
+    ));
+
+    let factory_address = app
+        .instantiate_contract(
+            factory_id,
+            Addr::unchecked(ADDR_ADMIN),
+            &terraswap::factory::InstantiateMsg {
+                pair_code_id: pair_id,
+                token_code_id: cw20_token_id,
+            },
+            &[],
+            "factory",
+            Some(ADDR_ADMIN.to_string()),
+        )
+        .unwrap();
+
+    // add decimals
+    let _res = app
+        .execute_contract(
+            Addr::unchecked(ADDR_ADMIN),
+            factory_address.clone(),
+            &terraswap::factory::ExecuteMsg::AddNativeTokenDecimals {
+                denom: DENOM_COIN1.to_string(),
+                decimals: DECIMALS,
+            },
+            &[coin(1, DENOM_COIN1)],
+        )
+        .unwrap();
+
+    let _res = app
+        .execute_contract(
+            Addr::unchecked(ADDR_ADMIN),
+            factory_address.clone(),
+            &terraswap::factory::ExecuteMsg::AddNativeTokenDecimals {
+                denom: DENOM_COIN2.to_string(),
+                decimals: DECIMALS,
+            },
+            &[coin(1, DENOM_COIN2)],
+        )
+        .unwrap();
+
+    // create pair
+    let asset_infos = [
+        terraswap::asset::AssetInfo::NativeToken {
+            denom: DENOM_COIN1.to_string(),
+        },
+        terraswap::asset::AssetInfo::NativeToken {
+            denom: DENOM_COIN2.to_string(),
+        },
+    ];
+
+    app.execute_contract(
+        Addr::unchecked(ADDR_ADMIN),
+        factory_address.clone(),
+        &terraswap::factory::ExecuteMsg::CreatePair {
+            asset_infos: asset_infos.clone(),
+        },
+        &[coin(10, DENOM_COIN1), coin(10, DENOM_COIN2)],
+    )
+    .unwrap();
+
+    // query pairs
+    let terraswap::factory::PairsResponse { pairs } = app
+        .wrap()
+        .query_wasm_smart(
+            factory_address.clone(),
+            &terraswap::factory::QueryMsg::Pairs {
+                start_after: None,
+                limit: None,
+            },
+        )
+        .unwrap();
+
+    let received: Vec<[terraswap::asset::AssetInfo; 2]> =
+        pairs.iter().map(|x| x.asset_infos.to_owned()).collect();
+
+    let expected = vec![asset_infos.clone()];
+
+    speculoos::assert_that(&received).is_equal_to(expected);
+
+    // query pool
+    let pool_addr = &pairs[0].contract_addr;
+
+    let terraswap::pair::PoolResponse { assets, .. } = app
+        .wrap()
+        .query_wasm_smart(pool_addr, &terraswap::pair::QueryMsg::Pool {})
+        .unwrap();
+
+    let expected = TryInto::<[terraswap::asset::Asset; 2]>::try_into(
+        asset_infos
+            .iter()
+            .map(|x| terraswap::asset::Asset {
+                amount: Uint128::zero(),
+                info: x.to_owned(),
+            })
+            .collect::<Vec<terraswap::asset::Asset>>(),
+    )
+    .unwrap();
+
+    speculoos::assert_that(&assets).is_equal_to(expected);
 }
 
 // #[test]
