@@ -297,7 +297,7 @@ fn create_pair_of_coins() {
         &terraswap::factory::ExecuteMsg::CreatePair {
             asset_infos: asset_infos.clone(),
         },
-        &[coin(10, DENOM_COIN1), coin(10, DENOM_COIN2)],
+        &[],
     )
     .unwrap();
 

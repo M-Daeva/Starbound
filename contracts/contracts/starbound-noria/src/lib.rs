@@ -25,4 +25,6 @@ pub mod messages {
 mod tests {
     pub mod helpers;
     pub mod integration;
+    pub mod robot;
+    pub mod robot_test;
 }
