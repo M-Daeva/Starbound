@@ -32,6 +32,7 @@
     assetListStorage,
     // setUserContractStorage,
   } from "../services/storage";
+  import {signDeposit} from "../utils/transactions/signDeposit";
 
   let paymentBalance = 0;
   let investPeriod = 0;
@@ -162,15 +163,13 @@
 
     l({ userToSend });
 
-    try {
-      const { deposit: _deposit, setUserContractStorage } = await init(
-        get(chainRegistryStorage),
-        CHAIN_TYPE
-      );
-      const tx = await _deposit(userToSend);
-      displayModal(tx);
-      await setUserContractStorage();
-    } catch (error) {}
+    try{
+      // TODO: add loader while transaction is going and toast
+      await signDeposit(userToSend)
+    }catch (e) {
+      console.log(e)
+    }
+
   }
 
   async function withdraw() {

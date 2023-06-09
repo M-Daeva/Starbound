@@ -2,6 +2,7 @@ import {
   chainRegistryStorage,
   CHAIN_TYPE,
   currenChain,
+  cosmClient,
 } from "../../services/storage";
 
 import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
@@ -26,9 +27,10 @@ export const connectWallet = async (walletName: string) => {
   await addInitAddress(wallet, chainId);
   if (currentChain?.chainId) {
     const offlineSigner = wallet.getOfflineSigner(chainId);
-    const cosmJS = await SigningCosmWasmClient.connectWithSigner(
+    const client = await SigningCosmWasmClient.connectWithSigner(
       currentChain.rpc,
       offlineSigner
     );
+    cosmClient.set(client);
   }
 };

@@ -69,6 +69,9 @@ let txResStorage: Writable<["Success" | "Error", string]> = writable([
 ]);
 
 let currenChain: Writable<ChainInfo> = writable();
+
+let cosmClient: Writable<any> = writable();
+
 class Localstorage {
   get(): string | undefined {
     const value = `${localStorage.getItem(LOCAL_STORAGE_KEY)}`;
@@ -229,6 +232,7 @@ export {
   isModalActiveStorage,
   txResStorage,
   currenChain,
+  cosmClient,
   ls,
   getRegistryChannelsPools,
   getPools,
