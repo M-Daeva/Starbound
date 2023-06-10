@@ -45,6 +45,8 @@ schemars = "0.8.12"
 serde = "1.0.163"
 thiserror = "1.0.40"
 terraswap = {path = "../../packages/terraswap"}
+strum = "0.24.1"
+strum_macros = "0.24.3"
 
 [dev-dependencies]
 cw-multi-test = "0.16.5"

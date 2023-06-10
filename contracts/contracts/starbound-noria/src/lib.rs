@@ -27,4 +27,5 @@ mod tests {
     pub mod integration;
     pub mod robot;
     pub mod robot_test;
+    pub mod suite;
 }

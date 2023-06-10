@@ -12,7 +12,7 @@ async function main() {
     const seed = await getSeed(SEED_DAPP);
     if (!seed) throw new Error("Seed is not found!");
 
-    const helpers = await init();
+    const helpers = await init(seed);
     if (!helpers) return;
 
     const {
