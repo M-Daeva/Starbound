@@ -51,6 +51,7 @@ strum_macros = "0.24.3"
 [dev-dependencies]
 cw-multi-test = "0.16.5"
 speculoos = "0.11.0"
-terraswap-factory = {path = "../../packages/terraswap-factory"}
-terraswap-pair = {path = "../../packages/terraswap-pair"}
-terraswap-router = {path = "../../packages/terraswap-router"}
+terraswap-factory = {path = "../../packages/terraswap_factory"}
+terraswap-pair = {path = "../../packages/terraswap_pair"}
+terraswap-router = {path = "../../packages/terraswap_router"}
+terraswap-token = {path = "../../packages/terraswap_token"}

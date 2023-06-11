@@ -1,32 +1,25 @@
-use cosmwasm_std::{
-    coin,
-    testing::{mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage},
-    Addr, Attribute, Coin, Decimal, Empty, Env, MessageInfo, OwnedDeps, Response, StdError,
-    StdResult, Uint128,
-};
+use cosmwasm_std::{coin, Addr, Coin, Empty, StdResult, Uint128};
 use cw_multi_test::{App, AppResponse, ContractWrapper, Executor};
 
 use serde::Serialize;
-use strum_macros::{Display, EnumString, IntoStaticStr};
+use strum::IntoEnumIterator;
+use strum_macros::{Display, EnumIter, EnumString, IntoStaticStr};
 
-use crate::{
-    actions::helpers::math::{str_to_dec, u128_to_dec},
-    error::ContractError,
-    messages::{execute::ExecuteMsg, instantiate::InstantiateMsg, query::QueryMsg},
-    state::{Asset, User, CHAIN_ID_DEV},
-};
+use crate::state::CHAIN_ID_DEV;
+
+const ADMIN_FUNDS_AMOUNT: u128 = 1_000_000_000_000_000_000;
 
 #[derive(Debug, Clone, Copy, Display, EnumString, IntoStaticStr)]
 pub enum ProjectAccount {
-    #[strum(serialize = "noria18tnvnwkklyv4dyuj8x357n7vray4v4zugmp3du")]
+    #[strum(serialize = "admin")]
     Admin,
-    #[strum(serialize = "noria1gjqnuhv52pd2a7ets2vhw9w9qa9knyhyhd7uh3")]
+    #[strum(serialize = "alice")]
     Alice,
-    #[strum(serialize = "noria1chgwz55h9kepjq0fkj5supl2ta3nwu63sck8c3")]
+    #[strum(serialize = "bob")]
     Bob,
 }
 
-#[derive(Debug, Clone, Copy, Display, EnumString, IntoStaticStr)]
+#[derive(Debug, Clone, Copy, Display, EnumString, IntoStaticStr, EnumIter)]
 pub enum ProjectCoin {
     #[strum(serialize = "ucrd")]
     Denom,
@@ -34,13 +27,13 @@ pub enum ProjectCoin {
     Noria,
 }
 
-#[derive(Debug, Clone, Copy, Display, EnumString, IntoStaticStr)]
+#[derive(Debug, Clone, Copy, Display, EnumString, IntoStaticStr, EnumIter)]
 pub enum ProjectToken {
-    #[strum(serialize = "ATOM")]
+    #[strum(serialize = "contract1")]
     Atom,
-    #[strum(serialize = "LUNA")]
+    #[strum(serialize = "contract2")]
     Luna,
-    #[strum(serialize = "INJ")]
+    #[strum(serialize = "contract3")]
     Inj,
 }
 
@@ -70,7 +63,7 @@ impl Project {
     pub fn new(chain_id_mocked: Option<&str>) -> Self {
         // create app and distribute coins to accounts
         let account_and_funds_amount_list: Vec<(ProjectAccount, u128)> = vec![
-            (ProjectAccount::Admin, 1_100_000),
+            (ProjectAccount::Admin, ADMIN_FUNDS_AMOUNT * 11 / 10),
             (ProjectAccount::Alice, 1_100),
             (ProjectAccount::Bob, 1_100),
         ];
@@ -84,6 +77,7 @@ impl Project {
         // register contracts code
         let app_code_id = Self::store_app_code(&mut app);
         let cw20_base_code_id = Self::store_cw20_base_code(&mut app);
+        let terraswap_lp_token_code_id = Self::store_terraswap_lp_token_code(&mut app);
         let terraswap_pair_code_id = Self::store_terraswap_pair_code(&mut app);
         let terraswap_factory_code_id = Self::store_terraswap_factory_code(&mut app);
 
@@ -91,6 +85,7 @@ impl Project {
         let app_contract_address =
             Self::instantiate_contract(&mut app, app_code_id, "app", &Empty {});
 
+        // DON'T CHANGE TOKEN INIT ORDER AS ITS ADDRESSES ARE HARDCODED IN ProjectToken ENUM
         let cw20_base_token_list: Vec<(ProjectToken, Addr)> = vec![
             (ProjectToken::Atom, 6u8),
             (ProjectToken::Luna, 6u8),
@@ -115,7 +110,7 @@ impl Project {
             &mut app,
             terraswap_factory_code_id,
             terraswap_pair_code_id,
-            cw20_base_code_id,
+            terraswap_lp_token_code_id,
         );
 
         // register coins at factory
@@ -151,13 +146,26 @@ impl Project {
         ]
         .iter()
         .for_each(|project_asset_pair| {
-            Self::create_terraswap_pool(
-                &mut app,
-                &terraswap_factory_address,
-                *project_asset_pair,
-                &cw20_base_token_list,
-            );
+            Self::create_terraswap_pool(&mut app, &terraswap_factory_address, *project_asset_pair);
         });
+
+        // TODO: query query pairs and store it
+
+        // TODO: write get_pool_and_lp_by_asset_pair()
+
+        // TODO: increase allowance for tokens
+
+        // TODO: provide liquidity for assets
+        // contract_addr: "contract11",
+        // liquidity_token: "contract12",
+        Self::provide_liquidity(
+            &mut app,
+            &Addr::unchecked("contract11"),
+            (
+                ProjectAsset::Coin(ProjectCoin::Denom),
+                ProjectAsset::Coin(ProjectCoin::Noria),
+            ),
+        );
 
         Self {
             app,
@@ -214,6 +222,15 @@ impl Project {
         ))
     }
 
+    // Debug and Clone must be implemented on terraswap::token::InstantiateMsg
+    fn store_terraswap_lp_token_code(app: &mut App) -> u64 {
+        app.store_code(Box::new(ContractWrapper::new(
+            terraswap_token::contract::execute,
+            terraswap_token::contract::instantiate,
+            terraswap_token::contract::query,
+        )))
+    }
+
     fn store_terraswap_factory_code(app: &mut App) -> u64 {
         app.store_code(Box::new(
             ContractWrapper::new(
@@ -249,7 +266,14 @@ impl Project {
         decimals: u8,
         account_and_funds_amount_list: &Vec<(ProjectAccount, u128)>,
     ) -> Addr {
-        let symbol: &str = project_token.into();
+        let token_postfix: u8 = project_token
+            .to_string()
+            .strip_prefix("contract")
+            .unwrap()
+            .parse()
+            .unwrap();
+
+        let symbol = format!("TK{}", "N".repeat(token_postfix as usize)); // max 10 tokens
 
         let initial_balances: Vec<cw20::Cw20Coin> = account_and_funds_amount_list
             .iter()
@@ -262,10 +286,10 @@ impl Project {
         Self::instantiate_contract(
             app,
             code_id,
-            &symbol.to_lowercase(),
+            &format!("toke{}", "n".repeat(token_postfix as usize)),
             &cw20_base::msg::InstantiateMsg {
                 name: format!("cw20-base token {}", symbol),
-                symbol: symbol.to_string(),
+                symbol,
                 decimals,
                 initial_balances,
                 mint: None,
@@ -313,11 +337,10 @@ impl Project {
         app: &mut App,
         terraswap_factory_address: &Addr,
         project_asset_pair: (ProjectAsset, ProjectAsset),
-        cw20_base_token_list: &Vec<(ProjectToken, Addr)>,
     ) -> AppResponse {
         let asset_infos = [
-            Self::project_asset_to_terraswap_asset_info(project_asset_pair.0, cw20_base_token_list),
-            Self::project_asset_to_terraswap_asset_info(project_asset_pair.1, cw20_base_token_list),
+            Self::project_asset_to_terraswap_asset_info(project_asset_pair.0),
+            Self::project_asset_to_terraswap_asset_info(project_asset_pair.1),
         ];
 
         app.execute_contract(
@@ -331,49 +354,167 @@ impl Project {
         .unwrap()
     }
 
-    fn get_cw20_base_token_address(
-        cw20_base_token_list: &Vec<(ProjectToken, Addr)>,
-        project_token: ProjectToken,
-    ) -> Addr {
-        let (_token, address) = cw20_base_token_list
-            .iter()
-            .find(|(token, _address)| token.to_string() == project_token.to_string())
-            .unwrap();
-
-        address.to_owned()
-    }
-
     fn project_asset_to_terraswap_asset_info(
         project_asset: ProjectAsset,
-        cw20_base_token_list: &Vec<(ProjectToken, Addr)>,
     ) -> terraswap::asset::AssetInfo {
-        let asset1 = match project_asset {
+        match project_asset {
             ProjectAsset::Coin(project_coin) => terraswap::asset::AssetInfo::NativeToken {
                 denom: project_coin.to_string(),
             },
             ProjectAsset::Token(project_token) => terraswap::asset::AssetInfo::Token {
-                contract_addr: Self::get_cw20_base_token_address(
-                    cw20_base_token_list,
-                    project_token,
-                )
-                .to_string(),
+                contract_addr: project_token.to_string(),
             },
+        }
+    }
+
+    // fn increase_allowance(
+    //     app: &mut App,
+    //     project_token: ProjectToken,
+    //     pool_address: &Addr,
+    // ) -> AppResponse {
+    //     app.execute_contract(
+    //         Addr::unchecked(ProjectAccount::Admin.to_string()),
+    //         Addr::unchecked(project_token.to_string()),
+    //         &cw20_base::msg::ExecuteMsg::IncreaseAllowance {
+    //             spender: pool_address.to_string(),
+    //             amount: Uint128::from(ADMIN_FUNDS_AMOUNT),
+    //             expires: None,
+    //         },
+    //         &[],
+    //     )
+    //     .unwrap()
+    // }
+
+    fn provide_liquidity(
+        app: &mut App,
+        pool_address: &Addr,
+        project_asset_pair: (ProjectAsset, ProjectAsset),
+    ) -> AppResponse {
+        let asset_list = vec![project_asset_pair.0, project_asset_pair.1];
+
+        let assets = TryInto::<[terraswap::asset::Asset; 2]>::try_into(
+            asset_list
+                .iter()
+                .map(|x| terraswap::asset::Asset {
+                    amount: Uint128::from(ADMIN_FUNDS_AMOUNT),
+                    info: Self::project_asset_to_terraswap_asset_info(x.to_owned()),
+                })
+                .collect::<Vec<terraswap::asset::Asset>>(),
+        )
+        .unwrap();
+
+        // check if asset is coin and set send_funds
+        let mut send_funds: Vec<Coin> = vec![];
+        asset_list.iter().for_each(|x| {
+            if let ProjectAsset::Coin(project_coin) = x {
+                send_funds.push(coin(ADMIN_FUNDS_AMOUNT, project_coin.to_string()));
+            }
+        });
+
+        let sender = Addr::unchecked(ProjectAccount::Admin.to_string());
+        let contract_addr = pool_address.to_owned();
+        let msg = terraswap::pair::ExecuteMsg::ProvideLiquidity {
+            assets,
+            slippage_tolerance: None,
+            receiver: None,
         };
 
-        asset1
+        // there is no way to genarate send_funds dynamically then just call execute-contract
+        (match send_funds.len() {
+            1 => app.execute_contract(
+                sender,
+                contract_addr,
+                &msg,
+                &[coin(ADMIN_FUNDS_AMOUNT, &send_funds[0].denom)],
+            ),
+            _ => app.execute_contract(
+                sender,
+                contract_addr,
+                &msg,
+                &[
+                    coin(ADMIN_FUNDS_AMOUNT, &send_funds[0].denom),
+                    coin(ADMIN_FUNDS_AMOUNT, &send_funds[1].denom),
+                ],
+            ),
+        })
+        .unwrap()
+    }
+
+    pub fn query_all_balances(&self, project_account: ProjectAccount) -> Vec<(String, Uint128)> {
+        let mut denom_and_amount_list: Vec<(String, Uint128)> = vec![];
+
+        self.app
+            .wrap()
+            .query_all_balances(project_account.to_string())
+            .unwrap()
+            .iter()
+            .for_each(|x| {
+                denom_and_amount_list.push((x.denom.to_owned(), x.amount));
+            });
+
+        ProjectToken::iter().for_each(|x| {
+            let cw20::BalanceResponse { balance } = self
+                .app
+                .wrap()
+                .query_wasm_smart(
+                    Addr::unchecked(x.to_string()),
+                    &cw20_base::msg::QueryMsg::Balance {
+                        address: project_account.to_string(),
+                    },
+                )
+                .unwrap();
+
+            denom_and_amount_list.push((x.to_string(), balance));
+        });
+
+        denom_and_amount_list
+    }
+
+    // TODO: use router contract to provide swaps
+    pub fn swap(
+        &mut self,
+        terraswap_pool_address: &impl ToString,
+        project_account: ProjectAccount,
+        project_asset_in: ProjectAsset,
+        _project_asset_out: ProjectAsset,
+        amount: impl Into<Uint128>,
+    ) -> StdResult<AppResponse> {
+        let amount: Uint128 = amount.into();
+        let sender = Addr::unchecked(project_account.to_string());
+        let contract_addr = Addr::unchecked(terraswap_pool_address.to_string());
+        let msg = terraswap::pair::ExecuteMsg::Swap {
+            offer_asset: terraswap::asset::Asset {
+                amount,
+                info: Self::project_asset_to_terraswap_asset_info(project_asset_in),
+            },
+            belief_price: None,
+            max_spread: None,
+            to: None,
+        };
+
+        (match project_asset_in {
+            ProjectAsset::Coin(project_coin) => self.app.execute_contract(
+                sender,
+                contract_addr,
+                &msg,
+                &[coin(amount.u128(), project_coin.to_string())],
+            ),
+            _ => self.app.execute_contract(sender, contract_addr, &msg, &[]),
+        })
+        .map_err(|err| err.downcast().unwrap())
     }
 }
 
 #[test]
 fn ref_test() {
-    let project = Project::new(None);
+    let mut project = Project::new(None);
 
     // query pairs
     let terraswap::factory::PairsResponse { pairs } = project
         .app
         .wrap()
         .query_wasm_smart(
-            project.terraswap_factory_address,
+            &project.terraswap_factory_address,
             &terraswap::factory::QueryMsg::Pairs {
                 start_after: None,
                 limit: None,
@@ -382,4 +523,37 @@ fn ref_test() {
         .unwrap();
 
     println!("{:#?}", pairs);
+
+    // query lp
+    let bal: cw20::BalanceResponse = project
+        .app
+        .wrap()
+        .query_wasm_smart(
+            Addr::unchecked("contract12"),
+            &cw20_base::msg::QueryMsg::Balance {
+                address: ProjectAccount::Admin.to_string(),
+            },
+        )
+        .unwrap();
+
+    println!("{:#?}", bal);
+
+    // query all balances
+    let res = project.query_all_balances(ProjectAccount::Alice);
+    println!("{:#?}", res);
+
+    // execute swap 500 denom -> noria
+    project
+        .swap(
+            &Addr::unchecked("contract11"),
+            ProjectAccount::Alice,
+            ProjectAsset::Coin(ProjectCoin::Denom),
+            ProjectAsset::Coin(ProjectCoin::Noria),
+            500u128,
+        )
+        .unwrap();
+
+    // query all balances
+    let res = project.query_all_balances(ProjectAccount::Alice);
+    println!("{:#?}", res);
 }

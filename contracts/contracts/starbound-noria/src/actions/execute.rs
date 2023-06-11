@@ -58,7 +58,7 @@ pub fn deposit(
     )?;
 
     Ok(Response::new().add_attributes(vec![
-        ("method", "deposit"),
+        ("action", "deposit"),
         ("user_deposited", &funds_amount.to_string()),
     ]))
 }
@@ -96,7 +96,7 @@ pub fn deposit(
 //     });
 
 //     Ok(Response::new().add_message(msg).add_attributes(vec![
-//         ("method", "withdraw"),
+//         ("action", "withdraw"),
 //         ("user_deposited", &user.deposited.to_string()),
 //     ]))
 // }
@@ -157,13 +157,13 @@ pub fn deposit(
 //         },
 //     )?;
 
-//     Ok(Response::new().add_attributes(vec![("method", "update_config")]))
+//     Ok(Response::new().add_attributes(vec![("action", "update_config")]))
 // }
 
 // pub fn swap(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, ContractError> {
 //     verify_scheduler(&deps, &info)?;
 
-//     Ok(Response::new().add_attributes(vec![("method", "swap")]))
+//     Ok(Response::new().add_attributes(vec![("action", "swap")]))
 // }
 
 // pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
@@ -209,5 +209,5 @@ pub fn deposit(
 
 //     Ok(Response::new()
 //         .add_messages(msg_list)
-//         .add_attributes(vec![("method", "transfer")]))
+//         .add_attributes(vec![("action", "transfer")]))
 // }
