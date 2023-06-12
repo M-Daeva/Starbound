@@ -189,10 +189,10 @@ impl SplitPair for ProjectPair {
 }
 
 pub struct Project {
-    app: App,
+    pub app: App,
     app_contract_address: Addr,
     terraswap_factory_address: Addr,
-    cw20_base_token_list: Vec<(ProjectToken, Addr)>,
+    terraswap_router_address: Addr,
     terraswap_pair_list: Vec<terraswap::asset::PairInfo>,
 }
 
@@ -211,27 +211,28 @@ impl Project {
         let terraswap_lp_token_code_id = Self::store_terraswap_lp_token_code(&mut app);
         let terraswap_pair_code_id = Self::store_terraswap_pair_code(&mut app);
         let terraswap_factory_code_id = Self::store_terraswap_factory_code(&mut app);
+        let terraswap_router_code_id = Self::store_terraswap_router_code(&mut app);
 
         // instantiate contracts
         let app_contract_address =
             Self::instantiate_contract(&mut app, app_code_id, "app", &Empty {});
 
         // DON'T CHANGE TOKEN INIT ORDER AS ITS ADDRESSES ARE HARDCODED IN ProjectToken ENUM
-        let cw20_base_token_list: Vec<(ProjectToken, Addr)> = ProjectToken::iter()
-            .map(|project_token| {
-                (
-                    project_token,
-                    Self::create_cw20_base_token(&mut app, cw20_base_code_id, project_token),
-                )
-            })
-            .collect();
-        println!("{:#?}", cw20_base_token_list);
+        ProjectToken::iter().for_each(|project_token| {
+            Self::create_cw20_base_token(&mut app, cw20_base_code_id, project_token);
+        });
 
         let terraswap_factory_address = Self::create_terraswap_factory(
             &mut app,
             terraswap_factory_code_id,
             terraswap_pair_code_id,
             terraswap_lp_token_code_id,
+        );
+
+        let terraswap_router_address = Self::create_terraswap_router(
+            &mut app,
+            terraswap_router_code_id,
+            &terraswap_factory_address,
         );
 
         // register coins at factory
@@ -246,10 +247,6 @@ impl Project {
 
         // query pairs
         let terraswap_pair_list = Self::query_pairs(&app, &terraswap_factory_address);
-
-        let pair_info =
-            Self::get_pair_info_by_asset_pair(&terraswap_pair_list, ProjectPair::DenomNoria);
-        println!("\n{:#?}\n", pair_info);
 
         // TODO: increase allowance for tokens
         // ProjectToken::iter().for_each(|x| {
@@ -267,9 +264,25 @@ impl Project {
             app,
             app_contract_address,
             terraswap_factory_address,
-            cw20_base_token_list,
+            terraswap_router_address,
             terraswap_pair_list,
         }
+    }
+
+    pub fn get_app_contract_address(&self) -> Addr {
+        self.app_contract_address.clone()
+    }
+
+    pub fn get_terraswap_factory_address(&self) -> Addr {
+        self.terraswap_factory_address.clone()
+    }
+
+    pub fn get_terraswap_router_address(&self) -> Addr {
+        self.terraswap_router_address.clone()
+    }
+
+    pub fn get_terraswap_pair_list(&self) -> Vec<terraswap::asset::PairInfo> {
+        self.terraswap_pair_list.clone()
     }
 
     fn create_app_with_balances() -> App {
@@ -339,6 +352,14 @@ impl Project {
         ))
     }
 
+    fn store_terraswap_router_code(app: &mut App) -> u64 {
+        app.store_code(Box::new(ContractWrapper::new(
+            terraswap_router::contract::execute,
+            terraswap_router::contract::instantiate,
+            terraswap_router::contract::query,
+        )))
+    }
+
     fn instantiate_contract(
         app: &mut App,
         code_id: u64,
@@ -401,6 +422,21 @@ impl Project {
             &terraswap::factory::InstantiateMsg {
                 pair_code_id: terraswap_pair_code_id,
                 token_code_id: terraswap_lp_token_code_id,
+            },
+        )
+    }
+
+    fn create_terraswap_router(
+        app: &mut App,
+        terraswap_router_code_id: u64,
+        terraswap_factory_address: &Addr,
+    ) -> Addr {
+        Self::instantiate_contract(
+            app,
+            terraswap_router_code_id,
+            "router",
+            &terraswap::router::InstantiateMsg {
+                terraswap_factory: terraswap_factory_address.to_string(),
             },
         )
     }
@@ -540,7 +576,7 @@ impl Project {
         pairs
     }
 
-    fn get_pair_info_by_asset_pair(
+    pub fn get_pair_info_by_asset_pair(
         terraswap_pair_list: &Vec<terraswap::asset::PairInfo>,
         project_pair: ProjectPair,
     ) -> terraswap::asset::PairInfo {
@@ -591,20 +627,18 @@ impl Project {
         denom_and_amount_list
     }
 
-    // TODO: use router contract to provide swaps
-    pub fn swap<T1, T2>(
+    pub fn swap_with_pair<T1, T2>(
         &mut self,
-        terraswap_pair_list: &Vec<terraswap::asset::PairInfo>,
+        sender: ProjectAccount,
+        amount: impl Into<Uint128>,
         project_coin_or_token_in: T1,
         project_coin_or_token_out: T2,
-        project_account: ProjectAccount,
-        amount: impl Into<Uint128>,
     ) -> StdResult<AppResponse>
     where
         T1: ToTerraswapAssetInfo + ToProjectAsset + ToString + Clone,
         T2: ToTerraswapAssetInfo + ToProjectAsset + ToString + Clone,
     {
-        let terraswap::asset::PairInfo { contract_addr, .. } = terraswap_pair_list
+        let terraswap::asset::PairInfo { contract_addr, .. } = Self::get_terraswap_pair_list(&self)
             .iter()
             .find(|x| {
                 let asset1 = &x.asset_infos[0];
@@ -619,7 +653,7 @@ impl Project {
             .to_owned();
 
         let amount: Uint128 = amount.into();
-        let sender = project_account.to_address();
+        let sender = sender.to_address();
         let contract_addr = Addr::unchecked(contract_addr.to_string());
         let msg = terraswap::pair::ExecuteMsg::Swap {
             offer_asset: terraswap::asset::Asset {
@@ -642,79 +676,37 @@ impl Project {
         })
         .map_err(|err| err.downcast().unwrap())
     }
-}
 
-#[test]
-fn ref_test() {
-    let mut project = Project::new(None);
+    pub fn swap_with_router(
+        &mut self,
+        sender: ProjectAccount,
+        amount: impl Into<Uint128>,
+        swap_operations: &Vec<terraswap::router::SwapOperation>,
+    ) -> StdResult<AppResponse> {
+        let amount: Uint128 = amount.into();
+        let sender = sender.to_address();
+        let contract_addr = Self::get_terraswap_router_address(&self);
 
-    // query pairs
-    let pairs = Project::query_pairs(&project.app, &project.terraswap_factory_address);
-    println!("{:#?}", pairs);
+        let msg = terraswap::router::ExecuteMsg::ExecuteSwapOperations {
+            operations: swap_operations.to_owned(),
+            minimum_receive: None,
+            to: None,
+        };
 
-    // query lp
-    let bal: cw20::BalanceResponse = project
-        .app
-        .wrap()
-        .query_wasm_smart(
-            Addr::unchecked("contract12"),
-            &cw20_base::msg::QueryMsg::Balance {
-                address: ProjectAccount::Admin.to_string(),
-            },
-        )
-        .unwrap();
+        let mut funds: Vec<Coin> = vec![];
 
-    println!("{:#?}", bal);
+        swap_operations.iter().for_each(|swap_operation| {
+            if let terraswap::router::SwapOperation::TerraSwap {
+                offer_asset_info: terraswap::asset::AssetInfo::NativeToken { denom },
+                ask_asset_info: _,
+            } = swap_operation
+            {
+                funds.push(coin(amount.u128(), denom));
+            }
+        });
 
-    // query all balances
-    let res = project.query_all_balances(ProjectAccount::Alice);
-    println!("{:#?}", res);
-
-    // execute swap 500 denom -> noria
-    project
-        .swap(
-            &pairs,
-            ProjectCoin::Denom,
-            ProjectCoin::Noria,
-            ProjectAccount::Alice,
-            500u128,
-        )
-        .unwrap();
-
-    // query all balances
-    let res = project.query_all_balances(ProjectAccount::Alice);
-    println!("{:#?}", res);
-
-    // // query allowances
-    // let allowances: cw20::AllAllowancesResponse = project
-    //     .app
-    //     .wrap()
-    //     .query_wasm_smart(
-    //         Addr::unchecked("contract1"),
-    //         &cw20_base::msg::QueryMsg::AllAllowances {
-    //             owner: ProjectAccount::Admin.to_string(),
-    //             start_after: None,
-    //             limit: None,
-    //         },
-    //     )
-    //     .unwrap();
-    // println!("{:#?}", allowances);
-
-    // // increase allowance
-    // // it works for contract12 - lp token
-    // // and doesn't work for contract1 - cw20-base
-    // let res = project
-    //     .app
-    //     .execute_contract(
-    //         ProjectAccount::Admin.to_address(),
-    //         Addr::unchecked("contract1".to_string()),
-    //         &cw20_base::msg::ExecuteMsg::IncreaseAllowance {
-    //             spender: ProjectAccount::Alice.to_string(),
-    //             amount: Uint128::from(10u128),
-    //             expires: None,
-    //         },
-    //         &[],
-    //     )
-    //     .unwrap();
-    // println!("{:#?}", res);
+        self.app
+            .execute_contract(sender, contract_addr, &msg, &funds)
+            .map_err(|err| err.downcast().unwrap())
+    }
 }

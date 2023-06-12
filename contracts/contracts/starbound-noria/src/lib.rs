@@ -28,4 +28,5 @@ mod tests {
     pub mod robot;
     pub mod robot_test;
     pub mod suite;
+    pub mod suite_test;
 }
