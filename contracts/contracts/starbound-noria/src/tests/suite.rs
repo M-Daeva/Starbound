@@ -52,7 +52,7 @@ impl AsRef<str> for ProjectAsset {
     }
 }
 
-trait ToProjectAsset {
+pub trait ToProjectAsset {
     fn to_project_asset(&self) -> ProjectAsset;
 }
 
@@ -68,7 +68,7 @@ impl ToProjectAsset for ProjectToken {
     }
 }
 
-trait ToTerraswapAssetInfo {
+pub trait ToTerraswapAssetInfo {
     fn to_terraswap_asset_info(&self) -> terraswap::asset::AssetInfo;
 }
 
@@ -203,22 +203,19 @@ impl Project {
         // query pairs
         let terraswap_pair_list = Self::query_pairs(&app, &terraswap_factory_address);
 
-        // TODO: write get_pool_and_lp_by_asset_pair()
-        let info = Self::get_pair_info_by_asset_pair(
+        let pair_info = Self::get_pair_info_by_asset_pair(
             &terraswap_pair_list,
             ProjectCoin::Noria,
             ProjectCoin::Denom,
         );
-        println!("\n{:#?}\n", info);
+        println!("\n{:#?}\n", pair_info);
 
         // TODO: increase allowance for tokens
 
         // TODO: provide liquidity for assets
-        // contract_addr: "contract11",
-        // liquidity_token: "contract12",
         Self::provide_liquidity(
             &mut app,
-            &Addr::unchecked("contract11"),
+            &terraswap_pair_list,
             ProjectCoin::Denom,
             ProjectCoin::Noria,
         );
@@ -430,10 +427,16 @@ impl Project {
 
     fn provide_liquidity(
         app: &mut App,
-        pool_address: &Addr,
-        project_coin_or_token1: impl ToProjectAsset,
-        project_coin_or_token2: impl ToProjectAsset,
+        terraswap_pair_list: &Vec<terraswap::asset::PairInfo>,
+        project_coin_or_token1: impl ToProjectAsset + ToString + Clone,
+        project_coin_or_token2: impl ToProjectAsset + ToString + Clone,
     ) -> AppResponse {
+        let terraswap::asset::PairInfo { contract_addr, .. } = Self::get_pair_info_by_asset_pair(
+            terraswap_pair_list,
+            project_coin_or_token1.clone(),
+            project_coin_or_token2.clone(),
+        );
+
         let asset_list = vec![
             project_coin_or_token1.to_project_asset(),
             project_coin_or_token2.to_project_asset(),
@@ -460,7 +463,7 @@ impl Project {
 
         app.execute_contract(
             Addr::unchecked(ProjectAccount::Admin.to_string()),
-            pool_address.to_owned(),
+            Addr::unchecked(contract_addr),
             &terraswap::pair::ExecuteMsg::ProvideLiquidity {
                 assets,
                 slippage_tolerance: None,
@@ -541,28 +544,38 @@ impl Project {
     }
 
     // TODO: use router contract to provide swaps
-    pub fn swap(
+    pub fn swap<T1, T2>(
         &mut self,
-        terraswap_pool_address: &impl ToString,
+        terraswap_pair_list: &Vec<terraswap::asset::PairInfo>,
+        project_coin_or_token_in: T1,
+        project_coin_or_token_out: T2,
         project_account: ProjectAccount,
-        project_asset_in: ProjectAsset,
-        _project_asset_out: ProjectAsset,
         amount: impl Into<Uint128>,
-    ) -> StdResult<AppResponse> {
+    ) -> StdResult<AppResponse>
+    where
+        T1: ToTerraswapAssetInfo + ToProjectAsset + ToString + Clone,
+        T2: ToTerraswapAssetInfo + ToProjectAsset + ToString + Clone,
+    {
+        let terraswap::asset::PairInfo { contract_addr, .. } = Self::get_pair_info_by_asset_pair(
+            terraswap_pair_list,
+            project_coin_or_token_in.clone(),
+            project_coin_or_token_out.clone(),
+        );
+
         let amount: Uint128 = amount.into();
         let sender = Addr::unchecked(project_account.to_string());
-        let contract_addr = Addr::unchecked(terraswap_pool_address.to_string());
+        let contract_addr = Addr::unchecked(contract_addr.to_string());
         let msg = terraswap::pair::ExecuteMsg::Swap {
             offer_asset: terraswap::asset::Asset {
                 amount,
-                info: project_asset_in.to_terraswap_asset_info(),
+                info: project_coin_or_token_in.to_terraswap_asset_info(),
             },
             belief_price: None,
             max_spread: None,
             to: None,
         };
 
-        (match project_asset_in {
+        (match &project_coin_or_token_in.to_project_asset() {
             ProjectAsset::Coin(project_coin) => self.app.execute_contract(
                 sender,
                 contract_addr,
@@ -604,10 +617,10 @@ fn ref_test() {
     // execute swap 500 denom -> noria
     project
         .swap(
-            &Addr::unchecked("contract11"),
+            &pairs,
+            ProjectCoin::Denom,
+            ProjectCoin::Noria,
             ProjectAccount::Alice,
-            ProjectAsset::Coin(ProjectCoin::Denom),
-            ProjectAsset::Coin(ProjectCoin::Noria),
             500u128,
         )
         .unwrap();
