@@ -52,11 +52,57 @@ impl AsRef<str> for ProjectAsset {
     }
 }
 
+trait ToProjectAsset {
+    fn to_project_asset(&self) -> ProjectAsset;
+}
+
+impl ToProjectAsset for ProjectCoin {
+    fn to_project_asset(&self) -> ProjectAsset {
+        ProjectAsset::Coin(*self)
+    }
+}
+
+impl ToProjectAsset for ProjectToken {
+    fn to_project_asset(&self) -> ProjectAsset {
+        ProjectAsset::Token(*self)
+    }
+}
+
+trait ToTerraswapAssetInfo {
+    fn to_terraswap_asset_info(&self) -> terraswap::asset::AssetInfo;
+}
+
+impl ToTerraswapAssetInfo for ProjectCoin {
+    fn to_terraswap_asset_info(&self) -> terraswap::asset::AssetInfo {
+        terraswap::asset::AssetInfo::NativeToken {
+            denom: self.to_string(),
+        }
+    }
+}
+
+impl ToTerraswapAssetInfo for ProjectToken {
+    fn to_terraswap_asset_info(&self) -> terraswap::asset::AssetInfo {
+        terraswap::asset::AssetInfo::Token {
+            contract_addr: self.to_string(),
+        }
+    }
+}
+
+impl ToTerraswapAssetInfo for ProjectAsset {
+    fn to_terraswap_asset_info(&self) -> terraswap::asset::AssetInfo {
+        match self {
+            ProjectAsset::Coin(project_coin) => project_coin.to_terraswap_asset_info(),
+            ProjectAsset::Token(project_token) => project_token.to_terraswap_asset_info(),
+        }
+    }
+}
+
 pub struct Project {
     app: App,
     app_contract_address: Addr,
     terraswap_factory_address: Addr,
     cw20_base_token_list: Vec<(ProjectToken, Addr)>,
+    terraswap_pair_list: Vec<terraswap::asset::PairInfo>,
 }
 
 impl Project {
@@ -125,7 +171,7 @@ impl Project {
                 );
             });
 
-        // create pools
+        // create pairs
         vec![
             (
                 ProjectAsset::Token(ProjectToken::Atom),
@@ -145,13 +191,25 @@ impl Project {
             ),
         ]
         .iter()
-        .for_each(|project_asset_pair| {
-            Self::create_terraswap_pool(&mut app, &terraswap_factory_address, *project_asset_pair);
+        .for_each(|(project_coin_or_token1, project_coin_or_token2)| {
+            Self::create_terraswap_pool(
+                &mut app,
+                &terraswap_factory_address,
+                *project_coin_or_token1,
+                *project_coin_or_token2,
+            );
         });
 
-        // TODO: query query pairs and store it
+        // query pairs
+        let terraswap_pair_list = Self::query_pairs(&app, &terraswap_factory_address);
 
         // TODO: write get_pool_and_lp_by_asset_pair()
+        let info = Self::get_pair_info_by_asset_pair(
+            &terraswap_pair_list,
+            ProjectCoin::Noria,
+            ProjectCoin::Denom,
+        );
+        println!("\n{:#?}\n", info);
 
         // TODO: increase allowance for tokens
 
@@ -161,10 +219,8 @@ impl Project {
         Self::provide_liquidity(
             &mut app,
             &Addr::unchecked("contract11"),
-            (
-                ProjectAsset::Coin(ProjectCoin::Denom),
-                ProjectAsset::Coin(ProjectCoin::Noria),
-            ),
+            ProjectCoin::Denom,
+            ProjectCoin::Noria,
         );
 
         Self {
@@ -172,6 +228,7 @@ impl Project {
             app_contract_address,
             terraswap_factory_address,
             cw20_base_token_list,
+            terraswap_pair_list,
         }
     }
 
@@ -336,35 +393,21 @@ impl Project {
     fn create_terraswap_pool(
         app: &mut App,
         terraswap_factory_address: &Addr,
-        project_asset_pair: (ProjectAsset, ProjectAsset),
+        project_coin_or_token1: impl ToTerraswapAssetInfo,
+        project_coin_or_token2: impl ToTerraswapAssetInfo,
     ) -> AppResponse {
-        let asset_infos = [
-            Self::project_asset_to_terraswap_asset_info(project_asset_pair.0),
-            Self::project_asset_to_terraswap_asset_info(project_asset_pair.1),
-        ];
-
         app.execute_contract(
             Addr::unchecked(ProjectAccount::Admin.to_string()),
             terraswap_factory_address.to_owned(),
             &terraswap::factory::ExecuteMsg::CreatePair {
-                asset_infos: asset_infos.clone(),
+                asset_infos: [
+                    project_coin_or_token1.to_terraswap_asset_info(),
+                    project_coin_or_token2.to_terraswap_asset_info(),
+                ],
             },
             &[],
         )
         .unwrap()
-    }
-
-    fn project_asset_to_terraswap_asset_info(
-        project_asset: ProjectAsset,
-    ) -> terraswap::asset::AssetInfo {
-        match project_asset {
-            ProjectAsset::Coin(project_coin) => terraswap::asset::AssetInfo::NativeToken {
-                denom: project_coin.to_string(),
-            },
-            ProjectAsset::Token(project_token) => terraswap::asset::AssetInfo::Token {
-                contract_addr: project_token.to_string(),
-            },
-        }
     }
 
     // fn increase_allowance(
@@ -388,16 +431,20 @@ impl Project {
     fn provide_liquidity(
         app: &mut App,
         pool_address: &Addr,
-        project_asset_pair: (ProjectAsset, ProjectAsset),
+        project_coin_or_token1: impl ToProjectAsset,
+        project_coin_or_token2: impl ToProjectAsset,
     ) -> AppResponse {
-        let asset_list = vec![project_asset_pair.0, project_asset_pair.1];
+        let asset_list = vec![
+            project_coin_or_token1.to_project_asset(),
+            project_coin_or_token2.to_project_asset(),
+        ];
 
         let assets = TryInto::<[terraswap::asset::Asset; 2]>::try_into(
             asset_list
                 .iter()
                 .map(|x| terraswap::asset::Asset {
                     amount: Uint128::from(ADMIN_FUNDS_AMOUNT),
-                    info: Self::project_asset_to_terraswap_asset_info(x.to_owned()),
+                    info: x.to_owned().to_terraswap_asset_info(),
                 })
                 .collect::<Vec<terraswap::asset::Asset>>(),
         )
@@ -411,33 +458,56 @@ impl Project {
             }
         });
 
-        let sender = Addr::unchecked(ProjectAccount::Admin.to_string());
-        let contract_addr = pool_address.to_owned();
-        let msg = terraswap::pair::ExecuteMsg::ProvideLiquidity {
-            assets,
-            slippage_tolerance: None,
-            receiver: None,
-        };
-
-        // there is no way to genarate send_funds dynamically then just call execute-contract
-        (match send_funds.len() {
-            1 => app.execute_contract(
-                sender,
-                contract_addr,
-                &msg,
-                &[coin(ADMIN_FUNDS_AMOUNT, &send_funds[0].denom)],
-            ),
-            _ => app.execute_contract(
-                sender,
-                contract_addr,
-                &msg,
-                &[
-                    coin(ADMIN_FUNDS_AMOUNT, &send_funds[0].denom),
-                    coin(ADMIN_FUNDS_AMOUNT, &send_funds[1].denom),
-                ],
-            ),
-        })
+        app.execute_contract(
+            Addr::unchecked(ProjectAccount::Admin.to_string()),
+            pool_address.to_owned(),
+            &terraswap::pair::ExecuteMsg::ProvideLiquidity {
+                assets,
+                slippage_tolerance: None,
+                receiver: None,
+            },
+            &send_funds
+                .iter()
+                .take(2)
+                .map(|x| coin(ADMIN_FUNDS_AMOUNT, &x.denom))
+                .collect::<Vec<_>>(),
+        )
         .unwrap()
+    }
+
+    fn query_pairs(app: &App, terraswap_factory_address: &Addr) -> Vec<terraswap::asset::PairInfo> {
+        let terraswap::factory::PairsResponse { pairs } = app
+            .wrap()
+            .query_wasm_smart(
+                terraswap_factory_address,
+                &terraswap::factory::QueryMsg::Pairs {
+                    start_after: None,
+                    limit: None,
+                },
+            )
+            .unwrap();
+
+        pairs
+    }
+
+    fn get_pair_info_by_asset_pair(
+        terraswap_pair_list: &Vec<terraswap::asset::PairInfo>,
+        project_coin_or_token1: impl ToProjectAsset + ToString,
+        project_coin_or_token2: impl ToProjectAsset + ToString,
+    ) -> terraswap::asset::PairInfo {
+        terraswap_pair_list
+            .iter()
+            .find(|x| {
+                let asset1 = &x.asset_infos[0];
+                let asset2 = &x.asset_infos[1];
+
+                ((asset1.to_string() == project_coin_or_token1.to_string())
+                    && (asset2.to_string() == project_coin_or_token2.to_string()))
+                    || ((asset1.to_string() == project_coin_or_token2.to_string())
+                        && (asset2.to_string() == project_coin_or_token1.to_string()))
+            })
+            .unwrap()
+            .to_owned()
     }
 
     pub fn query_all_balances(&self, project_account: ProjectAccount) -> Vec<(String, Uint128)> {
@@ -485,7 +555,7 @@ impl Project {
         let msg = terraswap::pair::ExecuteMsg::Swap {
             offer_asset: terraswap::asset::Asset {
                 amount,
-                info: Self::project_asset_to_terraswap_asset_info(project_asset_in),
+                info: project_asset_in.to_terraswap_asset_info(),
             },
             belief_price: None,
             max_spread: None,
@@ -510,18 +580,7 @@ fn ref_test() {
     let mut project = Project::new(None);
 
     // query pairs
-    let terraswap::factory::PairsResponse { pairs } = project
-        .app
-        .wrap()
-        .query_wasm_smart(
-            &project.terraswap_factory_address,
-            &terraswap::factory::QueryMsg::Pairs {
-                start_after: None,
-                limit: None,
-            },
-        )
-        .unwrap();
-
+    let pairs = Project::query_pairs(&project.app, &project.terraswap_factory_address);
     println!("{:#?}", pairs);
 
     // query lp
