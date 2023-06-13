@@ -315,7 +315,7 @@ impl Project {
 
     fn store_cw20_base_code(app: &mut App) -> u64 {
         app.store_code(Box::new(ContractWrapper::new(
-            cw20_base::contract::instantiate,
+            cw20_base::contract::execute,
             cw20_base::contract::instantiate,
             cw20_base::contract::query,
         )))

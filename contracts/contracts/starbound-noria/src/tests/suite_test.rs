@@ -1,7 +1,8 @@
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Uint128};
+use cw_multi_test::Executor;
 
 use crate::tests::suite::{
-    Project, ProjectAccount, ProjectCoin, ProjectPair, ToTerraswapAssetInfo,
+    Project, ProjectAccount, ProjectCoin, ProjectPair, ToAddress, ToTerraswapAssetInfo,
 };
 
 #[test]
@@ -67,36 +68,36 @@ fn default() {
     let res = project.query_all_balances(ProjectAccount::Alice);
     println!("{:#?}", res);
 
-    // // query allowances
-    // let allowances: cw20::AllAllowancesResponse = project
-    //     .app
-    //     .wrap()
-    //     .query_wasm_smart(
-    //         Addr::unchecked("contract1"),
-    //         &cw20_base::msg::QueryMsg::AllAllowances {
-    //             owner: ProjectAccount::Admin.to_string(),
-    //             start_after: None,
-    //             limit: None,
-    //         },
-    //     )
-    //     .unwrap();
-    // println!("{:#?}", allowances);
+    // increase allowance
+    // it works for contract13 - lp token
+    // and doesn't work for contract1 - cw20-base
+    let res = project
+        .app
+        .execute_contract(
+            ProjectAccount::Admin.to_address(),
+            Addr::unchecked("contract1".to_string()),
+            &cw20_base::msg::ExecuteMsg::IncreaseAllowance {
+                spender: ProjectAccount::Alice.to_string(),
+                amount: Uint128::from(10u128),
+                expires: None,
+            },
+            &[],
+        )
+        .unwrap();
+    println!("{:#?}", res);
 
-    // // increase allowance
-    // // it works for contract13 - lp token
-    // // and doesn't work for contract1 - cw20-base
-    // let res = project
-    //     .app
-    //     .execute_contract(
-    //         ProjectAccount::Admin.to_address(),
-    //         Addr::unchecked("contract1".to_string()),
-    //         &cw20_base::msg::ExecuteMsg::IncreaseAllowance {
-    //             spender: ProjectAccount::Alice.to_string(),
-    //             amount: Uint128::from(10u128),
-    //             expires: None,
-    //         },
-    //         &[],
-    //     )
-    //     .unwrap();
-    // println!("{:#?}", res);
+    // query allowances
+    let allowances: cw20::AllAllowancesResponse = project
+        .app
+        .wrap()
+        .query_wasm_smart(
+            Addr::unchecked("contract1"),
+            &cw20_base::msg::QueryMsg::AllAllowances {
+                owner: ProjectAccount::Admin.to_string(),
+                start_after: None,
+                limit: None,
+            },
+        )
+        .unwrap();
+    println!("{:#?}", allowances);
 }
