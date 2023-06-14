@@ -1,4 +1,4 @@
-use cosmwasm_std::{coin, Addr, Coin, Empty, StdResult, Uint128};
+use cosmwasm_std::{coin, to_binary, Addr, Coin, Empty, StdResult, Uint128};
 use cw_multi_test::{App, AppResponse, ContractWrapper, Executor};
 
 use serde::Serialize;
@@ -255,7 +255,13 @@ impl Project {
                     .asset_infos
                     .contains(&project_token.to_terraswap_asset_info())
                 {
-                    Self::increase_allowance(&mut app, project_token, pair_info.clone());
+                    Self::increase_allowance(
+                        &mut app,
+                        ProjectAccount::Admin,
+                        ProjectAccount::Admin.get_initial_funds_amount(),
+                        project_token,
+                        pair_info.contract_addr.clone(),
+                    );
                 }
             }
         }
@@ -484,22 +490,45 @@ impl Project {
         .unwrap()
     }
 
-    fn increase_allowance(
+    fn increase_allowance<T>(
         app: &mut App,
-        project_token: ProjectToken,
-        pair_info: terraswap::asset::PairInfo,
-    ) -> AppResponse {
+        owner: ProjectAccount,
+        amount: T,
+        token: ProjectToken,
+        spender: impl ToString,
+    ) -> AppResponse
+    where
+        Uint128: From<T>,
+    {
         app.execute_contract(
-            ProjectAccount::Admin.to_address(),
-            project_token.to_address(),
+            owner.to_address(),
+            token.to_address(),
             &cw20_base::msg::ExecuteMsg::IncreaseAllowance {
-                spender: pair_info.contract_addr.to_string(),
-                amount: Uint128::from(INCREASED_FUNDS_AMOUNT),
+                spender: spender.to_string(),
+                amount: Uint128::from(amount),
                 expires: None,
             },
             &[],
         )
         .unwrap()
+    }
+
+    pub fn query_allowances(
+        &self,
+        owner: ProjectAccount,
+        token: ProjectToken,
+    ) -> cw20::AllAllowancesResponse {
+        self.app
+            .wrap()
+            .query_wasm_smart(
+                token.to_address(),
+                &cw20_base::msg::QueryMsg::AllAllowances {
+                    owner: owner.to_string(),
+                    start_after: None,
+                    limit: None,
+                },
+            )
+            .unwrap()
     }
 
     fn provide_liquidity(
@@ -679,11 +708,21 @@ impl Project {
                 &msg,
                 &[coin(amount.u128(), project_coin.to_string())],
             ),
-            _ => self.app.execute_contract(sender, contract_addr, &msg, &[]),
+            ProjectAsset::Token(project_token) => self.app.execute_contract(
+                sender,
+                project_token.to_address(),
+                &cw20_base::msg::ExecuteMsg::Send {
+                    contract: contract_addr.to_string(),
+                    amount,
+                    msg: to_binary(&msg)?,
+                },
+                &[],
+            ),
         })
         .map_err(|err| err.downcast().unwrap())
     }
 
+    // TODO: implement custom router to swap both in sequence and parallel and use different amounts
     pub fn swap_with_router(
         &mut self,
         sender: ProjectAccount,
@@ -692,27 +731,51 @@ impl Project {
     ) -> StdResult<AppResponse> {
         let amount: Uint128 = amount.into();
         let sender = sender.to_address();
-        let contract_addr = Self::get_terraswap_router_address(&self);
-        let msg = terraswap::router::ExecuteMsg::ExecuteSwapOperations {
+        let router_address = Self::get_terraswap_router_address(&self);
+        let hook_msg = terraswap::router::ExecuteMsg::ExecuteSwapOperations {
             operations: swap_operations.to_owned(),
             minimum_receive: None,
             to: None,
         };
 
-        let mut funds: Vec<Coin> = vec![];
-
-        for swap_operation in swap_operations.iter() {
-            if let terraswap::router::SwapOperation::TerraSwap {
-                offer_asset_info: terraswap::asset::AssetInfo::NativeToken { denom },
-                ask_asset_info: _,
-            } = swap_operation
-            {
-                funds.push(coin(amount.u128(), denom));
-            }
+        enum WrappedMsg {
+            Router(terraswap::router::ExecuteMsg),
+            Token(cw20_base::msg::ExecuteMsg),
         }
 
-        self.app
-            .execute_contract(sender, contract_addr, &msg, &funds)
-            .map_err(|err| err.downcast().unwrap())
+        let (contract_addr, msg, funds) = match &swap_operations[0] {
+            terraswap::router::SwapOperation::TerraSwap {
+                offer_asset_info: terraswap::asset::AssetInfo::NativeToken { denom },
+                ..
+            } => (
+                router_address,
+                WrappedMsg::Router(hook_msg),
+                Some(vec![coin(amount.u128(), denom)]),
+            ),
+            terraswap::router::SwapOperation::TerraSwap {
+                offer_asset_info: terraswap::asset::AssetInfo::Token { contract_addr },
+                ..
+            } => (
+                Addr::unchecked(contract_addr),
+                WrappedMsg::Token(cw20_base::msg::ExecuteMsg::Send {
+                    contract: router_address.to_string(),
+                    amount,
+                    msg: to_binary(&hook_msg)?,
+                }),
+                None,
+            ),
+        };
+
+        match (msg, funds) {
+            (WrappedMsg::Router(msg), Some(funds)) => {
+                self.app
+                    .execute_contract(sender, contract_addr, &msg, &funds)
+            }
+            (WrappedMsg::Token(msg), None) => {
+                self.app.execute_contract(sender, contract_addr, &msg, &[])
+            }
+            _ => unreachable!(),
+        }
+        .map_err(|err| err.downcast().unwrap())
     }
 }
