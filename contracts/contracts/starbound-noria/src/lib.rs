@@ -23,6 +23,7 @@ pub mod messages {
 
 #[cfg(test)]
 mod tests {
+    pub mod builders;
     pub mod helpers;
     pub mod integration;
     pub mod robot;

@@ -50,6 +50,7 @@ strum_macros = "0.24.3"
 
 [dev-dependencies]
 cw-multi-test = "0.16.5"
+rand = "0.8.5"
 speculoos = "0.11.0"
 terraswap-factory = {path = "../../packages/terraswap_factory"}
 terraswap-pair = {path = "../../packages/terraswap_pair"}

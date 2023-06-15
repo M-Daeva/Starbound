@@ -1,14 +1,28 @@
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::{coin, Addr, Decimal, Uint128};
 use cw_multi_test::Executor;
 
 use crate::tests::suite::{
-    Project, ProjectAccount, ProjectCoin, ProjectPair, ProjectToken, ToAddress,
-    ToTerraswapAssetInfo,
+    create_address_generator, Project, ProjectAccount, ProjectCoin, ProjectPair, ProjectToken,
+    ToAddress, ToTerraswapAssetInfo,
 };
 
 #[test]
 fn default() {
     let mut project = Project::new(None);
+
+    // project
+    //     .prepare_deposit_by(ProjectAccount::Alice)
+    //     .with_funds(100, ProjectCoin::Denom)
+    //     .with_asset(ProjectToken::Atom, Decimal::one())
+    //     .with_rebalancing(false)
+    //     .with_down_counter(10u128)
+    //     .execute_and_switch_to(&mut project)
+    //     .display_logs();
+
+    // let mut gen_addr = create_address_generator("noria");
+    // println!("{}", gen_addr());
+    // println!("{}", gen_addr());
+    // println!("{}", gen_addr());
 
     // query pairs
     let pairs = project.get_terraswap_pair_list();

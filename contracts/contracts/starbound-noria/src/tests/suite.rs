@@ -1,11 +1,16 @@
-use cosmwasm_std::{coin, to_binary, Addr, Coin, Empty, StdResult, Uint128};
-use cw_multi_test::{App, AppResponse, ContractWrapper, Executor};
+use cosmwasm_std::{coin, to_binary, Addr, Coin, Empty, StdResult, Storage, Uint128};
+use cw_multi_test::{AddressGenerator, App, AppResponse, ContractWrapper, Executor};
 
+use bech32::{ToBase32, Variant};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 use serde::Serialize;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, IntoStaticStr};
 
-use crate::state::CHAIN_ID_DEV;
+use crate::{
+    state::{User, CHAIN_ID_DEV},
+    tests::builders::DepositBuilder,
+};
 
 const DEFAULT_FUNDS_AMOUNT: u128 = 1_000;
 const INCREASED_FUNDS_AMOUNT: u128 = 1_000_000_000_000_000_000;
@@ -190,6 +195,7 @@ impl SplitPair for ProjectPair {
 
 pub struct Project {
     pub app: App,
+    pub log: StdResult<AppResponse>,
     app_contract_address: Addr,
     terraswap_factory_address: Addr,
     terraswap_router_address: Addr,
@@ -273,6 +279,7 @@ impl Project {
 
         Self {
             app,
+            log: Ok(AppResponse::default()),
             app_contract_address,
             terraswap_factory_address,
             terraswap_router_address,
@@ -777,5 +784,29 @@ impl Project {
             _ => unreachable!(),
         }
         .map_err(|err| err.downcast().unwrap())
+    }
+
+    pub fn prepare_deposit_by(&mut self, project_account: ProjectAccount) -> DepositBuilder {
+        DepositBuilder::new(project_account)
+    }
+
+    pub fn display_logs(&mut self) -> &mut Self {
+        println!("\n{:#?}\n", &self.log);
+        self
+    }
+}
+
+pub fn create_address_generator(prefix: impl ToString) -> impl FnMut() -> Addr {
+    let mut cnt = 0;
+
+    move || {
+        let mut rng = StdRng::seed_from_u64(cnt);
+        cnt += 1;
+
+        let bytes: [u8; 20] = rng.gen();
+        let address =
+            bech32::encode(&prefix.to_string(), bytes.to_base32(), Variant::Bech32).unwrap();
+
+        Addr::unchecked(address)
     }
 }
