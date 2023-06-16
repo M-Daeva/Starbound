@@ -966,6 +966,7 @@ dependencies = [
 name = "starbound-noria"
 version = "2.0.0"
 dependencies = [
+ "anyhow",
  "bech32",
  "cosmwasm-schema",
  "cosmwasm-std",

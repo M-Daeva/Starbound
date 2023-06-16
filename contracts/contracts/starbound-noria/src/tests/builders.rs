@@ -61,19 +61,16 @@ impl DepositBuilder {
             funds,
         } = self.to_owned();
 
-        project.log = project
-            .app
-            .execute_contract(
-                sender,
-                project.get_app_contract_address(),
-                &ExecuteMsg::Deposit {
-                    asset_list,
-                    is_rebalancing_used,
-                    down_counter,
-                },
-                &funds,
-            )
-            .map_err(|err| err.downcast().unwrap());
+        project.logs = project.app.execute_contract(
+            sender,
+            project.get_app_contract_address(),
+            &ExecuteMsg::Deposit {
+                asset_list,
+                is_rebalancing_used,
+                down_counter,
+            },
+            &funds,
+        );
 
         project
     }
