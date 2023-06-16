@@ -179,7 +179,7 @@ impl Project {
             .instantiate_contract(
                 id,
                 Addr::unchecked(ADDR_ADMIN),
-                &msg.clone(),
+                &msg,
                 &[],
                 "factory",
                 Some(ADDR_ADMIN.to_string()),

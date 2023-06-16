@@ -1,5 +1,5 @@
-use cosmwasm_std::{coin, to_binary, Addr, Coin, Empty, StdResult, Storage, Uint128};
-use cw_multi_test::{AddressGenerator, App, AppResponse, ContractWrapper, Executor};
+use cosmwasm_std::{coin, to_binary, Addr, Coin, Empty, StdResult, Uint128};
+use cw_multi_test::{App, AppResponse, ContractWrapper, Executor};
 
 use anyhow::Error;
 use bech32::{ToBase32, Variant};
@@ -8,7 +8,7 @@ use serde::Serialize;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, IntoStaticStr};
 
-use crate::{state::CHAIN_ID_DEV, tests::builders::DepositBuilder};
+use crate::state::CHAIN_ID_DEV;
 
 const DEFAULT_FUNDS_AMOUNT: u128 = 1_000;
 const INCREASED_FUNDS_AMOUNT: u128 = 1_000_000_000_000_000_000;
@@ -43,7 +43,7 @@ pub enum ProjectToken {
     #[strum(serialize = "contract3")]
     Inj,
 }
-pub trait GetDecimals {
+trait GetDecimals {
     fn get_decimals(&self) -> u8;
 }
 
@@ -66,7 +66,7 @@ impl GetDecimals for ProjectToken {
     }
 }
 
-pub trait GetFunds {
+trait GetFunds {
     fn get_initial_funds_amount(&self) -> u128;
 }
 
@@ -164,7 +164,7 @@ impl ToTerraswapAssetInfo for ProjectAsset {
     }
 }
 
-pub trait SplitPair {
+trait SplitPair {
     fn split_pair(&self) -> (ProjectAsset, ProjectAsset);
 }
 
@@ -289,15 +289,15 @@ impl Project {
         self.app_contract_address.clone()
     }
 
-    pub fn get_terraswap_factory_address(&self) -> Addr {
+    fn get_terraswap_factory_address(&self) -> Addr {
         self.terraswap_factory_address.clone()
     }
 
-    pub fn get_terraswap_router_address(&self) -> Addr {
+    fn get_terraswap_router_address(&self) -> Addr {
         self.terraswap_router_address.clone()
     }
 
-    pub fn get_terraswap_pair_list(&self) -> Vec<terraswap::asset::PairInfo> {
+    fn get_terraswap_pair_list(&self) -> Vec<terraswap::asset::PairInfo> {
         self.terraswap_pair_list.clone()
     }
 
@@ -604,7 +604,7 @@ impl Project {
         pairs
     }
 
-    pub fn get_pair_info_by_asset_pair(
+    fn get_pair_info_by_asset_pair(
         terraswap_pair_list: &Vec<terraswap::asset::PairInfo>,
         project_pair: ProjectPair,
     ) -> terraswap::asset::PairInfo {
@@ -622,7 +622,7 @@ impl Project {
             .to_owned()
     }
 
-    pub fn query_all_balances(&self, project_account: ProjectAccount) -> Vec<(String, Uint128)> {
+    fn query_all_balances(&self, project_account: ProjectAccount) -> Vec<(String, Uint128)> {
         let mut denom_and_amount_list: Vec<(String, Uint128)> = vec![];
 
         // query project_coins
@@ -650,7 +650,7 @@ impl Project {
         }
 
         // query lp tokens
-        for pair_info in Self::get_terraswap_pair_list(&self) {
+        for pair_info in Self::get_terraswap_pair_list(self) {
             let cw20::BalanceResponse { balance } = self
                 .app
                 .wrap()
@@ -672,7 +672,7 @@ impl Project {
             .collect()
     }
 
-    pub fn swap_with_pair<T1, T2>(
+    fn swap_with_pair<T1, T2>(
         &mut self,
         sender: ProjectAccount,
         amount: impl Into<Uint128>,
@@ -683,7 +683,7 @@ impl Project {
         T1: ToTerraswapAssetInfo + ToProjectAsset + ToString + Clone,
         T2: ToTerraswapAssetInfo + ToProjectAsset + ToString + Clone,
     {
-        let terraswap::asset::PairInfo { contract_addr, .. } = Self::get_terraswap_pair_list(&self)
+        let terraswap::asset::PairInfo { contract_addr, .. } = Self::get_terraswap_pair_list(self)
             .into_iter()
             .find(|x| {
                 x.asset_infos
@@ -695,7 +695,7 @@ impl Project {
 
         let amount: Uint128 = amount.into();
         let sender = sender.to_address();
-        let contract_addr = Addr::unchecked(contract_addr.to_string());
+        let contract_addr = Addr::unchecked(contract_addr);
         let msg = terraswap::pair::ExecuteMsg::Swap {
             offer_asset: terraswap::asset::Asset {
                 amount,
@@ -728,7 +728,7 @@ impl Project {
     }
 
     // TODO: implement custom router to swap both in sequence and parallel and use different amounts
-    pub fn swap_with_router(
+    fn swap_with_router(
         &mut self,
         sender: ProjectAccount,
         amount: impl Into<Uint128>,
@@ -736,7 +736,7 @@ impl Project {
     ) -> StdResult<AppResponse> {
         let amount: Uint128 = amount.into();
         let sender = sender.to_address();
-        let router_address = Self::get_terraswap_router_address(&self);
+        let router_address = Self::get_terraswap_router_address(self);
         let hook_msg = terraswap::router::ExecuteMsg::ExecuteSwapOperations {
             operations: swap_operations.to_owned(),
             minimum_receive: None,
@@ -783,46 +783,19 @@ impl Project {
         }
         .map_err(|err| err.downcast().unwrap())
     }
-
-    fn check_logs(&self) {
-        self.logs.as_ref().unwrap(); // check errors
-    }
-
-    pub fn prepare_deposit_by(&mut self, project_account: ProjectAccount) -> DepositBuilder {
-        self.check_logs();
-        DepositBuilder::new(project_account)
-    }
-
-    pub fn display_logs(&mut self) -> &mut Self {
-        self.check_logs();
-        println!("\n{:#?}\n", &self.logs);
-        self
-    }
-
-    pub fn assert_error(&mut self, submsg: &str) -> &mut Self {
-        let err = self.logs.as_ref().unwrap_err();
-
-        let context = format!("{}", err);
-        let source = err.source().unwrap().to_string();
-        let info = format!("{}\n{}", context, source);
-        speculoos::assert_that(&info).matches(|x| x.contains(submsg));
-
-        self.logs = Ok(AppResponse::default()); // clear logs after reading error
-        self
-    }
 }
 
-pub fn create_address_generator(prefix: impl ToString) -> impl FnMut() -> Addr {
-    let mut cnt = 0;
+// fn create_address_generator(prefix: impl ToString) -> impl FnMut() -> Addr {
+//     let mut cnt = 0;
 
-    move || {
-        let mut rng = StdRng::seed_from_u64(cnt);
-        cnt += 1;
+//     move || {
+//         let mut rng = StdRng::seed_from_u64(cnt);
+//         cnt += 1;
 
-        let bytes: [u8; 20] = rng.gen();
-        let address =
-            bech32::encode(&prefix.to_string(), bytes.to_base32(), Variant::Bech32).unwrap();
+//         let bytes: [u8; 20] = rng.gen();
+//         let address =
+//             bech32::encode(&prefix.to_string(), bytes.to_base32(), Variant::Bech32).unwrap();
 
-        Addr::unchecked(address)
-    }
-}
+//         Addr::unchecked(address)
+//     }
+// }

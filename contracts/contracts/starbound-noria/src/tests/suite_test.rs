@@ -1,9 +1,9 @@
-use cosmwasm_std::{coin, Addr, Decimal, Uint128};
-use cw_multi_test::Executor;
-
-use crate::tests::suite::{
-    create_address_generator, Project, ProjectAccount, ProjectCoin, ProjectPair, ProjectToken,
-    ToAddress, ToTerraswapAssetInfo,
+use crate::{
+    error::ContractError,
+    tests::{
+        builders::Builders,
+        suite::{Project, ProjectAccount, ProjectCoin, ProjectToken},
+    },
 };
 
 #[test]
@@ -13,11 +13,11 @@ fn default() {
     project
         .prepare_deposit_by(ProjectAccount::Alice)
         .with_funds(100, ProjectCoin::Denom)
-        .with_asset(ProjectToken::Atom, Decimal::one())
+        .with_asset(ProjectToken::Atom, "1")
         .with_rebalancing(false)
-        .with_down_counter(10u128)
+        .with_down_counter(10)
         .execute_and_switch_to(&mut project)
-        .assert_error("Generic error: invalid length")
+        // .assert_error(ContractError::InvalidAsset {})
         .display_logs();
 
     // let mut gen_addr = create_address_generator("noria");

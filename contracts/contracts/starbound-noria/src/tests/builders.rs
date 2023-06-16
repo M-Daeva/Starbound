@@ -1,10 +1,52 @@
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
-use cw_multi_test::Executor;
+use cw_multi_test::{AppResponse, Executor};
 
 use crate::{
+    actions::helpers::math::str_to_dec,
     messages::execute::ExecuteMsg,
     tests::suite::{Project, ProjectAccount, ToAddress, ToProjectAsset},
 };
+
+trait Helpers {
+    fn check_logs(&self);
+}
+
+impl Helpers for Project {
+    fn check_logs(&self) {
+        self.logs.as_ref().unwrap(); // check errors
+    }
+}
+
+pub trait Builders {
+    fn display_logs(&mut self) -> &mut Self;
+    fn assert_error(&mut self, submsg: impl ToString) -> &mut Self;
+    fn prepare_deposit_by(&mut self, project_account: ProjectAccount) -> DepositBuilder;
+}
+
+impl Builders for Project {
+    fn display_logs(&mut self) -> &mut Self {
+        self.check_logs();
+        println!("\n{:#?}\n", &self.logs);
+        self
+    }
+
+    fn assert_error(&mut self, submsg: impl ToString) -> &mut Self {
+        let err = self.logs.as_ref().unwrap_err();
+
+        let context = format!("{}", err);
+        let source = err.source().unwrap().to_string();
+        let info = format!("{}\n{}", context, source);
+        speculoos::assert_that(&info).matches(|x| x.contains(&submsg.to_string()));
+
+        self.logs = Ok(AppResponse::default()); // clear logs after reading error
+        self
+    }
+
+    fn prepare_deposit_by(&mut self, project_account: ProjectAccount) -> DepositBuilder {
+        self.check_logs();
+        DepositBuilder::new(project_account)
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct DepositBuilder {
@@ -26,9 +68,9 @@ impl DepositBuilder {
         }
     }
 
-    pub fn with_asset(&mut self, asset: impl ToString, weight: Decimal) -> Self {
+    pub fn with_asset(&mut self, asset: impl ToString, weight: &str) -> Self {
         let mut asset_list = self.asset_list.clone().unwrap_or(vec![]);
-        asset_list.push((asset.to_string(), weight));
+        asset_list.push((asset.to_string(), str_to_dec(weight)));
         self.asset_list = Some(asset_list);
         self.to_owned()
     }
@@ -38,10 +80,7 @@ impl DepositBuilder {
         self.to_owned()
     }
 
-    pub fn with_down_counter<T>(&mut self, down_counter: T) -> Self
-    where
-        Uint128: From<T>,
-    {
+    pub fn with_down_counter(&mut self, down_counter: u128) -> Self {
         self.down_counter = Some(Uint128::from(down_counter));
         self.to_owned()
     }

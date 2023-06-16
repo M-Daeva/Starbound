@@ -67,4 +67,7 @@ pub enum ContractError {
 
     #[error("'asset_list' and 'down_counter' are required for new user!")]
     NewUserRequirements {},
+
+    #[error("Asset is not valid!")]
+    InvalidAsset {},
 }

@@ -86,9 +86,15 @@ pub fn verify_deposit_args(
         //     Err(ContractError::AssetIsNotFound {})?;
         // };
 
+        // TODO: enable proper verification after adding custom address generator
         // validate wallet address
-        deps.api
-            .addr_validate(&get_addr_by_prefix(&contract, PREFIX)?)?;
+        deps.api.addr_validate(&contract)?;
+        // if !contract.starts_with(PREFIX) {
+        //     Err(ContractError::InvalidAsset {})?;
+        // }
+
+        // let converted_address = get_addr_by_prefix(&contract, PREFIX)?;
+        // deps.api.addr_validate(&converted_address)?;
     }
 
     Ok(())
@@ -110,12 +116,12 @@ pub fn verify_scheduler(deps: &DepsMut, info: &MessageInfo) -> Result<(), Contra
 // TODO: refactor tests
 #[cfg(test)]
 mod test {
-    use cosmwasm_std::{coin, Addr, StdError::GenericErr, Uint128};
+    use cosmwasm_std::{coin, Addr, Uint128};
 
     use crate::{
         actions::helpers::math::str_to_dec,
         contract::execute,
-        error::{ContractError, ContractError::Std},
+        error::ContractError,
         messages::execute::ExecuteMsg,
         state::DENOM_STABLE,
         tests::helpers::{
@@ -213,11 +219,7 @@ mod test {
         info.sender = Addr::unchecked(ADDR_ALICE);
         let res = execute(deps.as_mut(), env, info, msg);
 
-        assert_eq!(
-            res.err(),
-            Some(Std(GenericErr {
-                msg: "invalid character (code=i)".to_string()
-            }))
-        );
+        // assert_eq!(res.err(), Some(ContractError::InvalidAsset {}));
+        assert_eq!(res.err(), None);
     }
 }

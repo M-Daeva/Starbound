@@ -26,8 +26,6 @@ mod tests {
     pub mod builders;
     pub mod helpers;
     pub mod integration;
-    pub mod robot;
-    pub mod robot_test;
     pub mod suite;
     pub mod suite_test;
 }
