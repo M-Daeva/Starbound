@@ -26,7 +26,7 @@ fn verify_address(deps: &Deps, raw_address: impl ToString) -> Result<Addr, Contr
         Err(ContractError::InvalidAsset {})?;
     }
 
-    let native_address = get_addr_by_prefix(&address, PREFIX)?;
+    let native_address = get_addr_by_prefix(address, PREFIX)?;
     let verified_address = deps.api.addr_validate(&native_address)?;
 
     Ok(verified_address)

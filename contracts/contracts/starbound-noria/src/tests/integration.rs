@@ -1,52 +1,34 @@
-// use cosmwasm_std::{coin, Addr, Empty, Uint128};
-// use cw_multi_test::{App, ContractWrapper, Executor};
+use crate::{
+    state::User,
+    tests::{
+        builders::*,
+        suite::{Project, ProjectAccount, ProjectCoin, ProjectToken},
+    },
+};
 
-// #[test]
-// fn query_pairs_default() {
-//     let mut prj = Project::new(None);
-//     // let user = Project::get_user(UserName::Alice);
+#[test]
+fn deposit() {
+    let mut project = Project::new(None);
 
-//     prj.create_factory().unwrap();
-
-//     let asset_infos = [
-//         AssetInfo::NativeToken {
-//             denom: DENOM_DENOM.to_string(),
-//         },
-//         AssetInfo::NativeToken {
-//             denom: DENOM_NORIA.to_string(),
-//         },
-//     ];
-
-//     //println!("{:#?}", prj.query_balances(ADDR_ADMIN).unwrap());
-
-//     // prj.add_decimals(DENOM_DENOM, 6).unwrap();
-//     // prj.add_decimals(DENOM_NORIA, 6).unwrap();
-
-//     prj.create_pair(asset_infos).unwrap();
-
-//     // let res = prj.query_dex().unwrap();
-
-//     // assert_eq!(res.pairs, vec![]);
-// }
-
-// #[test]
-// fn deposit() {
-//     let mut prj = Project::new(None);
-//     let user = Project::get_user(UserName::Alice);
-
-//     prj.deposit(
-//         ADDR_ALICE_OSMO,
-//         &user.asset_list,
-//         user.is_rebalancing_used,
-//         user.down_counter,
-//         &[coin(user.deposited.u128(), DENOM_EEUR)],
-//     )
-//     .unwrap();
-
-//     let res = prj.query_user(ADDR_ALICE_OSMO);
-
-//     assert_eq!(res.unwrap(), user);
-// }
+    project
+        .prepare_deposit_by(ProjectAccount::Alice)
+        .with_funds(100, ProjectCoin::Denom)
+        .with_asset(ProjectCoin::Noria, "0.5")
+        .with_asset(ProjectToken::Atom, "0.5")
+        .with_rebalancing(false)
+        .with_down_counter(10)
+        .execute_and_switch_to(&mut project)
+        .query_users(&[ProjectAccount::Alice])
+        .assert_user(
+            User::prepare()
+                .with_funds(100, ProjectCoin::Denom)
+                .with_asset(ProjectCoin::Noria, "0.5")
+                .with_asset(ProjectToken::Atom, "0.5")
+                .with_rebalancing(false)
+                .with_down_counter(10)
+                .complete_with_name(ProjectAccount::Alice),
+        );
+}
 
 // #[test]
 // fn deposit_multiple_times_and_without_assets() {

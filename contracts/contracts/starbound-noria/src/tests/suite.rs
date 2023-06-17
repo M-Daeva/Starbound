@@ -1,4 +1,4 @@
-use cosmwasm_std::{coin, to_binary, Addr, Coin, Empty, StdResult, Uint128};
+use cosmwasm_std::{coin, to_binary, Addr, Binary, Coin, Empty, StdResult, Uint128};
 use cw_multi_test::{App, AppResponse, ContractWrapper, Executor};
 
 use anyhow::Error;
@@ -24,6 +24,16 @@ pub enum ProjectAccount {
     Alice,
     #[strum(serialize = "bob")]
     Bob,
+}
+
+impl ProjectAccount {
+    fn get_initial_funds_amount(&self) -> u128 {
+        match self {
+            ProjectAccount::Admin => INCREASED_FUNDS_AMOUNT,
+            ProjectAccount::Alice => DEFAULT_FUNDS_AMOUNT,
+            ProjectAccount::Bob => DEFAULT_FUNDS_AMOUNT,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Display, IntoStaticStr, EnumIter)]
@@ -66,34 +76,6 @@ impl GetDecimals for ProjectToken {
     }
 }
 
-trait GetFunds {
-    fn get_initial_funds_amount(&self) -> u128;
-}
-
-impl GetFunds for ProjectAccount {
-    fn get_initial_funds_amount(&self) -> u128 {
-        match self {
-            ProjectAccount::Admin => INCREASED_FUNDS_AMOUNT,
-            ProjectAccount::Alice => DEFAULT_FUNDS_AMOUNT,
-            ProjectAccount::Bob => DEFAULT_FUNDS_AMOUNT,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum ProjectAsset {
-    Coin(ProjectCoin),
-    Token(ProjectToken),
-}
-
-#[derive(Debug, Clone, Copy, EnumIter)]
-pub enum ProjectPair {
-    AtomLuna,
-    DenomInj,
-    DenomLuna,
-    DenomNoria,
-}
-
 pub trait ToAddress {
     fn to_address(&self) -> Addr;
 }
@@ -110,13 +92,10 @@ impl ToAddress for ProjectToken {
     }
 }
 
-impl ToString for ProjectAsset {
-    fn to_string(&self) -> String {
-        match self {
-            ProjectAsset::Coin(coin) => coin.to_string(),
-            ProjectAsset::Token(token) => token.to_string(),
-        }
-    }
+#[derive(Debug, Clone, Copy, Display)]
+pub enum ProjectAsset {
+    Coin(ProjectCoin),
+    Token(ProjectToken),
 }
 
 pub trait ToProjectAsset {
@@ -164,11 +143,15 @@ impl ToTerraswapAssetInfo for ProjectAsset {
     }
 }
 
-trait SplitPair {
-    fn split_pair(&self) -> (ProjectAsset, ProjectAsset);
+#[derive(Debug, Clone, Copy, EnumIter)]
+pub enum ProjectPair {
+    AtomLuna,
+    DenomInj,
+    DenomLuna,
+    DenomNoria,
 }
 
-impl SplitPair for ProjectPair {
+impl ProjectPair {
     fn split_pair(&self) -> (ProjectAsset, ProjectAsset) {
         match self {
             ProjectPair::AtomLuna => (
@@ -191,9 +174,31 @@ impl SplitPair for ProjectPair {
     }
 }
 
+#[derive(Debug)]
+pub enum WrappedResponse {
+    Execute(Result<AppResponse, Error>),
+    Query(StdResult<Binary>),
+}
+
+pub trait WrapIntoResponse {
+    fn wrap(self) -> WrappedResponse;
+}
+
+impl WrapIntoResponse for Result<AppResponse, Error> {
+    fn wrap(self) -> WrappedResponse {
+        WrappedResponse::Execute(self)
+    }
+}
+
+impl WrapIntoResponse for StdResult<Binary> {
+    fn wrap(self) -> WrappedResponse {
+        WrappedResponse::Query(self)
+    }
+}
+
 pub struct Project {
     pub app: App,
-    pub logs: Result<AppResponse, Error>,
+    pub logs: WrappedResponse,
     app_contract_address: Addr,
     terraswap_factory_address: Addr,
     terraswap_router_address: Addr,
@@ -277,7 +282,7 @@ impl Project {
 
         Self {
             app,
-            logs: Ok(AppResponse::default()),
+            logs: WrappedResponse::Execute(Ok(AppResponse::default())),
             app_contract_address,
             terraswap_factory_address,
             terraswap_router_address,
@@ -287,18 +292,6 @@ impl Project {
 
     pub fn get_app_contract_address(&self) -> Addr {
         self.app_contract_address.clone()
-    }
-
-    fn get_terraswap_factory_address(&self) -> Addr {
-        self.terraswap_factory_address.clone()
-    }
-
-    fn get_terraswap_router_address(&self) -> Addr {
-        self.terraswap_router_address.clone()
-    }
-
-    fn get_terraswap_pair_list(&self) -> Vec<terraswap::asset::PairInfo> {
-        self.terraswap_pair_list.clone()
     }
 
     fn create_app_with_balances() -> App {
@@ -518,27 +511,9 @@ impl Project {
         .unwrap()
     }
 
-    pub fn query_allowances(
-        &self,
-        owner: ProjectAccount,
-        token: ProjectToken,
-    ) -> cw20::AllAllowancesResponse {
-        self.app
-            .wrap()
-            .query_wasm_smart(
-                token.to_address(),
-                &cw20_base::msg::QueryMsg::AllAllowances {
-                    owner: owner.to_string(),
-                    start_after: None,
-                    limit: None,
-                },
-            )
-            .unwrap()
-    }
-
     fn provide_liquidity(
         app: &mut App,
-        terraswap_pair_list: &Vec<terraswap::asset::PairInfo>,
+        terraswap_pair_list: &[terraswap::asset::PairInfo],
         project_pair: ProjectPair,
     ) -> AppResponse {
         const PROVIDED_PER_ASSET_FUNDS_AMOUNT: u128 = INCREASED_FUNDS_AMOUNT / 10;
@@ -604,8 +579,8 @@ impl Project {
         pairs
     }
 
-    fn get_pair_info_by_asset_pair(
-        terraswap_pair_list: &Vec<terraswap::asset::PairInfo>,
+    pub fn get_pair_info_by_asset_pair(
+        terraswap_pair_list: &[terraswap::asset::PairInfo],
         project_pair: ProjectPair,
     ) -> terraswap::asset::PairInfo {
         let (project_asset1, project_asset2) = project_pair.split_pair();
@@ -620,6 +595,72 @@ impl Project {
             })
             .unwrap()
             .to_owned()
+    }
+}
+
+pub trait Testable {
+    fn get_terraswap_factory_address(&self) -> Addr;
+
+    fn get_terraswap_router_address(&self) -> Addr;
+
+    fn get_terraswap_pair_list(&self) -> Vec<terraswap::asset::PairInfo>;
+
+    fn query_allowances(
+        &self,
+        owner: ProjectAccount,
+        token: ProjectToken,
+    ) -> cw20::AllAllowancesResponse;
+
+    fn query_all_balances(&self, project_account: ProjectAccount) -> Vec<(String, Uint128)>;
+
+    fn swap_with_pair<T1, T2>(
+        &mut self,
+        sender: ProjectAccount,
+        amount: impl Into<Uint128>,
+        project_coin_or_token_in: T1,
+        project_coin_or_token_out: T2,
+    ) -> StdResult<AppResponse>
+    where
+        T1: ToTerraswapAssetInfo + ToProjectAsset + ToString + Clone,
+        T2: ToTerraswapAssetInfo + ToProjectAsset + ToString + Clone;
+
+    fn swap_with_router(
+        &mut self,
+        sender: ProjectAccount,
+        amount: impl Into<Uint128>,
+        swap_operations: &[terraswap::router::SwapOperation],
+    ) -> StdResult<AppResponse>;
+}
+
+impl Testable for Project {
+    fn get_terraswap_factory_address(&self) -> Addr {
+        self.terraswap_factory_address.clone()
+    }
+
+    fn get_terraswap_router_address(&self) -> Addr {
+        self.terraswap_router_address.clone()
+    }
+
+    fn get_terraswap_pair_list(&self) -> Vec<terraswap::asset::PairInfo> {
+        self.terraswap_pair_list.clone()
+    }
+
+    fn query_allowances(
+        &self,
+        owner: ProjectAccount,
+        token: ProjectToken,
+    ) -> cw20::AllAllowancesResponse {
+        self.app
+            .wrap()
+            .query_wasm_smart(
+                token.to_address(),
+                &cw20_base::msg::QueryMsg::AllAllowances {
+                    owner: owner.to_string(),
+                    start_after: None,
+                    limit: None,
+                },
+            )
+            .unwrap()
     }
 
     fn query_all_balances(&self, project_account: ProjectAccount) -> Vec<(String, Uint128)> {
@@ -732,7 +773,7 @@ impl Project {
         &mut self,
         sender: ProjectAccount,
         amount: impl Into<Uint128>,
-        swap_operations: &Vec<terraswap::router::SwapOperation>,
+        swap_operations: &[terraswap::router::SwapOperation],
     ) -> StdResult<AppResponse> {
         let amount: Uint128 = amount.into();
         let sender = sender.to_address();
@@ -785,17 +826,17 @@ impl Project {
     }
 }
 
-// fn create_address_generator(prefix: impl ToString) -> impl FnMut() -> Addr {
-//     let mut cnt = 0;
+pub fn create_address_generator(prefix: impl ToString) -> impl FnMut() -> Addr {
+    let mut cnt = 0;
 
-//     move || {
-//         let mut rng = StdRng::seed_from_u64(cnt);
-//         cnt += 1;
+    move || {
+        let mut rng = StdRng::seed_from_u64(cnt);
+        cnt += 1;
 
-//         let bytes: [u8; 20] = rng.gen();
-//         let address =
-//             bech32::encode(&prefix.to_string(), bytes.to_base32(), Variant::Bech32).unwrap();
+        let bytes: [u8; 20] = rng.gen();
+        let address =
+            bech32::encode(&prefix.to_string(), bytes.to_base32(), Variant::Bech32).unwrap();
 
-//         Addr::unchecked(address)
-//     }
-// }
+        Addr::unchecked(address)
+    }
+}

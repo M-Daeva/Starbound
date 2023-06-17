@@ -1,25 +1,15 @@
 use cosmwasm_std::{
     coin,
     testing::{mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage},
-    Addr, Attribute, Coin, Decimal, Empty, Env, MessageInfo, OwnedDeps, Response, StdError,
-    StdResult, Uint128,
+    Addr, Attribute, Coin, Empty, Env, MessageInfo, OwnedDeps, Response, StdResult, Uint128,
 };
 use cw_multi_test::{App, AppResponse, ContractWrapper, Executor};
 
-use terraswap::pair::{
-    Cw20HookMsg, ExecuteMsg as PairExecuteMsg, InstantiateMsg as PairInstantiateMsg,
-};
-use terraswap::{
-    asset::{Asset as TerraswapAsset, AssetInfo, PairInfo},
-    factory::{ExecuteMsg as FactoryExecuteMsg, InstantiateMsg as FactoryInstantiateMsg},
-};
-use terraswap_factory::state::Config as factoryConfig;
-
 use crate::{
-    actions::helpers::math::{str_to_dec, u128_to_dec},
+    actions::helpers::math::str_to_dec,
     contract::{execute, instantiate, query},
     error::ContractError,
-    messages::{execute::ExecuteMsg, instantiate::InstantiateMsg, query::QueryMsg},
+    messages::{instantiate::InstantiateMsg, query::QueryMsg},
     state::{Asset, User, CHAIN_ID_DEV},
 };
 
@@ -142,106 +132,6 @@ impl Project {
             Some(ADDR_ADMIN.to_string()),
         )
         .unwrap()
-    }
-
-    #[track_caller]
-    pub fn create_factory(&mut self) -> StdResult<()> {
-        let contract = ContractWrapper::new(
-            terraswap_factory::contract::execute,
-            terraswap_factory::contract::instantiate,
-            terraswap_factory::contract::query,
-        );
-
-        let id = self.app.store_code(Box::new(contract));
-
-        // // store pair code
-        // let pair = ContractWrapper::new(
-        //     terraswap_pair::contract::execute,
-        //     terraswap_pair::contract::instantiate,
-        //     terraswap_pair::contract::query,
-        // );
-        // let id_pair = self.app.store_code(Box::new(pair)); // id = 3
-
-        // let lp = ContractWrapper::new(
-        //     terraswap_pair::contract::execute,
-        //     terraswap_pair::contract::instantiate,
-        //     terraswap_pair::contract::query,
-        // );
-        // let id_lp = self.app.store_code(Box::new(lp)); // id = 4
-
-        let msg = FactoryInstantiateMsg {
-            pair_code_id: 3,  // pair contract
-            token_code_id: 4, // LP token
-        };
-
-        let address = self
-            .app
-            .instantiate_contract(
-                id,
-                Addr::unchecked(ADDR_ADMIN),
-                &msg,
-                &[],
-                "factory",
-                Some(ADDR_ADMIN.to_string()),
-            )
-            .unwrap();
-
-        self.factory_address = address;
-
-        Ok(())
-    }
-
-    #[track_caller]
-    pub fn add_decimals(&mut self, denom: &str, decimals: u8) -> StdResult<AppResponse> {
-        self.app
-            .execute_contract(
-                Addr::unchecked(ADDR_ADMIN),
-                self.get_factory_address(),
-                &terraswap::factory::ExecuteMsg::AddNativeTokenDecimals {
-                    denom: denom.to_string(),
-                    decimals,
-                },
-                &[coin(1u128, DENOM_DENOM), coin(1u128, DENOM_NORIA)],
-            )
-            .map_err(|err| err.downcast().unwrap())
-    }
-
-    #[track_caller]
-    pub fn create_pair(
-        &mut self,
-        asset_infos: [terraswap::asset::AssetInfo; 2],
-    ) -> StdResult<AppResponse> {
-        self.app
-            .execute_contract(
-                Addr::unchecked(ADDR_ADMIN),
-                self.get_factory_address(),
-                &terraswap::factory::ExecuteMsg::CreatePair { asset_infos },
-                &[],
-            )
-            .map_err(|err| err.downcast().unwrap())
-    }
-
-    #[track_caller]
-    pub fn deposit(
-        &mut self,
-        sender: &str,
-        asset_list: &Option<Vec<(String, Decimal)>>,
-        is_rebalancing_used: Option<bool>,
-        down_counter: Option<Uint128>,
-        funds: &[Coin],
-    ) -> Result<AppResponse, StdError> {
-        self.app
-            .execute_contract(
-                Addr::unchecked(sender.to_string()),
-                self.address.clone(),
-                &ExecuteMsg::Deposit {
-                    asset_list: asset_list.to_owned(),
-                    is_rebalancing_used,
-                    down_counter,
-                },
-                funds,
-            )
-            .map_err(|err| err.downcast().unwrap())
     }
 
     // #[track_caller]
