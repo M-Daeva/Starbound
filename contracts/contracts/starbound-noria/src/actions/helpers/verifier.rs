@@ -1,5 +1,5 @@
 #[cfg(not(feature = "library"))]
-use cosmwasm_std::{Decimal, DepsMut, MessageInfo, StdError, StdResult, Uint128};
+use cosmwasm_std::{Addr, Decimal, Deps, MessageInfo, StdError, StdResult, Uint128};
 
 use bech32::{decode, encode, Variant};
 
@@ -19,9 +19,35 @@ pub fn get_addr_by_prefix(address: &str, prefix: &str) -> StdResult<String> {
     Ok(new_address)
 }
 
+fn verify_address(deps: &Deps, raw_address: impl ToString) -> Result<Addr, ContractError> {
+    let address = &raw_address.to_string();
+
+    if !address.starts_with(PREFIX) {
+        Err(ContractError::InvalidAsset {})?;
+    }
+
+    let native_address = get_addr_by_prefix(&address, PREFIX)?;
+    let verified_address = deps.api.addr_validate(&native_address)?;
+
+    Ok(verified_address)
+}
+
+// data verification for update_pools_and_users, swap, transfer methods
+pub fn verify_scheduler(deps: &Deps, info: &MessageInfo) -> Result<(), ContractError> {
+    let Config {
+        admin, scheduler, ..
+    } = CONFIG.load(deps.storage)?;
+
+    if info.sender != admin && info.sender != scheduler {
+        Err(ContractError::Unauthorized {})?;
+    }
+
+    Ok(())
+}
+
 // data verification for deposit method
 pub fn verify_deposit_args(
-    deps: &DepsMut,
+    deps: &Deps,
     info: &MessageInfo,
     asset_list: &Option<Vec<(String, Decimal)>>,
     _is_rebalancing_used: Option<bool>,
@@ -86,140 +112,11 @@ pub fn verify_deposit_args(
         //     Err(ContractError::AssetIsNotFound {})?;
         // };
 
+        // verify wallet address
         // TODO: enable proper verification after adding custom address generator
-        // validate wallet address
         deps.api.addr_validate(&contract)?;
-        // if !contract.starts_with(PREFIX) {
-        //     Err(ContractError::InvalidAsset {})?;
-        // }
-
-        // let converted_address = get_addr_by_prefix(&contract, PREFIX)?;
-        // deps.api.addr_validate(&converted_address)?;
+        // verify_address(deps, contract)?;
     }
 
     Ok(())
-}
-
-// data verification for update_pools_and_users, swap, transfer methods
-pub fn verify_scheduler(deps: &DepsMut, info: &MessageInfo) -> Result<(), ContractError> {
-    let Config {
-        admin, scheduler, ..
-    } = CONFIG.load(deps.storage)?;
-
-    if info.sender != admin && info.sender != scheduler {
-        Err(ContractError::Unauthorized {})?;
-    }
-
-    Ok(())
-}
-
-// TODO: refactor tests
-#[cfg(test)]
-mod test {
-    use cosmwasm_std::{coin, Addr, Uint128};
-
-    use crate::{
-        actions::helpers::math::str_to_dec,
-        contract::execute,
-        error::ContractError,
-        messages::execute::ExecuteMsg,
-        state::DENOM_STABLE,
-        tests::helpers::{
-            get_instance, ADDR_ADMIN, ADDR_ALICE, ADDR_INVALID, DENOM_NORIA, FUNDS_AMOUNT,
-            IS_REBALANCING_USED,
-        },
-    };
-
-    #[test]
-    fn verify_funds() {
-        // try to deposit regular asset instead of stable currency
-        let funds_denom = DENOM_NORIA;
-        let funds_amount = FUNDS_AMOUNT;
-        let is_rebalancing_used = Some(IS_REBALANCING_USED);
-
-        let (mut deps, env, mut info, _) = get_instance(ADDR_ADMIN);
-
-        let asset_list_alice = vec![
-            (ADDR_ALICE.to_string(), str_to_dec("0.5")),
-            (ADDR_ALICE.to_string(), str_to_dec("0.5")),
-        ];
-
-        let msg = ExecuteMsg::Deposit {
-            asset_list: Some(asset_list_alice),
-            down_counter: Some(Uint128::from(3_u128)),
-            is_rebalancing_used,
-        };
-        info.funds = vec![coin(funds_amount, funds_denom)];
-        info.sender = Addr::unchecked(ADDR_ALICE);
-        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
-
-        assert_eq!(res.err(), Some(ContractError::UnexpectedFunds {}));
-
-        // try to deposit with [0, 1.5] weights
-        let funds_denom = DENOM_STABLE;
-
-        let asset_list_alice = vec![
-            (ADDR_ALICE.to_string(), str_to_dec("0")),
-            (ADDR_ALICE.to_string(), str_to_dec("1.5")),
-        ];
-
-        let msg = ExecuteMsg::Deposit {
-            asset_list: Some(asset_list_alice),
-            down_counter: Some(Uint128::from(3_u128)),
-            is_rebalancing_used,
-        };
-        info.funds = vec![coin(funds_amount, funds_denom)];
-        info.sender = Addr::unchecked(ADDR_ALICE);
-        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
-
-        assert_eq!(res.err(), Some(ContractError::WeightIsOutOfRange {}));
-
-        // try to deposit with [0.7, 0.5] weights
-        let asset_list_alice = vec![
-            (ADDR_ALICE.to_string(), str_to_dec("0.7")),
-            (ADDR_ALICE.to_string(), str_to_dec("0.5")),
-        ];
-
-        let msg = ExecuteMsg::Deposit {
-            asset_list: Some(asset_list_alice),
-            down_counter: Some(Uint128::from(3_u128)),
-            is_rebalancing_used,
-        };
-        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
-
-        assert_eq!(res.err(), Some(ContractError::WeightsAreUnbalanced {}));
-
-        // try to deposit with duplicated denoms
-        let asset_list_alice = vec![
-            (ADDR_ALICE.to_string(), str_to_dec("0.3")),
-            (ADDR_ALICE.to_string(), str_to_dec("0.4")),
-            (ADDR_ALICE.to_string(), str_to_dec("0.3")),
-        ];
-
-        let msg = ExecuteMsg::Deposit {
-            asset_list: Some(asset_list_alice),
-            down_counter: Some(Uint128::from(3_u128)),
-            is_rebalancing_used,
-        };
-        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
-
-        assert_eq!(res.err(), Some(ContractError::DuplicatedAssets {}));
-
-        // try to deposit with wrong address
-        let asset_list_alice = vec![
-            (ADDR_INVALID.to_string(), str_to_dec("0.6")),
-            (ADDR_ALICE.to_string(), str_to_dec("0.4")),
-        ];
-
-        let msg = ExecuteMsg::Deposit {
-            asset_list: Some(asset_list_alice),
-            down_counter: Some(Uint128::from(3_u128)),
-            is_rebalancing_used,
-        };
-        info.sender = Addr::unchecked(ADDR_ALICE);
-        let res = execute(deps.as_mut(), env, info, msg);
-
-        // assert_eq!(res.err(), Some(ContractError::InvalidAsset {}));
-        assert_eq!(res.err(), None);
-    }
 }

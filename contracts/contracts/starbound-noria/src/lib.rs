@@ -28,4 +28,5 @@ mod tests {
     pub mod integration;
     pub mod suite;
     pub mod suite_test;
+    pub mod verifier;
 }

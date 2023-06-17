@@ -19,7 +19,7 @@ pub fn deposit(
     let user_loaded = USERS.load(deps.storage, &info.sender).unwrap_or_default();
 
     verify_deposit_args(
-        &deps,
+        &deps.as_ref(),
         &info,
         &asset_list,
         is_rebalancing_used,
@@ -33,6 +33,7 @@ pub fn deposit(
         x.iter()
             .map(|(contract, weight)| {
                 Ok(Asset::new(
+                    // addresses were verified by verify_deposit_args()
                     &deps.api.addr_validate(contract)?,
                     weight.to_owned(),
                 ))
@@ -161,13 +162,13 @@ pub fn deposit(
 // }
 
 // pub fn swap(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-//     verify_scheduler(&deps, &info)?;
+//     verify_scheduler(&deps.as_ref(), &info)?;
 
 //     Ok(Response::new().add_attributes(vec![("action", "swap")]))
 // }
 
 // pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-//     verify_scheduler(&deps, &info)?;
+//     verify_scheduler(&deps.as_ref(), &info)?;
 
 //     let QueryPoolsAndUsersResponse { pools, users } =
 //         query_pools_and_users(deps.as_ref(), env.clone())?;
