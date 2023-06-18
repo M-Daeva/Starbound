@@ -1,4 +1,4 @@
-use crate::tests::suite::{
+use crate::tests::helpers::suite::{
     create_address_generator, Project, ProjectAccount, ProjectCoin, ProjectPair, ProjectToken,
     Testable, ToTerraswapAssetInfo,
 };

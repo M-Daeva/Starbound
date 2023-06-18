@@ -6,7 +6,7 @@ use crate::{
     messages::execute::ExecuteMsg,
     messages::query::QueryMsg,
     state::{Asset, User},
-    tests::suite::{
+    tests::helpers::suite::{
         Project, ProjectAccount, ToAddress, ToProjectAsset, WrapIntoResponse, WrappedResponse,
     },
 };

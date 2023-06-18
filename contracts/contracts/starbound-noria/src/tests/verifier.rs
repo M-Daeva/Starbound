@@ -1,6 +1,6 @@
 use crate::{
     error::ContractError,
-    tests::{
+    tests::helpers::{
         builders::*,
         suite::{Project, ProjectAccount, ProjectCoin, ProjectToken},
     },

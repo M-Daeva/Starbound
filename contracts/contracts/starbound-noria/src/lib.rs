@@ -23,10 +23,14 @@ pub mod messages {
 
 #[cfg(test)]
 mod tests {
-    pub mod builders;
-    pub mod helpers;
-    pub mod integration;
-    pub mod suite;
-    pub mod suite_test;
+    pub mod main;
+    pub mod math;
+    pub mod utils;
     pub mod verifier;
+
+    pub mod helpers {
+        pub mod builders;
+        pub mod suite;
+        pub mod suite_test;
+    }
 }

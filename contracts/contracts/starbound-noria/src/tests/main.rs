@@ -1,7 +1,7 @@
 use crate::{
     error::ContractError,
     state::User,
-    tests::{
+    tests::helpers::{
         builders::*,
         suite::{Project, ProjectAccount, ProjectCoin, ProjectToken},
     },
