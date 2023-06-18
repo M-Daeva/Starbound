@@ -86,7 +86,7 @@ pub trait Builderable {
 
     fn prepare_deposit_by(&mut self, project_account: ProjectAccount) -> DepositBuilder;
 
-    fn query_users(&mut self, address_list: &[impl ToString]) -> &mut Self;
+    fn query_users(&mut self, address_list: &[ProjectAccount]) -> &mut Self;
     fn assert_user(&mut self, address_and_user: (Addr, User)) -> &mut Self;
 }
 
@@ -122,7 +122,7 @@ impl Builderable for Project {
     }
 
     #[track_caller]
-    fn query_users(&mut self, address_list: &[impl ToString]) -> &mut Self {
+    fn query_users(&mut self, address_list: &[ProjectAccount]) -> &mut Self {
         self.check_logs();
 
         let address_list: Vec<String> = address_list.iter().map(|x| x.to_string()).collect();

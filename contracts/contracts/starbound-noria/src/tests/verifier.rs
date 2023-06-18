@@ -7,9 +7,8 @@ use crate::{
 };
 
 #[test]
-fn improper_funds() {
+fn deposit_with_wrong_funds() {
     let mut project = Project::new(None);
-
     project
         // try to deposit regular coin instead of smoothcoin
         .prepare_deposit_by(ProjectAccount::Alice)
@@ -29,9 +28,8 @@ fn improper_funds() {
 }
 
 #[test]
-fn improper_weights() {
+fn deposit_with_wrong_weights() {
     let mut project = Project::new(None);
-
     project
         // try to deposit with a weight out of range
         .prepare_deposit_by(ProjectAccount::Alice)
@@ -61,9 +59,8 @@ fn improper_weights() {
 }
 
 #[test]
-fn improper_asset_address() {
+fn deposit_with_wrong_asset_address() {
     let mut project = Project::new(None);
-
     project
         // try to deposit with wrong address
         .prepare_deposit_by(ProjectAccount::Alice)

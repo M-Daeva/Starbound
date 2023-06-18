@@ -66,7 +66,7 @@ pub fn verify_deposit_args(
     }
 
     // asset_list and down_counter are required if new user was created
-    if !(user_loaded == &User::default() && asset_list.is_some() && down_counter.is_some()) {
+    if user_loaded == &User::default() && !(asset_list.is_some() && down_counter.is_some()) {
         Err(ContractError::NewUserRequirements {})?;
     }
 
