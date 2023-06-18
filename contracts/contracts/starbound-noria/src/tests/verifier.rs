@@ -59,10 +59,10 @@ fn deposit_with_wrong_weights() {
 }
 
 #[test]
-fn deposit_with_wrong_asset_address() {
+fn deposit_with_unregistered_asset() {
     let mut project = Project::new(None);
     project
-        // try to deposit with wrong address
+        // try to deposit with asset not included in pair list
         .prepare_deposit_by(ProjectAccount::Alice)
         .with_funds(100, ProjectCoin::Denom)
         .with_asset("fake asset", "1")

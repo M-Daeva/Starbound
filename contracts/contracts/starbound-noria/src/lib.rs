@@ -25,7 +25,6 @@ pub mod messages {
 mod tests {
     pub mod main;
     pub mod math;
-    pub mod utils;
     pub mod verifier;
 
     pub mod helpers {

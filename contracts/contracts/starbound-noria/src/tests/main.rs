@@ -59,6 +59,68 @@ fn deposit_default() {
 }
 
 #[test]
+fn query_users() {
+    let mut project = Project::new(None);
+    project
+        .prepare_deposit_by(ProjectAccount::Alice)
+        .with_funds(100, ProjectCoin::Denom)
+        .with_asset(ProjectToken::Atom, "1")
+        .with_down_counter(10)
+        .execute_and_switch_to(&mut project)
+        .prepare_deposit_by(ProjectAccount::Bob)
+        .with_funds(200, ProjectCoin::Denom)
+        .with_asset(ProjectCoin::Denom, "1")
+        .with_down_counter(1)
+        .execute_and_switch_to(&mut project)
+        // query all users
+        .query_users(&[])
+        .assert_user(
+            User::prepare()
+                .with_funds(100, ProjectCoin::Denom)
+                .with_asset(ProjectToken::Atom, "1")
+                .with_rebalancing(false)
+                .with_down_counter(10)
+                .complete_with_name(ProjectAccount::Alice),
+        )
+        .assert_user(
+            User::prepare()
+                .with_funds(200, ProjectCoin::Denom)
+                .with_asset(ProjectCoin::Denom, "1")
+                .with_rebalancing(false)
+                .with_down_counter(1)
+                .complete_with_name(ProjectAccount::Bob),
+        )
+        // query specified users
+        .query_users(&[ProjectAccount::Alice, ProjectAccount::Bob])
+        .assert_user(
+            User::prepare()
+                .with_funds(100, ProjectCoin::Denom)
+                .with_asset(ProjectToken::Atom, "1")
+                .with_rebalancing(false)
+                .with_down_counter(10)
+                .complete_with_name(ProjectAccount::Alice),
+        )
+        .assert_user(
+            User::prepare()
+                .with_funds(200, ProjectCoin::Denom)
+                .with_asset(ProjectCoin::Denom, "1")
+                .with_rebalancing(false)
+                .with_down_counter(1)
+                .complete_with_name(ProjectAccount::Bob),
+        )
+        // query single user
+        .query_users(&[ProjectAccount::Alice])
+        .assert_user(
+            User::prepare()
+                .with_funds(100, ProjectCoin::Denom)
+                .with_asset(ProjectToken::Atom, "1")
+                .with_rebalancing(false)
+                .with_down_counter(10)
+                .complete_with_name(ProjectAccount::Alice),
+        );
+}
+
+#[test]
 fn deposit_and_update_parameters() {
     let mut project = Project::new(None);
     project
@@ -75,7 +137,21 @@ fn deposit_and_update_parameters() {
                 .with_down_counter(10)
                 .complete_with_name(ProjectAccount::Alice),
         )
-        // update assets
+        // add asset
+        .prepare_deposit_by(ProjectAccount::Alice)
+        .with_asset(ProjectToken::Atom, "0.8")
+        .with_asset(ProjectCoin::Noria, "0.2")
+        .execute_and_switch_to(&mut project)
+        .query_users(&[])
+        .assert_user(
+            User::prepare()
+                .with_asset(ProjectToken::Atom, "0.8")
+                .with_asset(ProjectCoin::Noria, "0.2")
+                .with_rebalancing(false)
+                .with_down_counter(10)
+                .complete_with_name(ProjectAccount::Alice),
+        )
+        // remove asset
         .prepare_deposit_by(ProjectAccount::Alice)
         .with_asset(ProjectCoin::Noria, "1")
         .execute_and_switch_to(&mut project)
@@ -139,110 +215,58 @@ fn deposit_and_update_parameters() {
         );
 }
 
-// // check if asset lists can be merged properly
-// #[test]
-// fn deposit_and_update_asset_list() {
-//     let mut prj = Project::new(None);
-//     let user = Project::get_user(UserName::Alice);
-
-//     // add atom to asset list
-//     let asset_list = vec![Asset::new(
-//         DENOM_ATOM,
-//         &Addr::unchecked(ADDR_ALICE_ATOM),
-//         Uint128::zero(),
-//         str_to_dec("1"),
-//         Uint128::from(100_u128), // must be ignored
-//     )];
-
-//     prj.deposit(
-//         ADDR_ALICE_OSMO,
-//         &asset_list,
-//         user.is_rebalancing_used,
-//         user.down_counter,
-//         &[coin(user.deposited.u128(), DENOM_EEUR)],
-//     )
-//     .unwrap();
-
-//     let res = prj.query_user(ADDR_ALICE_OSMO).unwrap();
-//     assert_eq!(
-//         res,
-//         User {
-//             asset_list: vec![Asset::new(
-//                 DENOM_ATOM,
-//                 &Addr::unchecked(ADDR_ALICE_ATOM),
-//                 Uint128::zero(),
-//                 str_to_dec("1"),
-//                 Uint128::zero()
-//             )],
-//             ..user
-//         }
-//     );
-
-//     // add atom and juno to asset list and update it
-//     prj.deposit(
-//         ADDR_ALICE_OSMO,
-//         &user.asset_list,
-//         user.is_rebalancing_used,
-//         user.down_counter,
-//         &[],
-//     )
-//     .unwrap();
-
-//     let res = prj.query_user(ADDR_ALICE_OSMO).unwrap();
-
-//     assert_eq!(res, user);
-// }
-
-// // check if asset outside pool list can not be deposited (excluding native asset)
-// #[test]
-// fn deposit_non_pool_asset_native() {
-//     let mut prj = Project::new(None);
-//     let mut user = Project::get_user(UserName::Alice);
-//     user.asset_list.push(Asset::new(
-//         DENOM_OSMO,
-//         &Addr::unchecked(ADDR_ALICE_OSMO),
-//         Uint128::zero(),
-//         u128_to_dec(0_u128),
-//         Uint128::zero(),
-//     ));
-
-//     prj.deposit(
-//         ADDR_ALICE_OSMO,
-//         &user.asset_list,
-//         user.is_rebalancing_used,
-//         user.down_counter,
-//         &[coin(user.deposited.u128(), DENOM_EEUR)],
-//     )
-//     .unwrap();
-
-//     let res = prj.query_user(ADDR_ALICE_OSMO);
-
-//     assert_eq!(res.unwrap(), user);
-// }
-
-// // check if asset outside pool list can not be deposited
-// #[test]
-// #[should_panic]
-// fn deposit_non_pool_asset_scrt() {
-//     let mut prj = Project::new(None);
-//     let mut user = Project::get_user(UserName::Alice);
-//     user.asset_list.push(Asset::new(
-//         DENOM_SCRT,
-//         &Addr::unchecked(ADDR_BOB_SCRT),
-//         Uint128::zero(),
-//         u128_to_dec(0_u128),
-//         Uint128::zero(),
-//     ));
-
-//     prj.deposit(
-//         ADDR_ALICE_OSMO,
-//         &user.asset_list,
-//         user.is_rebalancing_used,
-//         user.down_counter,
-//         &[coin(user.deposited.u128(), DENOM_EEUR)],
-//     )
-//     .unwrap();
-// }
+#[test]
+fn deposit_by_2_users() {
+    let mut project = Project::new(None);
+    project
+        // deposit by 1st user 1st time
+        .prepare_deposit_by(ProjectAccount::Alice)
+        .with_funds(100, ProjectCoin::Denom)
+        .with_asset(ProjectCoin::Noria, "0.6")
+        .with_asset(ProjectToken::Atom, "0.4")
+        .with_down_counter(10)
+        .execute_and_switch_to(&mut project)
+        // deposit by 2nd user 1st time
+        .prepare_deposit_by(ProjectAccount::Bob)
+        .with_funds(200, ProjectCoin::Denom)
+        .with_asset(ProjectCoin::Denom, "1")
+        .with_down_counter(1)
+        .execute_and_switch_to(&mut project)
+        // deposit by 1st user 2nd time
+        .prepare_deposit_by(ProjectAccount::Alice)
+        .with_funds(500, ProjectCoin::Denom)
+        .with_asset(ProjectCoin::Noria, "0.3")
+        .with_asset(ProjectToken::Atom, "0.3")
+        .with_asset(ProjectToken::Luna, "0.4")
+        .with_down_counter(20)
+        .execute_and_switch_to(&mut project)
+        // deposit by 2nd user 2nd time
+        .prepare_deposit_by(ProjectAccount::Bob)
+        .with_funds(100, ProjectCoin::Denom)
+        .with_asset(ProjectCoin::Denom, "0.6")
+        .with_asset(ProjectToken::Inj, "0.4")
+        .execute_and_switch_to(&mut project)
+        .query_users(&[])
+        .assert_user(
+            User::prepare()
+                .with_funds(600, ProjectCoin::Denom)
+                .with_asset(ProjectCoin::Noria, "0.3")
+                .with_asset(ProjectToken::Atom, "0.3")
+                .with_asset(ProjectToken::Luna, "0.4")
+                .with_rebalancing(false)
+                .with_down_counter(20)
+                .complete_with_name(ProjectAccount::Alice),
+        )
+        .assert_user(
+            User::prepare()
+                .with_funds(300, ProjectCoin::Denom)
+                .with_asset(ProjectCoin::Denom, "0.6")
+                .with_asset(ProjectToken::Inj, "0.4")
+                .with_rebalancing(false)
+                .with_down_counter(1)
+                .complete_with_name(ProjectAccount::Bob),
+        );
+}
 
 // #[test]
 // fn withdraw() {
