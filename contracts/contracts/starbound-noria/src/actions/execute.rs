@@ -4,12 +4,12 @@ use cosmwasm_std::{Decimal, DepsMut, Env, MessageInfo, Response, StdResult, Uint
 use crate::{
     actions::helpers::verifier::verify_deposit_args,
     error::ContractError,
-    state::{Asset, User, DENOM_STABLE, USERS},
+    state::{Asset, Config, User, CONFIG, DENOM_STABLE, USERS},
 };
 
 pub fn deposit(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     asset_list: Option<Vec<(String, Decimal)>>,
     is_rebalancing_used: Option<bool>,
@@ -20,6 +20,7 @@ pub fn deposit(
 
     verify_deposit_args(
         &deps.as_ref(),
+        &env,
         &info,
         &asset_list,
         is_rebalancing_used,
@@ -33,7 +34,7 @@ pub fn deposit(
         x.iter()
             .map(|(contract, weight)| {
                 Ok(Asset::new(
-                    // addresses were verified by verify_deposit_args()
+                    // assets were verified by verify_deposit_args()
                     &deps.api.addr_validate(contract)?,
                     weight.to_owned(),
                 ))
@@ -102,64 +103,39 @@ pub fn deposit(
 //     ]))
 // }
 
-// #[allow(clippy::too_many_arguments)]
-// pub fn update_config(
-//     deps: DepsMut,
-//     _env: Env,
-//     info: MessageInfo,
-//     scheduler: Option<AddrUnchecked>,
-//     stablecoin_denom: Option<Denom>,
-//     stablecoin_pool_id: Option<u64>,
-//     fee_default: Option<Decimal>,
-//     fee_native: Option<Decimal>,
-//     dapp_address_and_denom_list: Option<Vec<(AddrUnchecked, Denom)>>,
-// ) -> Result<Response, ContractError> {
-//     CONFIG.update(
-//         deps.storage,
-//         |mut config| -> Result<Config, ContractError> {
-//             if info.sender != config.admin {
-//                 Err(ContractError::Unauthorized {})?;
-//             }
+pub fn update_config(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    scheduler: Option<String>,
+    terraswap_factory: Option<String>,
+    fee_rate: Option<Decimal>,
+) -> Result<Response, ContractError> {
+    CONFIG.update(
+        deps.storage,
+        |mut config| -> Result<Config, ContractError> {
+            if info.sender != config.admin {
+                Err(ContractError::Unauthorized {})?;
+            }
 
-//             if let Some(x) = scheduler {
-//                 config.scheduler = deps.api.addr_validate(&x)?;
-//             }
+            if let Some(x) = scheduler {
+                config.scheduler = deps.api.addr_validate(&x)?;
+            }
 
-//             if let Some(x) = stablecoin_denom {
-//                 // pool id must be updated same time as denom
-//                 config.stablecoin_denom = x;
-//                 config.stablecoin_pool_id =
-//                     stablecoin_pool_id.ok_or(ContractError::StablePoolIdIsNotUpdated {})?;
-//             }
+            if let Some(x) = terraswap_factory {
+                config.terraswap_factory = deps.api.addr_validate(&x)?;
+            }
 
-//             if let Some(x) = fee_default {
-//                 config.fee_default = x;
-//             }
+            if let Some(x) = fee_rate {
+                config.fee_rate = x;
+            }
 
-//             if let Some(x) = fee_native {
-//                 config.fee_native = x;
-//             }
+            Ok(config)
+        },
+    )?;
 
-//             if let Some(x) = dapp_address_and_denom_list {
-//                 let mut verified_list: Vec<(Addr, String)> = vec![];
-
-//                 for (address, denom) in x {
-//                     verified_list.push((
-//                         deps.api
-//                             .addr_validate(&get_addr_by_prefix(&address, EXCHANGE_PREFIX)?)?,
-//                         denom,
-//                     ));
-//                 }
-
-//                 config.dapp_address_and_denom_list = verified_list;
-//             }
-
-//             Ok(config)
-//         },
-//     )?;
-
-//     Ok(Response::new().add_attributes(vec![("action", "update_config")]))
-// }
+    Ok(Response::new().add_attributes(vec![("action", "update_config")]))
+}
 
 // pub fn swap(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, ContractError> {
 //     verify_scheduler(&deps.as_ref(), &info)?;

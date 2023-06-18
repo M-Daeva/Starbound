@@ -4,12 +4,20 @@
 * and run the @cosmwasm/ts-codegen generate command to regenerate this file.
 */
 
-export interface InstantiateMsg {}
+export interface InstantiateMsg {
+  terraswap_factory: string;
+}
 export type ExecuteMsg = {
   deposit: {
     asset_list?: [string, Decimal][] | null;
     down_counter?: Uint128 | null;
     is_rebalancing_used?: boolean | null;
+  };
+} | {
+  update_config: {
+    fee_rate?: Decimal | null;
+    scheduler?: string | null;
+    terraswap_factory?: string | null;
   };
 };
 export type Decimal = string;
@@ -20,6 +28,8 @@ export type QueryMsg = {
   };
 } | {
   query_config: {};
+} | {
+  query_pairs: {};
 };
 export type MigrateMsg = string;
 export type Addr = string;
@@ -30,8 +40,29 @@ export interface Config {
   chain_id_dev: string;
   fee_rate: Decimal;
   scheduler: Addr;
+  terraswap_factory: Addr;
   timestamp: Timestamp;
 }
+export type AssetInfo = {
+  token: {
+    contract_addr: string;
+    [k: string]: unknown;
+  };
+} | {
+  native_token: {
+    denom: string;
+    [k: string]: unknown;
+  };
+};
+export type ArrayOfPairInfo = PairInfo[];
+export interface PairInfo {
+  asset_decimals: [number, number];
+  asset_infos: [AssetInfo, AssetInfo];
+  contract_addr: string;
+  liquidity_token: string;
+  [k: string]: unknown;
+}
+export type ArrayOfTupleOfAddrAndUser = [Addr, User][];
 export interface User {
   asset_list: Asset[];
   down_counter: Uint128;

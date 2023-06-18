@@ -6,15 +6,16 @@
 
 import { CosmWasmClient, SigningCosmWasmClient, ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 import { Coin, StdFee } from "@cosmjs/amino";
-import { InstantiateMsg, ExecuteMsg, Decimal, Uint128, QueryMsg, MigrateMsg, Addr, Timestamp, Uint64, Config, User, Asset } from "./StarboundNoria.types";
+import { InstantiateMsg, ExecuteMsg, Decimal, Uint128, QueryMsg, MigrateMsg, Addr, Timestamp, Uint64, Config, AssetInfo, ArrayOfPairInfo, PairInfo, ArrayOfTupleOfAddrAndUser, User, Asset } from "./StarboundNoria.types";
 export interface StarboundNoriaReadOnlyInterface {
   contractAddress: string;
   queryUsers: ({
     addressList
   }: {
     addressList: string[];
-  }) => Promise<User>;
+  }) => Promise<ArrayOfTupleOfAddrAndUser>;
   queryConfig: () => Promise<Config>;
+  queryPairs: () => Promise<ArrayOfPairInfo>;
 }
 export class StarboundNoriaQueryClient implements StarboundNoriaReadOnlyInterface {
   client: CosmWasmClient;
@@ -25,13 +26,14 @@ export class StarboundNoriaQueryClient implements StarboundNoriaReadOnlyInterfac
     this.contractAddress = contractAddress;
     this.queryUsers = this.queryUsers.bind(this);
     this.queryConfig = this.queryConfig.bind(this);
+    this.queryPairs = this.queryPairs.bind(this);
   }
 
   queryUsers = async ({
     addressList
   }: {
     addressList: string[];
-  }): Promise<User> => {
+  }): Promise<ArrayOfTupleOfAddrAndUser> => {
     return this.client.queryContractSmart(this.contractAddress, {
       query_users: {
         address_list: addressList
@@ -41,6 +43,11 @@ export class StarboundNoriaQueryClient implements StarboundNoriaReadOnlyInterfac
   queryConfig = async (): Promise<Config> => {
     return this.client.queryContractSmart(this.contractAddress, {
       query_config: {}
+    });
+  };
+  queryPairs = async (): Promise<ArrayOfPairInfo> => {
+    return this.client.queryContractSmart(this.contractAddress, {
+      query_pairs: {}
     });
   };
 }
@@ -56,6 +63,15 @@ export interface StarboundNoriaInterface extends StarboundNoriaReadOnlyInterface
     downCounter?: Uint128;
     isRebalancingUsed?: boolean;
   }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
+  updateConfig: ({
+    feeRate,
+    scheduler,
+    terraswapFactory
+  }: {
+    feeRate?: Decimal;
+    scheduler?: string;
+    terraswapFactory?: string;
+  }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
 }
 export class StarboundNoriaClient extends StarboundNoriaQueryClient implements StarboundNoriaInterface {
   client: SigningCosmWasmClient;
@@ -68,6 +84,7 @@ export class StarboundNoriaClient extends StarboundNoriaQueryClient implements S
     this.sender = sender;
     this.contractAddress = contractAddress;
     this.deposit = this.deposit.bind(this);
+    this.updateConfig = this.updateConfig.bind(this);
   }
 
   deposit = async ({
@@ -84,6 +101,23 @@ export class StarboundNoriaClient extends StarboundNoriaQueryClient implements S
         asset_list: assetList,
         down_counter: downCounter,
         is_rebalancing_used: isRebalancingUsed
+      }
+    }, fee, memo, funds);
+  };
+  updateConfig = async ({
+    feeRate,
+    scheduler,
+    terraswapFactory
+  }: {
+    feeRate?: Decimal;
+    scheduler?: string;
+    terraswapFactory?: string;
+  }, fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
+    return await this.client.execute(this.sender, this.contractAddress, {
+      update_config: {
+        fee_rate: feeRate,
+        scheduler,
+        terraswap_factory: terraswapFactory
       }
     }, fee, memo, funds);
   };

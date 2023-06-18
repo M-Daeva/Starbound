@@ -11,10 +11,11 @@ pub enum ExecuteMsg {
     // Withdraw {
     //     amount: Uint128,
     // },
-    // UpdateConfig {
-    //     scheduler: Option<AddrUnchecked>,
-    //     fee_rate: Option<Decimal>,
-    // },
+    UpdateConfig {
+        scheduler: Option<String>,
+        terraswap_factory: Option<String>,
+        fee_rate: Option<Decimal>,
+    },
     // Swap {},
     // Transfer {},
 }

@@ -8,23 +8,23 @@ pub const PREFIX: &str = "noria";
 pub const DENOM_STABLE: &str = "ucrd";
 pub const CHAIN_ID_DEV: &str = "devnet-1";
 
-pub const DEX_FACTORY: &str = "noria14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9sx2wcwe";
-
 pub const CONFIG: Item<Config> = Item::new("config");
 #[cw_serde]
 pub struct Config {
     pub admin: Addr,
     pub scheduler: Addr,
+    pub terraswap_factory: Addr,
     pub fee_rate: Decimal,
     pub timestamp: Timestamp,
     chain_id_dev: String,
 }
 
 impl Config {
-    pub fn new(admin: &Addr, scheduler: &Addr, fee_rate: &str) -> Self {
+    pub fn new(admin: &Addr, scheduler: &Addr, terraswap_factory: &Addr, fee_rate: &str) -> Self {
         Self {
             admin: admin.to_owned(),
             scheduler: scheduler.to_owned(),
+            terraswap_factory: terraswap_factory.to_owned(),
             fee_rate: str_to_dec(fee_rate),
             timestamp: Timestamp::default(),
             chain_id_dev: String::from(CHAIN_ID_DEV),

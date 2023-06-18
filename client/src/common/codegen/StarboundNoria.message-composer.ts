@@ -8,7 +8,7 @@ import { Coin } from "@cosmjs/amino";
 import { MsgExecuteContractEncodeObject } from "@cosmjs/cosmwasm-stargate";
 import { MsgExecuteContract } from "cosmjs-types/cosmwasm/wasm/v1/tx";
 import { toUtf8 } from "@cosmjs/encoding";
-import { InstantiateMsg, ExecuteMsg, Decimal, Uint128, QueryMsg, MigrateMsg, Addr, Timestamp, Uint64, Config, User, Asset } from "./StarboundNoria.types";
+import { InstantiateMsg, ExecuteMsg, Decimal, Uint128, QueryMsg, MigrateMsg, Addr, Timestamp, Uint64, Config, AssetInfo, ArrayOfPairInfo, PairInfo, ArrayOfTupleOfAddrAndUser, User, Asset } from "./StarboundNoria.types";
 export interface StarboundNoriaMessage {
   contractAddress: string;
   sender: string;
@@ -21,6 +21,15 @@ export interface StarboundNoriaMessage {
     downCounter?: Uint128;
     isRebalancingUsed?: boolean;
   }, funds?: Coin[]) => MsgExecuteContractEncodeObject;
+  updateConfig: ({
+    feeRate,
+    scheduler,
+    terraswapFactory
+  }: {
+    feeRate?: Decimal;
+    scheduler?: string;
+    terraswapFactory?: string;
+  }, funds?: Coin[]) => MsgExecuteContractEncodeObject;
 }
 export class StarboundNoriaMessageComposer implements StarboundNoriaMessage {
   sender: string;
@@ -30,6 +39,7 @@ export class StarboundNoriaMessageComposer implements StarboundNoriaMessage {
     this.sender = sender;
     this.contractAddress = contractAddress;
     this.deposit = this.deposit.bind(this);
+    this.updateConfig = this.updateConfig.bind(this);
   }
 
   deposit = ({
@@ -51,6 +61,31 @@ export class StarboundNoriaMessageComposer implements StarboundNoriaMessage {
             asset_list: assetList,
             down_counter: downCounter,
             is_rebalancing_used: isRebalancingUsed
+          }
+        })),
+        funds
+      })
+    };
+  };
+  updateConfig = ({
+    feeRate,
+    scheduler,
+    terraswapFactory
+  }: {
+    feeRate?: Decimal;
+    scheduler?: string;
+    terraswapFactory?: string;
+  }, funds?: Coin[]): MsgExecuteContractEncodeObject => {
+    return {
+      typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
+      value: MsgExecuteContract.fromPartial({
+        sender: this.sender,
+        contract: this.contractAddress,
+        msg: toUtf8(JSON.stringify({
+          update_config: {
+            fee_rate: feeRate,
+            scheduler,
+            terraswap_factory: terraswapFactory
           }
         })),
         funds

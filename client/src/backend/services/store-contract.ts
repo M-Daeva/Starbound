@@ -9,6 +9,7 @@ import { getCwClient } from "../../common/account/clients";
 import { getSigner } from "../account/signer";
 import { getSeed } from "./get-seed";
 import { NetworkConfig } from "../../common/interfaces";
+import { InstantiateMsg } from "../../common/codegen/StarboundNoria.types";
 
 const NETWORK = "noria";
 
@@ -25,7 +26,10 @@ const NETWORK_CONFIG: NetworkConfig = {
 async function main() {
   try {
     const CONTRACT_LABEL = "starbound-dev";
-    const INIT_MSG = {};
+    const INIT_MSG: InstantiateMsg = {
+      terraswap_factory:
+        "noria14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9sx2wcwe",
+    };
 
     const DIR_NAME = getLast(process.argv).trim();
     const DIR_NAME_SNAKE = DIR_NAME.replace(/-/g, "_");

@@ -5,7 +5,7 @@ use cosmwasm_std::{
 
 use crate::{
     actions::{
-        execute::deposit,
+        execute::{deposit, update_config},
         instantiate::init,
         other::migrate_contract,
         query::{query_config, query_pairs, query_users},
@@ -49,24 +49,11 @@ pub fn execute(
             down_counter,
         ),
         // ExecuteMsg::Withdraw { amount } => withdraw(deps, env, info, amount),
-        // ExecuteMsg::UpdateConfig {
-        //     scheduler,
-        //     stablecoin_denom,
-        //     stablecoin_pool_id,
-        //     fee_default,
-        //     fee_native,
-        //     dapp_address_and_denom_list,
-        // } => update_config(
-        //     deps,
-        //     env,
-        //     info,
-        //     scheduler,
-        //     stablecoin_denom,
-        //     stablecoin_pool_id,
-        //     fee_default,
-        //     fee_native,
-        //     dapp_address_and_denom_list,
-        // ),
+        ExecuteMsg::UpdateConfig {
+            scheduler,
+            terraswap_factory,
+            fee_rate,
+        } => update_config(deps, env, info, scheduler, terraswap_factory, fee_rate),
         // ExecuteMsg::Swap {} => swap(deps, env, info),
         // ExecuteMsg::Transfer {} => transfer(deps, env, info),
     }

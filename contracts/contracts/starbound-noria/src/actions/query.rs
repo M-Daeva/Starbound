@@ -1,12 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::{Addr, Deps, Env, Order, StdResult};
 
-use terraswap::{
-    asset::PairInfo,
-    factory::{PairsResponse, QueryMsg as FactoryQueryMsg},
-};
-
-use crate::state::{Config, User, CONFIG, DEX_FACTORY, USERS};
+use crate::state::{Config, User, CONFIG, USERS};
 
 pub fn query_config(deps: Deps, _env: Env) -> StdResult<Config> {
     CONFIG.load(deps.storage)
@@ -33,10 +28,10 @@ pub fn query_users<T: ToString>(
     Ok(res)
 }
 
-pub fn query_pairs(deps: Deps, _env: Env) -> StdResult<Vec<PairInfo>> {
-    let PairsResponse { pairs } = deps.querier.query_wasm_smart(
-        DEX_FACTORY,
-        &FactoryQueryMsg::Pairs {
+pub fn query_pairs(deps: Deps, _env: Env) -> StdResult<Vec<terraswap::asset::PairInfo>> {
+    let terraswap::factory::PairsResponse { pairs } = deps.querier.query_wasm_smart(
+        CONFIG.load(deps.storage)?.terraswap_factory,
+        &terraswap::factory::QueryMsg::Pairs {
             start_after: None,
             limit: None,
         },

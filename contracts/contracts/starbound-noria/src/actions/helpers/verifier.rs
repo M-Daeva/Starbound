@@ -1,36 +1,11 @@
 #[cfg(not(feature = "library"))]
-use cosmwasm_std::{Addr, Decimal, Deps, MessageInfo, StdError, StdResult, Uint128};
-
-use bech32::{decode, encode, Variant};
+use cosmwasm_std::{Decimal, Deps, Env, MessageInfo, Uint128};
 
 use crate::{
+    actions::query::query_pairs,
     error::ContractError,
-    state::{Config, User, CONFIG, PREFIX},
+    state::{Config, User, CONFIG},
 };
-
-// to convert any other chain address to current chain address and use it with deps.api.addr_validate
-// because deps.api.addr_validate can not validate addresses from other networks
-// https://testnet.mintscan.io/osmosis-testnet/txs/44709BCDFFAC51C1AB1245FB7AF31D14B3607357E18A57A569BD82E66DB12F06
-pub fn get_addr_by_prefix(address: &str, prefix: &str) -> StdResult<String> {
-    let (_hrp, data, _) = decode(address).map_err(|e| StdError::generic_err(e.to_string()))?;
-    let new_address =
-        encode(prefix, data, Variant::Bech32).map_err(|e| StdError::generic_err(e.to_string()))?;
-
-    Ok(new_address)
-}
-
-fn verify_address(deps: &Deps, raw_address: impl ToString) -> Result<Addr, ContractError> {
-    let address = &raw_address.to_string();
-
-    if !address.starts_with(PREFIX) {
-        Err(ContractError::InvalidAsset {})?;
-    }
-
-    let native_address = get_addr_by_prefix(address, PREFIX)?;
-    let verified_address = deps.api.addr_validate(&native_address)?;
-
-    Ok(verified_address)
-}
 
 // data verification for update_pools_and_users, swap, transfer methods
 pub fn verify_scheduler(deps: &Deps, info: &MessageInfo) -> Result<(), ContractError> {
@@ -48,6 +23,7 @@ pub fn verify_scheduler(deps: &Deps, info: &MessageInfo) -> Result<(), ContractE
 // data verification for deposit method
 pub fn verify_deposit_args(
     deps: &Deps,
+    env: &Env,
     info: &MessageInfo,
     asset_list: &Option<Vec<(String, Decimal)>>,
     _is_rebalancing_used: Option<bool>,
@@ -105,17 +81,24 @@ pub fn verify_deposit_args(
         Err(ContractError::DuplicatedAssets {})?;
     }
 
-    // verify asset list
-    for (contract, _weight) in asset_list.clone().unwrap_or_default() {
-        // check if asset exists in pool list
-        // if (denom != EXCHANGE_DENOM) && POOLS.load(deps.storage, denom).is_err() {
-        //     Err(ContractError::AssetIsNotFound {})?;
-        // };
+    // verify asset list - only asset from pair list can be added
+    let asset_pair_list: Vec<[String; 2]> = query_pairs(deps.to_owned(), env.to_owned())?
+        .into_iter()
+        .map(|pair| {
+            pair.asset_infos.map(|asset_info| match asset_info {
+                terraswap::asset::AssetInfo::NativeToken { denom } => denom,
+                terraswap::asset::AssetInfo::Token { contract_addr } => contract_addr,
+            })
+        })
+        .collect();
 
-        // verify wallet address
-        // TODO: enable proper verification after adding custom address generator
-        deps.api.addr_validate(&contract)?;
-        // verify_address(deps, contract)?;
+    for (contract, _weight) in asset_list.clone().unwrap_or_default() {
+        if !asset_pair_list
+            .iter()
+            .any(|[asset1, asset2]| &contract == asset1 || &contract == asset2)
+        {
+            Err(ContractError::AssetIsNotFound {})?;
+        };
     }
 
     Ok(())

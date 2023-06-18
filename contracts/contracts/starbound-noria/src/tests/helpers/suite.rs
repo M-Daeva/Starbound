@@ -1,14 +1,10 @@
-use cosmwasm_std::{coin, to_binary, Addr, Binary, Coin, Empty, StdResult, Uint128};
+use cosmwasm_std::{coin, to_binary, Addr, Binary, Coin, StdResult, Uint128};
 use cw_multi_test::{App, AppResponse, ContractWrapper, Executor};
 
 use anyhow::Error;
-use bech32::{ToBase32, Variant};
-use rand::{rngs::StdRng, Rng, SeedableRng};
 use serde::Serialize;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, IntoStaticStr};
-
-use crate::state::CHAIN_ID_DEV;
 
 const DEFAULT_FUNDS_AMOUNT: u128 = 1_000;
 const INCREASED_FUNDS_AMOUNT: u128 = 1_000_000_000_000_000_000;
@@ -46,11 +42,11 @@ pub enum ProjectCoin {
 
 #[derive(Debug, Clone, Copy, Display, IntoStaticStr, EnumIter)]
 pub enum ProjectToken {
-    #[strum(serialize = "contract1")]
+    #[strum(serialize = "contract0")]
     Atom,
-    #[strum(serialize = "contract2")]
+    #[strum(serialize = "contract1")]
     Luna,
-    #[strum(serialize = "contract3")]
+    #[strum(serialize = "contract2")]
     Inj,
 }
 trait GetDecimals {
@@ -222,7 +218,7 @@ impl Project {
         let mut project = Self::create_project_with_balances();
 
         // set specific chain_id to prevent execution of mocked actions on real networks
-        let chain_id = chain_id_mocked.unwrap_or(CHAIN_ID_DEV);
+        let chain_id = chain_id_mocked.unwrap_or(crate::state::CHAIN_ID_DEV);
         project
             .app
             .update_block(|block| block.chain_id = String::from(chain_id));
@@ -234,9 +230,6 @@ impl Project {
         let terraswap_pair_code_id = project.store_terraswap_pair_code();
         let terraswap_factory_code_id = project.store_terraswap_factory_code();
         let terraswap_router_code_id = project.store_terraswap_router_code();
-
-        // instantiate contracts
-        let app_contract_address = project.instantiate_contract(app_code_id, "app", &Empty {});
 
         // DON'T CHANGE TOKEN INIT ORDER AS ITS ADDRESSES ARE HARDCODED IN ProjectToken ENUM
         for project_token in ProjectToken::iter() {
@@ -281,6 +274,15 @@ impl Project {
                 }
             }
         }
+
+        // instantiate app contract
+        let app_contract_address = project.instantiate_contract(
+            app_code_id,
+            "app",
+            &crate::messages::instantiate::InstantiateMsg {
+                terraswap_factory: terraswap_factory_address.to_string(),
+            },
+        );
 
         project = Self {
             app_contract_address,
@@ -403,7 +405,7 @@ impl Project {
             .parse()
             .unwrap();
 
-        let symbol = format!("TK{}", "N".repeat(token_postfix as usize)); // max 10 tokens
+        let symbol = format!("TKN{}", "N".repeat(token_postfix as usize)); // max 10 tokens
 
         let initial_balances: Vec<cw20::Cw20Coin> = ProjectAccount::iter()
             .map(|project_account| cw20::Cw20Coin {
@@ -414,7 +416,7 @@ impl Project {
 
         self.instantiate_contract(
             code_id,
-            &format!("toke{}", "n".repeat(token_postfix as usize)),
+            &format!("token{}", "n".repeat(token_postfix as usize)),
             &cw20_base::msg::InstantiateMsg {
                 name: format!("cw20-base token {}", symbol),
                 symbol,
@@ -830,20 +832,5 @@ impl Testable for Project {
             _ => unreachable!(),
         }
         .map_err(|err| err.downcast().unwrap())
-    }
-}
-
-pub fn create_address_generator(prefix: impl ToString) -> impl FnMut() -> Addr {
-    let mut cnt = 0;
-
-    move || {
-        let mut rng = StdRng::seed_from_u64(cnt);
-        cnt += 1;
-
-        let bytes: [u8; 20] = rng.gen();
-        let address =
-            bech32::encode(&prefix.to_string(), bytes.to_base32(), Variant::Bech32).unwrap();
-
-        Addr::unchecked(address)
     }
 }

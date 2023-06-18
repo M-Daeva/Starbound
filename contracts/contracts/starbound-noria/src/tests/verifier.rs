@@ -68,7 +68,5 @@ fn deposit_with_wrong_asset_address() {
         .with_asset("fake asset", "1")
         .with_down_counter(10)
         .execute_and_switch_to(&mut project)
-        // TODO: uncomment after adding custom address generator
-        // .assert_error(ContractError::InvalidAsset {})
-        ;
+        .assert_error(ContractError::AssetIsNotFound {});
 }

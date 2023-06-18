@@ -1,16 +1,10 @@
 use crate::tests::helpers::suite::{
-    create_address_generator, Project, ProjectAccount, ProjectCoin, ProjectPair, ProjectToken,
-    Testable, ToTerraswapAssetInfo,
+    Project, ProjectAccount, ProjectCoin, ProjectPair, ProjectToken, Testable, ToTerraswapAssetInfo,
 };
 
 #[test]
 fn default() {
     let mut project = Project::new(None);
-
-    let mut gen_addr = create_address_generator("noria");
-    println!("{}", gen_addr());
-    println!("{}", gen_addr());
-    println!("{}", gen_addr());
 
     // query pairs
     let pairs = project.get_terraswap_pair_list();

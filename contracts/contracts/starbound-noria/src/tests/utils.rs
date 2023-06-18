@@ -41,7 +41,9 @@ pub fn get_instance(addr: &str) -> Instance {
     let mut deps = mock_dependencies();
     let env = mock_env();
     let info = mock_info(addr, &[]);
-    let msg = InstantiateMsg {};
+    let msg = InstantiateMsg {
+        terraswap_factory: "".to_string(),
+    };
 
     let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg);
     (deps, env, info, res)
