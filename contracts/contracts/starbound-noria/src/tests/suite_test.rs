@@ -17,10 +17,7 @@ fn default() {
     println!("{:#?}", pairs);
 
     // query Denom-Noria pair info
-    let pair_info = Project::get_pair_info_by_asset_pair(
-        &project.get_terraswap_pair_list(),
-        ProjectPair::DenomNoria,
-    );
+    let pair_info = project.get_pair_info_by_asset_pair(ProjectPair::DenomNoria);
     println!("\n{:#?}\n", pair_info);
 
     // query all balances
