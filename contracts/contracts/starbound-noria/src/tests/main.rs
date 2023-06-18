@@ -1,6 +1,6 @@
 use crate::{
     error::ContractError,
-    state::User,
+    state::{Config, User},
     tests::helpers::{
         builders::*,
         suite::{Project, ProjectAccount, ProjectCoin, ProjectToken},
@@ -268,6 +268,35 @@ fn deposit_by_2_users() {
         );
 }
 
+#[test]
+fn update_config_by_non_admin() {
+    let mut project = Project::new(None);
+    project
+        .prepare_update_config_by(ProjectAccount::Alice)
+        .with_fee_rate("0.1")
+        .execute_and_switch_to(&mut project)
+        .assert_error(ContractError::Unauthorized {});
+}
+
+#[test]
+fn update_config_default() {
+    let mut project = Project::new(None);
+    let terraswap_factory_address = &project.get_terraswap_factory_address();
+    project
+        .prepare_update_config_by(ProjectAccount::Admin)
+        .with_scheduler(ProjectAccount::Alice)
+        .with_terraswap_factory(terraswap_factory_address)
+        .with_fee_rate("0.1")
+        .execute_and_switch_to(&mut project)
+        .query_config()
+        .assert_config(
+            Config::prepare_by(ProjectAccount::Admin)
+                .with_scheduler(ProjectAccount::Alice)
+                .with_terraswap_factory(terraswap_factory_address)
+                .with_fee_rate("0.1"),
+        );
+}
+
 // #[test]
 // fn withdraw() {
 //     let mut prj = Project::new(None);
@@ -295,68 +324,6 @@ fn deposit_by_2_users() {
 //             ..user
 //         }
 //     );
-// }
-
-// #[test]
-// #[should_panic]
-// fn update_scheduler_before() {
-//     let mut prj = Project::new(None);
-
-//     let QueryPoolsAndUsersResponse {
-//         pools: res_pools,
-//         users: res_users,
-//     } = prj.query_pools_and_users().unwrap();
-// }
-
-// #[test]
-// fn update_scheduler_after() {
-//     let mut prj = Project::new(None);
-//     let res = prj
-//         .update_config(
-//             ADDR_ADMIN_OSMO,
-//             Some(ADDR_BOB_OSMO.to_string()),
-//             None,
-//             None,
-//             None,
-//             None,
-//             None,
-//         )
-//         .unwrap();
-
-//     assert_eq!(Project::get_attr(&res, "method"), "update_config");
-
-//     let QueryPoolsAndUsersResponse {
-//         pools: res_pools,
-//         users: res_users,
-//     } = prj.query_pools_and_users().unwrap();
-// }
-
-// #[test]
-// fn query_user() {
-//     let mut prj = Project::new(None);
-//     let user_alice = Project::get_user(UserName::Alice);
-//     let user_bob = Project::get_user(UserName::Bob);
-
-//     prj.deposit(
-//         ADDR_ALICE_OSMO,
-//         &user_alice.asset_list,
-//         user_alice.is_rebalancing_used,
-//         user_alice.down_counter,
-//         &[coin(user_alice.deposited.u128(), DENOM_EEUR)],
-//     )
-//     .unwrap();
-//     prj.deposit(
-//         ADDR_BOB_OSMO,
-//         &user_bob.asset_list,
-//         user_bob.is_rebalancing_used,
-//         user_bob.down_counter,
-//         &[coin(user_bob.deposited.u128(), DENOM_EEUR)],
-//     )
-//     .unwrap();
-
-//     let res = prj.query_user(ADDR_ALICE_OSMO).unwrap();
-
-//     assert_eq!(res, user_alice);
 // }
 
 // #[test]
@@ -482,54 +449,4 @@ fn deposit_by_2_users() {
 
 //     assert_eq!(res_pools_updated, pools_updated);
 //     assert_eq!(res_users_updated, users_updated);
-// }
-
-// // check if asset outside pool list can not be added
-// #[test]
-// fn update_pools_and_users_unsupported_asset() {
-//     // initialize
-//     let mut prj = Project::new(None);
-//     let user_alice = Project::get_user(UserName::Alice);
-//     let user_bob = Project::get_user(UserName::Bob);
-
-//     prj.deposit(
-//         ADDR_ALICE_OSMO,
-//         &user_alice.asset_list,
-//         user_alice.is_rebalancing_used,
-//         user_alice.down_counter,
-//         &[coin(user_alice.deposited.u128(), DENOM_EEUR)],
-//     )
-//     .unwrap();
-//     prj.deposit(
-//         ADDR_BOB_OSMO,
-//         &user_bob.asset_list,
-//         user_bob.is_rebalancing_used,
-//         user_bob.down_counter,
-//         &[coin(user_bob.deposited.u128(), DENOM_EEUR)],
-//     )
-//     .unwrap();
-
-//     // request data
-//     let QueryPoolsAndUsersResponse {
-//         pools: res_pools,
-//         users: res_users,
-//     } = prj.query_pools_and_users().unwrap();
-
-//     // update data
-//     let mut users_updated = res_users.clone();
-//     users_updated[0].1.asset_list.push(Asset::new(
-//         DENOM_SCRT,
-//         &Addr::unchecked(ADDR_BOB_SCRT),
-//         Uint128::zero(),
-//         Decimal::one(),
-//         Uint128::zero(),
-//     ));
-
-//     // check changes
-//     let QueryPoolsAndUsersResponse {
-//         pools: _res_pools_updated,
-//         users: res_users_updated,
-//     } = prj.query_pools_and_users().unwrap();
-
-//     assert_eq!(res_users_updated, res_users);
 // }

@@ -304,6 +304,10 @@ impl Project {
         self.app_contract_address.clone()
     }
 
+    pub fn get_terraswap_factory_address(&self) -> Addr {
+        self.terraswap_factory_address.clone()
+    }
+
     fn create_app_with_balances() -> App {
         App::new(|router, _api, storage| {
             for project_account in ProjectAccount::iter() {
@@ -608,8 +612,6 @@ impl Project {
 }
 
 pub trait Testable {
-    fn get_terraswap_factory_address(&self) -> Addr;
-
     fn get_terraswap_router_address(&self) -> Addr;
 
     fn get_terraswap_pair_list(&self) -> Vec<terraswap::asset::PairInfo>;
@@ -642,10 +644,6 @@ pub trait Testable {
 }
 
 impl Testable for Project {
-    fn get_terraswap_factory_address(&self) -> Addr {
-        self.terraswap_factory_address.clone()
-    }
-
     fn get_terraswap_router_address(&self) -> Addr {
         self.terraswap_router_address.clone()
     }

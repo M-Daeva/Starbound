@@ -11,7 +11,7 @@ use crate::{
 const CONTRACT_NAME: &str = "crates.io:starbound";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-const FEE_RATE: &str = "0.002";
+pub const FEE_RATE: &str = "0.002";
 
 pub fn init(
     deps: DepsMut,

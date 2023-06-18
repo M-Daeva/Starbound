@@ -2,10 +2,9 @@ use cosmwasm_std::{coin, from_binary, to_binary, Addr, Coin, Decimal, Uint128};
 use cw_multi_test::{AppResponse, Executor};
 
 use crate::{
-    actions::helpers::math::str_to_dec,
-    messages::execute::ExecuteMsg,
-    messages::query::QueryMsg,
-    state::{Asset, User},
+    actions::{helpers::math::str_to_dec, instantiate::FEE_RATE},
+    messages::{execute::ExecuteMsg, query::QueryMsg},
+    state::{Asset, Config, User},
     tests::helpers::suite::{
         Project, ProjectAccount, ToAddress, ToProjectAsset, WrapIntoResponse, WrappedResponse,
     },
@@ -35,13 +34,120 @@ impl Loggable for Project {
     }
 }
 
+pub trait Builderable {
+    fn display_logs(&mut self) -> &mut Self;
+    fn assert_error(&mut self, submsg: impl ToString) -> &mut Self;
+
+    fn prepare_deposit_by(&mut self, project_account: ProjectAccount) -> DepositBuilder;
+    fn prepare_update_config_by(&mut self, project_account: ProjectAccount) -> UpdateConfigBuilder;
+
+    fn query_users(&mut self, address_list: &[ProjectAccount]) -> &mut Self;
+    fn assert_user(&mut self, address_and_user: (Addr, User)) -> &mut Self;
+
+    fn query_config(&mut self) -> &mut Self;
+    fn assert_config(&mut self, config: Config) -> &mut Self;
+}
+
+impl Builderable for Project {
+    fn display_logs(&mut self) -> &mut Self {
+        self.check_logs();
+        println!("\n{:#?}\n", &self.logs);
+        self
+    }
+
+    fn assert_error(&mut self, submsg: impl ToString) -> &mut Self {
+        let info = match &self.logs {
+            WrappedResponse::Execute(execute_response) => {
+                let err = execute_response.as_ref().unwrap_err();
+                let context = format!("{}", err);
+                let source = err.source().unwrap().to_string();
+                format!("{}\n{}", context, source)
+            }
+            WrappedResponse::Query(query_response) => {
+                let err = query_response.as_ref().unwrap_err();
+                format!("{}", err)
+            }
+        };
+
+        speculoos::assert_that(&info).matches(|x| x.contains(&submsg.to_string()));
+
+        self.save_logs_and_return(Ok(AppResponse::default())) // clear logs after reading error
+    }
+
+    fn prepare_deposit_by(&mut self, project_account: ProjectAccount) -> DepositBuilder {
+        self.check_logs();
+        DepositBuilder::prepare(project_account)
+    }
+
+    fn prepare_update_config_by(&mut self, project_account: ProjectAccount) -> UpdateConfigBuilder {
+        self.check_logs();
+        UpdateConfigBuilder::prepare(project_account)
+    }
+
+    #[track_caller]
+    fn query_users(&mut self, address_list: &[ProjectAccount]) -> &mut Self {
+        self.check_logs();
+
+        let address_list: Vec<String> = address_list.iter().map(|x| x.to_string()).collect();
+
+        let response = self.app.wrap().query_wasm_smart::<Vec<(Addr, User)>>(
+            self.get_app_contract_address(),
+            &QueryMsg::QueryUsers { address_list },
+        );
+
+        let result = response.map(|x| to_binary(&x)).unwrap();
+
+        self.save_logs_and_return(result)
+    }
+
+    fn assert_user(&mut self, address_and_user: (Addr, User)) -> &mut Self {
+        if let WrappedResponse::Query(query_response) = &self.logs {
+            let users: Vec<(Addr, User)> = from_binary(query_response.as_ref().unwrap()).unwrap();
+
+            speculoos::assert_that(&users).matches(|address_and_user_list| {
+                address_and_user_list
+                    .iter()
+                    .any(|(current_address, current_user)| {
+                        let (address, user) = &address_and_user;
+                        current_address == address && current_user == user
+                    })
+            });
+        }
+
+        self
+    }
+
+    fn query_config(&mut self) -> &mut Self {
+        self.check_logs();
+
+        let response = self
+            .app
+            .wrap()
+            .query_wasm_smart::<Config>(self.get_app_contract_address(), &QueryMsg::QueryConfig {});
+
+        let result = response.map(|x| to_binary(&x)).unwrap();
+
+        self.save_logs_and_return(result)
+    }
+
+    fn assert_config(&mut self, config: Config) -> &mut Self {
+        if let WrappedResponse::Query(query_response) = &self.logs {
+            let received_config: Config = from_binary(query_response.as_ref().unwrap()).unwrap();
+
+            speculoos::assert_that(&received_config).is_equal_to(config);
+        }
+
+        self
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct DepositBuilder {
-    pub sender: Addr,
-    pub asset_list: Option<Vec<(String, Decimal)>>,
-    pub is_rebalancing_used: Option<bool>,
-    pub down_counter: Option<Uint128>,
-    pub funds: Vec<Coin>,
+    sender: Addr,
+    asset_list: Option<Vec<(String, Decimal)>>,
+    is_rebalancing_used: Option<bool>,
+    down_counter: Option<Uint128>,
+    funds: Vec<Coin>,
 }
 
 impl DepositBuilder {
@@ -77,81 +183,6 @@ impl DepositBuilder {
         );
 
         project.save_logs_and_return(result)
-    }
-}
-
-pub trait Builderable {
-    fn display_logs(&mut self) -> &mut Self;
-    fn assert_error(&mut self, submsg: impl ToString) -> &mut Self;
-
-    fn prepare_deposit_by(&mut self, project_account: ProjectAccount) -> DepositBuilder;
-
-    fn query_users(&mut self, address_list: &[ProjectAccount]) -> &mut Self;
-    fn assert_user(&mut self, address_and_user: (Addr, User)) -> &mut Self;
-}
-
-impl Builderable for Project {
-    fn display_logs(&mut self) -> &mut Self {
-        self.check_logs();
-        println!("\n{:#?}\n", &self.logs);
-        self
-    }
-
-    fn assert_error(&mut self, submsg: impl ToString) -> &mut Self {
-        let info = match &self.logs {
-            WrappedResponse::Execute(execute_response) => {
-                let err = execute_response.as_ref().unwrap_err();
-                let context = format!("{}", err);
-                let source = err.source().unwrap().to_string();
-                format!("{}\n{}", context, source)
-            }
-            WrappedResponse::Query(query_response) => {
-                let err = query_response.as_ref().unwrap_err();
-                format!("{}", err)
-            }
-        };
-
-        speculoos::assert_that(&info).matches(|x| x.contains(&submsg.to_string()));
-
-        self.save_logs_and_return(Ok(AppResponse::default())) // clear logs after reading error
-    }
-
-    fn prepare_deposit_by(&mut self, project_account: ProjectAccount) -> DepositBuilder {
-        self.check_logs();
-        DepositBuilder::prepare(project_account)
-    }
-
-    #[track_caller]
-    fn query_users(&mut self, address_list: &[ProjectAccount]) -> &mut Self {
-        self.check_logs();
-
-        let address_list: Vec<String> = address_list.iter().map(|x| x.to_string()).collect();
-
-        let response = self.app.wrap().query_wasm_smart::<Vec<(Addr, User)>>(
-            self.get_app_contract_address(),
-            &QueryMsg::QueryUsers { address_list },
-        );
-
-        let result = response.map(|x| to_binary(&x)).unwrap();
-
-        self.save_logs_and_return(result)
-    }
-
-    fn assert_user(&mut self, address_and_user: (Addr, User)) -> &mut Self {
-        if let WrappedResponse::Query(query_response) = &self.logs {
-            let users: Vec<(Addr, User)> = from_binary(query_response.as_ref().unwrap()).unwrap();
-
-            speculoos::assert_that(&users).matches(|address_and_user_list| {
-                address_and_user_list
-                    .iter()
-                    .any(|(current_address, current_user)| {
-                        let (address, user) = &address_and_user;
-                        current_address == address && current_user == user
-                    })
-            });
-        }
-
-        self
     }
 }
 
@@ -223,5 +254,102 @@ impl BuilderableUser for User {
 
     fn complete_with_name(&mut self, project_account: ProjectAccount) -> (Addr, User) {
         (project_account.to_address(), self.to_owned())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct UpdateConfigBuilder {
+    sender: Addr,
+    scheduler: Option<String>,
+    terraswap_factory: Option<String>,
+    fee_rate: Option<Decimal>,
+}
+
+impl UpdateConfigBuilder {
+    fn prepare(project_account: ProjectAccount) -> Self {
+        Self {
+            sender: project_account.to_address(),
+            scheduler: None,
+            terraswap_factory: None,
+            fee_rate: None,
+        }
+    }
+
+    #[track_caller]
+    pub fn execute_and_switch_to<'a>(&self, project: &'a mut Project) -> &'a mut Project {
+        let UpdateConfigBuilder {
+            sender,
+            scheduler,
+            terraswap_factory,
+            fee_rate,
+        } = self.to_owned();
+
+        let result = project.app.execute_contract(
+            sender,
+            project.get_app_contract_address(),
+            &ExecuteMsg::UpdateConfig {
+                scheduler,
+                terraswap_factory,
+                fee_rate,
+            },
+            &[],
+        );
+
+        project.save_logs_and_return(result)
+    }
+}
+
+pub trait BuilderableUpdateConfig {
+    fn with_scheduler(&mut self, scheduler: impl ToString) -> Self;
+    fn with_terraswap_factory(&mut self, terraswap_factory_address: impl ToString) -> Self;
+    fn with_fee_rate(&mut self, fee_rate: &str) -> Self;
+}
+
+impl BuilderableUpdateConfig for UpdateConfigBuilder {
+    fn with_scheduler(&mut self, scheduler: impl ToString) -> Self {
+        self.scheduler = Some(scheduler.to_string());
+        self.to_owned()
+    }
+
+    fn with_terraswap_factory(&mut self, terraswap_factory_address: impl ToString) -> Self {
+        self.terraswap_factory = Some(terraswap_factory_address.to_string());
+        self.to_owned()
+    }
+
+    fn with_fee_rate(&mut self, fee_rate: &str) -> Self {
+        self.fee_rate = Some(str_to_dec(fee_rate));
+        self.to_owned()
+    }
+}
+
+impl BuilderableUpdateConfig for Config {
+    fn with_scheduler(&mut self, scheduler: impl ToString) -> Self {
+        self.scheduler = Addr::unchecked(scheduler.to_string());
+        self.to_owned()
+    }
+
+    fn with_terraswap_factory(&mut self, terraswap_factory_address: impl ToString) -> Self {
+        self.terraswap_factory = Addr::unchecked(terraswap_factory_address.to_string());
+        self.to_owned()
+    }
+
+    fn with_fee_rate(&mut self, fee_rate: &str) -> Self {
+        self.fee_rate = str_to_dec(fee_rate);
+        self.to_owned()
+    }
+}
+
+pub trait BuilderableConfig {
+    fn prepare_by(project_account: ProjectAccount) -> Self;
+}
+
+impl BuilderableConfig for Config {
+    fn prepare_by(project_account: ProjectAccount) -> Self {
+        Self::new(
+            &project_account.to_address(),
+            &project_account.to_address(),
+            &Addr::unchecked(""),
+            FEE_RATE,
+        )
     }
 }
