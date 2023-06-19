@@ -1,5 +1,7 @@
 #[cfg(not(feature = "library"))]
-use cosmwasm_std::{Decimal, DepsMut, Env, MessageInfo, Response, StdResult, Uint128};
+use cosmwasm_std::{
+    coin, BankMsg, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,
+};
 
 use crate::{
     actions::helpers::verifier::verify_deposit_args,
@@ -23,7 +25,6 @@ pub fn deposit(
         &env,
         &info,
         &asset_list,
-        is_rebalancing_used,
         down_counter,
         DENOM_STABLE,
         &user_loaded,
@@ -65,43 +66,40 @@ pub fn deposit(
     ]))
 }
 
-// pub fn withdraw(
-//     deps: DepsMut,
-//     _env: Env,
-//     info: MessageInfo,
-//     amount: Uint128,
-// ) -> Result<Response, ContractError> {
-//     let config = CONFIG.load(deps.storage)?;
-//     let denom_token_out = config.stablecoin_denom;
+pub fn withdraw(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    amount: Uint128,
+) -> Result<Response, ContractError> {
+    let user = USERS.update(
+        deps.storage,
+        &info.sender,
+        |some_user| -> Result<User, ContractError> {
+            let user = some_user.ok_or(ContractError::UserIsNotFound {})?;
 
-//     let user = USERS.update(
-//         deps.storage,
-//         &info.sender,
-//         |some_user| -> Result<User, ContractError> {
-//             let user = some_user.ok_or(ContractError::UserIsNotFound {})?;
+            // check withdraw amount
+            if amount > user.stable_balance {
+                Err(ContractError::WithdrawAmountIsExceeded {})?;
+            }
 
-//             // check withdraw amount
-//             if amount > user.deposited {
-//                 Err(ContractError::WithdrawAmountIsExceeded {})?;
-//             }
+            Ok(User {
+                stable_balance: user.stable_balance - amount,
+                ..user
+            })
+        },
+    )?;
 
-//             Ok(User {
-//                 deposited: user.deposited - amount,
-//                 ..user
-//             })
-//         },
-//     )?;
+    let msg = CosmosMsg::Bank(BankMsg::Send {
+        to_address: info.sender.to_string(),
+        amount: vec![coin(amount.u128(), DENOM_STABLE)],
+    });
 
-//     let msg = CosmosMsg::Bank(BankMsg::Send {
-//         to_address: info.sender.to_string(),
-//         amount: vec![coin(amount.u128(), denom_token_out)],
-//     });
-
-//     Ok(Response::new().add_message(msg).add_attributes(vec![
-//         ("action", "withdraw"),
-//         ("user_deposited", &user.deposited.to_string()),
-//     ]))
-// }
+    Ok(Response::new().add_message(msg).add_attributes(vec![
+        ("action", "withdraw"),
+        ("user_stable_balance", &user.stable_balance.to_string()),
+    ]))
+}
 
 pub fn update_config(
     deps: DepsMut,

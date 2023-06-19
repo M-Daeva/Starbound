@@ -8,9 +8,9 @@ pub enum ExecuteMsg {
         is_rebalancing_used: Option<bool>,
         down_counter: Option<Uint128>,
     },
-    // Withdraw {
-    //     amount: Uint128,
-    // },
+    Withdraw {
+        amount: Uint128,
+    },
     UpdateConfig {
         scheduler: Option<String>,
         terraswap_factory: Option<String>,

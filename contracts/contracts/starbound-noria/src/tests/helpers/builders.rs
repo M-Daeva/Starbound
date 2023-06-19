@@ -39,6 +39,7 @@ pub trait Builderable {
     fn assert_error(&mut self, submsg: impl ToString) -> &mut Self;
 
     fn prepare_deposit_by(&mut self, project_account: ProjectAccount) -> DepositBuilder;
+    fn prepare_withdraw_by(&mut self, project_account: ProjectAccount) -> WithdrawBuilder;
     fn prepare_update_config_by(&mut self, project_account: ProjectAccount) -> UpdateConfigBuilder;
 
     fn query_users(&mut self, address_list: &[ProjectAccount]) -> &mut Self;
@@ -77,6 +78,11 @@ impl Builderable for Project {
     fn prepare_deposit_by(&mut self, project_account: ProjectAccount) -> DepositBuilder {
         self.check_logs();
         DepositBuilder::prepare(project_account)
+    }
+
+    fn prepare_withdraw_by(&mut self, project_account: ProjectAccount) -> WithdrawBuilder {
+        self.check_logs();
+        WithdrawBuilder::prepare(project_account)
     }
 
     fn prepare_update_config_by(&mut self, project_account: ProjectAccount) -> UpdateConfigBuilder {
@@ -254,6 +260,46 @@ impl BuilderableUser for User {
 
     fn complete_with_name(&mut self, project_account: ProjectAccount) -> (Addr, User) {
         (project_account.to_address(), self.to_owned())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct WithdrawBuilder {
+    sender: Addr,
+    amount: Uint128,
+}
+
+impl WithdrawBuilder {
+    fn prepare(project_account: ProjectAccount) -> Self {
+        Self {
+            sender: project_account.to_address(),
+            amount: Uint128::zero(),
+        }
+    }
+
+    #[track_caller]
+    pub fn execute_and_switch_to<'a>(&self, project: &'a mut Project) -> &'a mut Project {
+        let WithdrawBuilder { sender, amount } = self.to_owned();
+
+        let result = project.app.execute_contract(
+            sender,
+            project.get_app_contract_address(),
+            &ExecuteMsg::Withdraw { amount },
+            &[],
+        );
+
+        project.save_logs_and_return(result)
+    }
+}
+
+pub trait BuilderableWithdraw {
+    fn with_amount(&mut self, amount: u128) -> Self;
+}
+
+impl BuilderableWithdraw for WithdrawBuilder {
+    fn with_amount(&mut self, amount: u128) -> Self {
+        self.amount = Uint128::from(amount);
+        self.to_owned()
     }
 }
 

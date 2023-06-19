@@ -26,7 +26,6 @@ pub fn verify_deposit_args(
     env: &Env,
     info: &MessageInfo,
     asset_list: &Option<Vec<(String, Decimal)>>,
-    _is_rebalancing_used: Option<bool>,
     down_counter: Option<Uint128>,
     denom_stable: &str,
     user_loaded: &User,

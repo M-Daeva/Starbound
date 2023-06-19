@@ -269,6 +269,45 @@ fn deposit_by_2_users() {
 }
 
 #[test]
+fn withdraw() {
+    let mut project = Project::new(None);
+    project
+        // withdraw while user wasn't registered
+        .prepare_withdraw_by(ProjectAccount::Alice)
+        .with_amount(100)
+        .execute_and_switch_to(&mut project)
+        .assert_error(ContractError::UserIsNotFound {})
+        // register user
+        .prepare_deposit_by(ProjectAccount::Alice)
+        .with_funds(100, ProjectCoin::Denom)
+        .with_asset(ProjectToken::Atom, "1")
+        .with_down_counter(10)
+        .execute_and_switch_to(&mut project)
+        // withdraw zero amount
+        .prepare_withdraw_by(ProjectAccount::Alice)
+        .execute_and_switch_to(&mut project)
+        .assert_error("Cannot transfer empty coins amount")
+        // withdraw amount exceeding balance
+        .prepare_withdraw_by(ProjectAccount::Alice)
+        .with_amount(200)
+        .execute_and_switch_to(&mut project)
+        .assert_error(ContractError::WithdrawAmountIsExceeded {})
+        // withdraw part of balance
+        .prepare_withdraw_by(ProjectAccount::Alice)
+        .with_amount(20)
+        .execute_and_switch_to(&mut project)
+        .query_users(&[])
+        .assert_user(
+            User::prepare()
+                .with_funds(80, ProjectCoin::Denom)
+                .with_asset(ProjectToken::Atom, "1")
+                .with_rebalancing(false)
+                .with_down_counter(10)
+                .complete_with_name(ProjectAccount::Alice),
+        );
+}
+
+#[test]
 fn update_config_by_non_admin() {
     let mut project = Project::new(None);
     project
@@ -296,35 +335,6 @@ fn update_config_default() {
                 .with_fee_rate("0.1"),
         );
 }
-
-// #[test]
-// fn withdraw() {
-//     let mut prj = Project::new(None);
-//     let user = Project::get_user(UserName::Alice);
-
-//     prj.deposit(
-//         ADDR_ALICE_OSMO,
-//         &user.asset_list,
-//         user.is_rebalancing_used,
-//         user.down_counter,
-//         &[coin(user.deposited.u128(), DENOM_EEUR)],
-//     )
-//     .unwrap();
-
-//     let part_of_deposited = user.deposited.div(Uint128::from(2_u128));
-
-//     prj.withdraw(ADDR_ALICE_OSMO, part_of_deposited).unwrap();
-
-//     let res = prj.query_user(ADDR_ALICE_OSMO);
-
-//     assert_eq!(
-//         res.unwrap(),
-//         User {
-//             deposited: part_of_deposited,
-//             ..user
-//         }
-//     );
-// }
 
 // #[test]
 // fn query_pools_and_users() {

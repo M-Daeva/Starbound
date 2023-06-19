@@ -5,7 +5,7 @@ use cosmwasm_std::{
 
 use crate::{
     actions::{
-        execute::{deposit, update_config},
+        execute::{deposit, update_config, withdraw},
         instantiate::init,
         other::migrate_contract,
         query::{query_config, query_pairs, query_users},
@@ -48,7 +48,7 @@ pub fn execute(
             is_rebalancing_used,
             down_counter,
         ),
-        // ExecuteMsg::Withdraw { amount } => withdraw(deps, env, info, amount),
+        ExecuteMsg::Withdraw { amount } => withdraw(deps, env, info, amount),
         ExecuteMsg::UpdateConfig {
             scheduler,
             terraswap_factory,
