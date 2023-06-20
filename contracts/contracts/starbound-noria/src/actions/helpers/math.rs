@@ -9,7 +9,7 @@ pub fn str_to_dec(s: &str) -> Decimal {
     s.to_string().parse::<Decimal>().unwrap()
 }
 
-pub fn str_vec_to_dec_vec(str_vec: Vec<&str>) -> Vec<Decimal> {
+pub fn str_vec_to_dec_vec(str_vec: &[&str]) -> Vec<Decimal> {
     str_vec.iter().map(|&x| str_to_dec(x)).collect()
 }
 
@@ -31,7 +31,7 @@ pub fn dec_to_uint128(dec: Decimal) -> Uint128 {
         .div(Uint128::from(1_000_000_000_000_000_000_u128))
 }
 
-pub fn u128_vec_to_uint128_vec(u128_vec: Vec<u128>) -> Vec<Uint128> {
+pub fn u128_vec_to_uint128_vec(u128_vec: &[u128]) -> Vec<Uint128> {
     u128_vec
         .iter()
         .map(|&x| Uint128::from(x))
@@ -95,10 +95,10 @@ pub fn vec_sub(a: &[Uint128], b: &[Uint128]) -> Vec<Uint128> {
 
 /// transforms r = [a + e1, b + e2] -> [a, b], where sum([a, b]) == d, e1/d -> 0, e2/d -> 0 \
 /// increasing/decreasing maximums of r
-fn correct_sum(r: Vec<Uint128>, d: Uint128) -> Vec<Uint128> {
+pub fn correct_sum(r: &[Uint128], d: Uint128) -> Vec<Uint128> {
     let r_sum = r.iter().sum::<Uint128>();
     if r_sum == d {
-        return r;
+        return r.to_vec();
     }
 
     let r_max = *r.iter().max().unwrap();
@@ -183,20 +183,20 @@ pub fn rebalance_controlled(x1: &[Uint128], k2: &[Decimal], d: Uint128) -> Vec<U
     }
 
     // rounding error correction
-    correct_sum(r, dec_to_uint128(d))
+    correct_sum(&r, dec_to_uint128(d))
 }
 
 /// k2 - vector of target asset ratios \
 /// d - funds to buy coins \
 /// r - vector of coins to buy costs
 pub fn rebalance_proportional(k2: &[Decimal], d: Uint128) -> Vec<Uint128> {
-    let r = k2
+    let r: Vec<Uint128> = k2
         .iter()
         .map(|k2_item| dec_to_uint128(k2_item.mul(uint128_to_dec(d))))
         .collect();
 
     // rounding error correction
-    correct_sum(r, d)
+    correct_sum(&r, d)
 }
 
 // /// pools_with_denoms - POOLS.range().map().collect() \

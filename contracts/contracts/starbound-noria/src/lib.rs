@@ -23,7 +23,7 @@ pub mod messages {
 
 #[cfg(test)]
 mod tests {
-    pub mod main;
+    pub mod core;
     pub mod math;
     pub mod verifier;
 

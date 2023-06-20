@@ -4,7 +4,7 @@ use cosmwasm_std::{
 };
 
 use crate::{
-    actions::helpers::verifier::verify_deposit_args,
+    actions::helpers::verifier::{verify_deposit_args, verify_scheduler},
     error::ContractError,
     state::{Asset, Config, User, CONFIG, DENOM_STABLE, USERS},
 };

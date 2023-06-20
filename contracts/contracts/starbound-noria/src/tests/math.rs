@@ -1,16 +1,246 @@
-// use crate::{
-//     actions::helpers::math::{
-//         correct_sum, dec_to_uint128, get_ledger, rebalance_controlled, rebalance_proportional,
-//         str_to_dec, str_vec_to_dec_vec, transfer_router, u128_vec_to_uint128_vec, uint128_to_dec,
-//         vec_add, vec_div, vec_mul, vec_sub, Addr, Asset, Coin, Ledger, Pool, Timestamp, Uint128,
-//         User,
-//     },
-//     tests::helpers::{
-//         ADDR_ALICE_ATOM, ADDR_ALICE_JUNO, ADDR_ALICE_OSMO, ADDR_BOB_ATOM, ADDR_BOB_JUNO,
-//         ADDR_BOB_OSMO, ADDR_BOB_STARS, DENOM_ATOM, DENOM_EEUR, DENOM_JUNO, DENOM_SCRT, DENOM_STARS,
-//         IS_REBALANCING_USED,
-//     },
-// };
+use cosmwasm_std::Uint128;
+
+use speculoos::assert_that;
+
+use crate::actions::helpers::math::{
+    correct_sum, dec_to_uint128, rebalance_controlled, rebalance_proportional, str_to_dec,
+    str_vec_to_dec_vec, u128_vec_to_uint128_vec, uint128_to_dec, vec_add, vec_div, vec_mul,
+    vec_sub,
+};
+
+#[test]
+fn vector_addition() {
+    let a = &[1, 2, 3];
+    let b = &[3, 2, 1];
+    let c = &[4, 4, 4];
+
+    let a = &u128_vec_to_uint128_vec(a);
+    let b = &u128_vec_to_uint128_vec(b);
+    let c = u128_vec_to_uint128_vec(c);
+
+    assert_that(&vec_add(a, b)).is_equal_to(c);
+}
+
+#[test]
+fn vector_subtraction() {
+    let a = &[10, 12, 13];
+    let b = &[3, 2, 1];
+    let c = &[7, 10, 12];
+
+    let a = &u128_vec_to_uint128_vec(a);
+    let b = &u128_vec_to_uint128_vec(b);
+    let c = u128_vec_to_uint128_vec(c);
+
+    assert_that(&vec_sub(a, b)).is_equal_to(c);
+}
+
+#[test]
+fn vector_multiplication() {
+    let a = &[3];
+    let b = &["9.5"];
+    let c = &[28];
+    let d = &[29];
+
+    let a = &u128_vec_to_uint128_vec(a);
+    let b = &str_vec_to_dec_vec(b);
+    let c = u128_vec_to_uint128_vec(c);
+    let d = u128_vec_to_uint128_vec(d);
+
+    assert_that(&vec_mul(a, b, true)).is_equal_to(c);
+    assert_that(&vec_mul(a, b, false)).is_equal_to(d);
+}
+
+#[test]
+fn vector_division() {
+    let a = &[300];
+    let b = &["9.5"];
+    let c = &[31];
+    let d = &[32];
+
+    let a = &u128_vec_to_uint128_vec(a);
+    let b = &str_vec_to_dec_vec(b);
+    let c = u128_vec_to_uint128_vec(c);
+    let d = u128_vec_to_uint128_vec(d);
+
+    assert_that(&vec_div(a, b, true)).is_equal_to(c);
+    assert_that(&vec_div(a, b, false)).is_equal_to(d);
+}
+
+#[test]
+fn sum_correction() {
+    let r = &[100_000_007, 299_999_998, 200_000_000, 0];
+    let d: u128 = 600_000_000;
+    let xd = &[100_000_007, 299_999_993, 200_000_000, 0];
+
+    let r = &u128_vec_to_uint128_vec(r);
+    let d = Uint128::from(d);
+    let xd = u128_vec_to_uint128_vec(xd);
+
+    assert_that(&correct_sum(r, d)).is_equal_to(xd);
+}
+
+#[test]
+fn sum_correction2() {
+    let r = &[300_002, 100_000, 300_002, 200_000, 0];
+    let d: u128 = 900_000;
+    let xd = &[300_000, 100_000, 300_000, 200_000, 0];
+
+    let r = &u128_vec_to_uint128_vec(r);
+    let d = Uint128::from(d);
+    let xd = u128_vec_to_uint128_vec(xd);
+
+    assert_that(&correct_sum(r, d)).is_equal_to(xd);
+}
+
+#[test]
+fn sum_correction3() {
+    let r = &[300_002, 100_001, 300_002, 200_000, 0];
+    let d: u128 = 900_000;
+    let xd = &[299_999, 100_001, 300_000, 200_000, 0];
+
+    let r = &u128_vec_to_uint128_vec(r);
+    let d = Uint128::from(d);
+    let xd = u128_vec_to_uint128_vec(xd);
+
+    assert_that(&correct_sum(r, d)).is_equal_to(xd);
+}
+
+#[test]
+fn sum_correction4() {
+    let r = &[299_998, 99_999, 299_998, 200_000, 0];
+    let d: u128 = 900_000;
+    let xd = &[300_001, 99_999, 300_000, 200_000, 0];
+
+    let r = &u128_vec_to_uint128_vec(r);
+    let d = Uint128::from(d);
+    let xd = u128_vec_to_uint128_vec(xd);
+
+    assert_that(&correct_sum(r, d)).is_equal_to(xd);
+}
+
+#[test]
+// controlled mode case 1.1
+fn big_payment_and_s2_greater_s1() {
+    let x1 = &[100_000_000, 300_000_000, 200_000_000, 0];
+    let k2 = &["0.3", "0.2", "0.5", "0"];
+    let sd: u128 = 10_000_000_000;
+    let xd = &[3_080_000_000, 1_820_000_000, 5_100_000_000, 0];
+
+    let x1 = u128_vec_to_uint128_vec(x1);
+    let k2 = str_vec_to_dec_vec(k2);
+    let sd = Uint128::from(sd);
+    let xd = u128_vec_to_uint128_vec(xd);
+
+    assert_that(&rebalance_controlled(&x1, &k2, sd)).is_equal_to(xd);
+}
+
+#[test]
+// controlled mode case 1.2
+fn big_payment_and_s2_greater_s1_noisy() {
+    let x1 = &[100_000_049, 300_000_007, 200_000_011, 0];
+    let k2 = &["0.3", "0.2", "0.5", "0"];
+    let sd: u128 = 10_000_000_000;
+    let xd = &[3_079_999_972, 1_820_000_007, 5_100_000_021, 0];
+
+    let x1 = u128_vec_to_uint128_vec(x1);
+    let k2 = str_vec_to_dec_vec(k2);
+    let sd = Uint128::from(sd);
+    let xd = u128_vec_to_uint128_vec(xd);
+
+    assert_that(&rebalance_controlled(&x1, &k2, sd)).is_equal_to(xd);
+}
+
+#[test]
+// controlled mode case 2.1
+fn s2_equal_s1() {
+    let x1 = &[300_000_000, 200_000_000, 500_000_000, 0];
+    let k2 = &["0.3", "0.2", "0.5", "0"];
+    let sd: u128 = 100_000_000;
+    let xd = &[30_000_000, 20_000_000, 50_000_000, 0];
+
+    let x1 = u128_vec_to_uint128_vec(x1);
+    let k2 = str_vec_to_dec_vec(k2);
+    let sd = Uint128::from(sd);
+    let xd = u128_vec_to_uint128_vec(xd);
+
+    assert_that(&rebalance_controlled(&x1, &k2, sd)).is_equal_to(xd);
+}
+
+#[test]
+// controlled mode case 2.2
+fn s2_equal_s1_noisy() {
+    let x1 = &[300_000_049, 200_000_007, 500_000_011, 0];
+    let k2 = &["0.3", "0.2", "0.5", "0"];
+    let sd: u128 = 100_000_000;
+    let xd = &[29_999_972, 20_000_007, 50_000_021, 0];
+
+    let x1 = u128_vec_to_uint128_vec(x1);
+    let k2 = str_vec_to_dec_vec(k2);
+    let sd = Uint128::from(sd);
+    let xd = u128_vec_to_uint128_vec(xd);
+
+    assert_that(&rebalance_controlled(&x1, &k2, sd)).is_equal_to(xd);
+}
+
+#[test]
+// controlled mode case 3.1
+fn small_payment_and_s2_greater_s1() {
+    let x1 = &[100_000_000, 300_000_000, 200_000_000, 0];
+    let k2 = &["0.3", "0.2", "0.5", "0"];
+    let sd: u128 = 100_000_000;
+    let xd = &[38_888_889, 0, 61_111_111, 0];
+
+    let x1 = u128_vec_to_uint128_vec(x1);
+    let k2 = str_vec_to_dec_vec(k2);
+    let sd = Uint128::from(sd);
+    let xd = u128_vec_to_uint128_vec(xd);
+
+    assert_that(&rebalance_controlled(&x1, &k2, sd)).is_equal_to(xd);
+}
+
+#[test]
+// controlled mode case 3.2
+fn small_payment_and_s2_greater_s1_noisy() {
+    let x1 = &[115_000_012, 35_000_007, 0];
+    let k2 = &["0.3", "0.7", "0"];
+    let sd: u128 = 200_000;
+    let xd = &[0, 200_000, 0];
+
+    let x1 = u128_vec_to_uint128_vec(x1);
+    let k2 = str_vec_to_dec_vec(k2);
+    let sd = Uint128::from(sd);
+    let xd = u128_vec_to_uint128_vec(xd);
+
+    assert_that(&rebalance_controlled(&x1, &k2, sd)).is_equal_to(xd);
+}
+
+#[test]
+// proportional mode case 1.1
+fn proportional() {
+    let k2 = &["0.3", "0.2", "0.5", "0"];
+    let sd: u128 = 100_000_000;
+    let xd = &[30_000_000, 20_000_000, 50_000_000, 0];
+
+    let k2 = str_vec_to_dec_vec(k2);
+    let sd = Uint128::from(sd);
+    let xd = u128_vec_to_uint128_vec(xd);
+
+    assert_that(&rebalance_proportional(&k2, sd)).is_equal_to(xd);
+}
+
+#[test]
+// proportional mode case 1.2
+fn proportional_noisy() {
+    let k2 = &["0.3", "0.2", "0.5", "0"];
+    let sd: u128 = 100_000_011;
+    let xd = &[30_000_004, 20_000_003, 50_000_004, 0];
+
+    let k2 = str_vec_to_dec_vec(k2);
+    let sd = Uint128::from(sd);
+    let xd = u128_vec_to_uint128_vec(xd);
+
+    assert_that(&rebalance_proportional(&k2, sd)).is_equal_to(xd);
+}
 
 // // TODO: add tests for bank transfer
 // #[test]
@@ -142,180 +372,6 @@
 //         DENOM_EEUR,
 //         Timestamp::default(),
 //     );
-// }
-
-// #[test]
-// fn vector_addition() {
-//     let a = u128_vec_to_uint128_vec(vec![1, 2, 3]);
-//     let b = u128_vec_to_uint128_vec(vec![3, 2, 1]);
-//     let c = u128_vec_to_uint128_vec(vec![4, 4, 4]);
-
-//     assert_eq!(vec_add(&a, &b), c);
-// }
-
-// #[test]
-// fn vector_subtraction() {
-//     let a = u128_vec_to_uint128_vec(vec![10, 12, 13]);
-//     let b = u128_vec_to_uint128_vec(vec![3, 2, 1]);
-//     let c = u128_vec_to_uint128_vec(vec![7, 10, 12]);
-
-//     assert_eq!(vec_sub(&a, &b), c);
-// }
-
-// #[test]
-// fn vector_division() {
-//     let a = u128_vec_to_uint128_vec(vec![300]);
-//     let b = str_vec_to_dec_vec(vec!["9.5"]);
-//     let c = u128_vec_to_uint128_vec(vec![31]);
-//     let d = u128_vec_to_uint128_vec(vec![32]);
-
-//     assert_eq!(vec_div(&a, &b, true), c);
-//     assert_eq!(vec_div(&a, &b, false), d);
-// }
-
-// #[test]
-// fn vector_multiplication() {
-//     let a = u128_vec_to_uint128_vec(vec![3]);
-//     let b = str_vec_to_dec_vec(vec!["9.5"]);
-//     let c = u128_vec_to_uint128_vec(vec![28]);
-//     let d = u128_vec_to_uint128_vec(vec![29]);
-
-//     assert_eq!(vec_mul(&a, &b, true), c);
-//     assert_eq!(vec_mul(&a, &b, false), d);
-// }
-
-// #[test]
-// fn sum_correction() {
-//     let r = u128_vec_to_uint128_vec(vec![100_000_007, 299_999_998, 200_000_000, 0]);
-//     let d: Uint128 = Uint128::from(600_000_000_u128);
-
-//     let xd = u128_vec_to_uint128_vec(vec![100_000_007, 299_999_993, 200_000_000, 0]);
-
-//     assert_eq!(correct_sum(r, d), xd);
-// }
-
-// #[test]
-// fn sum_correction2() {
-//     let r = u128_vec_to_uint128_vec(vec![300_002, 100_000, 300_002, 200_000, 0]);
-//     let d: Uint128 = Uint128::from(900_000_u128);
-
-//     let xd = u128_vec_to_uint128_vec(vec![300_000, 100_000, 300_000, 200_000, 0]);
-
-//     assert_eq!(correct_sum(r, d), xd);
-// }
-
-// #[test]
-// fn sum_correction3() {
-//     let r = u128_vec_to_uint128_vec(vec![300_002, 100_001, 300_002, 200_000, 0]);
-//     let d: Uint128 = Uint128::from(900_000_u128);
-
-//     let xd = u128_vec_to_uint128_vec(vec![299_999, 100_001, 300_000, 200_000, 0]);
-
-//     assert_eq!(correct_sum(r, d), xd);
-// }
-
-// #[test]
-// fn sum_correction4() {
-//     let r = u128_vec_to_uint128_vec(vec![299_998, 99_999, 299_998, 200_000, 0]);
-//     let d: Uint128 = Uint128::from(900_000_u128);
-
-//     let xd = u128_vec_to_uint128_vec(vec![300_001, 99_999, 300_000, 200_000, 0]);
-
-//     assert_eq!(correct_sum(r, d), xd);
-// }
-
-// #[test]
-// // controlled mode case 1.1
-// fn big_payment_and_s2_greater_s1() {
-//     let x1 = u128_vec_to_uint128_vec(vec![100_000_000, 300_000_000, 200_000_000, 0]);
-//     let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5", "0"]);
-//     let sd = Uint128::from(10_000_000_000_u128);
-
-//     let xd = u128_vec_to_uint128_vec(vec![3_080_000_000, 1_820_000_000, 5_100_000_000, 0]);
-
-//     assert_eq!(rebalance_controlled(&x1, &k2, sd), xd);
-// }
-
-// #[test]
-// // controlled mode case 1.2
-// fn big_payment_and_s2_greater_s1_noisy() {
-//     let x1 = u128_vec_to_uint128_vec(vec![100_000_049, 300_000_007, 200_000_011, 0]);
-//     let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5", "0"]);
-//     let sd = Uint128::from(10_000_000_000_u128);
-
-//     let xd = u128_vec_to_uint128_vec(vec![3_079_999_972, 1_820_000_007, 5_100_000_021, 0]);
-
-//     assert_eq!(rebalance_controlled(&x1, &k2, sd), xd);
-// }
-
-// #[test]
-// // controlled mode case 2.1
-// fn s2_equal_s1() {
-//     let x1 = u128_vec_to_uint128_vec(vec![300_000_000, 200_000_000, 500_000_000, 0]);
-//     let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5", "0"]);
-//     let sd = Uint128::from(100_000_000_u128);
-
-//     let xd = u128_vec_to_uint128_vec(vec![30_000_000, 20_000_000, 50_000_000, 0]);
-
-//     assert_eq!(rebalance_controlled(&x1, &k2, sd), xd);
-// }
-
-// #[test]
-// // controlled mode case 2.2
-// fn s2_equal_s1_noisy() {
-//     let x1 = u128_vec_to_uint128_vec(vec![300_000_049, 200_000_007, 500_000_011, 0]);
-//     let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5", "0"]);
-//     let sd = Uint128::from(100_000_000_u128);
-
-//     let xd = u128_vec_to_uint128_vec(vec![29_999_972, 20_000_007, 50_000_021, 0]);
-
-//     assert_eq!(rebalance_controlled(&x1, &k2, sd), xd);
-// }
-
-// #[test]
-// // controlled mode case 3.1
-// fn small_payment_and_s2_greater_s1() {
-//     let x1 = u128_vec_to_uint128_vec(vec![100_000_000, 300_000_000, 200_000_000, 0]);
-//     let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5", "0"]);
-//     let sd = Uint128::from(100_000_000_u128);
-
-//     let xd = u128_vec_to_uint128_vec(vec![38_888_889, 0, 61_111_111, 0]);
-
-//     assert_eq!(rebalance_controlled(&x1, &k2, sd), xd);
-// }
-
-// #[test]
-// // controlled mode case 3.2
-// fn small_payment_and_s2_greater_s1_noisy() {
-//     let x1 = u128_vec_to_uint128_vec(vec![115_000_012, 35_000_007, 0]);
-//     let k2 = str_vec_to_dec_vec(vec!["0.3", "0.7", "0"]);
-//     let sd = Uint128::from(200_000_u128);
-
-//     let xd = u128_vec_to_uint128_vec(vec![0, 200_000, 0]);
-
-//     assert_eq!(rebalance_controlled(&x1, &k2, sd), xd);
-// }
-
-// #[test]
-// // proportional mode case 1.1
-// fn proportional() {
-//     let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5", "0"]);
-//     let sd = Uint128::from(100_000_000_u128);
-
-//     let xd = u128_vec_to_uint128_vec(vec![30_000_000, 20_000_000, 50_000_000, 0]);
-
-//     assert_eq!(rebalance_proportional(&k2, sd), xd);
-// }
-
-// #[test]
-// // proportional mode case 1.2
-// fn proportional_noisy() {
-//     let k2 = str_vec_to_dec_vec(vec!["0.3", "0.2", "0.5", "0"]);
-//     let sd = Uint128::from(100_000_011_u128);
-
-//     let xd = u128_vec_to_uint128_vec(vec![30_000_004, 20_000_003, 50_000_004, 0]);
-
-//     assert_eq!(rebalance_proportional(&k2, sd), xd);
 // }
 
 // #[test]
