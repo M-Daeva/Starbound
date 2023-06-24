@@ -29,11 +29,11 @@ fn default() {
     // let res = project.query_all_balances(ProjectAccount::Alice);
     // println!("{:#?}", res);
 
-    // execute swap 500 denom -> noria
+    // execute swap 1e6 crd -> inj
     project
         .swap_with_pair(
             ProjectAccount::Alice,
-            1000u128,
+            1_000_000u128,
             ProjectCoin::Denom,
             ProjectToken::Inj,
         )

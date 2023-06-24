@@ -6,10 +6,10 @@ use serde::Serialize;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, IntoStaticStr};
 
-use crate::actions::helpers::math::{get_xyk_amount, str_to_dec, P12, P18, P24, P6};
+use crate::actions::helpers::math::{get_xyk_amount, str_to_dec, P12, P24, P6};
 
-const DEFAULT_FUNDS_AMOUNT: u128 = P6;
-const INCREASED_FUNDS_AMOUNT: u128 = 10 * P24;
+const DEFAULT_FUNDS_AMOUNT: u128 = 1; // give each user 1 asset (1 CRD, 1 INJ, etc.)
+const INCREASED_FUNDS_AMOUNT: u128 = 100 * P6; // give admin such amount of assets to ensure providing 1e6 of assets to each pair
 
 const DEFAULT_DECIMALS: u8 = 6;
 const INCREASED_DECIMALS: u8 = 18;
@@ -309,9 +309,12 @@ impl Project {
                     .asset_infos
                     .contains(&project_token.to_terraswap_asset_info())
                 {
+                    let amount = ProjectAccount::Admin.get_initial_funds_amount()
+                        * 10u128.pow(project_token.get_decimals() as u32);
+
                     project.increase_allowance(
                         ProjectAccount::Admin,
-                        ProjectAccount::Admin.get_initial_funds_amount(),
+                        amount,
                         project_token,
                         &pair_info.contract_addr,
                     );
@@ -357,10 +360,10 @@ impl Project {
             for project_account in ProjectAccount::iter() {
                 let funds: Vec<Coin> = ProjectCoin::iter()
                     .map(|project_coin| {
-                        coin(
-                            project_account.get_initial_funds_amount(),
-                            project_coin.to_string(),
-                        )
+                        let amount = project_account.get_initial_funds_amount()
+                            * 10u128.pow(project_coin.get_decimals() as u32);
+
+                        coin(amount, project_coin.to_string())
                     })
                     .collect();
 
@@ -456,9 +459,14 @@ impl Project {
         let symbol = format!("TKN{}", "N".repeat(token_postfix as usize)); // max 10 tokens
 
         let initial_balances: Vec<cw20::Cw20Coin> = ProjectAccount::iter()
-            .map(|project_account| cw20::Cw20Coin {
-                address: project_account.to_string(),
-                amount: Uint128::from(project_account.get_initial_funds_amount()),
+            .map(|project_account| {
+                let amount = project_account.get_initial_funds_amount()
+                    * 10u128.pow(project_token.get_decimals() as u32);
+
+                cw20::Cw20Coin {
+                    address: project_account.to_string(),
+                    amount: Uint128::from(amount),
+                }
             })
             .collect();
 
