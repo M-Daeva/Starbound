@@ -8,7 +8,7 @@ use crate::{
         execute::{deposit, update_config, withdraw},
         instantiate::init,
         other::migrate_contract,
-        query::{query_config, query_pairs, query_users},
+        query::{query_config, query_pairs, query_prices, query_users},
     },
     error::ContractError,
     messages::{
@@ -66,6 +66,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::QueryUsers { address_list } => to_binary(&query_users(deps, env, address_list)?),
         QueryMsg::QueryConfig {} => to_binary(&query_config(deps, env)?),
         QueryMsg::QueryPairs {} => to_binary(&query_pairs(deps, env)?),
+        QueryMsg::QueryPrices {} => to_binary(&query_prices(deps, env)?),
     }
 }
 

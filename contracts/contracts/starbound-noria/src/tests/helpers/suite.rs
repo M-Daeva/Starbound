@@ -1,4 +1,4 @@
-use cosmwasm_std::{coin, to_binary, Addr, Binary, Coin, StdResult, Uint128};
+use cosmwasm_std::{coin, to_binary, Addr, Binary, Coin, Decimal, StdResult, Uint128};
 use cw_multi_test::{App, AppResponse, ContractWrapper, Executor};
 
 use anyhow::Error;
@@ -6,8 +6,10 @@ use serde::Serialize;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, IntoStaticStr};
 
-const DEFAULT_FUNDS_AMOUNT: u128 = 1_000;
-const INCREASED_FUNDS_AMOUNT: u128 = 1_000_000_000_000_000_000;
+use crate::actions::helpers::math::{get_xyk_amount, str_to_dec, P12, P18, P24, P6};
+
+const DEFAULT_FUNDS_AMOUNT: u128 = P6;
+const INCREASED_FUNDS_AMOUNT: u128 = 10 * P24;
 
 const DEFAULT_DECIMALS: u8 = 6;
 const INCREASED_DECIMALS: u8 = 18;
@@ -49,8 +51,50 @@ pub enum ProjectToken {
     #[strum(serialize = "contract2")]
     Inj,
 }
+
+trait GetPrice {
+    fn get_price(&self) -> Decimal;
+}
+
+impl GetPrice for ProjectAsset {
+    fn get_price(&self) -> Decimal {
+        match self {
+            ProjectAsset::Coin(project_coin) => project_coin.get_price(),
+            ProjectAsset::Token(project_token) => project_token.get_price(),
+        }
+    }
+}
+
+impl GetPrice for ProjectCoin {
+    fn get_price(&self) -> Decimal {
+        match self {
+            ProjectCoin::Denom => str_to_dec("1"),
+            ProjectCoin::Noria => str_to_dec("2"),
+        }
+    }
+}
+
+impl GetPrice for ProjectToken {
+    fn get_price(&self) -> Decimal {
+        match self {
+            ProjectToken::Atom => str_to_dec("10"),
+            ProjectToken::Luna => str_to_dec("0.5"),
+            ProjectToken::Inj => str_to_dec("5"),
+        }
+    }
+}
+
 trait GetDecimals {
     fn get_decimals(&self) -> u8;
+}
+
+impl GetDecimals for ProjectAsset {
+    fn get_decimals(&self) -> u8 {
+        match self {
+            ProjectAsset::Coin(project_coin) => project_coin.get_decimals(),
+            ProjectAsset::Token(project_token) => project_token.get_decimals(),
+        }
+    }
 }
 
 impl GetDecimals for ProjectCoin {
@@ -527,19 +571,30 @@ impl Project {
     }
 
     fn provide_liquidity(&mut self, project_pair: ProjectPair) -> AppResponse {
-        const PROVIDED_PER_ASSET_FUNDS_AMOUNT: u128 = INCREASED_FUNDS_AMOUNT / 10;
-
         let terraswap::asset::PairInfo { contract_addr, .. } =
             self.get_pair_info_by_asset_pair(project_pair);
 
         let (project_asset1, project_asset2) = project_pair.split_pair();
+
+        let (price1, decimals1) = (project_asset1.get_price(), project_asset1.get_decimals());
+        let (price2, decimals2) = (project_asset2.get_price(), project_asset2.get_decimals());
+
+        let amount1 = if decimals1 == INCREASED_DECIMALS {
+            P24
+        } else {
+            P12
+        };
+        let amount2 = get_xyk_amount(amount1, decimals1, decimals2, price1, price2);
+        let amount_list = vec![amount1, amount2];
+
         let asset_list = vec![project_asset1, project_asset2];
 
         let assets = TryInto::<[terraswap::asset::Asset; 2]>::try_into(
             asset_list
                 .iter()
-                .map(|x| terraswap::asset::Asset {
-                    amount: Uint128::from(PROVIDED_PER_ASSET_FUNDS_AMOUNT),
+                .enumerate()
+                .map(|(i, x)| terraswap::asset::Asset {
+                    amount: Uint128::from(amount_list[i]),
                     info: x.to_owned().to_terraswap_asset_info(),
                 })
                 .collect::<Vec<terraswap::asset::Asset>>(),
@@ -549,12 +604,9 @@ impl Project {
         // check if asset is coin and set send_funds
         let mut send_funds: Vec<Coin> = vec![];
 
-        for asset in asset_list.iter() {
+        for (i, asset) in asset_list.iter().enumerate() {
             if let ProjectAsset::Coin(project_coin) = asset {
-                send_funds.push(coin(
-                    PROVIDED_PER_ASSET_FUNDS_AMOUNT,
-                    project_coin.to_string(),
-                ));
+                send_funds.push(coin(amount_list[i], project_coin.to_string()));
             }
         }
 
@@ -570,7 +622,7 @@ impl Project {
                 &send_funds
                     .iter()
                     .take(2)
-                    .map(|x| coin(PROVIDED_PER_ASSET_FUNDS_AMOUNT, &x.denom))
+                    .map(|x| coin(x.amount.u128(), &x.denom))
                     .collect::<Vec<_>>(),
             )
             .unwrap()
@@ -641,6 +693,8 @@ pub trait Testable {
         amount: impl Into<Uint128>,
         swap_operations: &[terraswap::router::SwapOperation],
     ) -> StdResult<AppResponse>;
+
+    fn query_prices(&self) -> ();
 }
 
 impl Testable for Project {
@@ -830,5 +884,15 @@ impl Testable for Project {
             _ => unreachable!(),
         }
         .map_err(|err| err.downcast().unwrap())
+    }
+
+    fn query_prices(&self) -> () {
+        self.app
+            .wrap()
+            .query_wasm_smart(
+                self.app_contract_address.to_string(),
+                &crate::messages::query::QueryMsg::QueryPrices {},
+            )
+            .unwrap()
     }
 }

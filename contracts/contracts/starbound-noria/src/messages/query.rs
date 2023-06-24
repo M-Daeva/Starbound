@@ -14,4 +14,6 @@ pub enum QueryMsg {
     QueryConfig {},
     #[returns(Vec<PairInfo>)]
     QueryPairs {},
+    #[returns(())]
+    QueryPrices {},
 }

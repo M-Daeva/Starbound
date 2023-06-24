@@ -1,16 +1,22 @@
 use cosmwasm_std::{
-    coin, Addr, BankMsg, Coin, CosmosMsg, Decimal, IbcMsg, IbcTimeout, Timestamp, Uint128,
+    coin, Addr, BankMsg, Coin, CosmosMsg, Decimal, Decimal256, IbcMsg, IbcTimeout, Timestamp,
+    Uint128,
 };
-use std::ops::{Div, Mul};
 
-use crate::state::{Asset, User};
+use std::{
+    ops::{Div, Mul},
+    str::FromStr,
+};
+
+use crate::state::{Asset, Ledger, User};
+
+pub const P6: u128 = 1_000_000; // 1 asset with 6 decimals
+pub const P12: u128 = P6.pow(2); // 1_000_000 of assets with 6 decimals
+pub const P18: u128 = P6 * P12; // 1 of asset with 18 decimals
+pub const P24: u128 = P12.pow(2); // 1_000_000 of assets with 18 decimals
 
 pub fn str_to_dec(s: &str) -> Decimal {
-    s.to_string().parse::<Decimal>().unwrap()
-}
-
-pub fn str_vec_to_dec_vec(str_vec: &[&str]) -> Vec<Decimal> {
-    str_vec.iter().map(|&x| str_to_dec(x)).collect()
+    Decimal::from_str(s).unwrap()
 }
 
 pub fn u128_to_dec(num: u128) -> Decimal {
@@ -18,7 +24,7 @@ pub fn u128_to_dec(num: u128) -> Decimal {
 }
 
 pub fn dec_to_u128(dec: Decimal) -> u128 {
-    dec.ceil().atomics().u128() / 1_000_000_000_000_000_000
+    dec.to_uint_ceil().u128()
 }
 
 pub fn uint128_to_dec(num: Uint128) -> Decimal {
@@ -26,9 +32,33 @@ pub fn uint128_to_dec(num: Uint128) -> Decimal {
 }
 
 pub fn dec_to_uint128(dec: Decimal) -> Uint128 {
-    dec.ceil()
-        .atomics()
-        .div(Uint128::from(1_000_000_000_000_000_000_u128))
+    dec.to_uint_ceil()
+}
+
+pub fn u128_to_dec256(num: u128) -> Decimal256 {
+    Decimal256::from_ratio(Uint128::new(num), Uint128::one())
+}
+
+pub fn dec_to_dec256(dec: Decimal) -> Decimal256 {
+    Decimal256::from_str(&dec.to_string()).unwrap()
+}
+
+pub fn dec256_to_dec(dec256: Decimal256) -> Decimal {
+    str_to_dec(
+        &dec256
+            .to_string()
+            .chars()
+            .take(Decimal::DECIMAL_PLACES as usize)
+            .collect::<String>(),
+    )
+}
+
+pub fn dec256_to_u128(dec256: Decimal256) -> u128 {
+    Uint128::try_from(dec256.to_uint_ceil()).unwrap().u128()
+}
+
+pub fn str_vec_to_dec_vec(str_vec: &[&str]) -> Vec<Decimal> {
+    str_vec.iter().map(|&x| str_to_dec(x)).collect()
 }
 
 pub fn u128_vec_to_uint128_vec(u128_vec: &[u128]) -> Vec<Uint128> {
@@ -234,10 +264,10 @@ pub fn rebalance_proportional(k2: &[Decimal], d: Uint128) -> Vec<Uint128> {
 
 //         // skip if user is out of money or investment period is ended
 //         let mut daily_payment = user
-//             .deposited
+//             .stable_balance
 //             .checked_div(user.down_counter)
 //             .map_or(Uint128::zero(), |x| {
-//                 x.clamp(Uint128::zero(), user.deposited)
+//                 x.clamp(Uint128::zero(), user.stable_balance)
 //             });
 
 //         // we can get (deposited/down_counter == 0) && (deposited != 0) &&
@@ -269,7 +299,7 @@ pub fn rebalance_proportional(k2: &[Decimal], d: Uint128) -> Vec<Uint128> {
 
 //         // 3) iterate over user assets and fill user_weights and user_balances
 //         for (i, denom) in global_denom_list.iter().enumerate() {
-//             if let Some(asset_by_denom) = user.asset_list.iter().find(|x| &x.denom == denom) {
+//             if let Some(asset_by_denom) = user.asset_list.iter().find(|x| &x.contract == denom) {
 //                 user_weights[i] = asset_by_denom.weight;
 //                 user_balances[i] = asset_by_denom.wallet_balance;
 //             };
@@ -298,7 +328,7 @@ pub fn rebalance_proportional(k2: &[Decimal], d: Uint128) -> Vec<Uint128> {
 
 //         daily_payment_sum += daily_payment;
 
-//         let deposited = user.deposited - daily_payment;
+//         let stable_balance = user.stable_balance - daily_payment;
 
 //         // update user assets amount to buy data (amount_to_transfer)
 //         let mut asset_list_updated: Vec<Asset> = vec![];
@@ -326,7 +356,7 @@ pub fn rebalance_proportional(k2: &[Decimal], d: Uint128) -> Vec<Uint128> {
 //             native_address.to_owned(),
 //             User {
 //                 down_counter,
-//                 deposited,
+//                 stable_balance,
 //                 asset_list: asset_list_updated,
 //                 ..*user
 //             },
@@ -335,7 +365,7 @@ pub fn rebalance_proportional(k2: &[Decimal], d: Uint128) -> Vec<Uint128> {
 
 //     // 8) clamping sum of assets costs by daily_payment_sum
 //     if global_delta_cost_list.iter().sum::<Uint128>() > daily_payment_sum {
-//         global_delta_cost_list = correct_sum(global_delta_cost_list, daily_payment_sum);
+//         global_delta_cost_list = correct_sum(&global_delta_cost_list, daily_payment_sum);
 //     }
 
 //     let ledger = Ledger {
@@ -502,3 +532,35 @@ pub fn rebalance_proportional(k2: &[Decimal], d: Uint128) -> Vec<Uint128> {
 
 //     (users_with_addresses_updated, msg_list)
 // }
+
+/// returns a2 = a1 * 10^(d2 - d1) * p1 / p2, \
+/// where a - amount, d - decimals, p - price
+pub fn get_xyk_amount(a1: u128, d1: u8, d2: u8, p1: Decimal, p2: Decimal) -> u128 {
+    let amount1 = u128_to_dec256(a1);
+    let price1 = dec_to_dec256(p1);
+    let price2 = dec_to_dec256(p2);
+
+    if d2 >= d1 {
+        let power = u128_to_dec256(10u128.pow((d2 - d1).into()));
+        dec256_to_u128((price1 / price2) * amount1 * power)
+    } else {
+        let power = u128_to_dec256(10u128.pow((d1 - d2).into()));
+        dec256_to_u128((price1 / price2) * amount1 / power)
+    }
+}
+
+/// returns p2 = p1 * 10^(d2 - d1) * a1 / a2, \
+/// where a - amount, d - decimals, p - price
+pub fn get_xyk_price(p1: Decimal, d1: u8, d2: u8, a1: u128, a2: u128) -> Decimal {
+    let price1 = dec_to_dec256(p1);
+    let amount1 = u128_to_dec256(a1);
+    let amount2 = u128_to_dec256(a2);
+
+    if d2 >= d1 {
+        let power = u128_to_dec256(10u128.pow((d2 - d1).into()));
+        dec256_to_dec((amount1 / amount2) * price1 * power)
+    } else {
+        let power = u128_to_dec256(10u128.pow((d1 - d2).into()));
+        dec256_to_dec((amount1 / amount2) * price1 / power)
+    }
+}

@@ -36,6 +36,16 @@ impl Config {
     }
 }
 
+pub const LEDGER: Item<Ledger> = Item::new("ledger");
+
+#[cw_serde]
+pub struct Ledger {
+    pub global_delta_balance_list: Vec<Uint128>,
+    pub global_delta_cost_list: Vec<Uint128>,
+    pub global_denom_list: Vec<String>,
+    pub global_price_list: Vec<Decimal>,
+}
+
 // key - native_address: &Addr
 pub const USERS: Map<&Addr, User> = Map::new("users");
 #[cw_serde]

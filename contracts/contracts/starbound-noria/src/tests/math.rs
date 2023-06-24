@@ -3,9 +3,9 @@ use cosmwasm_std::Uint128;
 use speculoos::assert_that;
 
 use crate::actions::helpers::math::{
-    correct_sum, dec_to_uint128, rebalance_controlled, rebalance_proportional, str_to_dec,
-    str_vec_to_dec_vec, u128_vec_to_uint128_vec, uint128_to_dec, vec_add, vec_div, vec_mul,
-    vec_sub,
+    correct_sum, dec_to_uint128, get_xyk_amount, get_xyk_price, rebalance_controlled,
+    rebalance_proportional, str_to_dec, str_vec_to_dec_vec, u128_vec_to_uint128_vec,
+    uint128_to_dec, vec_add, vec_div, vec_mul, vec_sub, P12, P24,
 };
 
 #[test]
@@ -551,3 +551,43 @@ fn proportional_noisy() {
 //         assert_eq!(global_delta_cost_list_left, ledger.global_delta_cost_list);
 //     }
 // }
+
+#[test]
+fn xyk_amounts() {
+    assert_that(&get_xyk_amount(P12, 6, 6, str_to_dec("1"), str_to_dec("1"))).is_equal_to(P12);
+
+    assert_that(&get_xyk_amount(P12, 6, 6, str_to_dec("1"), str_to_dec("2"))).is_equal_to(P12 / 2);
+
+    assert_that(&get_xyk_amount(P12, 6, 6, str_to_dec("2"), str_to_dec("1"))).is_equal_to(P12 * 2);
+
+    assert_that(&get_xyk_amount(
+        P12,
+        6,
+        18,
+        str_to_dec("1"),
+        str_to_dec("1"),
+    ))
+    .is_equal_to(P24);
+
+    assert_that(&get_xyk_amount(
+        P24,
+        18,
+        6,
+        str_to_dec("1"),
+        str_to_dec("1"),
+    ))
+    .is_equal_to(P12);
+}
+
+#[test]
+fn xyk_prices() {
+    assert_that(&get_xyk_price(str_to_dec("1"), 6, 6, P12, P12)).is_equal_to(str_to_dec("1"));
+
+    assert_that(&get_xyk_price(str_to_dec("1"), 6, 6, P12 * 2, P12)).is_equal_to(str_to_dec("2"));
+
+    assert_that(&get_xyk_price(str_to_dec("1"), 6, 6, P12 / 2, P12)).is_equal_to(str_to_dec("0.5"));
+
+    assert_that(&get_xyk_price(str_to_dec("1"), 18, 6, P24, P12)).is_equal_to(str_to_dec("1"));
+
+    assert_that(&get_xyk_price(str_to_dec("1"), 6, 18, P12, P24)).is_equal_to(str_to_dec("1"));
+}
