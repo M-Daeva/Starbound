@@ -1,12 +1,15 @@
 use cosmwasm_std::{coin, from_binary, to_binary, Addr, Coin, Decimal, Uint128};
 use cw_multi_test::{AppResponse, Executor};
 
+use strum::IntoEnumIterator;
+
 use crate::{
     actions::{helpers::math::str_to_dec, instantiate::FEE_RATE},
     messages::{execute::ExecuteMsg, query::QueryMsg},
     state::{Asset, Config, User},
     tests::helpers::suite::{
-        Project, ProjectAccount, ToAddress, ToProjectAsset, WrapIntoResponse, WrappedResponse,
+        GetDecimals, GetPrice, Project, ProjectAccount, ProjectPair, ToAddress, ToProjectAsset,
+        ToTerraswapAssetInfo, WrapIntoResponse, WrappedResponse,
     },
 };
 
@@ -47,6 +50,9 @@ pub trait Builderable {
 
     fn query_config(&mut self) -> &mut Self;
     fn assert_config(&mut self, config: Config) -> &mut Self;
+
+    fn query_assets_in_pools(&mut self) -> &mut Self;
+    fn assert_assets_in_pools(&mut self) -> &mut Self;
 }
 
 impl Builderable for Project {
@@ -123,6 +129,7 @@ impl Builderable for Project {
         self
     }
 
+    #[track_caller]
     fn query_config(&mut self) -> &mut Self {
         self.check_logs();
 
@@ -141,6 +148,54 @@ impl Builderable for Project {
             let received_config: Config = from_binary(query_response.as_ref().unwrap()).unwrap();
 
             speculoos::assert_that(&received_config).is_equal_to(config);
+        }
+
+        self
+    }
+
+    #[track_caller]
+    fn query_assets_in_pools(&mut self) -> &mut Self {
+        self.check_logs();
+
+        let response = self
+            .app
+            .wrap()
+            .query_wasm_smart::<Vec<(terraswap::asset::AssetInfo, Decimal, u8)>>(
+                self.get_app_contract_address(),
+                &crate::messages::query::QueryMsg::QueryAssetsInPools {},
+            );
+
+        let result = response.map(|x| to_binary(&x)).unwrap();
+
+        self.save_logs_and_return(result)
+    }
+
+    fn assert_assets_in_pools(&mut self) -> &mut Self {
+        if let WrappedResponse::Query(query_response) = &self.logs {
+            let received_assets_in_pools: Vec<(terraswap::asset::AssetInfo, Decimal, u8)> =
+                from_binary(query_response.as_ref().unwrap()).unwrap();
+
+            let mut pairs: Vec<(terraswap::asset::AssetInfo, Decimal, u8)> = vec![];
+
+            for project_pair in ProjectPair::iter() {
+                let (project_asset1, project_asset2) = project_pair.split_pair();
+
+                for project_asset in &[project_asset1, project_asset2] {
+                    if !pairs
+                        .iter()
+                        .any(|(asset, _, _)| asset.equal(&project_asset.to_terraswap_asset_info()))
+                    {
+                        pairs.push((
+                            project_asset.to_terraswap_asset_info(),
+                            project_asset.get_price(),
+                            project_asset.get_decimals(),
+                        ));
+                    }
+                }
+            }
+
+            speculoos::assert_that(&received_assets_in_pools)
+                .matches(|x| pairs.iter().any(|pair| x.contains(pair)));
         }
 
         self

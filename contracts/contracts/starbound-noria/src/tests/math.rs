@@ -4,8 +4,8 @@ use speculoos::assert_that;
 
 use crate::actions::helpers::math::{
     correct_sum, dec_to_uint128, get_xyk_amount, get_xyk_price, rebalance_controlled,
-    rebalance_proportional, str_to_dec, str_vec_to_dec_vec, u128_vec_to_uint128_vec,
-    uint128_to_dec, vec_add, vec_div, vec_mul, vec_sub, P12, P24,
+    rebalance_proportional, str_to_dec, str_vec_to_dec_vec, u128_to_dec, u128_vec_to_uint128_vec,
+    vec_add, vec_div, vec_mul, vec_sub, P12, P24,
 };
 
 #[test]
@@ -509,7 +509,7 @@ fn proportional_noisy() {
 
 //                 let price = ledger.global_price_list[index];
 //                 let amount = asset.amount_to_transfer;
-//                 let daily_payment = dec_to_uint128((uint128_to_dec(amount) * price).ceil());
+//                 let daily_payment = dec_to_uint128((u128_to_dec(amount) * price).ceil());
 //                 user_daily_payment_right_item += daily_payment;
 
 //                 global_delta_balance_list_left[index] += amount;

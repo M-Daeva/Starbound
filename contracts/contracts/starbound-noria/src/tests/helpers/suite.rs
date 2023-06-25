@@ -52,7 +52,7 @@ pub enum ProjectToken {
     Inj,
 }
 
-trait GetPrice {
+pub trait GetPrice {
     fn get_price(&self) -> Decimal;
 }
 
@@ -84,7 +84,7 @@ impl GetPrice for ProjectToken {
     }
 }
 
-trait GetDecimals {
+pub trait GetDecimals {
     fn get_decimals(&self) -> u8;
 }
 
@@ -192,7 +192,7 @@ pub enum ProjectPair {
 }
 
 impl ProjectPair {
-    fn split_pair(&self) -> (ProjectAsset, ProjectAsset) {
+    pub fn split_pair(&self) -> (ProjectAsset, ProjectAsset) {
         match self {
             ProjectPair::AtomLuna => (
                 ProjectToken::Atom.to_project_asset(),
@@ -701,8 +701,6 @@ pub trait Testable {
         amount: impl Into<Uint128>,
         swap_operations: &[terraswap::router::SwapOperation],
     ) -> StdResult<AppResponse>;
-
-    fn query_prices(&self) -> ();
 }
 
 impl Testable for Project {
@@ -892,15 +890,5 @@ impl Testable for Project {
             _ => unreachable!(),
         }
         .map_err(|err| err.downcast().unwrap())
-    }
-
-    fn query_prices(&self) -> () {
-        self.app
-            .wrap()
-            .query_wasm_smart(
-                self.app_contract_address.to_string(),
-                &crate::messages::query::QueryMsg::QueryPrices {},
-            )
-            .unwrap()
     }
 }

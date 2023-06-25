@@ -6,9 +6,6 @@ use crate::tests::helpers::suite::{
 fn default() {
     let mut project = Project::new(None);
 
-    project.query_prices();
-    println!("----------------------------------------------------------------------");
-
     // // query pairs
     // let pairs = project.get_terraswap_pair_list();
     // println!("{:#?}", pairs);
@@ -29,18 +26,18 @@ fn default() {
     // let res = project.query_all_balances(ProjectAccount::Alice);
     // println!("{:#?}", res);
 
-    // execute swap 1e6 crd -> inj
-    project
-        .swap_with_pair(
-            ProjectAccount::Alice,
-            1_000_000u128,
-            ProjectCoin::Denom,
-            ProjectToken::Inj,
-        )
-        .unwrap();
+    // // execute swap 1e6 crd -> inj
+    // project
+    //     .swap_with_pair(
+    //         ProjectAccount::Alice,
+    //         1_000_000u128,
+    //         ProjectCoin::Denom,
+    //         ProjectToken::Inj,
+    //     )
+    //     .unwrap();
 
-    let res = project.query_all_balances(ProjectAccount::Alice);
-    println!("{:#?}", res);
+    // let res = project.query_all_balances(ProjectAccount::Alice);
+    // println!("{:#?}", res);
 
     // // 250 ATOM -> LUNA, LUNA -> DENOM, DENOM -> INJ
     // project

@@ -19,24 +19,26 @@ pub fn str_to_dec(s: &str) -> Decimal {
     Decimal::from_str(s).unwrap()
 }
 
-pub fn u128_to_dec(num: u128) -> Decimal {
-    Decimal::from_ratio(Uint128::new(num), Uint128::one())
+pub fn u128_to_dec<T>(num: T) -> Decimal
+where
+    Uint128: From<T>,
+{
+    Decimal::from_ratio(Uint128::from(num), Uint128::one())
 }
 
 pub fn dec_to_u128(dec: Decimal) -> u128 {
     dec.to_uint_ceil().u128()
 }
 
-pub fn uint128_to_dec(num: Uint128) -> Decimal {
-    Decimal::from_ratio(num, Uint128::one())
-}
-
 pub fn dec_to_uint128(dec: Decimal) -> Uint128 {
     dec.to_uint_ceil()
 }
 
-pub fn u128_to_dec256(num: u128) -> Decimal256 {
-    Decimal256::from_ratio(Uint128::new(num), Uint128::one())
+pub fn u128_to_dec256<T>(num: T) -> Decimal256
+where
+    Uint128: From<T>,
+{
+    Decimal256::from_ratio(Uint128::from(num), Uint128::one())
 }
 
 pub fn dec_to_dec256(dec: Decimal) -> Decimal256 {
@@ -80,7 +82,7 @@ pub fn vec_mul(uint128_vec: &[Uint128], dec_vec: &[Decimal], is_floored: bool) -
     let mut temp = Vec::<Uint128>::new();
 
     for (i, item) in uint128_vec.iter().enumerate() {
-        let mut res = dec_vec[i].mul(uint128_to_dec(*item));
+        let mut res = dec_vec[i].mul(u128_to_dec(*item));
         res = if is_floored { res.floor() } else { res.ceil() };
         temp.push(dec_to_uint128(res));
     }
@@ -93,7 +95,7 @@ pub fn vec_div(uint128_vec: &[Uint128], dec_vec: &[Decimal], is_floored: bool) -
     let mut temp = Vec::<Uint128>::new();
 
     for (i, item) in uint128_vec.iter().enumerate() {
-        let mut res = uint128_to_dec(*item).div(dec_vec[i]);
+        let mut res = u128_to_dec(*item).div(dec_vec[i]);
         res = if is_floored { res.floor() } else { res.ceil() };
         temp.push(dec_to_uint128(res));
     }
@@ -168,8 +170,8 @@ pub fn correct_sum(r: &[Uint128], d: Uint128) -> Vec<Uint128> {
 /// r - vector of coins to buy costs
 pub fn rebalance_controlled(x1: &[Uint128], k2: &[Decimal], d: Uint128) -> Vec<Uint128> {
     let mut r: Vec<Uint128> = vec![];
-    let d = uint128_to_dec(d);
-    let s1 = uint128_to_dec(x1.iter().sum::<Uint128>());
+    let d = u128_to_dec(d);
+    let s1 = u128_to_dec(x1.iter().sum::<Uint128>());
 
     // we need to find minimal s2 where s2 = x1/k2 and s2 >= s1
     let mut s2 = Decimal::zero();
@@ -177,7 +179,7 @@ pub fn rebalance_controlled(x1: &[Uint128], k2: &[Decimal], d: Uint128) -> Vec<U
     for (i, &k2_item) in k2.iter().enumerate() {
         // skip division by zero
         if !k2_item.is_zero() {
-            let s2_item = uint128_to_dec(x1[i]) / k2_item;
+            let s2_item = u128_to_dec(x1[i]) / k2_item;
             // always update initial value of s2 if s2_item >= s1
             if s2_item >= s1 && (s2.is_zero() || (!s2.is_zero() && s2_item < s2)) {
                 s2 = s2_item;
@@ -190,7 +192,7 @@ pub fn rebalance_controlled(x1: &[Uint128], k2: &[Decimal], d: Uint128) -> Vec<U
     if d > ds && !ds.is_zero() {
         // case 1: if d > s2 - s1 && s2 > s1 then r = (s1 + d) * k2 - x1
         for (i, &k2_item) in k2.iter().enumerate() {
-            let x1_item = uint128_to_dec(x1[i]);
+            let x1_item = u128_to_dec(x1[i]);
 
             r.push(dec_to_uint128((s1 + d) * k2_item - x1_item));
         }
@@ -203,7 +205,7 @@ pub fn rebalance_controlled(x1: &[Uint128], k2: &[Decimal], d: Uint128) -> Vec<U
     } else {
         // case 3: else r = (s2 * k2 - x1) * d / (s2 - s1)
         for (i, &k2_item) in k2.iter().enumerate() {
-            let x1_item = uint128_to_dec(x1[i]);
+            let x1_item = u128_to_dec(x1[i]);
 
             // preventing calculation error with ceil
             r.push(dec_to_uint128(
@@ -222,7 +224,7 @@ pub fn rebalance_controlled(x1: &[Uint128], k2: &[Decimal], d: Uint128) -> Vec<U
 pub fn rebalance_proportional(k2: &[Decimal], d: Uint128) -> Vec<Uint128> {
     let r: Vec<Uint128> = k2
         .iter()
-        .map(|k2_item| dec_to_uint128(k2_item.mul(uint128_to_dec(d))))
+        .map(|k2_item| dec_to_uint128(k2_item.mul(u128_to_dec(d))))
         .collect();
 
     // rounding error correction
@@ -347,7 +349,7 @@ pub fn rebalance_proportional(k2: &[Decimal], d: Uint128) -> Vec<Uint128> {
 //                 // 7) fill global_delta_balance_list and global_delta_cost_list
 //                 global_delta_balance_list[index] += amount_to_transfer;
 //                 global_delta_cost_list[index] += dec_to_uint128(
-//                     (uint128_to_dec(amount_to_transfer) * global_price_list[index]).ceil(),
+//                     (u128_to_dec(amount_to_transfer) * global_price_list[index]).ceil(),
 //                 );
 //             }
 //         }
@@ -409,14 +411,14 @@ pub fn rebalance_proportional(k2: &[Decimal], d: Uint128) -> Vec<Uint128> {
 //                         } else {
 //                             fee_default
 //                         };
-//                         let amount = uint128_to_dec(y.amount);
+//                         let amount = u128_to_dec(y.amount);
 //                         let fee = (amount * fee_multiplier).ceil();
 //                         fee_list[i] = dec_to_uint128(fee);
 //                         amount - fee
 //                     });
 
 //             asset_amount
-//                 .checked_div(uint128_to_dec(ledger.global_delta_balance_list[i]))
+//                 .checked_div(u128_to_dec(ledger.global_delta_balance_list[i]))
 //                 .map_or(Decimal::zero(), |y| y)
 //         })
 //         .collect::<Vec<Decimal>>();
@@ -434,7 +436,7 @@ pub fn rebalance_proportional(k2: &[Decimal], d: Uint128) -> Vec<Uint128> {
 //                 .position(|x| x == &asset.denom)
 //             {
 //                 let amount_to_transfer = dec_to_uint128(
-//                     (uint128_to_dec(asset.amount_to_transfer)
+//                     (u128_to_dec(asset.amount_to_transfer)
 //                         * asset_amount_correction_vector[index])
 //                         .floor(),
 //                 );
@@ -551,16 +553,19 @@ pub fn get_xyk_amount(a1: u128, d1: u8, d2: u8, p1: Decimal, p2: Decimal) -> u12
 
 /// returns p2 = p1 * 10^(d2 - d1) * a1 / a2, \
 /// where a - amount, d - decimals, p - price
-pub fn get_xyk_price(p1: Decimal, d1: u8, d2: u8, a1: u128, a2: u128) -> Decimal {
+pub fn get_xyk_price<T>(p1: Decimal, d1: u8, d2: u8, a1: T, a2: T) -> Decimal
+where
+    Uint128: From<T>,
+{
     let price1 = dec_to_dec256(p1);
     let amount1 = u128_to_dec256(a1);
     let amount2 = u128_to_dec256(a2);
 
     if d2 >= d1 {
-        let power = u128_to_dec256(10u128.pow((d2 - d1).into()));
+        let power = u128_to_dec256::<u128>(10u128.pow((d2 - d1).into()));
         dec256_to_dec((amount1 / amount2) * price1 * power)
     } else {
-        let power = u128_to_dec256(10u128.pow((d1 - d2).into()));
+        let power = u128_to_dec256::<u128>(10u128.pow((d1 - d2).into()));
         dec256_to_dec((amount1 / amount2) * price1 / power)
     }
 }

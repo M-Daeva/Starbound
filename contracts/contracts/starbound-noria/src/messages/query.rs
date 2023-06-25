@@ -1,7 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Decimal};
 
-use terraswap::asset::PairInfo;
+use terraswap::asset::{AssetInfo, PairInfo};
 
 use crate::state::{Config, User};
 
@@ -14,6 +14,6 @@ pub enum QueryMsg {
     QueryConfig {},
     #[returns(Vec<PairInfo>)]
     QueryPairs {},
-    #[returns(())]
-    QueryPrices {},
+    #[returns(Vec<(AssetInfo, Decimal, u8)>)]
+    QueryAssetsInPools {},
 }

@@ -336,6 +336,12 @@ fn update_config_default() {
         );
 }
 
+#[test]
+fn query_assets_in_pools() {
+    let mut project = Project::new(None);
+    project.query_assets_in_pools().assert_assets_in_pools();
+}
+
 // #[test]
 // fn query_pools_and_users() {
 //     let mut prj = Project::new(None);

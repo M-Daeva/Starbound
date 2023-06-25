@@ -1,7 +1,10 @@
 #[cfg(not(feature = "library"))]
-use cosmwasm_std::{Addr, Deps, Env, Order, StdResult, Uint128};
+use cosmwasm_std::{Addr, Decimal, Deps, Env, Order, StdResult};
 
-use crate::state::{Config, User, CONFIG, USERS};
+use crate::{
+    actions::helpers::math::get_xyk_price,
+    state::{Config, User, CONFIG, DENOM_STABLE, USERS},
+};
 
 pub fn query_config(deps: Deps, _env: Env) -> StdResult<Config> {
     CONFIG.load(deps.storage)
@@ -41,46 +44,101 @@ pub fn query_pairs(deps: Deps, _env: Env) -> StdResult<Vec<terraswap::asset::Pai
 }
 
 // TODO: implement when oracle module will be added
-pub fn query_denom_price(_deps: Deps, _env: Env) -> StdResult<Uint128> {
-    Ok(Uint128::one())
+pub fn query_denom_price(_deps: Deps, _env: Env) -> StdResult<Decimal> {
+    Ok(Decimal::one())
 }
 
-pub fn query_prices(deps: Deps, _env: Env) -> StdResult<()> {
-    const POOL_NUMBER: usize = 2;
+pub fn query_assets_in_pools(
+    deps: Deps,
+    env: Env,
+) -> StdResult<Vec<(terraswap::asset::AssetInfo, Decimal, u8)>> {
+    let denom_decimals: u8 = 6;
+    let denom_asset_info = terraswap::asset::AssetInfo::NativeToken {
+        denom: DENOM_STABLE.to_string(),
+    };
+    let denom_price = query_denom_price(deps, env.clone())?;
 
-    let denom_price = Uint128::one();
-    let terraswap_factory = CONFIG.load(deps.storage)?.terraswap_factory;
+    let query_pairs_result = query_pairs(deps, env)?;
 
-    let terraswap::factory::PairsResponse {
-        pairs: query_pairs_result,
-    } = deps.querier.query_wasm_smart(
-        &terraswap_factory,
-        &terraswap::factory::QueryMsg::Pairs {
-            start_after: None,
-            limit: None,
-        },
-    )?;
-    println!("{:#?}", &query_pairs_result);
+    // list of (asset_info, price, decimals)
+    let mut asset_data_list: Vec<(terraswap::asset::AssetInfo, Decimal, u8)> =
+        vec![(denom_asset_info.clone(), denom_price, denom_decimals)];
+    // list of pairs without main asset
+    let mut raw_info_list: Vec<([terraswap::asset::Asset; 2], [u8; 2])> = vec![];
 
-    let query_pair_result: terraswap::asset::PairInfo = deps.querier.query_wasm_smart(
-        &terraswap_factory,
-        &terraswap::factory::QueryMsg::Pair {
-            asset_infos: query_pairs_result[POOL_NUMBER].asset_infos.clone(),
-        },
-    )?;
-    println!("{:#?}", query_pair_result);
+    for terraswap::asset::PairInfo {
+        contract_addr,
+        asset_decimals,
+        ..
+    } in query_pairs_result
+    {
+        let query_pool_result: terraswap::pair::PoolResponse = deps
+            .querier
+            .query_wasm_smart(&contract_addr, &terraswap::pair::QueryMsg::Pool {})?;
 
-    let query_pair_info: terraswap::asset::PairInfo = deps.querier.query_wasm_smart(
-        &query_pairs_result[POOL_NUMBER].contract_addr,
-        &terraswap::pair::QueryMsg::Pair {},
-    )?;
-    println!("{:#?}", query_pair_info);
+        let terraswap::pair::PoolResponse { assets, .. } = query_pool_result;
 
-    let query_pool_result: terraswap::pair::PoolResponse = deps.querier.query_wasm_smart(
-        &query_pairs_result[POOL_NUMBER].contract_addr,
-        &terraswap::pair::QueryMsg::Pool {},
-    )?;
-    println!("{:#?}", query_pool_result);
+        // calculate prices of ucrd-asset pools
+        for i in 0..1 {
+            update_asset_data_list(
+                &mut asset_data_list,
+                &assets[i].info,
+                assets.clone(),
+                asset_decimals,
+                denom_price,
+                i,
+            );
+        }
 
-    Ok(())
+        // store parameters of non ucrd-asset pools
+        if !assets.iter().any(|x| x.info.equal(&denom_asset_info)) {
+            raw_info_list.push((assets, asset_decimals));
+        }
+    }
+
+    // calculate prices of non ucrd-asset pools
+    for (assets, decimals) in raw_info_list {
+        for (asset_data, price, _) in asset_data_list.clone().iter() {
+            for i in 0..1 {
+                update_asset_data_list(
+                    &mut asset_data_list,
+                    asset_data,
+                    assets.clone(),
+                    decimals,
+                    *price,
+                    i,
+                );
+            }
+        }
+    }
+
+    Ok(asset_data_list)
+}
+
+fn update_asset_data_list(
+    asset_data_list: &mut Vec<(terraswap::asset::AssetInfo, Decimal, u8)>,
+    asset_info: &terraswap::asset::AssetInfo,
+    assets: [terraswap::asset::Asset; 2],
+    decimals: [u8; 2],
+    price: Decimal,
+    i: usize,
+) {
+    if asset_info.equal(&assets[i].info) {
+        let price = get_xyk_price(
+            price,
+            decimals[i],
+            decimals[1 - i],
+            assets[i].amount,
+            assets[1 - i].amount,
+        );
+
+        let asset_info = &assets[1 - i].info;
+
+        if !asset_data_list
+            .iter()
+            .any(|(asset_data, ..)| asset_data.equal(asset_info))
+        {
+            asset_data_list.push((asset_info.to_owned(), price, decimals[1 - i]));
+        }
+    }
 }
