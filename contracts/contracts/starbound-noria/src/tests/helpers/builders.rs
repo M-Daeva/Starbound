@@ -195,7 +195,7 @@ impl Builderable for Project {
             }
 
             speculoos::assert_that(&received_assets_in_pools)
-                .matches(|x| pairs.iter().any(|pair| x.contains(pair)));
+                .matches(|x| pairs.len() == x.len() && pairs.iter().any(|pair| x.contains(pair)));
         }
 
         self

@@ -79,7 +79,7 @@ pub fn query_assets_in_pools(
         let terraswap::pair::PoolResponse { assets, .. } = query_pool_result;
 
         // calculate prices of ucrd-asset pools
-        for i in 0..1 {
+        for i in 0..=1 {
             update_asset_data_list(
                 &mut asset_data_list,
                 &assets[i].info,
@@ -99,7 +99,7 @@ pub fn query_assets_in_pools(
     // calculate prices of non ucrd-asset pools
     for (assets, decimals) in raw_info_list {
         for (asset_data, price, _) in asset_data_list.clone().iter() {
-            for i in 0..1 {
+            for i in 0..=1 {
                 update_asset_data_list(
                     &mut asset_data_list,
                     asset_data,
@@ -117,15 +117,15 @@ pub fn query_assets_in_pools(
 
 fn update_asset_data_list(
     asset_data_list: &mut Vec<(terraswap::asset::AssetInfo, Decimal, u8)>,
-    asset_info: &terraswap::asset::AssetInfo,
+    current_asset_info: &terraswap::asset::AssetInfo,
     assets: [terraswap::asset::Asset; 2],
     decimals: [u8; 2],
-    price: Decimal,
+    current_price: Decimal,
     i: usize,
 ) {
-    if asset_info.equal(&assets[i].info) {
+    if current_asset_info.equal(&assets[i].info) {
         let price = get_xyk_price(
-            price,
+            current_price,
             decimals[i],
             decimals[1 - i],
             assets[i].amount,
