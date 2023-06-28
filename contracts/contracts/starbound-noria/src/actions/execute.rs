@@ -33,10 +33,10 @@ pub fn deposit(
     // received asset_list is empty just take it from user_loaded
     let asset_list: Vec<Asset> = asset_list.map_or(Ok(user_loaded.asset_list), |x| {
         x.iter()
-            .map(|(contract, weight)| {
+            .map(|(asset_info, weight)| {
                 Ok(Asset::new(
                     // assets were verified by verify_deposit_args()
-                    &deps.api.addr_validate(contract)?,
+                    asset_info,
                     weight.to_owned(),
                 ))
             })

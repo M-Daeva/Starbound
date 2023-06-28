@@ -1,5 +1,5 @@
 #[cfg(not(feature = "library"))]
-use cosmwasm_std::{Addr, Decimal, Deps, Env, Order, StdResult};
+use cosmwasm_std::{Addr, Decimal, Deps, Env, Order, StdResult, Uint128};
 
 use crate::{
     actions::helpers::math::get_xyk_price,
@@ -12,10 +12,10 @@ pub fn query_config(deps: Deps, _env: Env) -> StdResult<Config> {
 
 /// returns list of (address, user) for specified list of addresses
 /// or full list of (address, user) if list of addresses is empty
-pub fn query_users<T: ToString>(
+pub fn query_users(
     deps: Deps,
     _env: Env,
-    address_list: Vec<T>,
+    address_list: Vec<impl ToString>,
 ) -> StdResult<Vec<(Addr, User)>> {
     let address_list = address_list
         .iter()
@@ -141,4 +141,13 @@ fn update_asset_data_list(
             asset_data_list.push((asset_info.to_owned(), price, decimals[1 - i]));
         }
     }
+}
+
+// returns balances_with_addresses: Vec<(Addr, Vec<(terraswap::asset::AssetInfo, Uint128)>)>
+pub fn query_balances(
+    deps: Deps,
+    _env: Env,
+    address_list: Vec<impl ToString>,
+) -> StdResult<Vec<(Addr, Vec<(terraswap::asset::AssetInfo, Uint128)>)>> {
+    unimplemented!()
 }

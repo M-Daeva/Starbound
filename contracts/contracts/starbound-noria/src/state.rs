@@ -42,7 +42,7 @@ pub const LEDGER: Item<Ledger> = Item::new("ledger");
 pub struct Ledger {
     pub global_delta_balance_list: Vec<Uint128>,
     pub global_delta_cost_list: Vec<Uint128>,
-    pub global_denom_list: Vec<String>,
+    pub global_denom_list: Vec<terraswap::asset::AssetInfo>,
     pub global_price_list: Vec<Decimal>,
 }
 
@@ -75,15 +75,27 @@ impl User {
 
 #[cw_serde]
 pub struct Asset {
-    pub contract: Addr, // TODO: rename to denom and support both cw20 and native assets
+    pub info: terraswap::asset::AssetInfo,
     pub weight: Decimal,
+    pub amount_to_transfer: Uint128,
 }
 
 impl Asset {
-    pub fn new(contract: &Addr, weight: Decimal) -> Self {
+    pub fn new(info: &str, weight: Decimal) -> Self {
+        let asset_info = if info.starts_with(PREFIX) {
+            terraswap::asset::AssetInfo::Token {
+                contract_addr: info.to_string(),
+            }
+        } else {
+            terraswap::asset::AssetInfo::NativeToken {
+                denom: info.to_string(),
+            }
+        };
+
         Self {
-            contract: contract.to_owned(),
+            info: asset_info,
             weight,
+            amount_to_transfer: Uint128::zero(),
         }
     }
 }

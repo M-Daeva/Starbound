@@ -231,154 +231,169 @@ pub fn rebalance_proportional(k2: &[Decimal], d: Uint128) -> Vec<Uint128> {
     correct_sum(&r, d)
 }
 
-// /// pools_with_denoms - POOLS.range().map().collect() \
-// /// users_with_addresses - USERS.range().map().collect()
-// pub fn get_ledger(
-//     pools_with_denoms: &Vec<(String, Pool)>,
-//     users_with_addresses: &Vec<(Addr, User)>,
-// ) -> (Ledger, Vec<(Addr, User)>) {
-//     let global_vec_len = pools_with_denoms.len();
+/// pools_with_denoms - POOLS.range().map().collect() \
+/// users_with_addresses - USERS.range().map().collect()
+pub fn get_ledger(
+    asset_data_list: &Vec<(terraswap::asset::AssetInfo, Decimal, u8)>, // list of (asset_info, price, decimals)
+    users_with_addresses: &Vec<(Addr, User)>,
+    balances_with_addresses: &Vec<(Addr, Vec<(terraswap::asset::AssetInfo, Uint128)>)>,
+) -> (Ledger, Vec<(Addr, User)>) {
+    let global_vec_len = asset_data_list.len();
 
-//     // for sorting
-//     let mut global_denom_list: Vec<String> = vec![];
+    // for sorting
+    let mut global_denom_list: Vec<terraswap::asset::AssetInfo> = vec![];
 
-//     // global_price_list - vector of global asset prices sorted by denom (ascending order)
-//     let mut global_price_list: Vec<Decimal> = vec![];
+    // global_price_list - vector of global asset prices sorted by denom (ascending order)
+    let mut global_price_list: Vec<Decimal> = vec![];
 
-//     // global_delta_balance_list - vector of global assets to buy
-//     let mut global_delta_balance_list: Vec<Uint128> = vec![Uint128::zero(); global_vec_len];
+    let mut global_decimals_list: Vec<u8> = vec![];
 
-//     // global_delta_cost_list - vector of global payments in $ to buy assets
-//     let mut global_delta_cost_list: Vec<Uint128> = vec![Uint128::zero(); global_vec_len];
+    // global_delta_balance_list - vector of global assets to buy
+    let mut global_delta_balance_list: Vec<Uint128> = vec![Uint128::zero(); global_vec_len];
 
-//     // 1) iterate over pools and fill global_denom_list and global_price_list
-//     for (denom, pool) in pools_with_denoms {
-//         global_denom_list.push(denom.to_owned());
-//         global_price_list.push(pool.price);
-//     }
+    // global_delta_cost_list - vector of global payments in $ to buy assets
+    let mut global_delta_cost_list: Vec<Uint128> = vec![Uint128::zero(); global_vec_len];
 
-//     let mut users_with_addresses_updated: Vec<(Addr, User)> = vec![];
+    // 1) iterate over pools and fill global_denom_list and global_price_list
+    for (asset_info, price, decimals) in asset_data_list {
+        global_denom_list.push(asset_info.clone());
+        global_price_list.push(*price);
+        global_decimals_list.push(*decimals);
+    }
 
-//     let mut daily_payment_sum = Uint128::zero();
+    let mut users_with_addresses_updated: Vec<(Addr, User)> = vec![];
 
-//     for (native_address, user) in users_with_addresses {
-//         // 2) calculate daily payment, update down_counter and deposited
+    let mut daily_payment_sum = Uint128::zero();
 
-//         // skip if user is out of money or investment period is ended
-//         let mut daily_payment = user
-//             .stable_balance
-//             .checked_div(user.down_counter)
-//             .map_or(Uint128::zero(), |x| {
-//                 x.clamp(Uint128::zero(), user.stable_balance)
-//             });
+    for (native_address, user) in users_with_addresses {
+        // 2) calculate daily payment, update down_counter and deposited
 
-//         // we can get (deposited/down_counter == 0) && (deposited != 0) &&
-//         // (down_counter != 0) so down_counter must be decremented anyway
-//         let down_counter = user.down_counter
-//             - if user.down_counter > Uint128::zero() {
-//                 Uint128::one()
-//             } else {
-//                 Uint128::zero()
-//             };
+        // skip if user is out of money or investment period is ended
+        let mut daily_payment = user
+            .stable_balance
+            .checked_div(user.down_counter)
+            .map_or(Uint128::zero(), |x| {
+                x.clamp(Uint128::zero(), user.stable_balance)
+            });
 
-//         if daily_payment.is_zero() {
-//             users_with_addresses_updated.push((
-//                 native_address.to_owned(),
-//                 User {
-//                     down_counter,
-//                     ..user.to_owned()
-//                 },
-//             ));
+        // we can get (deposited/down_counter == 0) && (deposited != 0) &&
+        // (down_counter != 0) so down_counter must be decremented anyway
+        let down_counter = user.down_counter
+            - if user.down_counter > Uint128::zero() {
+                Uint128::one()
+            } else {
+                Uint128::zero()
+            };
 
-//             continue;
-//         }
+        if daily_payment.is_zero() {
+            users_with_addresses_updated.push((
+                native_address.to_owned(),
+                User {
+                    down_counter,
+                    ..user.to_owned()
+                },
+            ));
 
-//         // user_weights - vector of target asset ratios
-//         let mut user_weights: Vec<Decimal> = vec![Decimal::zero(); global_vec_len];
+            continue;
+        }
 
-//         // user_balances - vector of user asset balances
-//         let mut user_balances: Vec<Uint128> = vec![Uint128::zero(); global_vec_len];
+        // user_weights - vector of target asset ratios
+        let mut user_weights: Vec<Decimal> = vec![Decimal::zero(); global_vec_len];
 
-//         // 3) iterate over user assets and fill user_weights and user_balances
-//         for (i, denom) in global_denom_list.iter().enumerate() {
-//             if let Some(asset_by_denom) = user.asset_list.iter().find(|x| &x.contract == denom) {
-//                 user_weights[i] = asset_by_denom.weight;
-//                 user_balances[i] = asset_by_denom.wallet_balance;
-//             };
-//         }
+        // user_balances - vector of user asset balances
+        let mut user_balances: Vec<Uint128> = vec![Uint128::zero(); global_vec_len];
 
-//         // 4) calculate user_costs based on balances and prices
-//         // user_costs - vector of user asset costs in $
-//         let user_costs = vec_mul(&user_balances, &global_price_list, true);
+        // TODO: refactor
+        // 3) iterate over user assets and fill user_weights and user_balances
+        for (i, denom) in global_denom_list.iter().enumerate() {
+            if let Some(asset_by_denom) = user.asset_list.iter().find(|x| x.info.equal(&denom)) {
+                if let Some((_, current_user_balances)) = balances_with_addresses
+                    .iter()
+                    .find(|(current_address, _)| current_address == native_address)
+                {
+                    if let Some((_, asset_balance_by_denom)) = current_user_balances
+                        .iter()
+                        .find(|(current_asset_info, _)| current_asset_info.equal(&denom))
+                    {
+                        user_weights[i] = asset_by_denom.weight;
+                        user_balances[i] = *asset_balance_by_denom;
+                    }
+                }
+            };
+        }
 
-//         // 5) calculate user_delta_costs using one of two rebalance functions
-//         // user_delta_costs - vector of user payments in $ to buy assets
-//         let user_delta_costs = if user.is_rebalancing_used {
-//             rebalance_controlled(&user_costs, &user_weights, daily_payment)
-//         } else {
-//             rebalance_proportional(&user_weights, daily_payment)
-//         };
+        // 4) calculate user_costs based on balances and prices
+        // user_costs - vector of user asset costs in $
+        let user_costs = vec_mul(&user_balances, &global_price_list, true);
 
-//         // 6) calcuclate user_delta_balances using prices and fill amount_to_transfer
-//         // user_delta_costs - vector of user assets to buy
-//         let user_delta_balances = vec_div(&user_delta_costs, &global_price_list, true);
+        // 5) calculate user_delta_costs using one of two rebalance functions
+        // user_delta_costs - vector of user payments in $ to buy assets
+        let user_delta_costs = if user.is_rebalancing_used {
+            rebalance_controlled(&user_costs, &user_weights, daily_payment)
+        } else {
+            rebalance_proportional(&user_weights, daily_payment)
+        };
 
-//         // update daily_payment considering unused funds
-//         daily_payment = vec_mul(&user_delta_balances, &global_price_list, false)
-//             .iter()
-//             .sum::<Uint128>();
+        // 6) calcuclate user_delta_balances using prices and fill amount_to_transfer
+        // user_delta_costs - vector of user assets to buy
+        let user_delta_balances = vec_div(&user_delta_costs, &global_price_list, true);
 
-//         daily_payment_sum += daily_payment;
+        // update daily_payment considering unused funds
+        daily_payment = vec_mul(&user_delta_balances, &global_price_list, false)
+            .iter()
+            .sum::<Uint128>();
 
-//         let stable_balance = user.stable_balance - daily_payment;
+        daily_payment_sum += daily_payment;
 
-//         // update user assets amount to buy data (amount_to_transfer)
-//         let mut asset_list_updated: Vec<Asset> = vec![];
-//         for asset in &user.asset_list {
-//             let some_index = global_denom_list.iter().position(|x| x == &asset.denom);
+        let stable_balance = user.stable_balance - daily_payment;
 
-//             if let Some(index) = some_index {
-//                 let amount_to_transfer = asset.amount_to_transfer + user_delta_balances[index];
+        // update user assets amount to buy data (amount_to_transfer)
+        let mut asset_list_updated: Vec<Asset> = vec![];
+        for asset in &user.asset_list {
+            let some_index = global_denom_list.iter().position(|x| x.equal(&asset.info));
 
-//                 let asset_updated = Asset {
-//                     amount_to_transfer,
-//                     ..asset.to_owned()
-//                 };
-//                 asset_list_updated.push(asset_updated);
+            if let Some(index) = some_index {
+                let amount_to_transfer = asset.amount_to_transfer + user_delta_balances[index];
 
-//                 // 7) fill global_delta_balance_list and global_delta_cost_list
-//                 global_delta_balance_list[index] += amount_to_transfer;
-//                 global_delta_cost_list[index] += dec_to_uint128(
-//                     (u128_to_dec(amount_to_transfer) * global_price_list[index]).ceil(),
-//                 );
-//             }
-//         }
+                let asset_updated = Asset {
+                    amount_to_transfer,
+                    ..asset.to_owned()
+                };
+                asset_list_updated.push(asset_updated);
 
-//         users_with_addresses_updated.push((
-//             native_address.to_owned(),
-//             User {
-//                 down_counter,
-//                 stable_balance,
-//                 asset_list: asset_list_updated,
-//                 ..*user
-//             },
-//         ));
-//     }
+                // 7) fill global_delta_balance_list and global_delta_cost_list
+                global_delta_balance_list[index] += amount_to_transfer;
+                global_delta_cost_list[index] += dec_to_uint128(
+                    (u128_to_dec(amount_to_transfer) * global_price_list[index]).ceil(),
+                );
+            }
+        }
 
-//     // 8) clamping sum of assets costs by daily_payment_sum
-//     if global_delta_cost_list.iter().sum::<Uint128>() > daily_payment_sum {
-//         global_delta_cost_list = correct_sum(&global_delta_cost_list, daily_payment_sum);
-//     }
+        users_with_addresses_updated.push((
+            native_address.to_owned(),
+            User {
+                down_counter,
+                stable_balance,
+                asset_list: asset_list_updated,
+                ..*user
+            },
+        ));
+    }
 
-//     let ledger = Ledger {
-//         global_denom_list,
-//         global_price_list,
-//         global_delta_balance_list,
-//         global_delta_cost_list,
-//     };
+    // 8) clamping sum of assets costs by daily_payment_sum
+    if global_delta_cost_list.iter().sum::<Uint128>() > daily_payment_sum {
+        global_delta_cost_list = correct_sum(&global_delta_cost_list, daily_payment_sum);
+    }
 
-//     (ledger, users_with_addresses_updated)
-// }
+    let ledger = Ledger {
+        global_denom_list,
+        global_price_list,
+        global_delta_balance_list,
+        global_delta_cost_list,
+    };
+
+    (ledger, users_with_addresses_updated)
+}
 
 // #[allow(clippy::too_many_arguments)]
 // pub fn transfer_router(

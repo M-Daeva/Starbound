@@ -280,10 +280,8 @@ impl BuilderableDeposit for DepositBuilder {
 
 impl BuilderableDeposit for User {
     fn with_asset(&mut self, asset: impl ToString, weight: &str) -> Self {
-        self.asset_list.push(Asset::new(
-            &Addr::unchecked(asset.to_string()),
-            str_to_dec(weight),
-        ));
+        self.asset_list
+            .push(Asset::new(&asset.to_string(), str_to_dec(weight)));
         self.to_owned()
     }
 
