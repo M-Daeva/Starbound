@@ -1,8 +1,9 @@
 #[cfg(not(feature = "library"))]
-use cosmwasm_std::{Addr, Decimal, Deps, Env, Order, StdResult, Uint128};
+use cosmwasm_std::{Addr, Coin, Decimal, Deps, Env, Order, StdResult, Uint128};
 
 use crate::{
     actions::helpers::math::get_xyk_price,
+    messages::query::QueryBalancesResponse,
     state::{Config, User, CONFIG, DENOM_STABLE, USERS},
 };
 
@@ -44,7 +45,7 @@ pub fn query_pairs(deps: Deps, _env: Env) -> StdResult<Vec<terraswap::asset::Pai
 }
 
 // TODO: implement when oracle module will be added
-pub fn query_denom_price(_deps: Deps, _env: Env) -> StdResult<Decimal> {
+fn query_denom_price(_deps: Deps, _env: Env) -> StdResult<Decimal> {
     Ok(Decimal::one())
 }
 
@@ -143,11 +144,84 @@ fn update_asset_data_list(
     }
 }
 
-// returns balances_with_addresses: Vec<(Addr, Vec<(terraswap::asset::AssetInfo, Uint128)>)>
 pub fn query_balances(
     deps: Deps,
-    _env: Env,
+    env: Env,
     address_list: Vec<impl ToString>,
-) -> StdResult<Vec<(Addr, Vec<(terraswap::asset::AssetInfo, Uint128)>)>> {
-    unimplemented!()
+) -> StdResult<QueryBalancesResponse> {
+    // get list of accounts saved in contract
+    let address_list = address_list
+        .iter()
+        .map(|x| deps.api.addr_validate(&x.to_string()))
+        .collect::<StdResult<Vec<Addr>>>()?;
+
+    let account_list = USERS
+        .range(deps.storage, None, None, Order::Ascending)
+        .flatten()
+        .filter(|(addr, _user)| address_list.is_empty() || address_list.contains(addr))
+        .map(|(addr, _user)| addr)
+        .collect::<Vec<Addr>>();
+
+    // get lists of assets from dex
+    let mut asset_list: Vec<terraswap::asset::AssetInfo> = vec![];
+
+    for terraswap::asset::PairInfo { asset_infos, .. } in query_pairs(deps, env)? {
+        for info in asset_infos {
+            if !asset_list.contains(&info) {
+                asset_list.push(info);
+            }
+        }
+    }
+
+    // split assets to coins and tokens
+    let mut coin_list: Vec<String> = vec![];
+    let mut token_list: Vec<Addr> = vec![];
+
+    for asset in asset_list {
+        match asset {
+            terraswap::asset::AssetInfo::NativeToken { denom } => coin_list.push(denom),
+            terraswap::asset::AssetInfo::Token { contract_addr } => {
+                token_list.push(deps.api.addr_validate(&contract_addr)?)
+            }
+        };
+    }
+
+    let mut accounts_and_balances: Vec<(Addr, Vec<(terraswap::asset::AssetInfo, Uint128)>)> =
+        vec![];
+
+    for account in &account_list {
+        // query account coins included in pairs
+        let mut balances = deps
+            .querier
+            .query_all_balances(account)?
+            .into_iter()
+            .filter(|Coin { denom, amount }| coin_list.contains(denom) && !amount.is_zero())
+            .map(|Coin { denom, amount }| {
+                (terraswap::asset::AssetInfo::NativeToken { denom }, amount)
+            })
+            .collect::<Vec<(terraswap::asset::AssetInfo, Uint128)>>();
+
+        // query account tokens included in pairs
+        for token in &token_list {
+            let cw20::BalanceResponse { balance } = deps.querier.query_wasm_smart(
+                token,
+                &cw20_base::msg::QueryMsg::Balance {
+                    address: account.to_string(),
+                },
+            )?;
+
+            if !balance.is_zero() {
+                balances.push((
+                    terraswap::asset::AssetInfo::Token {
+                        contract_addr: token.to_string(),
+                    },
+                    balance,
+                ));
+            }
+        }
+
+        accounts_and_balances.push((account.to_owned(), balances));
+    }
+
+    Ok(accounts_and_balances)
 }

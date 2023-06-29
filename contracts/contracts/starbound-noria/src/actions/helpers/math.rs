@@ -234,9 +234,9 @@ pub fn rebalance_proportional(k2: &[Decimal], d: Uint128) -> Vec<Uint128> {
 /// pools_with_denoms - POOLS.range().map().collect() \
 /// users_with_addresses - USERS.range().map().collect()
 pub fn get_ledger(
-    asset_data_list: &Vec<(terraswap::asset::AssetInfo, Decimal, u8)>, // list of (asset_info, price, decimals)
+    asset_data_list: &[(terraswap::asset::AssetInfo, Decimal, u8)], // list of (asset_info, price, decimals)
     users_with_addresses: &Vec<(Addr, User)>,
-    balances_with_addresses: &Vec<(Addr, Vec<(terraswap::asset::AssetInfo, Uint128)>)>,
+    balances_with_addresses: &[(Addr, Vec<(terraswap::asset::AssetInfo, Uint128)>)],
 ) -> (Ledger, Vec<(Addr, User)>) {
     let global_vec_len = asset_data_list.len();
 
@@ -306,14 +306,14 @@ pub fn get_ledger(
         // TODO: refactor
         // 3) iterate over user assets and fill user_weights and user_balances
         for (i, denom) in global_denom_list.iter().enumerate() {
-            if let Some(asset_by_denom) = user.asset_list.iter().find(|x| x.info.equal(&denom)) {
+            if let Some(asset_by_denom) = user.asset_list.iter().find(|x| x.info.equal(denom)) {
                 if let Some((_, current_user_balances)) = balances_with_addresses
                     .iter()
                     .find(|(current_address, _)| current_address == native_address)
                 {
                     if let Some((_, asset_balance_by_denom)) = current_user_balances
                         .iter()
-                        .find(|(current_asset_info, _)| current_asset_info.equal(&denom))
+                        .find(|(current_asset_info, _)| current_asset_info.equal(denom))
                     {
                         user_weights[i] = asset_by_denom.weight;
                         user_balances[i] = *asset_balance_by_denom;
