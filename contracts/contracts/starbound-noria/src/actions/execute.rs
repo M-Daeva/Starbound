@@ -1,12 +1,19 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::{
-    coin, BankMsg, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,
+    coin, BankMsg, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
+    Uint128,
 };
 
 use crate::{
-    actions::helpers::verifier::{verify_deposit_args, verify_scheduler},
+    actions::{
+        helpers::{
+            math::{get_ledger, transfer_router},
+            verifier::{verify_deposit_args, verify_scheduler},
+        },
+        query::{query_assets_in_pools, query_balances, query_pairs, query_users},
+    },
     error::ContractError,
-    state::{Asset, Config, User, CONFIG, DENOM_STABLE, USERS},
+    state::{Asset, Config, User, CONFIG, DENOM_STABLE, LEDGER, USERS},
 };
 
 pub fn deposit(
@@ -107,6 +114,7 @@ pub fn update_config(
     info: MessageInfo,
     scheduler: Option<String>,
     terraswap_factory: Option<String>,
+    terraswap_router: Option<String>,
     fee_rate: Option<Decimal>,
 ) -> Result<Response, ContractError> {
     CONFIG.update(
@@ -124,6 +132,10 @@ pub fn update_config(
                 config.terraswap_factory = deps.api.addr_validate(&x)?;
             }
 
+            if let Some(x) = terraswap_router {
+                config.terraswap_router = deps.api.addr_validate(&x)?;
+            }
+
             if let Some(x) = fee_rate {
                 config.fee_rate = x;
             }
@@ -135,10 +147,75 @@ pub fn update_config(
     Ok(Response::new().add_attributes(vec![("action", "update_config")]))
 }
 
-// pub fn swap(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+// pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
 //     verify_scheduler(&deps.as_ref(), &info)?;
 
-//     Ok(Response::new().add_attributes(vec![("action", "swap")]))
+//     let pairs = query_pairs(deps.as_ref(), env)?;
+//     let users_with_addresses = query_users(deps.as_ref(), env, vec![])?;
+//     let asset_data_list = query_assets_in_pools(deps.as_ref(), env)?;
+//     let balances_with_addresses = query_balances(deps.as_ref(), env, vec![])?;
+
+//     let (ledger, users_with_addresses) = get_ledger(
+//         &asset_data_list,
+//         &users_with_addresses,
+//         &balances_with_addresses,
+//     );
+
+//     let mut msg_list = Vec::<CosmosMsg>::new();
+
+//     let config = CONFIG.load(deps.storage)?;
+//     let denom_token_in = DENOM_STABLE;
+
+//     for (i, global_denom) in ledger.global_denom_list.iter().enumerate() {
+//         // skip stablecoin
+//         if global_denom.to_string().contains(denom_token_in) {
+//             continue;
+//         }
+
+//         let token_out_min_amount = String::from("1");
+//         let amount = ledger.global_delta_cost_list[i];
+
+//         // skip if no funds
+//         if amount.is_zero() {
+//             continue;
+//         }
+
+//         // let pool = POOLS.load(deps.storage, global_denom)?;
+
+//         //let mut routes: Vec = vec![];
+
+//         // if other asset is needed add extra route
+//         if !global_denom.to_string().contains(DENOM_STABLE) {
+//             routes.push(SwapAmountInRoute {
+//                 pool_id: pool.id.u128() as u64,
+//                 token_out_denom: global_denom.to_string(),
+//             });
+//         }
+
+//         let msg = MsgSwapExactAmountIn {
+//             sender: env.contract.address.to_string(),
+//             routes,
+//             token_in: Some(PoolCoin {
+//                 amount: amount.to_string(),
+//                 denom: denom_token_in.to_string(),
+//             }),
+//             token_out_min_amount,
+//         };
+
+//         msg_list.push(msg.into());
+//     }
+
+//     // update user list storage
+//     for (address, user_updated) in users_with_addresses {
+//         USERS.save(deps.storage, &address, &user_updated)?;
+//     }
+
+//     // update ledger
+//     LEDGER.save(deps.storage, &ledger)?;
+
+//     Ok(Response::new()
+//         .add_messages(msg_list)
+//         .add_attributes(vec![("action", "swap")]))
 // }
 
 // pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
@@ -185,4 +262,170 @@ pub fn update_config(
 //     Ok(Response::new()
 //         .add_messages(msg_list)
 //         .add_attributes(vec![("action", "transfer")]))
+// }
+
+// pub fn swap_router(
+//     deps: DepsMut,
+//     env: Env,
+//     info: MessageInfo,
+//     amount: impl Into<Uint128>,
+//     asset_in: terraswap::asset::AssetInfo,
+//     asset_out: terraswap::asset::AssetInfo,
+// ) -> StdResult<Vec<CosmosMsg>> {
+//     let pairs = query_pairs(deps.as_ref(), env)?;
+
+//     let mut routes: Vec<terraswap::asset::PairInfo> = vec![];
+
+//     for pair in pairs {
+//         let terraswap::asset::PairInfo { asset_infos, .. } = pair;
+
+//         if asset_infos.contains(&asset_in) && asset_infos.contains(&asset_out) {
+//             routes.push(pair);
+//             break;
+//         }
+
+//         if asset_infos.contains(&asset_in) {
+//             let intermediate_asset = asset_infos
+//                 .into_iter()
+//                 .find(|x| !x.equal(&asset_in))
+//                 .ok_or(StdError::NotFound {
+//                     kind: "Intermediate asset is not found".to_string(),
+//                 })?;
+
+//             let pairs_out = pairs
+//                 .into_iter()
+//                 .filter(|pair| pair.asset_infos.contains(&asset_out))
+//                 .collect::<Vec<terraswap::asset::PairInfo>>();
+
+//             let target_pair = pairs_out
+//                 .into_iter()
+//                 .find(|x| x.asset_infos.contains(&intermediate_asset))
+//                 .ok_or(StdError::NotFound {
+//                     kind: "Target pair is not found".to_string(),
+//                 })?;
+
+//             routes = vec![pair, target_pair];
+//             break;
+//         }
+
+//         if asset_infos.contains(&asset_out) {
+//             let intermediate_asset = asset_infos
+//                 .into_iter()
+//                 .find(|x| !x.equal(&asset_out))
+//                 .ok_or(StdError::NotFound {
+//                     kind: "Intermediate asset is not found".to_string(),
+//                 })?;
+
+//             let pairs_in = pairs
+//                 .into_iter()
+//                 .filter(|pair| pair.asset_infos.contains(&asset_in))
+//                 .collect::<Vec<terraswap::asset::PairInfo>>();
+
+//             let target_pair = pairs_in
+//                 .into_iter()
+//                 .find(|x| x.asset_infos.contains(&intermediate_asset))
+//                 .ok_or(StdError::NotFound {
+//                     kind: "Target pair is not found".to_string(),
+//                 })?;
+
+//             routes = vec![pair, target_pair];
+//             break;
+//         }
+//     }
+
+//     if routes.is_empty() {
+//         Err(StdError::GenericErr {
+//             msg: "Routes are not found!".to_string(),
+//         })?;
+//     }
+
+//     let mut msg_list: Vec<CosmosMsg> = vec![];
+
+//     for route in routes {
+//         let amount: Uint128 = amount.into();
+//         let sender = sender.to_address();
+//         let contract_addr = Addr::unchecked(contract_addr);
+
+//         let swap_msg = terraswap::pair::ExecuteMsg::Swap {
+//             offer_asset: terraswap::asset::Asset {
+//                 amount,
+//                 info: project_coin_or_token_in.to_terraswap_asset_info(),
+//             },
+//             belief_price: None,
+//             max_spread: None,
+//             to: None,
+//         };
+
+//         let wasm_msg = CosmosMsg::Wasm(WasmMsg::Execute {
+//             contract_addr,
+//             msg: to_binary(&swap_msg)?,
+//             funds: vec![],
+//         });
+
+//         msg_list.push(wasm_msg);
+//     }
+
+//     // // case 1 - asset_in is smoothcoin and pair with asset_in exists
+//     // if asset_in.to_string().contains(DENOM_STABLE)
+//     //     && pairs.iter().find(|pair| pair.asset_infos.contains(x))
+//     // {}
+
+//     let amount: Uint128 = amount.into();
+//     let sender = sender.to_address();
+//     let contract_addr = Addr::unchecked(contract_addr);
+//     let msg = terraswap::pair::ExecuteMsg::Swap {
+//         offer_asset: terraswap::asset::Asset {
+//             amount,
+//             info: project_coin_or_token_in.to_terraswap_asset_info(),
+//         },
+//         belief_price: None,
+//         max_spread: None,
+//         to: None,
+//     };
+
+//     (match &project_coin_or_token_in.to_project_asset() {
+//         ProjectAsset::Coin(project_coin) => self.app.execute_contract(
+//             sender,
+//             contract_addr,
+//             &msg,
+//             &[coin(amount.u128(), project_coin.to_string())],
+//         ),
+//         ProjectAsset::Token(project_token) => self.app.execute_contract(
+//             sender,
+//             project_token.to_address(),
+//             &cw20_base::msg::ExecuteMsg::Send {
+//                 contract: contract_addr.to_string(),
+//                 amount,
+//                 msg: to_binary(&msg)?,
+//             },
+//             &[],
+//         ),
+//     })
+//     .map_err(|err| err.downcast().unwrap());
+
+//     Ok(vec![])
+// }
+
+// fn create_swap_msg(pair: terraswap::asset::PairInfo) -> CosmosMsg {
+//     let amount: Uint128 = amount.into();
+//     let sender = sender.to_address();
+//     let contract_addr = Addr::unchecked(contract_addr);
+
+//     let swap_msg = terraswap::pair::ExecuteMsg::Swap {
+//         offer_asset: terraswap::asset::Asset {
+//             amount,
+//             info: project_coin_or_token_in.to_terraswap_asset_info(),
+//         },
+//         belief_price: None,
+//         max_spread: None,
+//         to: None,
+//     };
+
+//     let wasm_msg = CosmosMsg::Wasm(WasmMsg::Execute {
+//         contract_addr,
+//         msg: to_binary(&swap_msg)?,
+//         funds: vec![],
+//     });
+
+//     wasm_msg
 // }

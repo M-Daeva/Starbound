@@ -1,6 +1,5 @@
 use cosmwasm_std::{
-    coin, Addr, BankMsg, Coin, CosmosMsg, Decimal, Decimal256, IbcMsg, IbcTimeout, Timestamp,
-    Uint128,
+    coin, to_binary, Addr, BankMsg, CosmosMsg, Decimal, Decimal256, StdResult, Uint128, WasmMsg,
 };
 
 use std::{
@@ -8,7 +7,7 @@ use std::{
     str::FromStr,
 };
 
-use crate::state::{Asset, Ledger, User};
+use crate::state::{Asset, Ledger, User, DENOM_STABLE};
 
 pub const P6: u128 = 1_000_000; // 1 asset with 6 decimals
 pub const P12: u128 = P6.pow(2); // 1_000_000 of assets with 6 decimals
@@ -231,6 +230,41 @@ pub fn rebalance_proportional(k2: &[Decimal], d: Uint128) -> Vec<Uint128> {
     correct_sum(&r, d)
 }
 
+/// returns a2 = a1 * 10^(d2 - d1) * p1 / p2, \
+/// where a - amount, d - decimals, p - price
+pub fn get_xyk_amount(a1: u128, d1: u8, d2: u8, p1: Decimal, p2: Decimal) -> u128 {
+    let amount1 = u128_to_dec256(a1);
+    let price1 = dec_to_dec256(p1);
+    let price2 = dec_to_dec256(p2);
+
+    if d2 >= d1 {
+        let power = u128_to_dec256(10u128.pow((d2 - d1).into()));
+        dec256_to_u128((price1 / price2) * amount1 * power)
+    } else {
+        let power = u128_to_dec256(10u128.pow((d1 - d2).into()));
+        dec256_to_u128((price1 / price2) * amount1 / power)
+    }
+}
+
+/// returns p2 = p1 * 10^(d2 - d1) * a1 / a2, \
+/// where a - amount, d - decimals, p - price
+pub fn get_xyk_price<T>(p1: Decimal, d1: u8, d2: u8, a1: T, a2: T) -> Decimal
+where
+    Uint128: From<T>,
+{
+    let price1 = dec_to_dec256(p1);
+    let amount1 = u128_to_dec256(a1);
+    let amount2 = u128_to_dec256(a2);
+
+    if d2 >= d1 {
+        let power = u128_to_dec256::<u128>(10u128.pow((d2 - d1).into()));
+        dec256_to_dec((amount1 / amount2) * price1 * power)
+    } else {
+        let power = u128_to_dec256::<u128>(10u128.pow((d1 - d2).into()));
+        dec256_to_dec((amount1 / amount2) * price1 / power)
+    }
+}
+
 /// pools_with_denoms - POOLS.range().map().collect() \
 /// users_with_addresses - USERS.range().map().collect()
 pub fn get_ledger(
@@ -395,192 +429,133 @@ pub fn get_ledger(
     (ledger, users_with_addresses_updated)
 }
 
-// #[allow(clippy::too_many_arguments)]
-// pub fn transfer_router(
-//     pools_with_denoms: &[(String, Pool)],
-//     users_with_addresses: &[(Addr, User)],
-//     contract_balances: Vec<Coin>,
-//     ledger: Ledger,
-//     fee_default: Decimal,
-//     fee_native: Decimal,
-//     dapp_address_and_denom_list: Vec<(Addr, String)>,
-//     stablecoin_denom: &str,
-//     timestamp: Timestamp,
-// ) -> (Vec<(Addr, User)>, Vec<CosmosMsg>) {
-//     let mut fee_list: Vec<Uint128> = vec![Uint128::zero(); ledger.global_denom_list.len()];
+#[allow(clippy::too_many_arguments)]
+pub fn transfer_router(
+    users_with_addresses: &[(Addr, User)],
+    contract_balances: Vec<(terraswap::asset::AssetInfo, Uint128)>,
+    ledger: Ledger,
+    fee_native: Decimal,
+    admin_address: &Addr,
+) -> StdResult<(Vec<(Addr, User)>, Vec<CosmosMsg>)> {
+    let mut fee_list: Vec<Uint128> = vec![Uint128::zero(); ledger.global_denom_list.len()];
 
-//     // get vector of ratios to correct amount_to_transfer due to difference between
-//     // contract balances and calculated values
-//     let asset_amount_correction_vector = ledger
-//         .global_denom_list
-//         .iter()
-//         .enumerate()
-//         .map(|(i, denom)| {
-//             let asset_amount =
-//                 contract_balances
-//                     .iter()
-//                     .find(|x| &x.denom == denom)
-//                     .map_or(Decimal::zero(), |y| {
-//                         let fee_multiplier = if y.denom == EXCHANGE_DENOM {
-//                             fee_native
-//                         } else {
-//                             fee_default
-//                         };
-//                         let amount = u128_to_dec(y.amount);
-//                         let fee = (amount * fee_multiplier).ceil();
-//                         fee_list[i] = dec_to_uint128(fee);
-//                         amount - fee
-//                     });
+    // get vector of ratios to correct amount_to_transfer due to difference between
+    // contract balances and calculated values
+    let asset_amount_correction_vector = ledger
+        .global_denom_list
+        .iter()
+        .enumerate()
+        .map(|(i, denom)| {
+            let asset_amount = contract_balances
+                .iter()
+                .find(|(asset_info, _amount)| asset_info.equal(denom))
+                .map_or(Decimal::zero(), |y| {
+                    let fee_multiplier = if y.0.to_string().contains(DENOM_STABLE) {
+                        fee_native
+                    } else {
+                        Decimal::zero()
+                    };
+                    let amount = u128_to_dec(y.1);
+                    let fee = (amount * fee_multiplier).ceil();
+                    fee_list[i] = dec_to_uint128(fee);
+                    amount - fee
+                });
 
-//             asset_amount
-//                 .checked_div(u128_to_dec(ledger.global_delta_balance_list[i]))
-//                 .map_or(Decimal::zero(), |y| y)
-//         })
-//         .collect::<Vec<Decimal>>();
+            asset_amount
+                .checked_div(u128_to_dec(ledger.global_delta_balance_list[i]))
+                .map_or(Decimal::zero(), |y| y)
+        })
+        .collect::<Vec<Decimal>>();
 
-//     let mut users_with_addresses_updated: Vec<(Addr, User)> = vec![];
-//     let mut msg_list: Vec<CosmosMsg> = vec![];
+    let mut users_with_addresses_updated: Vec<(Addr, User)> = vec![];
+    let mut msg_list: Vec<CosmosMsg> = vec![];
 
-//     for (addr, user) in users_with_addresses.iter().cloned() {
-//         let mut asset_list: Vec<Asset> = vec![];
+    for (addr, user) in users_with_addresses.iter().cloned() {
+        let mut asset_list: Vec<Asset> = vec![];
 
-//         for asset in &user.asset_list {
-//             if let Some(index) = ledger
-//                 .global_denom_list
-//                 .iter()
-//                 .position(|x| x == &asset.denom)
-//             {
-//                 let amount_to_transfer = dec_to_uint128(
-//                     (u128_to_dec(asset.amount_to_transfer)
-//                         * asset_amount_correction_vector[index])
-//                         .floor(),
-//                 );
+        for asset in &user.asset_list {
+            if let Some(index) = ledger
+                .global_denom_list
+                .iter()
+                .position(|x| x.equal(&asset.info))
+            {
+                let amount_to_transfer = dec_to_uint128(
+                    (u128_to_dec(asset.amount_to_transfer) * asset_amount_correction_vector[index])
+                        .floor(),
+                );
 
-//                 // reset amount_to_transfer
-//                 asset_list.push(Asset {
-//                     amount_to_transfer: Uint128::zero(),
-//                     ..asset.to_owned()
-//                 });
+                // reset amount_to_transfer
+                asset_list.push(Asset {
+                    amount_to_transfer: Uint128::zero(),
+                    ..asset.to_owned()
+                });
 
-//                 // don't create message with zero balance
-//                 if amount_to_transfer.is_zero() {
-//                     continue;
-//                 }
+                // don't create message with zero balance
+                if amount_to_transfer.is_zero() {
+                    continue;
+                }
 
-//                 if asset.denom == EXCHANGE_DENOM {
-//                     let bank_msg = CosmosMsg::Bank(BankMsg::Send {
-//                         to_address: asset.wallet_address.to_string(),
-//                         amount: vec![coin(amount_to_transfer.u128(), &asset.denom)],
-//                     });
+                match asset.info.clone() {
+                    terraswap::asset::AssetInfo::NativeToken { denom } => {
+                        let bank_msg = CosmosMsg::Bank(BankMsg::Send {
+                            to_address: addr.to_string(),
+                            amount: vec![coin(amount_to_transfer.u128(), denom)],
+                        });
 
-//                     msg_list.push(bank_msg);
-//                 } else if let Some((_denom, pool)) = pools_with_denoms
-//                     .iter()
-//                     .find(|(denom, _pool)| denom == &asset.denom)
-//                 {
-//                     let ibc_msg = CosmosMsg::Ibc(IbcMsg::Transfer {
-//                         channel_id: pool.channel_id.to_owned(),
-//                         to_address: asset.wallet_address.to_string(),
-//                         amount: coin(amount_to_transfer.u128(), &asset.denom),
-//                         timeout: IbcTimeout::with_timestamp(timestamp),
-//                     });
+                        msg_list.push(bank_msg);
+                    }
+                    terraswap::asset::AssetInfo::Token { contract_addr } => {
+                        let cw20_msg = cw20_base::msg::ExecuteMsg::Transfer {
+                            recipient: addr.to_string(),
+                            amount: amount_to_transfer,
+                        };
 
-//                     msg_list.push(ibc_msg);
-//                 };
-//             };
-//         }
+                        let wasm_msg = CosmosMsg::Wasm(WasmMsg::Execute {
+                            contract_addr,
+                            msg: to_binary(&cw20_msg)?,
+                            funds: vec![],
+                        });
 
-//         users_with_addresses_updated.push((addr, User { asset_list, ..user }));
-//     }
+                        msg_list.push(wasm_msg);
+                    }
+                }
+            };
+        }
 
-//     for (i, fee) in fee_list.iter().enumerate() {
-//         // don't create message with zero balance
-//         if fee.is_zero() {
-//             continue;
-//         }
-
-//         let fee_denom = &ledger.global_denom_list[i];
-
-//         // don't create message with stablecoin
-//         if fee_denom == stablecoin_denom {
-//             continue;
-//         }
-
-//         if let Some((addr, denom)) = dapp_address_and_denom_list
-//             .iter()
-//             .find(|(_addr, denom)| denom == fee_denom)
-//         {
-//             if denom == EXCHANGE_DENOM {
-//                 let bank_msg = CosmosMsg::Bank(BankMsg::Send {
-//                     to_address: addr.to_string(),
-//                     amount: vec![coin(fee.u128(), fee_denom)],
-//                 });
-
-//                 msg_list.push(bank_msg);
-//             } else if let Some((_denom, pool)) = pools_with_denoms
-//                 .iter()
-//                 .find(|(denom, _pool)| denom == fee_denom)
-//             {
-//                 let ibc_msg = CosmosMsg::Ibc(IbcMsg::Transfer {
-//                     channel_id: pool.channel_id.to_owned(),
-//                     to_address: addr.to_string(),
-//                     amount: coin(fee.u128(), fee_denom),
-//                     timeout: IbcTimeout::with_timestamp(timestamp),
-//                 });
-
-//                 msg_list.push(ibc_msg);
-//             };
-//         };
-//     }
-
-//     // println!(
-//     //     "asset_amount_correction_vector {:#?}",
-//     //     asset_amount_correction_vector
-//     // );
-
-//     println!("fee_list {:#?}", fee_list);
-
-//     // println!(
-//     //     "users_with_addresses_updated {:#?}",
-//     //     users_with_addresses_updated
-//     // );
-
-//     println!("msg_list {:#?}", msg_list);
-
-//     (users_with_addresses_updated, msg_list)
-// }
-
-/// returns a2 = a1 * 10^(d2 - d1) * p1 / p2, \
-/// where a - amount, d - decimals, p - price
-pub fn get_xyk_amount(a1: u128, d1: u8, d2: u8, p1: Decimal, p2: Decimal) -> u128 {
-    let amount1 = u128_to_dec256(a1);
-    let price1 = dec_to_dec256(p1);
-    let price2 = dec_to_dec256(p2);
-
-    if d2 >= d1 {
-        let power = u128_to_dec256(10u128.pow((d2 - d1).into()));
-        dec256_to_u128((price1 / price2) * amount1 * power)
-    } else {
-        let power = u128_to_dec256(10u128.pow((d1 - d2).into()));
-        dec256_to_u128((price1 / price2) * amount1 / power)
+        users_with_addresses_updated.push((addr, User { asset_list, ..user }));
     }
-}
 
-/// returns p2 = p1 * 10^(d2 - d1) * a1 / a2, \
-/// where a - amount, d - decimals, p - price
-pub fn get_xyk_price<T>(p1: Decimal, d1: u8, d2: u8, a1: T, a2: T) -> Decimal
-where
-    Uint128: From<T>,
-{
-    let price1 = dec_to_dec256(p1);
-    let amount1 = u128_to_dec256(a1);
-    let amount2 = u128_to_dec256(a2);
+    for (i, fee) in fee_list.iter().enumerate() {
+        // don't create message with zero balance
+        if fee.is_zero() {
+            continue;
+        }
 
-    if d2 >= d1 {
-        let power = u128_to_dec256::<u128>(10u128.pow((d2 - d1).into()));
-        dec256_to_dec((amount1 / amount2) * price1 * power)
-    } else {
-        let power = u128_to_dec256::<u128>(10u128.pow((d1 - d2).into()));
-        dec256_to_dec((amount1 / amount2) * price1 / power)
+        let fee_asset = &ledger.global_denom_list[i];
+
+        if let terraswap::asset::AssetInfo::NativeToken { denom } = fee_asset {
+            let bank_msg = CosmosMsg::Bank(BankMsg::Send {
+                to_address: admin_address.to_string(),
+                amount: vec![coin(fee.u128(), denom)],
+            });
+
+            msg_list.push(bank_msg);
+        }
     }
+
+    // println!(
+    //     "asset_amount_correction_vector {:#?}",
+    //     asset_amount_correction_vector
+    // );
+
+    println!("fee_list {:#?}", fee_list);
+
+    // println!(
+    //     "users_with_addresses_updated {:#?}",
+    //     users_with_addresses_updated
+    // );
+
+    println!("msg_list {:#?}", msg_list);
+
+    Ok((users_with_addresses_updated, msg_list))
 }

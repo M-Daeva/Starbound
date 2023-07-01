@@ -20,10 +20,17 @@ pub fn init(
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     let terraswap_factory = deps.api.addr_validate(&msg.terraswap_factory)?;
+    let terraswap_router = deps.api.addr_validate(&msg.terraswap_router)?;
 
     CONFIG.save(
         deps.storage,
-        &Config::new(&info.sender, &info.sender, &terraswap_factory, FEE_RATE),
+        &Config::new(
+            &info.sender,
+            &info.sender,
+            &terraswap_factory,
+            &terraswap_router,
+            FEE_RATE,
+        ),
     )?;
 
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;

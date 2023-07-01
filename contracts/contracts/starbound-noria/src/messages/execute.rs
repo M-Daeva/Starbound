@@ -14,6 +14,7 @@ pub enum ExecuteMsg {
     UpdateConfig {
         scheduler: Option<String>,
         terraswap_factory: Option<String>,
+        terraswap_router: Option<String>,
         fee_rate: Option<Decimal>,
     },
     // Swap {},

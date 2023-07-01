@@ -361,6 +361,7 @@ pub struct UpdateConfigBuilder {
     sender: Addr,
     scheduler: Option<String>,
     terraswap_factory: Option<String>,
+    terraswap_router: Option<String>,
     fee_rate: Option<Decimal>,
 }
 
@@ -370,6 +371,7 @@ impl UpdateConfigBuilder {
             sender: project_account.to_address(),
             scheduler: None,
             terraswap_factory: None,
+            terraswap_router: None,
             fee_rate: None,
         }
     }
@@ -380,6 +382,7 @@ impl UpdateConfigBuilder {
             sender,
             scheduler,
             terraswap_factory,
+            terraswap_router,
             fee_rate,
         } = self.to_owned();
 
@@ -389,6 +392,7 @@ impl UpdateConfigBuilder {
             &ExecuteMsg::UpdateConfig {
                 scheduler,
                 terraswap_factory,
+                terraswap_router,
                 fee_rate,
             },
             &[],
@@ -401,6 +405,7 @@ impl UpdateConfigBuilder {
 pub trait BuilderableUpdateConfig {
     fn with_scheduler(&mut self, scheduler: impl ToString) -> Self;
     fn with_terraswap_factory(&mut self, terraswap_factory_address: impl ToString) -> Self;
+    fn with_terraswap_router(&mut self, terraswap_router_address: impl ToString) -> Self;
     fn with_fee_rate(&mut self, fee_rate: &str) -> Self;
 }
 
@@ -412,6 +417,11 @@ impl BuilderableUpdateConfig for UpdateConfigBuilder {
 
     fn with_terraswap_factory(&mut self, terraswap_factory_address: impl ToString) -> Self {
         self.terraswap_factory = Some(terraswap_factory_address.to_string());
+        self.to_owned()
+    }
+
+    fn with_terraswap_router(&mut self, terraswap_router_address: impl ToString) -> Self {
+        self.terraswap_router = Some(terraswap_router_address.to_string());
         self.to_owned()
     }
 
@@ -432,6 +442,11 @@ impl BuilderableUpdateConfig for Config {
         self.to_owned()
     }
 
+    fn with_terraswap_router(&mut self, terraswap_router_address: impl ToString) -> Self {
+        self.terraswap_router = Addr::unchecked(terraswap_router_address.to_string());
+        self.to_owned()
+    }
+
     fn with_fee_rate(&mut self, fee_rate: &str) -> Self {
         self.fee_rate = str_to_dec(fee_rate);
         self.to_owned()
@@ -447,6 +462,7 @@ impl BuilderableConfig for Config {
         Self::new(
             &project_account.to_address(),
             &project_account.to_address(),
+            &Addr::unchecked(""),
             &Addr::unchecked(""),
             FEE_RATE,
         )

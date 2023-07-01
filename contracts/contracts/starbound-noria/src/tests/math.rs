@@ -1,11 +1,20 @@
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Addr, Decimal, Uint128};
 
 use speculoos::assert_that;
+use strum::IntoEnumIterator;
 
-use crate::actions::helpers::math::{
-    correct_sum, dec_to_uint128, get_xyk_amount, get_xyk_price, rebalance_controlled,
-    rebalance_proportional, str_to_dec, str_vec_to_dec_vec, u128_to_dec, u128_vec_to_uint128_vec,
-    vec_add, vec_div, vec_mul, vec_sub, P12, P24,
+use crate::{
+    actions::helpers::math::{
+        correct_sum, dec_to_uint128, get_ledger, get_xyk_amount, get_xyk_price,
+        rebalance_controlled, rebalance_proportional, str_to_dec, str_vec_to_dec_vec, u128_to_dec,
+        u128_vec_to_uint128_vec, vec_add, vec_div, vec_mul, vec_sub, P12, P24,
+    },
+    messages::query::QueryBalancesResponse,
+    state::{Asset, User},
+    tests::helpers::suite::{
+        GetDecimals, GetPrice, ProjectAccount, ProjectCoin, ProjectToken, ToAddress,
+        ToTerraswapAssetInfo,
+    },
 };
 
 #[test]
@@ -242,6 +251,92 @@ fn proportional_noisy() {
     assert_that(&rebalance_proportional(&k2, sd)).is_equal_to(xd);
 }
 
+#[test]
+fn xyk_amounts() {
+    assert_that(&get_xyk_amount(P12, 6, 6, str_to_dec("1"), str_to_dec("1"))).is_equal_to(P12);
+
+    assert_that(&get_xyk_amount(P12, 6, 6, str_to_dec("1"), str_to_dec("2"))).is_equal_to(P12 / 2);
+
+    assert_that(&get_xyk_amount(P12, 6, 6, str_to_dec("2"), str_to_dec("1"))).is_equal_to(P12 * 2);
+
+    assert_that(&get_xyk_amount(
+        P12,
+        6,
+        18,
+        str_to_dec("1"),
+        str_to_dec("1"),
+    ))
+    .is_equal_to(P24);
+
+    assert_that(&get_xyk_amount(
+        P24,
+        18,
+        6,
+        str_to_dec("1"),
+        str_to_dec("1"),
+    ))
+    .is_equal_to(P12);
+}
+
+#[test]
+fn xyk_prices() {
+    assert_that(&get_xyk_price(str_to_dec("1"), 6, 6, P12, P12)).is_equal_to(str_to_dec("1"));
+
+    assert_that(&get_xyk_price(str_to_dec("1"), 6, 6, P12 * 2, P12)).is_equal_to(str_to_dec("2"));
+
+    assert_that(&get_xyk_price(str_to_dec("1"), 6, 6, P12 / 2, P12)).is_equal_to(str_to_dec("0.5"));
+
+    assert_that(&get_xyk_price(str_to_dec("1"), 18, 6, P24, P12)).is_equal_to(str_to_dec("1"));
+
+    assert_that(&get_xyk_price(str_to_dec("1"), 6, 18, P12, P24)).is_equal_to(str_to_dec("1"));
+}
+
+// #[test]
+// fn calc_ledger() {
+//     let mut asset_data_list: Vec<(terraswap::asset::AssetInfo, Decimal, u8)> = vec![];
+
+//     for project_coin in ProjectCoin::iter() {
+//         asset_data_list.push((
+//             project_coin.to_terraswap_asset_info(),
+//             project_coin.get_price(),
+//             project_coin.get_decimals(),
+//         ));
+//     }
+
+//     for project_token in ProjectToken::iter() {
+//         asset_data_list.push((
+//             project_token.to_terraswap_asset_info(),
+//             project_token.get_price(),
+//             project_token.get_decimals(),
+//         ));
+//     }
+
+//     let mut users_with_addresses: Vec<(Addr, User)> = vec![];
+//     let mut balances_with_addresses: QueryBalancesResponse = vec![];
+
+//     for project_account in vec![ProjectAccount::Alice] {
+//         users_with_addresses.push((
+//             project_account.to_address(),
+//             User::new(
+//                 &vec![Asset::new(&ProjectToken::Atom.to_string(), str_to_dec("1"))],
+//                 Uint128::from(2u128),
+//                 Uint128::from(100u128),
+//                 false,
+//             ),
+//         ));
+//     }
+
+//     let (ledger, users_with_addresses) = get_ledger(
+//         &asset_data_list,
+//         &users_with_addresses,
+//         &balances_with_addresses,
+//     );
+
+//     println!("{:#?}", ledger);
+//     println!("-------------------------------------------------------------");
+//     println!("{:#?}", users_with_addresses);
+// }
+
 // // TODO: add tests for bank transfer
 // #[test]
 // fn get_transfer_messages() {
@@ -373,221 +468,3 @@ fn proportional_noisy() {
 //         Timestamp::default(),
 //     );
 // }
-
-// #[test]
-// fn calc_ledger() {
-//     let deposited_alice = Uint128::from(1_035_u128);
-//     let down_counter_alice = Uint128::from(5_u128);
-
-//     let asset_list_alice = vec![
-//         Asset::new(
-//             DENOM_ATOM,
-//             &Addr::unchecked(ADDR_ALICE_ATOM),
-//             Uint128::zero(),
-//             str_to_dec("0.7"),
-//             Uint128::zero(),
-//         ),
-//         Asset::new(
-//             DENOM_JUNO,
-//             &Addr::unchecked(ADDR_ALICE_JUNO),
-//             Uint128::zero(),
-//             str_to_dec("0.3"),
-//             Uint128::zero(),
-//         ),
-//     ];
-
-//     let user_alice = User::new(
-//         &asset_list_alice,
-//         down_counter_alice,
-//         deposited_alice,
-//         !IS_REBALANCING_USED,
-//     );
-
-//     let deposited_bob = Uint128::from(4_130_u128);
-//     let down_counter_bob = Uint128::from(10_u128);
-
-//     let asset_list_bob = vec![
-//         Asset::new(
-//             DENOM_ATOM,
-//             &Addr::unchecked(ADDR_BOB_ATOM),
-//             Uint128::zero(),
-//             str_to_dec("0.4"),
-//             Uint128::zero(),
-//         ),
-//         Asset::new(
-//             DENOM_STARS,
-//             &Addr::unchecked(ADDR_BOB_STARS),
-//             Uint128::zero(),
-//             str_to_dec("0.6"),
-//             Uint128::zero(),
-//         ),
-//     ];
-
-//     let user_bob = User::new(
-//         &asset_list_bob,
-//         down_counter_bob,
-//         deposited_bob,
-//         !IS_REBALANCING_USED,
-//     );
-
-//     let users_with_addresses: Vec<(Addr, User)> = vec![
-//         (Addr::unchecked(ADDR_ALICE_OSMO), user_alice),
-//         (Addr::unchecked(ADDR_BOB_OSMO), user_bob),
-//     ];
-
-//     let pools_with_denoms: Vec<(String, Pool)> = vec![
-//         // ATOM / OSMO
-//         (
-//             DENOM_ATOM.to_string(),
-//             Pool::new(
-//                 Uint128::one(),
-//                 str_to_dec("9.5"),
-//                 "channel-1110",
-//                 "transfer",
-//                 "uatom",
-//             ),
-//         ),
-//         // JUNO / OSMO
-//         (
-//             DENOM_JUNO.to_string(),
-//             Pool::new(
-//                 Uint128::from(497_u128),
-//                 str_to_dec("1.5"),
-//                 "channel-1110",
-//                 "transfer",
-//                 "ujuno",
-//             ),
-//         ),
-//         // STARS / OSMO
-//         (
-//             DENOM_STARS.to_string(),
-//             Pool::new(
-//                 Uint128::from(604_u128),
-//                 str_to_dec("0.03"),
-//                 "channel-",
-//                 "transfer",
-//                 "ustars",
-//             ),
-//         ),
-//         // SCRT / OSMO
-//         (
-//             DENOM_SCRT.to_string(),
-//             Pool::new(
-//                 Uint128::from(584_u128),
-//                 str_to_dec("0.7"),
-//                 "channel-",
-//                 "transfer",
-//                 "uscrt",
-//             ),
-//         ),
-//     ];
-
-//     let mut deposited_pre: Vec<Uint128> = vec![deposited_alice, deposited_bob];
-//     let mut deposited_diff: Vec<Uint128> = vec![];
-//     let mut user_daily_payment_right: Vec<Uint128> = vec![];
-//     let mut user_with_addr_list: Vec<(Addr, User)> = users_with_addresses;
-
-//     for _i in 0..=(down_counter_bob).u128() {
-//         let (ledger, user_with_addr) = get_ledger(&pools_with_denoms, &user_with_addr_list);
-//         user_with_addr_list = vec![];
-
-//         let mut global_delta_balance_list_left: Vec<Uint128> =
-//             vec![Uint128::zero(); ledger.global_denom_list.len()];
-//         let mut global_delta_cost_list_left: Vec<Uint128> =
-//             vec![Uint128::zero(); ledger.global_denom_list.len()];
-
-//         for (addr, user) in user_with_addr {
-//             let mut user_daily_payment_right_item: Uint128 = Uint128::zero();
-//             let mut asset_list_updated: Vec<Asset> = vec![];
-
-//             for asset in user.asset_list {
-//                 let index = ledger
-//                     .global_denom_list
-//                     .iter()
-//                     .position(|x| x == &asset.denom)
-//                     .unwrap();
-
-//                 let price = ledger.global_price_list[index];
-//                 let amount = asset.amount_to_transfer;
-//                 let daily_payment = dec_to_uint128((u128_to_dec(amount) * price).ceil());
-//                 user_daily_payment_right_item += daily_payment;
-
-//                 global_delta_balance_list_left[index] += amount;
-
-//                 global_delta_cost_list_left[index] += daily_payment;
-
-//                 asset_list_updated.push(Asset {
-//                     amount_to_transfer: Uint128::zero(), // it is sent via ibc
-//                     ..asset
-//                 });
-//             }
-
-//             user_daily_payment_right.push(user_daily_payment_right_item);
-//             deposited_diff.push(user.deposited);
-//             user_with_addr_list.push((
-//                 addr,
-//                 User {
-//                     asset_list: asset_list_updated,
-//                     ..user
-//                 },
-//             ));
-//         }
-
-//         let user_daily_payment_left = vec_sub(&deposited_pre, &deposited_diff);
-//         deposited_pre = deposited_diff;
-//         deposited_diff = vec![];
-
-//         // 1) user_daily_payment == sum(user_asset_amount * price)
-//         assert_eq!(user_daily_payment_left, user_daily_payment_right);
-//         user_daily_payment_right = vec![];
-
-//         // 2) sum(user_asset) == global_delta_balance_list
-//         assert_eq!(
-//             global_delta_balance_list_left,
-//             ledger.global_delta_balance_list
-//         );
-
-//         // 3) sum(user_asset * price) ==  global_delta_cost_list
-//         assert_eq!(global_delta_cost_list_left, ledger.global_delta_cost_list);
-//     }
-// }
-
-#[test]
-fn xyk_amounts() {
-    assert_that(&get_xyk_amount(P12, 6, 6, str_to_dec("1"), str_to_dec("1"))).is_equal_to(P12);
-
-    assert_that(&get_xyk_amount(P12, 6, 6, str_to_dec("1"), str_to_dec("2"))).is_equal_to(P12 / 2);
-
-    assert_that(&get_xyk_amount(P12, 6, 6, str_to_dec("2"), str_to_dec("1"))).is_equal_to(P12 * 2);
-
-    assert_that(&get_xyk_amount(
-        P12,
-        6,
-        18,
-        str_to_dec("1"),
-        str_to_dec("1"),
-    ))
-    .is_equal_to(P24);
-
-    assert_that(&get_xyk_amount(
-        P24,
-        18,
-        6,
-        str_to_dec("1"),
-        str_to_dec("1"),
-    ))
-    .is_equal_to(P12);
-}
-
-#[test]
-fn xyk_prices() {
-    assert_that(&get_xyk_price(str_to_dec("1"), 6, 6, P12, P12)).is_equal_to(str_to_dec("1"));
-
-    assert_that(&get_xyk_price(str_to_dec("1"), 6, 6, P12 * 2, P12)).is_equal_to(str_to_dec("2"));
-
-    assert_that(&get_xyk_price(str_to_dec("1"), 6, 6, P12 / 2, P12)).is_equal_to(str_to_dec("0.5"));
-
-    assert_that(&get_xyk_price(str_to_dec("1"), 18, 6, P24, P12)).is_equal_to(str_to_dec("1"));
-
-    assert_that(&get_xyk_price(str_to_dec("1"), 6, 18, P12, P24)).is_equal_to(str_to_dec("1"));
-}

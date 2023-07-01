@@ -328,6 +328,7 @@ impl Project {
             "app",
             &crate::messages::instantiate::InstantiateMsg {
                 terraswap_factory: terraswap_factory_address.to_string(),
+                terraswap_router: terraswap_router_address.to_string(),
             },
         );
 
@@ -353,6 +354,10 @@ impl Project {
 
     pub fn get_terraswap_factory_address(&self) -> Addr {
         self.terraswap_factory_address.clone()
+    }
+
+    pub fn get_terraswap_router_address(&self) -> Addr {
+        self.terraswap_router_address.clone()
     }
 
     fn create_app_with_balances() -> App {

@@ -321,10 +321,12 @@ fn update_config_by_non_admin() {
 fn update_config_default() {
     let mut project = Project::new(None);
     let terraswap_factory_address = &project.get_terraswap_factory_address();
+    let terraswap_router_address = &project.get_terraswap_router_address();
     project
         .prepare_update_config_by(ProjectAccount::Admin)
         .with_scheduler(ProjectAccount::Alice)
         .with_terraswap_factory(terraswap_factory_address)
+        .with_terraswap_router(terraswap_router_address)
         .with_fee_rate("0.1")
         .execute_and_switch_to(&mut project)
         .query_config()
@@ -332,6 +334,7 @@ fn update_config_default() {
             Config::prepare_by(ProjectAccount::Admin)
                 .with_scheduler(ProjectAccount::Alice)
                 .with_terraswap_factory(terraswap_factory_address)
+                .with_terraswap_router(terraswap_router_address)
                 .with_fee_rate("0.1"),
         );
 }

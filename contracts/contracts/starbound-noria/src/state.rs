@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Decimal, Timestamp, Uint128};
+use cosmwasm_std::{Addr, Decimal, Uint128};
 use cw_storage_plus::{Item, Map};
 
 use crate::actions::helpers::math::str_to_dec;
@@ -14,19 +14,25 @@ pub struct Config {
     pub admin: Addr,
     pub scheduler: Addr,
     pub terraswap_factory: Addr,
+    pub terraswap_router: Addr,
     pub fee_rate: Decimal,
-    pub timestamp: Timestamp,
     chain_id_dev: String,
 }
 
 impl Config {
-    pub fn new(admin: &Addr, scheduler: &Addr, terraswap_factory: &Addr, fee_rate: &str) -> Self {
+    pub fn new(
+        admin: &Addr,
+        scheduler: &Addr,
+        terraswap_factory: &Addr,
+        terraswap_router: &Addr,
+        fee_rate: &str,
+    ) -> Self {
         Self {
             admin: admin.to_owned(),
             scheduler: scheduler.to_owned(),
             terraswap_factory: terraswap_factory.to_owned(),
+            terraswap_router: terraswap_router.to_owned(),
             fee_rate: str_to_dec(fee_rate),
-            timestamp: Timestamp::default(),
             chain_id_dev: String::from(CHAIN_ID_DEV),
         }
     }

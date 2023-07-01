@@ -52,8 +52,17 @@ pub fn execute(
         ExecuteMsg::UpdateConfig {
             scheduler,
             terraswap_factory,
+            terraswap_router,
             fee_rate,
-        } => update_config(deps, env, info, scheduler, terraswap_factory, fee_rate),
+        } => update_config(
+            deps,
+            env,
+            info,
+            scheduler,
+            terraswap_factory,
+            terraswap_router,
+            fee_rate,
+        ),
         // ExecuteMsg::Swap {} => swap(deps, env, info),
         // ExecuteMsg::Transfer {} => transfer(deps, env, info),
     }
