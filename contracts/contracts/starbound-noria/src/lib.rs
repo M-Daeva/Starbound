@@ -10,6 +10,7 @@ pub mod actions {
 
     pub mod helpers {
         pub mod math;
+        pub mod routers;
         pub mod verifier;
     }
 }
@@ -25,6 +26,7 @@ pub mod messages {
 mod tests {
     pub mod core;
     pub mod math;
+    pub mod routers;
     pub mod verifier;
 
     pub mod helpers {

@@ -6,7 +6,10 @@ use serde::Serialize;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, IntoStaticStr};
 
-use crate::actions::helpers::math::{get_xyk_amount, str_to_dec, P12, P24, P6};
+use crate::actions::helpers::{
+    math::{get_xyk_amount, str_to_dec, P12, P24, P6},
+    routers::{get_swap_with_terraswap_router_config, SwapMsg},
+};
 
 const DEFAULT_FUNDS_AMOUNT: u128 = 1; // give each user 1 asset (1 CRD, 1 INJ, etc.)
 const INCREASED_FUNDS_AMOUNT: u128 = 100 * P6; // give admin such amount of assets to ensure providing 1e6 of assets to each pair
@@ -704,7 +707,7 @@ pub trait Testable {
         &mut self,
         sender: ProjectAccount,
         amount: impl Into<Uint128>,
-        swap_operations: &[terraswap::router::SwapOperation],
+        pair_list: &[(ProjectAsset, ProjectAsset)],
     ) -> StdResult<AppResponse>;
 }
 
@@ -840,60 +843,49 @@ impl Testable for Project {
         .map_err(|err| err.downcast().unwrap())
     }
 
-    // TODO: implement custom router to swap both in sequence and parallel and use different amounts
     fn swap_with_router(
         &mut self,
         sender: ProjectAccount,
         amount: impl Into<Uint128>,
-        swap_operations: &[terraswap::router::SwapOperation],
+        pair_list: &[(ProjectAsset, ProjectAsset)],
     ) -> StdResult<AppResponse> {
-        let amount: Uint128 = amount.into();
         let sender = sender.to_address();
-        let router_address = Self::get_terraswap_router_address(self);
-        let hook_msg = terraswap::router::ExecuteMsg::ExecuteSwapOperations {
-            operations: swap_operations.to_owned(),
-            minimum_receive: None,
-            to: None,
-        };
+        let amount: Uint128 = amount.into();
+        let pairs = &Self::get_terraswap_pair_list(&self);
+        let router_address = &Self::get_terraswap_router_address(self);
+        let pair_list = &pair_list
+            .iter()
+            .map(|(asset1, asset2)| {
+                (
+                    asset1.to_terraswap_asset_info(),
+                    asset2.to_terraswap_asset_info(),
+                )
+            })
+            .collect::<Vec<(terraswap::asset::AssetInfo, terraswap::asset::AssetInfo)>>();
 
-        enum WrappedMsg {
-            Router(terraswap::router::ExecuteMsg),
-            Token(cw20_base::msg::ExecuteMsg),
+        let router_config =
+            get_swap_with_terraswap_router_config(pairs, router_address, amount, pair_list)
+                .unwrap();
+
+        let mut res: StdResult<AppResponse> = Ok(AppResponse::default());
+
+        for (contract_addr, msg, funds) in router_config {
+            let contract_addr = Addr::unchecked(contract_addr);
+
+            res = match (msg, funds) {
+                (SwapMsg::Router(msg), Some(funds)) => {
+                    self.app
+                        .execute_contract(sender.to_owned(), contract_addr, &msg, &funds)
+                }
+                (SwapMsg::Token(msg), None) => {
+                    self.app
+                        .execute_contract(sender.to_owned(), contract_addr, &msg, &[])
+                }
+                _ => unreachable!(),
+            }
+            .map_err(|err| err.downcast().unwrap());
         }
 
-        let (contract_addr, msg, funds) = match &swap_operations[0] {
-            terraswap::router::SwapOperation::TerraSwap {
-                offer_asset_info: terraswap::asset::AssetInfo::NativeToken { denom },
-                ..
-            } => (
-                router_address,
-                WrappedMsg::Router(hook_msg),
-                Some(vec![coin(amount.u128(), denom)]),
-            ),
-            terraswap::router::SwapOperation::TerraSwap {
-                offer_asset_info: terraswap::asset::AssetInfo::Token { contract_addr },
-                ..
-            } => (
-                Addr::unchecked(contract_addr),
-                WrappedMsg::Token(cw20_base::msg::ExecuteMsg::Send {
-                    contract: router_address.to_string(),
-                    amount,
-                    msg: to_binary(&hook_msg)?,
-                }),
-                None,
-            ),
-        };
-
-        match (msg, funds) {
-            (WrappedMsg::Router(msg), Some(funds)) => {
-                self.app
-                    .execute_contract(sender, contract_addr, &msg, &funds)
-            }
-            (WrappedMsg::Token(msg), None) => {
-                self.app.execute_contract(sender, contract_addr, &msg, &[])
-            }
-            _ => unreachable!(),
-        }
-        .map_err(|err| err.downcast().unwrap())
+        res
     }
 }

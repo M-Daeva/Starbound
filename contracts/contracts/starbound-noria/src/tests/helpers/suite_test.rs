@@ -1,5 +1,5 @@
 use crate::tests::helpers::suite::{
-    Project, ProjectAccount, ProjectCoin, ProjectPair, ProjectToken, Testable, ToTerraswapAssetInfo,
+    Project, ProjectAccount, ProjectCoin, ProjectPair, ProjectToken, Testable, ToProjectAsset,
 };
 
 #[test]
@@ -39,29 +39,31 @@ fn default() {
     // let res = project.query_all_balances(ProjectAccount::Alice);
     // println!("{:#?}", res);
 
-    // // 250 ATOM -> LUNA, LUNA -> DENOM, DENOM -> INJ
-    // project
-    //     .swap_with_router(
-    //         ProjectAccount::Alice,
-    //         250u128,
-    //         &[
-    //             terraswap::router::SwapOperation::TerraSwap {
-    //                 offer_asset_info: ProjectToken::Atom.to_terraswap_asset_info(),
-    //                 ask_asset_info: ProjectToken::Luna.to_terraswap_asset_info(),
-    //             },
-    //             terraswap::router::SwapOperation::TerraSwap {
-    //                 offer_asset_info: ProjectToken::Luna.to_terraswap_asset_info(),
-    //                 ask_asset_info: ProjectCoin::Denom.to_terraswap_asset_info(),
-    //             },
-    //             terraswap::router::SwapOperation::TerraSwap {
-    //                 offer_asset_info: ProjectCoin::Denom.to_terraswap_asset_info(),
-    //                 ask_asset_info: ProjectToken::Inj.to_terraswap_asset_info(),
-    //             },
-    //         ],
-    //     )
-    //     .unwrap();
+    // 250 ATOM -> LUNA, LUNA -> DENOM
+    project
+        .swap_with_router(
+            ProjectAccount::Alice,
+            250u128,
+            &[(
+                ProjectToken::Atom.to_project_asset(),
+                ProjectCoin::Denom.to_project_asset(),
+            )],
+        )
+        .unwrap();
 
-    // // query all balances
-    // let res = project.query_all_balances(ProjectAccount::Alice);
+    // query all balances
+    let res = project.query_all_balances(ProjectAccount::Alice);
     // println!("{:#?}", res);
+    speculoos::assert_that(&res).matches(|balances| {
+        balances.contains(&(
+            ProjectToken::Atom.to_string(),
+            cosmwasm_std::Uint128::from(999750u128),
+        ))
+    });
+    speculoos::assert_that(&res).matches(|balances| {
+        balances.contains(&(
+            ProjectCoin::Denom.to_string(),
+            cosmwasm_std::Uint128::from(1002485u128),
+        ))
+    });
 }

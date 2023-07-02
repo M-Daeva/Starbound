@@ -70,4 +70,10 @@ pub enum ContractError {
 
     #[error("Asset is not valid!")]
     InvalidAsset {},
+
+    #[error("Intermediate routing asset is not found!")]
+    ItermediateAssetIsNotFound {},
+
+    #[error("Routes are not found!")]
+    EmptyRoutes {},
 }
