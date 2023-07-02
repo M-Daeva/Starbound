@@ -11,9 +11,12 @@ use crate::{
     },
     messages::query::QueryBalancesResponse,
     state::{Asset, User},
-    tests::helpers::suite::{
-        GetDecimals, GetPrice, ProjectAccount, ProjectCoin, ProjectToken, ToAddress,
-        ToTerraswapAssetInfo,
+    tests::helpers::{
+        builders::*,
+        suite::{
+            GetDecimals, GetPrice, ProjectAccount, ProjectCoin, ProjectToken, ToAddress,
+            ToTerraswapAssetInfo,
+        },
     },
 };
 
@@ -291,8 +294,78 @@ fn xyk_prices() {
     assert_that(&get_xyk_price(str_to_dec("1"), 6, 18, P12, P24)).is_equal_to(str_to_dec("1"));
 }
 
+#[test]
+fn calc_ledger_default() {
+    let mut asset_data_list: Vec<(terraswap::asset::AssetInfo, Decimal, u8)> = vec![];
+
+    for project_coin in ProjectCoin::iter() {
+        asset_data_list.push((
+            project_coin.to_terraswap_asset_info(),
+            project_coin.get_price(),
+            project_coin.get_decimals(),
+        ));
+    }
+
+    for project_token in ProjectToken::iter() {
+        asset_data_list.push((
+            project_token.to_terraswap_asset_info(),
+            project_token.get_price(),
+            project_token.get_decimals(),
+        ));
+    }
+
+    // 1_000 ucrd -> 250 unoria + 50 contract0
+    let users_with_addresses: Vec<(Addr, User)> = vec![User::prepare()
+        .with_funds(1_000, ProjectCoin::Denom)
+        .with_asset(ProjectCoin::Noria, "0.5")
+        .with_asset(ProjectToken::Atom, "0.5")
+        .with_rebalancing(false)
+        .with_down_counter(1)
+        .complete_with_name(ProjectAccount::Alice)];
+
+    let balances_with_addresses: QueryBalancesResponse = vec![];
+
+    let (_ledger, users_with_addresses) = get_ledger(
+        &asset_data_list,
+        &users_with_addresses,
+        &balances_with_addresses,
+    );
+
+    assert_that(&users_with_addresses).matches(|users_with_addresses| {
+        let (_, user) = users_with_addresses
+            .iter()
+            .find(|(address, _)| address == ProjectAccount::Alice.to_address())
+            .unwrap();
+
+        let noria = user
+            .asset_list
+            .iter()
+            .find(|asset| {
+                asset
+                    .info
+                    .equal(&ProjectCoin::Noria.to_terraswap_asset_info())
+            })
+            .unwrap();
+
+        let atom = user
+            .asset_list
+            .iter()
+            .find(|asset| {
+                asset
+                    .info
+                    .equal(&ProjectToken::Atom.to_terraswap_asset_info())
+            })
+            .unwrap();
+
+        noria.weight == str_to_dec("0.5")
+            && noria.amount_to_transfer == Uint128::from(250u128)
+            && atom.weight == str_to_dec("0.5")
+            && atom.amount_to_transfer == Uint128::from(50u128)
+    });
+}
+
 // #[test]
-// fn calc_ledger() {
+// fn calc_ledger_decimals() {
 //     let mut asset_data_list: Vec<(terraswap::asset::AssetInfo, Decimal, u8)> = vec![];
 
 //     for project_coin in ProjectCoin::iter() {
@@ -311,30 +384,54 @@ fn xyk_prices() {
 //         ));
 //     }
 
-//     let mut users_with_addresses: Vec<(Addr, User)> = vec![];
-//     let mut balances_with_addresses: QueryBalancesResponse = vec![];
+//     // 1_000 ucrd -> 250 unoria + 100 contract2
+//     let users_with_addresses: Vec<(Addr, User)> = vec![User::prepare()
+//         .with_funds(1_000, ProjectCoin::Denom)
+//         .with_asset(ProjectCoin::Noria, "0.5")
+//         .with_asset(ProjectToken::Inj, "0.5")
+//         .with_rebalancing(false)
+//         .with_down_counter(1)
+//         .complete_with_name(ProjectAccount::Alice)];
 
-//     for project_account in vec![ProjectAccount::Alice] {
-//         users_with_addresses.push((
-//             project_account.to_address(),
-//             User::new(
-//                 &vec![Asset::new(&ProjectToken::Atom.to_string(), str_to_dec("1"))],
-//                 Uint128::from(2u128),
-//                 Uint128::from(100u128),
-//                 false,
-//             ),
-//         ));
-//     }
+//     let balances_with_addresses: QueryBalancesResponse = vec![];
 
-//     let (ledger, users_with_addresses) = get_ledger(
+//     let (_ledger, users_with_addresses) = get_ledger(
 //         &asset_data_list,
 //         &users_with_addresses,
 //         &balances_with_addresses,
 //     );
 
-//     println!("{:#?}", ledger);
-//     println!("-------------------------------------------------------------");
-//     println!("{:#?}", users_with_addresses);
+//     assert_that(&users_with_addresses).matches(|users_with_addresses| {
+//         let (_, user) = users_with_addresses
+//             .iter()
+//             .find(|(address, _)| address == ProjectAccount::Alice.to_address())
+//             .unwrap();
+
+//         let noria = user
+//             .asset_list
+//             .iter()
+//             .find(|asset| {
+//                 asset
+//                     .info
+//                     .equal(&ProjectCoin::Noria.to_terraswap_asset_info())
+//             })
+//             .unwrap();
+
+//         let inj = user
+//             .asset_list
+//             .iter()
+//             .find(|asset| {
+//                 asset
+//                     .info
+//                     .equal(&ProjectToken::Inj.to_terraswap_asset_info())
+//             })
+//             .unwrap();
+
+//         noria.weight == str_to_dec("0.5")
+//             && noria.amount_to_transfer == Uint128::from(250u128)
+//             && inj.weight == str_to_dec("0.5")
+//             && inj.amount_to_transfer == Uint128::from(100u128 * P12)
+//     });
 // }
 
 // // TODO: add tests for bank transfer

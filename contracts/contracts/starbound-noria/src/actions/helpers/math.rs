@@ -336,23 +336,27 @@ pub fn get_ledger(
         // user_balances - vector of user asset balances
         let mut user_balances: Vec<Uint128> = vec![Uint128::zero(); global_vec_len];
 
-        // TODO: refactor
         // 3) iterate over user assets and fill user_weights and user_balances
         for (i, denom) in global_denom_list.iter().enumerate() {
-            if let Some(asset_by_denom) = user.asset_list.iter().find(|x| x.info.equal(denom)) {
-                if let Some((_, current_user_balances)) = balances_with_addresses
-                    .iter()
-                    .find(|(current_address, _)| current_address == native_address)
-                {
-                    if let Some((_, asset_balance_by_denom)) = current_user_balances
+            if let Some(user_asset) = user
+                .asset_list
+                .iter()
+                .find(|user_asset| user_asset.info.equal(denom))
+            {
+                user_weights[i] = user_asset.weight;
+            }
+
+            balances_with_addresses
+                .iter()
+                .find(|(current_user_address, _)| current_user_address == native_address)
+                .and_then(|(_, current_user_balances)| {
+                    current_user_balances
                         .iter()
-                        .find(|(current_asset_info, _)| current_asset_info.equal(denom))
-                    {
-                        user_weights[i] = asset_by_denom.weight;
-                        user_balances[i] = *asset_balance_by_denom;
-                    }
-                }
-            };
+                        .find(|(user_asset, _)| user_asset.equal(denom))
+                        .map(|(_, asset_balance)| {
+                            user_balances[i] = *asset_balance;
+                        })
+                });
         }
 
         // 4) calculate user_costs based on balances and prices

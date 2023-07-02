@@ -1,14 +1,14 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::{
-    coin, BankMsg, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
-    Uint128,
+    coin, to_binary, BankMsg, CosmosMsg, Decimal, Deps, DepsMut, Env, MessageInfo, Response,
+    StdError, StdResult, Uint128, WasmMsg,
 };
 
 use crate::{
     actions::{
         helpers::{
             math::get_ledger,
-            routers::{get_swap_with_terraswap_router_config, transfer_router},
+            routers::{get_swap_with_terraswap_router_config, transfer_router, SwapMsg},
             verifier::{verify_deposit_args, verify_scheduler},
         },
         query::{query_assets_in_pools, query_balances, query_pairs, query_users},
@@ -42,10 +42,11 @@ pub fn deposit(
     let asset_list: Vec<Asset> = asset_list.map_or(Ok(user_loaded.asset_list), |x| {
         x.iter()
             .map(|(asset_info, weight)| {
+                // assets were verified by verify_deposit_args()
                 Ok(Asset::new(
-                    // assets were verified by verify_deposit_args()
                     asset_info,
                     weight.to_owned(),
+                    &env.block.chain_id,
                 ))
             })
             .collect::<StdResult<Vec<Asset>>>()
@@ -148,76 +149,62 @@ pub fn update_config(
     Ok(Response::new().add_attributes(vec![("action", "update_config")]))
 }
 
-// pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-//     verify_scheduler(&deps.as_ref(), &info)?;
+pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+    verify_scheduler(&deps.as_ref(), &info)?;
 
-//     let pairs = query_pairs(deps.as_ref(), env)?;
-//     let users_with_addresses = query_users(deps.as_ref(), env, vec![])?;
-//     let asset_data_list = query_assets_in_pools(deps.as_ref(), env)?;
-//     let balances_with_addresses = query_balances(deps.as_ref(), env, vec![])?;
+    let users_with_addresses = query_users(deps.as_ref(), env.clone(), Vec::<String>::new())?;
+    let asset_data_list = query_assets_in_pools(deps.as_ref(), env.clone())?;
+    let balances_with_addresses = query_balances(deps.as_ref(), env.clone(), Vec::<String>::new())?;
 
-//     let (ledger, users_with_addresses) = get_ledger(
-//         &asset_data_list,
-//         &users_with_addresses,
-//         &balances_with_addresses,
-//     );
+    let (ledger, users_with_addresses) = get_ledger(
+        &asset_data_list,
+        &users_with_addresses,
+        &balances_with_addresses,
+    );
 
-//     let mut msg_list = Vec::<CosmosMsg>::new();
+    println!("asset_data_list {:#?}", asset_data_list);
+    println!("ledger {:#?}", ledger);
+    println!("users_with_addresses {:#?}", users_with_addresses);
 
-//     let config = CONFIG.load(deps.storage)?;
-//     let denom_token_in = DENOM_STABLE;
+    let mut msg_list = Vec::<CosmosMsg>::new();
 
-//     for (i, global_denom) in ledger.global_denom_list.iter().enumerate() {
-//         // skip stablecoin
-//         if global_denom.to_string().contains(denom_token_in) {
-//             continue;
-//         }
+    let asset_in = &terraswap::asset::AssetInfo::NativeToken {
+        denom: DENOM_STABLE.to_string(),
+    };
 
-//         let token_out_min_amount = String::from("1");
-//         let amount = ledger.global_delta_cost_list[i];
+    for (i, global_denom) in ledger.global_denom_list.iter().enumerate() {
+        // skip stablecoin
+        if global_denom.to_string().contains(DENOM_STABLE) {
+            continue;
+        }
 
-//         // skip if no funds
-//         if amount.is_zero() {
-//             continue;
-//         }
+        let amount = ledger.global_delta_cost_list[i];
 
-//         // let pool = POOLS.load(deps.storage, global_denom)?;
+        // skip if no funds
+        if amount.is_zero() {
+            continue;
+        }
 
-//         //let mut routes: Vec = vec![];
+        let msg = create_swap_msg(deps.as_ref(), env.clone(), amount, asset_in, global_denom)?;
 
-//         // if other asset is needed add extra route
-//         if !global_denom.to_string().contains(DENOM_STABLE) {
-//             routes.push(SwapAmountInRoute {
-//                 pool_id: pool.id.u128() as u64,
-//                 token_out_denom: global_denom.to_string(),
-//             });
-//         }
+        msg_list.push(msg);
+    }
 
-//         let msg = MsgSwapExactAmountIn {
-//             sender: env.contract.address.to_string(),
-//             routes,
-//             token_in: Some(PoolCoin {
-//                 amount: amount.to_string(),
-//                 denom: denom_token_in.to_string(),
-//             }),
-//             token_out_min_amount,
-//         };
+    // update user list storage
+    for (address, user_updated) in users_with_addresses {
+        USERS.save(deps.storage, &address, &user_updated)?;
+    }
 
-//         msg_list.push(msg.into());
-//     }
+    // update ledger
+    LEDGER.save(deps.storage, &ledger)?;
 
-//     // update user list storage
-//     for (address, user_updated) in users_with_addresses {
-//         USERS.save(deps.storage, &address, &user_updated)?;
-//     }
+    // println!("{:#?}", ledger);
+    // println!("{:#?}", msg_list);
 
-//     // update ledger
-//     LEDGER.save(deps.storage, &ledger)?;
-
-//     Ok(Response::new()
-//         .add_messages(msg_list)
-//         .add_attributes(vec![("action", "swap")]))
-// }
+    Ok(Response::new()
+        .add_messages(msg_list)
+        .add_attributes(vec![("action", "swap")]))
+}
 
 // pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
 //     verify_scheduler(&deps.as_ref(), &info)?;
@@ -264,3 +251,40 @@ pub fn update_config(
 //         .add_messages(msg_list)
 //         .add_attributes(vec![("action", "transfer")]))
 // }
+
+fn create_swap_msg(
+    deps: Deps,
+    env: Env,
+    amount: Uint128,
+    asset_in: &terraswap::asset::AssetInfo,
+    asset_out: &terraswap::asset::AssetInfo,
+) -> Result<CosmosMsg, ContractError> {
+    let Config {
+        terraswap_router, ..
+    } = CONFIG.load(deps.storage)?;
+    let pairs = query_pairs(deps, env)?;
+
+    let (contract_addr, msg, funds) = get_swap_with_terraswap_router_config(
+        &terraswap_router,
+        &pairs,
+        asset_in.to_owned(),
+        asset_out.to_owned(),
+        amount,
+    )?;
+
+    let wasm_msg = match (msg, funds) {
+        (SwapMsg::Router(msg), Some(funds)) => WasmMsg::Execute {
+            contract_addr,
+            msg: to_binary(&msg)?,
+            funds,
+        },
+        (SwapMsg::Token(msg), None) => WasmMsg::Execute {
+            contract_addr,
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        },
+        _ => unreachable!(),
+    };
+
+    Ok(CosmosMsg::Wasm(wasm_msg))
+}

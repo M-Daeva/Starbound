@@ -707,7 +707,8 @@ pub trait Testable {
         &mut self,
         sender: ProjectAccount,
         amount: impl Into<Uint128>,
-        pair_list: &[(ProjectAsset, ProjectAsset)],
+        asset_in: ProjectAsset,
+        asset_out: ProjectAsset,
     ) -> StdResult<AppResponse>;
 }
 
@@ -847,45 +848,34 @@ impl Testable for Project {
         &mut self,
         sender: ProjectAccount,
         amount: impl Into<Uint128>,
-        pair_list: &[(ProjectAsset, ProjectAsset)],
+        asset_in: ProjectAsset,
+        asset_out: ProjectAsset,
     ) -> StdResult<AppResponse> {
         let sender = sender.to_address();
         let amount: Uint128 = amount.into();
-        let pairs = &Self::get_terraswap_pair_list(&self);
+        let pairs = &Self::get_terraswap_pair_list(self);
         let router_address = &Self::get_terraswap_router_address(self);
-        let pair_list = &pair_list
-            .iter()
-            .map(|(asset1, asset2)| {
-                (
-                    asset1.to_terraswap_asset_info(),
-                    asset2.to_terraswap_asset_info(),
-                )
-            })
-            .collect::<Vec<(terraswap::asset::AssetInfo, terraswap::asset::AssetInfo)>>();
 
-        let router_config =
-            get_swap_with_terraswap_router_config(pairs, router_address, amount, pair_list)
-                .unwrap();
+        let (contract_addr, msg, funds) = get_swap_with_terraswap_router_config(
+            router_address,
+            pairs,
+            asset_in.to_terraswap_asset_info(),
+            asset_out.to_terraswap_asset_info(),
+            amount,
+        )
+        .unwrap();
+        let contract_addr = Addr::unchecked(contract_addr);
 
-        let mut res: StdResult<AppResponse> = Ok(AppResponse::default());
-
-        for (contract_addr, msg, funds) in router_config {
-            let contract_addr = Addr::unchecked(contract_addr);
-
-            res = match (msg, funds) {
-                (SwapMsg::Router(msg), Some(funds)) => {
-                    self.app
-                        .execute_contract(sender.to_owned(), contract_addr, &msg, &funds)
-                }
-                (SwapMsg::Token(msg), None) => {
-                    self.app
-                        .execute_contract(sender.to_owned(), contract_addr, &msg, &[])
-                }
-                _ => unreachable!(),
+        match (msg, funds) {
+            (SwapMsg::Router(msg), Some(funds)) => {
+                self.app
+                    .execute_contract(sender, contract_addr, &msg, &funds)
             }
-            .map_err(|err| err.downcast().unwrap());
+            (SwapMsg::Token(msg), None) => {
+                self.app.execute_contract(sender, contract_addr, &msg, &[])
+            }
+            _ => unreachable!(),
         }
-
-        res
+        .map_err(|err| err.downcast().unwrap())
     }
 }

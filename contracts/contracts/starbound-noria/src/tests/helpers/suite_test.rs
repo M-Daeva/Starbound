@@ -44,10 +44,8 @@ fn default() {
         .swap_with_router(
             ProjectAccount::Alice,
             250u128,
-            &[(
-                ProjectToken::Atom.to_project_asset(),
-                ProjectCoin::Denom.to_project_asset(),
-            )],
+            ProjectToken::Atom.to_project_asset(),
+            ProjectCoin::Denom.to_project_asset(),
         )
         .unwrap();
 

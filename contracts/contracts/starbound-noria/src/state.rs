@@ -4,7 +4,9 @@ use cw_storage_plus::{Item, Map};
 
 use crate::actions::helpers::math::str_to_dec;
 
-pub const PREFIX: &str = "noria";
+const CONTRACT_PREFIX: &str = "noria";
+const CONTRACT_PREFIX_DEV: &str = "contract";
+
 pub const DENOM_STABLE: &str = "ucrd";
 pub const CHAIN_ID_DEV: &str = "devnet-1";
 
@@ -87,8 +89,14 @@ pub struct Asset {
 }
 
 impl Asset {
-    pub fn new(info: &str, weight: Decimal) -> Self {
-        let asset_info = if info.starts_with(PREFIX) {
+    pub fn new(info: &str, weight: Decimal, chain_id: &str) -> Self {
+        let prefix = if chain_id == CHAIN_ID_DEV {
+            CONTRACT_PREFIX_DEV
+        } else {
+            CONTRACT_PREFIX
+        };
+
+        let asset_info = if info.starts_with(prefix) {
             terraswap::asset::AssetInfo::Token {
                 contract_addr: info.to_string(),
             }

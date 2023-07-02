@@ -13,8 +13,9 @@ pub enum SwapMsg {
     Token(cw20_base::msg::ExecuteMsg),
 }
 
+// (A,C) -> [(A,B), (B,C)]
 pub fn get_swap_routes(
-    pairs: &Vec<terraswap::asset::PairInfo>,
+    pairs: &Vec<terraswap::asset::PairInfo>, // pairs from factory
     asset_in: terraswap::asset::AssetInfo,
     asset_out: terraswap::asset::AssetInfo,
 ) -> Result<Vec<(terraswap::asset::AssetInfo, terraswap::asset::AssetInfo)>, ContractError> {
@@ -24,27 +25,23 @@ pub fn get_swap_routes(
         let terraswap::asset::PairInfo { asset_infos, .. } = pair;
 
         if asset_infos.contains(&asset_in) && asset_infos.contains(&asset_out) {
-            routes.push((asset_in.to_owned(), asset_out.to_owned()));
+            routes.push((asset_in, asset_out));
             break;
         }
 
         if asset_infos.contains(&asset_in) {
             let intermediate_asset = asset_infos
-                .into_iter()
+                .iter()
                 .find(|x| !x.equal(&asset_in))
                 .ok_or(ContractError::ItermediateAssetIsNotFound {})?;
 
-            if pairs
-                .iter()
-                .find(|pair| {
-                    pair.asset_infos.contains(&intermediate_asset)
-                        && pair.asset_infos.contains(&asset_out)
-                })
-                .is_some()
-            {
+            if pairs.iter().any(|pair| {
+                pair.asset_infos.contains(intermediate_asset)
+                    && pair.asset_infos.contains(&asset_out)
+            }) {
                 routes = vec![
-                    (asset_in.to_owned(), intermediate_asset.to_owned()),
-                    (intermediate_asset.to_owned(), asset_out.to_owned()),
+                    (asset_in, intermediate_asset.to_owned()),
+                    (intermediate_asset.to_owned(), asset_out),
                 ];
                 break;
             }
@@ -52,21 +49,17 @@ pub fn get_swap_routes(
 
         if asset_infos.contains(&asset_out) {
             let intermediate_asset = asset_infos
-                .into_iter()
+                .iter()
                 .find(|x| !x.equal(&asset_out))
                 .ok_or(ContractError::ItermediateAssetIsNotFound {})?;
 
-            if pairs
-                .iter()
-                .find(|pair| {
-                    pair.asset_infos.contains(&asset_in)
-                        && pair.asset_infos.contains(&intermediate_asset)
-                })
-                .is_some()
-            {
+            if pairs.iter().any(|pair| {
+                pair.asset_infos.contains(&asset_in)
+                    && pair.asset_infos.contains(intermediate_asset)
+            }) {
                 routes = vec![
-                    (asset_in.to_owned(), intermediate_asset.to_owned()),
-                    (intermediate_asset.to_owned(), asset_out.to_owned()),
+                    (asset_in, intermediate_asset.to_owned()),
+                    (intermediate_asset.to_owned(), asset_out),
                 ];
                 break;
             }
@@ -81,61 +74,55 @@ pub fn get_swap_routes(
 }
 
 pub fn get_swap_with_terraswap_router_config(
-    pairs: &Vec<terraswap::asset::PairInfo>, // pairs from factory
     router_address: &Addr,
+    pairs: &Vec<terraswap::asset::PairInfo>, // pairs from factory
+    asset_in: terraswap::asset::AssetInfo,
+    asset_out: terraswap::asset::AssetInfo,
     amount: Uint128,
-    pair_list: &[(terraswap::asset::AssetInfo, terraswap::asset::AssetInfo)],
-) -> Result<Vec<(String, SwapMsg, Option<Vec<Coin>>)>, ContractError> {
-    let mut router_config: Vec<(String, SwapMsg, Option<Vec<Coin>>)> = vec![];
+) -> Result<(String, SwapMsg, Option<Vec<Coin>>), ContractError> {
+    let routes = get_swap_routes(pairs, asset_in, asset_out)?;
 
-    for (asset_in, asset_out) in pair_list.to_owned() {
-        let routes = get_swap_routes(pairs, asset_in, asset_out)?;
-        println!("routes {:#?}", routes);
+    let swap_operations = routes
+        .iter()
+        .cloned()
+        .map(
+            |(offer_asset_info, ask_asset_info)| terraswap::router::SwapOperation::TerraSwap {
+                offer_asset_info,
+                ask_asset_info,
+            },
+        )
+        .collect::<Vec<terraswap::router::SwapOperation>>();
 
-        let swap_operations = routes
-            .to_owned()
-            .into_iter()
-            .map(
-                |(offer_asset_info, ask_asset_info)| terraswap::router::SwapOperation::TerraSwap {
-                    offer_asset_info,
-                    ask_asset_info,
-                },
-            )
-            .collect::<Vec<terraswap::router::SwapOperation>>();
+    let hook_msg = terraswap::router::ExecuteMsg::ExecuteSwapOperations {
+        operations: swap_operations.to_owned(),
+        minimum_receive: None,
+        to: None,
+    };
 
-        let hook_msg = terraswap::router::ExecuteMsg::ExecuteSwapOperations {
-            operations: swap_operations.to_owned(),
-            minimum_receive: None,
-            to: None,
-        };
+    let (contract_addr, msg, funds) = match &swap_operations[0] {
+        terraswap::router::SwapOperation::TerraSwap {
+            offer_asset_info: terraswap::asset::AssetInfo::NativeToken { denom },
+            ..
+        } => (
+            router_address.to_string(),
+            SwapMsg::Router(hook_msg),
+            Some(vec![coin(amount.u128(), denom)]),
+        ),
+        terraswap::router::SwapOperation::TerraSwap {
+            offer_asset_info: terraswap::asset::AssetInfo::Token { contract_addr },
+            ..
+        } => (
+            contract_addr.to_string(),
+            SwapMsg::Token(cw20_base::msg::ExecuteMsg::Send {
+                contract: router_address.to_string(),
+                amount,
+                msg: to_binary(&hook_msg)?,
+            }),
+            None,
+        ),
+    };
 
-        let (contract_addr, msg, funds) = match &swap_operations[0] {
-            terraswap::router::SwapOperation::TerraSwap {
-                offer_asset_info: terraswap::asset::AssetInfo::NativeToken { denom },
-                ..
-            } => (
-                router_address.to_string(),
-                SwapMsg::Router(hook_msg),
-                Some(vec![coin(amount.u128(), denom)]),
-            ),
-            terraswap::router::SwapOperation::TerraSwap {
-                offer_asset_info: terraswap::asset::AssetInfo::Token { contract_addr },
-                ..
-            } => (
-                contract_addr.to_string(),
-                SwapMsg::Token(cw20_base::msg::ExecuteMsg::Send {
-                    contract: router_address.to_string(),
-                    amount,
-                    msg: to_binary(&hook_msg)?,
-                }),
-                None,
-            ),
-        };
-
-        router_config.push((contract_addr, msg, funds));
-    }
-
-    Ok(router_config)
+    Ok((contract_addr, msg, funds))
 }
 
 pub fn transfer_router(

@@ -6,7 +6,7 @@ use strum::IntoEnumIterator;
 use crate::{
     actions::{helpers::math::str_to_dec, instantiate::FEE_RATE},
     messages::{execute::ExecuteMsg, query::QueryMsg},
-    state::{Asset, Config, User},
+    state::{Asset, Config, User, CHAIN_ID_DEV},
     tests::helpers::suite::{
         GetDecimals, GetPrice, Project, ProjectAccount, ProjectPair, ToAddress, ToProjectAsset,
         ToTerraswapAssetInfo, WrapIntoResponse, WrappedResponse,
@@ -37,6 +37,7 @@ impl Loggable for Project {
     }
 }
 
+// TODO: add query_balances
 pub trait Builderable {
     fn display_logs(&mut self) -> &mut Self;
     fn assert_error(&mut self, submsg: impl ToString) -> &mut Self;
@@ -44,6 +45,7 @@ pub trait Builderable {
     fn prepare_deposit_by(&mut self, project_account: ProjectAccount) -> DepositBuilder;
     fn prepare_withdraw_by(&mut self, project_account: ProjectAccount) -> WithdrawBuilder;
     fn prepare_update_config_by(&mut self, project_account: ProjectAccount) -> UpdateConfigBuilder;
+    fn prepare_swap_by(&mut self, project_account: ProjectAccount) -> SwapBuilder;
 
     fn query_users(&mut self, address_list: &[ProjectAccount]) -> &mut Self;
     fn assert_user(&mut self, address_and_user: (Addr, User)) -> &mut Self;
@@ -53,6 +55,12 @@ pub trait Builderable {
 
     fn query_assets_in_pools(&mut self) -> &mut Self;
     fn assert_assets_in_pools(&mut self) -> &mut Self;
+
+    fn query_balances(&mut self, address_list: &[impl ToString]) -> &mut Self;
+    fn assert_balance(
+        &mut self,
+        address_and_balances: (Addr, Vec<(terraswap::asset::AssetInfo, Uint128)>),
+    ) -> &mut Self;
 }
 
 impl Builderable for Project {
@@ -96,6 +104,11 @@ impl Builderable for Project {
         UpdateConfigBuilder::prepare(project_account)
     }
 
+    fn prepare_swap_by(&mut self, project_account: ProjectAccount) -> SwapBuilder {
+        self.check_logs();
+        SwapBuilder::prepare(project_account)
+    }
+
     #[track_caller]
     fn query_users(&mut self, address_list: &[ProjectAccount]) -> &mut Self {
         self.check_logs();
@@ -106,7 +119,7 @@ impl Builderable for Project {
             self.get_app_contract_address(),
             &QueryMsg::QueryUsers { address_list },
         );
-
+        println!("{:#?}", response);
         let result = response.map(|x| to_binary(&x)).unwrap();
 
         self.save_logs_and_return(result)
@@ -165,6 +178,8 @@ impl Builderable for Project {
                 &crate::messages::query::QueryMsg::QueryAssetsInPools {},
             );
 
+        println!("assets_in_pools {:#?}", response);
+
         let result = response.map(|x| to_binary(&x)).unwrap();
 
         self.save_logs_and_return(result)
@@ -196,6 +211,46 @@ impl Builderable for Project {
 
             speculoos::assert_that(&received_assets_in_pools)
                 .matches(|x| pairs.len() == x.len() && pairs.iter().any(|pair| x.contains(pair)));
+        }
+
+        self
+    }
+
+    #[track_caller]
+    fn query_balances(&mut self, address_list: &[impl ToString]) -> &mut Self {
+        self.check_logs();
+
+        let address_list: Vec<String> = address_list.iter().map(|x| x.to_string()).collect();
+
+        let response = self
+            .app
+            .wrap()
+            .query_wasm_smart::<Vec<(Addr, Vec<(terraswap::asset::AssetInfo, Uint128)>)>>(
+                self.get_app_contract_address(),
+                &QueryMsg::QueryBalances { address_list },
+            );
+
+        let result = response.map(|x| to_binary(&x)).unwrap();
+
+        self.save_logs_and_return(result)
+    }
+
+    fn assert_balance(
+        &mut self,
+        address_and_balances: (Addr, Vec<(terraswap::asset::AssetInfo, Uint128)>),
+    ) -> &mut Self {
+        if let WrappedResponse::Query(query_response) = &self.logs {
+            let balances: Vec<(Addr, Vec<(terraswap::asset::AssetInfo, Uint128)>)> =
+                from_binary(query_response.as_ref().unwrap()).unwrap();
+
+            speculoos::assert_that(&balances).matches(|address_and_balance_list| {
+                address_and_balance_list
+                    .iter()
+                    .any(|(current_address, current_balances)| {
+                        let (address, balances) = &address_and_balances;
+                        current_address == address && current_balances == balances
+                    })
+            });
         }
 
         self
@@ -280,8 +335,11 @@ impl BuilderableDeposit for DepositBuilder {
 
 impl BuilderableDeposit for User {
     fn with_asset(&mut self, asset: impl ToString, weight: &str) -> Self {
-        self.asset_list
-            .push(Asset::new(&asset.to_string(), str_to_dec(weight)));
+        self.asset_list.push(Asset::new(
+            &asset.to_string(),
+            str_to_dec(weight),
+            CHAIN_ID_DEV,
+        ));
         self.to_owned()
     }
 
@@ -466,5 +524,32 @@ impl BuilderableConfig for Config {
             &Addr::unchecked(""),
             FEE_RATE,
         )
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct SwapBuilder {
+    sender: Addr,
+}
+
+impl SwapBuilder {
+    fn prepare(project_account: ProjectAccount) -> Self {
+        Self {
+            sender: project_account.to_address(),
+        }
+    }
+
+    #[track_caller]
+    pub fn execute_and_switch_to<'a>(&self, project: &'a mut Project) -> &'a mut Project {
+        let SwapBuilder { sender } = self.to_owned();
+
+        let result = project.app.execute_contract(
+            sender,
+            project.get_app_contract_address(),
+            &ExecuteMsg::Swap {},
+            &[],
+        );
+
+        project.save_logs_and_return(result)
     }
 }

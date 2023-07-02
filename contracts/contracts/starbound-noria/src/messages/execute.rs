@@ -17,6 +17,6 @@ pub enum ExecuteMsg {
         terraswap_router: Option<String>,
         fee_rate: Option<Decimal>,
     },
-    // Swap {},
+    Swap {},
     // Transfer {},
 }
