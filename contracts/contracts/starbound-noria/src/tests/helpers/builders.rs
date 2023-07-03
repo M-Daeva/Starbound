@@ -8,8 +8,8 @@ use crate::{
     messages::{execute::ExecuteMsg, query::QueryMsg},
     state::{Asset, Config, User, CHAIN_ID_DEV},
     tests::helpers::suite::{
-        GetDecimals, GetPrice, Project, ProjectAccount, ProjectPair, ToAddress, ToProjectAsset,
-        ToTerraswapAssetInfo, WrapIntoResponse, WrappedResponse,
+        GetDecimals, GetPrice, Project, ProjectAccount, ProjectCoin, ProjectPair, ProjectToken,
+        ToAddress, ToProjectAsset, ToTerraswapAssetInfo, WrapIntoResponse, WrappedResponse,
     },
 };
 
@@ -178,8 +178,6 @@ impl Builderable for Project {
                 &crate::messages::query::QueryMsg::QueryAssetsInPools {},
             );
 
-        println!("assets_in_pools {:#?}", response);
-
         let result = response.map(|x| to_binary(&x)).unwrap();
 
         self.save_logs_and_return(result)
@@ -190,27 +188,29 @@ impl Builderable for Project {
             let received_assets_in_pools: Vec<(terraswap::asset::AssetInfo, Decimal, u8)> =
                 from_binary(query_response.as_ref().unwrap()).unwrap();
 
-            let mut pairs: Vec<(terraswap::asset::AssetInfo, Decimal, u8)> = vec![];
+            let mut assets: Vec<(terraswap::asset::AssetInfo, Decimal, u8)> = vec![];
 
-            for project_pair in ProjectPair::iter() {
-                let (project_asset1, project_asset2) = project_pair.split_pair();
-
-                for project_asset in &[project_asset1, project_asset2] {
-                    if !pairs
-                        .iter()
-                        .any(|(asset, _, _)| asset.equal(&project_asset.to_terraswap_asset_info()))
-                    {
-                        pairs.push((
-                            project_asset.to_terraswap_asset_info(),
-                            project_asset.get_price(),
-                            project_asset.get_decimals(),
-                        ));
-                    }
-                }
+            for project_coin in ProjectCoin::iter() {
+                assets.push((
+                    project_coin.to_terraswap_asset_info(),
+                    project_coin.get_price(),
+                    project_coin.get_decimals(),
+                ));
             }
 
-            speculoos::assert_that(&received_assets_in_pools)
-                .matches(|x| pairs.len() == x.len() && pairs.iter().any(|pair| x.contains(pair)));
+            for project_token in ProjectToken::iter() {
+                assets.push((
+                    project_token.to_terraswap_asset_info(),
+                    project_token.get_price(),
+                    project_token.get_decimals(),
+                ));
+            }
+
+            speculoos::assert_that(&received_assets_in_pools).matches(|received_assets_in_pools| {
+                assets
+                    .iter()
+                    .all(|asset| received_assets_in_pools.contains(asset))
+            });
         }
 
         self

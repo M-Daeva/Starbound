@@ -69,7 +69,7 @@ pub fn query_assets_in_pools(
 
     for terraswap::asset::PairInfo {
         contract_addr,
-        asset_decimals,
+        asset_decimals: [decimals1, decimals2],
         ..
     } in query_pairs_result
     {
@@ -77,40 +77,58 @@ pub fn query_assets_in_pools(
             .querier
             .query_wasm_smart(&contract_addr, &terraswap::pair::QueryMsg::Pool {})?;
 
-        let terraswap::pair::PoolResponse { assets, .. } = query_pool_result;
+        let terraswap::pair::PoolResponse {
+            assets: [asset1, asset2],
+            ..
+        } = query_pool_result;
 
         // calculate prices of ucrd-asset pools
-        for i in 0..=1 {
-            update_asset_data_list(
-                &mut asset_data_list,
-                &assets[i].info,
-                assets.clone(),
-                asset_decimals,
-                denom_price,
-                i,
-            );
-        }
+        let (denom_asset, unknown_asset, unknown_decimals) = if asset1.info.equal(&denom_asset_info)
+        {
+            (asset1, asset2, decimals2)
+        } else if asset2.info.equal(&denom_asset_info) {
+            (asset2, asset1, decimals1)
+        } else {
+            // store parameters of non ucrd-asset pools
+            raw_info_list.push(([asset1, asset2], [decimals1, decimals2]));
+            continue;
+        };
 
-        // store parameters of non ucrd-asset pools
-        if !assets.iter().any(|x| x.info.equal(&denom_asset_info)) {
-            raw_info_list.push((assets, asset_decimals));
-        }
+        update_asset_data_list(
+            &mut asset_data_list,
+            denom_asset,
+            denom_price,
+            denom_decimals,
+            unknown_asset,
+            unknown_decimals,
+        );
     }
 
     // calculate prices of non ucrd-asset pools
-    for (assets, decimals) in raw_info_list {
-        for (asset_data, price, _) in asset_data_list.clone().iter() {
-            for i in 0..=1 {
-                update_asset_data_list(
-                    &mut asset_data_list,
-                    asset_data,
-                    assets.clone(),
-                    decimals,
-                    *price,
-                    i,
-                );
-            }
-        }
+    for ([asset1, asset2], [decimals1, decimals2]) in raw_info_list {
+        let (ref_asset, ref_price, ref_decimals, unknown_asset, unknown_decimals) =
+            if let Some((_, price, _)) = asset_data_list
+                .iter()
+                .find(|(asset_info, ..)| asset1.info.equal(asset_info))
+            {
+                (asset1, *price, decimals1, asset2, decimals2)
+            } else if let Some((_, price, _)) = asset_data_list
+                .iter()
+                .find(|(asset_info, ..)| asset2.info.equal(asset_info))
+            {
+                (asset2, *price, decimals2, asset1, decimals1)
+            } else {
+                continue;
+            };
+
+        update_asset_data_list(
+            &mut asset_data_list,
+            ref_asset,
+            ref_price,
+            ref_decimals,
+            unknown_asset,
+            unknown_decimals,
+        );
     }
 
     Ok(asset_data_list)
@@ -118,29 +136,25 @@ pub fn query_assets_in_pools(
 
 fn update_asset_data_list(
     asset_data_list: &mut Vec<(terraswap::asset::AssetInfo, Decimal, u8)>,
-    current_asset_info: &terraswap::asset::AssetInfo,
-    assets: [terraswap::asset::Asset; 2],
-    decimals: [u8; 2],
-    current_price: Decimal,
-    i: usize,
+    ref_asset: terraswap::asset::Asset,
+    ref_price: Decimal,
+    ref_decimals: u8,
+    unknown_asset: terraswap::asset::Asset,
+    unknown_decimals: u8,
 ) {
-    if current_asset_info.equal(&assets[i].info) {
-        let price = get_xyk_price(
-            current_price,
-            decimals[i],
-            decimals[1 - i],
-            assets[i].amount,
-            assets[1 - i].amount,
-        );
+    let price = get_xyk_price(
+        ref_price,
+        ref_decimals,
+        unknown_decimals,
+        ref_asset.amount,
+        unknown_asset.amount,
+    );
 
-        let asset_info = &assets[1 - i].info;
-
-        if !asset_data_list
-            .iter()
-            .any(|(asset_data, ..)| asset_data.equal(asset_info))
-        {
-            asset_data_list.push((asset_info.to_owned(), price, decimals[1 - i]));
-        }
+    if !asset_data_list
+        .iter()
+        .any(|(asset_data, ..)| asset_data.equal(&unknown_asset.info))
+    {
+        asset_data_list.push((unknown_asset.info, price, unknown_decimals));
     }
 }
 
