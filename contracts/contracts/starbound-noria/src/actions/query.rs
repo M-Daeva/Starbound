@@ -239,3 +239,65 @@ pub fn query_balances(
 
     Ok(accounts_and_balances)
 }
+
+pub fn query_balances_of_single_address(
+    deps: Deps,
+    env: Env,
+    address: impl ToString,
+) -> StdResult<Vec<(terraswap::asset::AssetInfo, Uint128)>> {
+    let account = &deps.api.addr_validate(&address.to_string())?;
+
+    // get lists of assets from dex
+    let mut asset_list: Vec<terraswap::asset::AssetInfo> = vec![];
+
+    for terraswap::asset::PairInfo { asset_infos, .. } in query_pairs(deps, env)? {
+        for info in asset_infos {
+            if !asset_list.contains(&info) {
+                asset_list.push(info);
+            }
+        }
+    }
+
+    // split assets to coins and tokens
+    let mut coin_list: Vec<String> = vec![];
+    let mut token_list: Vec<Addr> = vec![];
+
+    for asset in asset_list {
+        match asset {
+            terraswap::asset::AssetInfo::NativeToken { denom } => coin_list.push(denom),
+            terraswap::asset::AssetInfo::Token { contract_addr } => {
+                token_list.push(deps.api.addr_validate(&contract_addr)?)
+            }
+        };
+    }
+
+    // query account coins included in pairs
+    let mut balances = deps
+        .querier
+        .query_all_balances(account)?
+        .into_iter()
+        .filter(|Coin { denom, amount }| coin_list.contains(denom) && !amount.is_zero())
+        .map(|Coin { denom, amount }| (terraswap::asset::AssetInfo::NativeToken { denom }, amount))
+        .collect::<Vec<(terraswap::asset::AssetInfo, Uint128)>>();
+
+    // query account tokens included in pairs
+    for token in &token_list {
+        let cw20::BalanceResponse { balance } = deps.querier.query_wasm_smart(
+            token,
+            &cw20_base::msg::QueryMsg::Balance {
+                address: account.to_string(),
+            },
+        )?;
+
+        if !balance.is_zero() {
+            balances.push((
+                terraswap::asset::AssetInfo::Token {
+                    contract_addr: token.to_string(),
+                },
+                balance,
+            ));
+        }
+    }
+
+    Ok(balances)
+}

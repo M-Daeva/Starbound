@@ -5,7 +5,7 @@ use cosmwasm_std::{
 
 use crate::{
     actions::{
-        execute::{deposit, swap, update_config, withdraw},
+        execute::{deposit, swap, transfer, update_config, withdraw},
         instantiate::init,
         other::migrate_contract,
         query::{query_assets_in_pools, query_balances, query_config, query_pairs, query_users},
@@ -64,7 +64,7 @@ pub fn execute(
             fee_rate,
         ),
         ExecuteMsg::Swap {} => swap(deps, env, info),
-        // ExecuteMsg::Transfer {} => transfer(deps, env, info),
+        ExecuteMsg::Transfer {} => transfer(deps, env, info),
     }
 }
 

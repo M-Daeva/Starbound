@@ -76,4 +76,7 @@ pub enum ContractError {
 
     #[error("Routes are not found!")]
     EmptyRoutes {},
+
+    #[error("Contract balances are undefined!")]
+    UndefinedContractBalances {},
 }

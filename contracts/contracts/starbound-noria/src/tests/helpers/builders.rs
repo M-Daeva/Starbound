@@ -37,7 +37,6 @@ impl Loggable for Project {
     }
 }
 
-// TODO: add query_balances
 pub trait Builderable {
     fn display_logs(&mut self) -> &mut Self;
     fn assert_error(&mut self, submsg: impl ToString) -> &mut Self;
@@ -46,6 +45,7 @@ pub trait Builderable {
     fn prepare_withdraw_by(&mut self, project_account: ProjectAccount) -> WithdrawBuilder;
     fn prepare_update_config_by(&mut self, project_account: ProjectAccount) -> UpdateConfigBuilder;
     fn prepare_swap_by(&mut self, project_account: ProjectAccount) -> SwapBuilder;
+    fn prepare_transfer_by(&mut self, project_account: ProjectAccount) -> TransferBuilder;
 
     fn query_users(&mut self, address_list: &[ProjectAccount]) -> &mut Self;
     fn assert_user(&mut self, address_and_user: (Addr, User)) -> &mut Self;
@@ -109,6 +109,11 @@ impl Builderable for Project {
         SwapBuilder::prepare(project_account)
     }
 
+    fn prepare_transfer_by(&mut self, project_account: ProjectAccount) -> TransferBuilder {
+        self.check_logs();
+        TransferBuilder::prepare(project_account)
+    }
+
     #[track_caller]
     fn query_users(&mut self, address_list: &[ProjectAccount]) -> &mut Self {
         self.check_logs();
@@ -119,7 +124,7 @@ impl Builderable for Project {
             self.get_app_contract_address(),
             &QueryMsg::QueryUsers { address_list },
         );
-        println!("{:#?}", response);
+
         let result = response.map(|x| to_binary(&x)).unwrap();
 
         self.save_logs_and_return(result)
@@ -229,7 +234,7 @@ impl Builderable for Project {
                 self.get_app_contract_address(),
                 &QueryMsg::QueryBalances { address_list },
             );
-
+        println!("balances {:#?}", response);
         let result = response.map(|x| to_binary(&x)).unwrap();
 
         self.save_logs_and_return(result)
@@ -547,6 +552,33 @@ impl SwapBuilder {
             sender,
             project.get_app_contract_address(),
             &ExecuteMsg::Swap {},
+            &[],
+        );
+
+        project.save_logs_and_return(result)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct TransferBuilder {
+    sender: Addr,
+}
+
+impl TransferBuilder {
+    fn prepare(project_account: ProjectAccount) -> Self {
+        Self {
+            sender: project_account.to_address(),
+        }
+    }
+
+    #[track_caller]
+    pub fn execute_and_switch_to<'a>(&self, project: &'a mut Project) -> &'a mut Project {
+        let TransferBuilder { sender } = self.to_owned();
+
+        let result = project.app.execute_contract(
+            sender,
+            project.get_app_contract_address(),
+            &ExecuteMsg::Transfer {},
             &[],
         );
 

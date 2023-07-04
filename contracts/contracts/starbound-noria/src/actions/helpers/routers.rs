@@ -5,7 +5,7 @@ use cosmwasm_std::{
 use crate::{
     actions::helpers::math::{dec_to_uint128, u128_to_dec},
     error::ContractError,
-    state::{Asset, Ledger, User, DENOM_STABLE},
+    state::{Asset, Ledger, User},
 };
 
 pub enum SwapMsg {
@@ -129,11 +129,7 @@ pub fn transfer_router(
     users_with_addresses: &[(Addr, User)],
     contract_balances: Vec<(terraswap::asset::AssetInfo, Uint128)>,
     ledger: Ledger,
-    fee_native: Decimal,
-    admin_address: &Addr,
 ) -> StdResult<(Vec<(Addr, User)>, Vec<CosmosMsg>)> {
-    let mut fee_list: Vec<Uint128> = vec![Uint128::zero(); ledger.global_denom_list.len()];
-
     // get vector of ratios to correct amount_to_transfer due to difference between
     // contract balances and calculated values
     let asset_amount_correction_vector = ledger
@@ -144,17 +140,7 @@ pub fn transfer_router(
             let asset_amount = contract_balances
                 .iter()
                 .find(|(asset_info, _amount)| asset_info.equal(denom))
-                .map_or(Decimal::zero(), |y| {
-                    let fee_multiplier = if y.0.to_string().contains(DENOM_STABLE) {
-                        fee_native
-                    } else {
-                        Decimal::zero()
-                    };
-                    let amount = u128_to_dec(y.1);
-                    let fee = (amount * fee_multiplier).ceil();
-                    fee_list[i] = dec_to_uint128(fee);
-                    amount - fee
-                });
+                .map_or(Decimal::zero(), |(_, amount)| u128_to_dec(*amount));
 
             asset_amount
                 .checked_div(u128_to_dec(ledger.global_delta_balance_list[i]))
@@ -219,38 +205,6 @@ pub fn transfer_router(
 
         users_with_addresses_updated.push((addr, User { asset_list, ..user }));
     }
-
-    for (i, fee) in fee_list.iter().enumerate() {
-        // don't create message with zero balance
-        if fee.is_zero() {
-            continue;
-        }
-
-        let fee_asset = &ledger.global_denom_list[i];
-
-        if let terraswap::asset::AssetInfo::NativeToken { denom } = fee_asset {
-            let bank_msg = CosmosMsg::Bank(BankMsg::Send {
-                to_address: admin_address.to_string(),
-                amount: vec![coin(fee.u128(), denom)],
-            });
-
-            msg_list.push(bank_msg);
-        }
-    }
-
-    // println!(
-    //     "asset_amount_correction_vector {:#?}",
-    //     asset_amount_correction_vector
-    // );
-
-    println!("fee_list {:#?}", fee_list);
-
-    // println!(
-    //     "users_with_addresses_updated {:#?}",
-    //     users_with_addresses_updated
-    // );
-
-    println!("msg_list {:#?}", msg_list);
 
     Ok((users_with_addresses_updated, msg_list))
 }

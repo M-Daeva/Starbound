@@ -11,7 +11,10 @@ use crate::{
             routers::{get_swap_with_terraswap_router_config, transfer_router, SwapMsg},
             verifier::{verify_deposit_args, verify_scheduler},
         },
-        query::{query_assets_in_pools, query_balances, query_pairs, query_users},
+        query::{
+            query_assets_in_pools, query_balances, query_balances_of_single_address, query_pairs,
+            query_users,
+        },
     },
     error::ContractError,
     state::{Asset, Config, User, CONFIG, DENOM_STABLE, LEDGER, USERS},
@@ -162,10 +165,6 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         &balances_with_addresses,
     );
 
-    println!("asset_data_list {:#?}", asset_data_list);
-    println!("ledger {:#?}", ledger);
-    println!("users_with_addresses {:#?}", users_with_addresses);
-
     let mut msg_list = Vec::<CosmosMsg>::new();
 
     let asset_in = &terraswap::asset::AssetInfo::NativeToken {
@@ -185,6 +184,7 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
             continue;
         }
 
+        // TODO: add fee collector, decrease amount before swap and update collected_fee_amount
         let msg = create_swap_msg(deps.as_ref(), env.clone(), amount, asset_in, global_denom)?;
 
         msg_list.push(msg);
@@ -198,59 +198,33 @@ pub fn swap(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
     // update ledger
     LEDGER.save(deps.storage, &ledger)?;
 
-    // println!("{:#?}", ledger);
-    // println!("{:#?}", msg_list);
-
     Ok(Response::new()
         .add_messages(msg_list)
         .add_attributes(vec![("action", "swap")]))
 }
 
-// pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-//     verify_scheduler(&deps.as_ref(), &info)?;
+pub fn transfer(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+    verify_scheduler(&deps.as_ref(), &info)?;
 
-//     let QueryPoolsAndUsersResponse { pools, users } =
-//         query_pools_and_users(deps.as_ref(), env.clone())?;
+    let ledger = LEDGER.load(deps.storage)?;
 
-//     let ledger = LEDGER.load(deps.storage)?;
+    let users_with_addresses = query_users(deps.as_ref(), env.clone(), Vec::<String>::new())?;
 
-//     let Config {
-//         stablecoin_denom,
-//         fee_default,
-//         fee_native,
-//         dapp_address_and_denom_list,
-//         ..
-//     } = CONFIG.load(deps.storage)?;
-//     let timestamp = env.block.time.plus_seconds(IBC_TIMEOUT_IN_MINS * 60);
+    let contract_balances =
+        query_balances_of_single_address(deps.as_ref(), env.clone(), env.contract.address)?;
 
-//     let contract_balances = deps.querier.query_all_balances(env.contract.address)?;
+    let (users_updated, msg_list) =
+        transfer_router(&users_with_addresses, contract_balances, ledger)?;
 
-//     let (users_updated, msg_list) = transfer_router(
-//         &pools,
-//         &users,
-//         contract_balances,
-//         ledger,
-//         fee_default,
-//         fee_native,
-//         dapp_address_and_denom_list,
-//         &stablecoin_denom,
-//         timestamp,
-//     );
+    // update users
+    for (address, user) in users_updated {
+        USERS.save(deps.storage, &address, &user)?;
+    }
 
-//     // update users
-//     for (address, user) in users_updated {
-//         USERS.save(deps.storage, &address, &user)?;
-//     }
-
-//     CONFIG.update(deps.storage, |mut x| -> Result<Config, StdError> {
-//         x.timestamp = timestamp;
-//         Ok(x)
-//     })?;
-
-//     Ok(Response::new()
-//         .add_messages(msg_list)
-//         .add_attributes(vec![("action", "transfer")]))
-// }
+    Ok(Response::new()
+        .add_messages(msg_list)
+        .add_attributes(vec![("action", "transfer")]))
+}
 
 fn create_swap_msg(
     deps: Deps,

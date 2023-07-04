@@ -18,5 +18,5 @@ pub enum ExecuteMsg {
         fee_rate: Option<Decimal>,
     },
     Swap {},
-    // Transfer {},
+    Transfer {},
 }
