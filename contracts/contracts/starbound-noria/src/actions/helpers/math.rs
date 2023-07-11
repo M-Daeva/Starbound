@@ -5,7 +5,10 @@ use std::{
     str::FromStr,
 };
 
-use crate::state::{Asset, Ledger, User};
+use crate::{
+    messages::query::{AccountBalance, AssetData},
+    state::{Asset, Ledger, User},
+};
 
 pub const P6: u128 = 1_000_000; // 1 asset with 6 decimals
 pub const P12: u128 = P6.pow(2); // 1_000_000 of assets with 6 decimals
@@ -267,9 +270,9 @@ where
 /// pools_with_denoms - POOLS.range().map().collect() \
 /// users_with_addresses - USERS.range().map().collect()
 pub fn get_ledger(
-    asset_data_list: &[(terraswap::asset::AssetInfo, Decimal, u8)], // list of (asset_info, price, decimals)
+    asset_data_list: &[AssetData], // list of (asset_info, price, decimals)
     users_with_addresses: &Vec<(Addr, User)>,
-    balances_with_addresses: &[(Addr, Vec<(terraswap::asset::AssetInfo, Uint128)>)],
+    balances_with_addresses: &[AccountBalance],
 ) -> (Ledger, Vec<(Addr, User)>) {
     let global_vec_len = asset_data_list.len();
 

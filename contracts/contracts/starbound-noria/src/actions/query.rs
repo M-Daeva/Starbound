@@ -3,7 +3,7 @@ use cosmwasm_std::{Addr, Coin, Decimal, Deps, Env, Order, StdResult, Uint128};
 
 use crate::{
     actions::helpers::math::get_xyk_price,
-    messages::query::QueryBalancesResponse,
+    messages::query::{AccountBalance, AssetData},
     state::{Config, User, CONFIG, DENOM_STABLE, USERS},
 };
 
@@ -49,10 +49,7 @@ fn query_denom_price(_deps: Deps, _env: Env) -> StdResult<Decimal> {
     Ok(Decimal::one())
 }
 
-pub fn query_assets_in_pools(
-    deps: Deps,
-    env: Env,
-) -> StdResult<Vec<(terraswap::asset::AssetInfo, Decimal, u8)>> {
+pub fn query_assets_in_pools(deps: Deps, env: Env) -> StdResult<Vec<AssetData>> {
     let denom_decimals: u8 = 6;
     let denom_asset_info = terraswap::asset::AssetInfo::NativeToken {
         denom: DENOM_STABLE.to_string(),
@@ -62,7 +59,7 @@ pub fn query_assets_in_pools(
     let query_pairs_result = query_pairs(deps, env)?;
 
     // list of (asset_info, price, decimals)
-    let mut asset_data_list: Vec<(terraswap::asset::AssetInfo, Decimal, u8)> =
+    let mut asset_data_list: Vec<AssetData> =
         vec![(denom_asset_info.clone(), denom_price, denom_decimals)];
     // list of pairs without main asset
     let mut raw_info_list: Vec<([terraswap::asset::Asset; 2], [u8; 2])> = vec![];
@@ -135,7 +132,7 @@ pub fn query_assets_in_pools(
 }
 
 fn update_asset_data_list(
-    asset_data_list: &mut Vec<(terraswap::asset::AssetInfo, Decimal, u8)>,
+    asset_data_list: &mut Vec<AssetData>,
     ref_asset: terraswap::asset::Asset,
     ref_price: Decimal,
     ref_decimals: u8,
@@ -162,7 +159,7 @@ pub fn query_balances(
     deps: Deps,
     env: Env,
     address_list: Vec<impl ToString>,
-) -> StdResult<QueryBalancesResponse> {
+) -> StdResult<Vec<AccountBalance>> {
     // get list of accounts saved in contract
     let address_list = address_list
         .iter()
@@ -200,8 +197,7 @@ pub fn query_balances(
         };
     }
 
-    let mut accounts_and_balances: Vec<(Addr, Vec<(terraswap::asset::AssetInfo, Uint128)>)> =
-        vec![];
+    let mut accounts_and_balances: Vec<AccountBalance> = vec![];
 
     for account in &account_list {
         // query account coins included in pairs

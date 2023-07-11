@@ -125,6 +125,7 @@ pub fn get_swap_with_terraswap_router_config(
     Ok((contract_addr, msg, funds))
 }
 
+#[allow(clippy::type_complexity)]
 pub fn transfer_router(
     users_with_addresses: &[(Addr, User)],
     contract_balances: Vec<(terraswap::asset::AssetInfo, Uint128)>,

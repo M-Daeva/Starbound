@@ -9,7 +9,7 @@ use crate::{
         rebalance_controlled, rebalance_proportional, str_to_dec, str_vec_to_dec_vec, u128_to_dec,
         u128_vec_to_uint128_vec, vec_add, vec_div, vec_mul, vec_sub, P12, P24,
     },
-    messages::query::QueryBalancesResponse,
+    messages::query::{AccountBalance, AssetData},
     state::{Asset, User},
     tests::helpers::{
         builders::*,
@@ -296,7 +296,7 @@ fn xyk_prices() {
 
 #[test]
 fn calc_ledger_default() {
-    let mut asset_data_list: Vec<(terraswap::asset::AssetInfo, Decimal, u8)> = vec![];
+    let mut asset_data_list: Vec<AssetData> = vec![];
 
     for project_coin in ProjectCoin::iter() {
         asset_data_list.push((
@@ -323,7 +323,7 @@ fn calc_ledger_default() {
         .with_down_counter(1)
         .complete_with_name(ProjectAccount::Alice)];
 
-    let balances_with_addresses: QueryBalancesResponse = vec![];
+    let balances_with_addresses: Vec<AccountBalance> = vec![];
 
     let (_ledger, users_with_addresses) = get_ledger(
         &asset_data_list,
@@ -366,7 +366,7 @@ fn calc_ledger_default() {
 
 // #[test]
 // fn calc_ledger_decimals() {
-//     let mut asset_data_list: Vec<(terraswap::asset::AssetInfo, Decimal, u8)> = vec![];
+//     let mut asset_data_list: Vec<AssetData> = vec![];
 
 //     for project_coin in ProjectCoin::iter() {
 //         asset_data_list.push((

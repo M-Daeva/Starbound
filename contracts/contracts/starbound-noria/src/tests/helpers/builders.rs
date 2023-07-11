@@ -5,13 +5,31 @@ use strum::IntoEnumIterator;
 
 use crate::{
     actions::{helpers::math::str_to_dec, instantiate::FEE_RATE},
-    messages::{execute::ExecuteMsg, query::QueryMsg},
+    messages::{
+        execute::ExecuteMsg,
+        query::{AccountBalance, AssetData, QueryMsg},
+    },
     state::{Asset, Config, User, CHAIN_ID_DEV},
     tests::helpers::suite::{
-        GetDecimals, GetPrice, Project, ProjectAccount, ProjectCoin, ProjectPair, ProjectToken,
-        ToAddress, ToProjectAsset, ToTerraswapAssetInfo, WrapIntoResponse, WrappedResponse,
+        GetDecimals, GetPrice, Project, ProjectAccount, ProjectCoin, ProjectToken, ToAddress,
+        ToProjectAsset, ToTerraswapAssetInfo, WrapIntoResponse, WrappedResponse,
     },
 };
+
+/// vector must be greater or equal subvector
+fn check_if_vector_contains_subvector<T>(vec: &[T], subvec: &[T]) -> bool
+where
+    T: PartialEq,
+{
+    subvec.iter().all(|subvec_item| vec.contains(subvec_item))
+}
+
+fn compare_vectors_ignoring_order<T>(vec1: &[T], vec2: &[T]) -> bool
+where
+    T: PartialEq,
+{
+    check_if_vector_contains_subvector(vec1, vec2) && vec1.len() == vec2.len()
+}
 
 trait Loggable {
     fn check_logs(&self);
@@ -56,11 +74,11 @@ pub trait Builderable {
     fn query_assets_in_pools(&mut self) -> &mut Self;
     fn assert_assets_in_pools(&mut self) -> &mut Self;
 
-    fn query_balances(&mut self, address_list: &[impl ToString]) -> &mut Self;
-    fn assert_balance(
-        &mut self,
-        address_and_balances: (Addr, Vec<(terraswap::asset::AssetInfo, Uint128)>),
-    ) -> &mut Self;
+    fn query_balances(&mut self, address_list: &[ProjectAccount]) -> &mut Self;
+    // asserts [a,b,c] == [a,b,c]
+    fn assert_balance(&mut self, account_balance: AccountBalance) -> &mut Self;
+    // asserts [a,b,c] includes [a,b]
+    fn assert_partial_balance(&mut self, account_balance: AccountBalance) -> &mut Self;
 }
 
 impl Builderable for Project {
@@ -175,13 +193,10 @@ impl Builderable for Project {
     fn query_assets_in_pools(&mut self) -> &mut Self {
         self.check_logs();
 
-        let response = self
-            .app
-            .wrap()
-            .query_wasm_smart::<Vec<(terraswap::asset::AssetInfo, Decimal, u8)>>(
-                self.get_app_contract_address(),
-                &crate::messages::query::QueryMsg::QueryAssetsInPools {},
-            );
+        let response = self.app.wrap().query_wasm_smart::<Vec<AssetData>>(
+            self.get_app_contract_address(),
+            &crate::messages::query::QueryMsg::QueryAssetsInPools {},
+        );
 
         let result = response.map(|x| to_binary(&x)).unwrap();
 
@@ -190,10 +205,10 @@ impl Builderable for Project {
 
     fn assert_assets_in_pools(&mut self) -> &mut Self {
         if let WrappedResponse::Query(query_response) = &self.logs {
-            let received_assets_in_pools: Vec<(terraswap::asset::AssetInfo, Decimal, u8)> =
+            let received_assets_in_pools: Vec<AssetData> =
                 from_binary(query_response.as_ref().unwrap()).unwrap();
 
-            let mut assets: Vec<(terraswap::asset::AssetInfo, Decimal, u8)> = vec![];
+            let mut assets: Vec<AssetData> = vec![];
 
             for project_coin in ProjectCoin::iter() {
                 assets.push((
@@ -212,9 +227,7 @@ impl Builderable for Project {
             }
 
             speculoos::assert_that(&received_assets_in_pools).matches(|received_assets_in_pools| {
-                assets
-                    .iter()
-                    .all(|asset| received_assets_in_pools.contains(asset))
+                compare_vectors_ignoring_order(received_assets_in_pools, &assets)
             });
         }
 
@@ -222,38 +235,54 @@ impl Builderable for Project {
     }
 
     #[track_caller]
-    fn query_balances(&mut self, address_list: &[impl ToString]) -> &mut Self {
+    fn query_balances(&mut self, address_list: &[ProjectAccount]) -> &mut Self {
         self.check_logs();
 
         let address_list: Vec<String> = address_list.iter().map(|x| x.to_string()).collect();
 
-        let response = self
-            .app
-            .wrap()
-            .query_wasm_smart::<Vec<(Addr, Vec<(terraswap::asset::AssetInfo, Uint128)>)>>(
-                self.get_app_contract_address(),
-                &QueryMsg::QueryBalances { address_list },
-            );
-        println!("balances {:#?}", response);
+        let response = self.app.wrap().query_wasm_smart::<Vec<AccountBalance>>(
+            self.get_app_contract_address(),
+            &QueryMsg::QueryBalances { address_list },
+        );
+
         let result = response.map(|x| to_binary(&x)).unwrap();
 
         self.save_logs_and_return(result)
     }
 
-    fn assert_balance(
-        &mut self,
-        address_and_balances: (Addr, Vec<(terraswap::asset::AssetInfo, Uint128)>),
-    ) -> &mut Self {
+    fn assert_balance(&mut self, account_balance: AccountBalance) -> &mut Self {
         if let WrappedResponse::Query(query_response) = &self.logs {
-            let balances: Vec<(Addr, Vec<(terraswap::asset::AssetInfo, Uint128)>)> =
+            let balances_res: Vec<AccountBalance> =
                 from_binary(query_response.as_ref().unwrap()).unwrap();
 
-            speculoos::assert_that(&balances).matches(|address_and_balance_list| {
+            let (address, balances) = account_balance;
+
+            speculoos::assert_that(&balances_res).matches(|address_and_balance_list| {
                 address_and_balance_list
                     .iter()
-                    .any(|(current_address, current_balances)| {
-                        let (address, balances) = &address_and_balances;
-                        current_address == address && current_balances == balances
+                    .find(|(current_address, _)| current_address == address)
+                    .map_or(false, |(_, current_balances)| {
+                        compare_vectors_ignoring_order(current_balances, &balances)
+                    })
+            });
+        }
+
+        self
+    }
+
+    fn assert_partial_balance(&mut self, account_balance: AccountBalance) -> &mut Self {
+        if let WrappedResponse::Query(query_response) = &self.logs {
+            let balances_res: Vec<AccountBalance> =
+                from_binary(query_response.as_ref().unwrap()).unwrap();
+
+            let (address, balances) = account_balance;
+
+            speculoos::assert_that(&balances_res).matches(|address_and_balance_list| {
+                address_and_balance_list
+                    .iter()
+                    .find(|(current_address, _)| current_address == address)
+                    .map_or(false, |(_, current_balances)| {
+                        check_if_vector_contains_subvector(current_balances, &balances)
                     })
             });
         }
@@ -583,5 +612,23 @@ impl TransferBuilder {
         );
 
         project.save_logs_and_return(result)
+    }
+}
+
+pub trait BuilderableBalance {
+    fn prepare_for(account: ProjectAccount) -> Self;
+    fn with_funds(&mut self, amount: u128, asset: impl ToTerraswapAssetInfo) -> Self;
+}
+
+impl BuilderableBalance for AccountBalance {
+    fn prepare_for(account: ProjectAccount) -> Self {
+        (account.to_address(), vec![])
+    }
+
+    fn with_funds(&mut self, amount: u128, asset: impl ToTerraswapAssetInfo) -> Self {
+        let (address, mut asset_info_and_amount_list) = self.clone();
+        asset_info_and_amount_list.push((asset.to_terraswap_asset_info(), Uint128::from(amount)));
+
+        (address, asset_info_and_amount_list)
     }
 }

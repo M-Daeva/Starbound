@@ -1,5 +1,6 @@
 use crate::{
     error::ContractError,
+    messages::query::AccountBalance,
     state::{Config, User},
     tests::helpers::{
         builders::*,
@@ -349,6 +350,10 @@ fn query_assets_in_pools() {
 fn swap_and_transfer_default() {
     let mut project = Project::new(None);
     project
+        // register scheduler
+        .prepare_update_config_by(ProjectAccount::Admin)
+        .with_scheduler(ProjectAccount::Scheduler)
+        .execute_and_switch_to(&mut project)
         // deposit with all parameters
         .prepare_deposit_by(ProjectAccount::Alice)
         .with_funds(100_000, ProjectCoin::Denom)
@@ -357,13 +362,16 @@ fn swap_and_transfer_default() {
         .with_rebalancing(false)
         .with_down_counter(1)
         .execute_and_switch_to(&mut project)
-        //.query_balances(&Vec::<String>::new())
-        .query_users(&[])
-        // 100_000 ucrd -> 30_000 unoria + 4_000 contract0
-        .prepare_swap_by(ProjectAccount::Admin) // TODO: add scheduler account
+        // swap and transfer 100_000 ucrd -> 30_000 unoria + 4_000 contract0
+        .prepare_swap_by(ProjectAccount::Scheduler)
         .execute_and_switch_to(&mut project)
-        .prepare_transfer_by(ProjectAccount::Admin)
+        .prepare_transfer_by(ProjectAccount::Scheduler)
         .execute_and_switch_to(&mut project)
-        .query_users(&[])
-        .query_balances(&[ProjectAccount::Alice]);
+        .query_balances(&[])
+        .assert_partial_balance(
+            AccountBalance::prepare_for(ProjectAccount::Alice)
+                .with_funds(900_000, ProjectCoin::Denom)
+                .with_funds(1_029_910, ProjectCoin::Noria)
+                .with_funds(1_003_976, ProjectToken::Atom),
+        );
 }
